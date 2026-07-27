@@ -90,12 +90,13 @@ Bottom tab navigation with four screens:
 - Idea Dump entries from Focus Mode appear here.
 
 ### 4) Profile
-- Account management.
-- Upgrade to premium.
+- Account management with display name, timezone, and locale.
+- Secure anonymous sessions by linking email/password credentials.
 - Password reset.
-- Connect external calendars (Apple, Google, Microsoft).
-- Life wisdom/tips alert surface.
-- Alarm and reminder sound settings.
+- Upgrade to premium placeholder.
+- Connect external calendars (Apple, Google, Microsoft) placeholders.
+- Tips & Wisdom modal with refreshable random guidance.
+- Alarm and reminder sound settings with preview.
 
 ## Premium Scope (Initial)
 - AI-assisted goal setup and plan generation in the goal wizard.

@@ -53,18 +53,22 @@ Map user flows for all four tabs, modal transitions, and key branch points so im
 ## Notes Flow
 1. User lands on Notes tab and sees note cards.
 2. User taps FAB to create note.
-3. User views, edits, or deletes notes.
+3. User opens a note detail modal, then can edit or delete the note.
 4. Idea Dump-created notes appear in same list with source metadata.
 
 ## Profile Flow
 1. User lands on Profile tab.
 2. User can:
-   - Manage account
-   - Upgrade to premium
+   - Manage account display name
+   - Review account email
+   - Choose timezone from searchable dropdown
+   - Choose locale from searchable dropdown
+   - Secure an anonymous session with email/password when needed
    - Reset password
-   - Connect external calendars (Apple, Google, Microsoft)
-   - Open life wisdom/tips alert
-   - Configure alarm and reminder sounds
+   - Open Tips & Wisdom modal
+   - Refresh to a different tip or wisdom entry
+   - Configure and preview timer and reminder sounds
+   - View disabled placeholders for premium and external calendar connections
 
 ## Modal and Transition Graph
 ```mermaid
@@ -99,15 +103,18 @@ flowchart TD
     T --> V[Schedule Linked Event]
     T --> Q
 
-    G --> W[Create Note]
-    G --> X[Edit Note]
-    G --> Y[Delete Note]
+   G --> W[Create Note]
+   G --> X[Open Note Details]
+   X --> Y[Edit Note]
+   X --> ZA[Delete Note]
 
-    H --> Z[Upgrade to Premium]
-    H --> AA[Connect Calendars]
-    H --> AB[Password Reset]
-    H --> AC[Tips Alert]
-    H --> AD[Sound Settings]
+   H --> Z[Account Settings]
+   H --> AA[Password Reset]
+   H --> AB[Tips and Wisdom Modal]
+   AB --> AC[Refresh Tip]
+   H --> AD[Sound Settings]
+   H --> AE[Disabled Premium Placeholder]
+   H --> AF[Disabled Calendar Connection Placeholders]
 ```
 
 ## Route and State Planning Notes
