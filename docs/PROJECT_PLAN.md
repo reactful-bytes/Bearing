@@ -69,45 +69,53 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M6.4 | in-progress | Add .ics import/export/share support | ICS serializer/parser, native share, web download fallback, and Firestore import path implemented for timed events; recurrence, all-day, attendees, conference links, and reminders remain deferred by approved scope |
 | M6.5 | in-progress | Build conflict resolution and sync diagnostics UI | Profile now surfaces sync status, last-sync timing, calendar selection, and disconnect controls; provider delete propagation and background-sync execution still depend on live provider integration |
 
-### M7 - Premium and AI Goal Assistant
+### M7 - To-Do List and Task Conversion
 | Task ID | Status | Description | Notes |
 | --- | --- | --- | --- |
-| M7.1 | not-started | Implement premium entitlement model and feature gates | Premium gates enforced client and server side |
-| M7.2 | not-started | Build AI-assisted goal planning service integration | AI returns editable milestones and steps |
-| M7.3 | not-started | Add AI safety, fallback, and failure UX | Users receive clear recovery paths on failure |
-| M7.4 | not-started | Instrument premium funnel from upgrade to activation | Conversion analytics captured end-to-end |
+| M7.1 | not-started | Add to-do list screen and unscheduled task model | Dedicated task surface for unscheduled work; detailed product refinement still pending |
+| M7.2 | not-started | Implement task create, edit, and delete flows | Scope currently limited to simple list CRUD with task detail modal |
+| M7.3 | not-started | Add convert-to-event flow from the task modal | Creating an event from a task should transition the task out of the default active list |
+| M7.4 | not-started | Add soft-delete completion handling and completed toggle | Converted tasks remain recoverable/visible only when completed filtering is enabled |
 
-### M8 - Quality, Security, and Compliance
+### M8 - Premium and AI Goal Assistant
 | Task ID | Status | Description | Notes |
 | --- | --- | --- | --- |
-| M8.1 | not-started | Expand automated tests for critical user journeys | Core flows covered by stable tests |
-| M8.2 | not-started | Perform security hardening and secret management audit | No secrets exposed and auth flows validated |
-| M8.3 | not-started | Add analytics dashboards and operational alerts | Product and reliability telemetry available |
-| M8.4 | not-started | Finalize legal copy (privacy policy, terms, disclosures) | Store-compliant legal docs available |
+| M8.1 | not-started | Implement premium entitlement model and feature gates | Premium gates enforced client and server side |
+| M8.2 | not-started | Build AI-assisted goal planning service integration | AI returns editable milestones and steps |
+| M8.3 | not-started | Add AI safety, fallback, and failure UX | Users receive clear recovery paths on failure |
+| M8.4 | not-started | Instrument premium funnel from upgrade to activation | Conversion analytics captured end-to-end |
 
-### M9 - Final UI Fixes and Operability Fixes
+### M9 - Quality, Security, and Compliance
 | Task ID | Status | Description | Notes |
 | --- | --- | --- | --- |
-| M9.1 | not-started | Polish UI interactions and accessibility | All screens pass WCAG AA accessibility audit |
-| M9.2 | not-started | Fix operability edge cases and error recovery | Edge cases in critical flows handled gracefully |
-| M9.3 | not-started | Optimize app performance and startup time | App launch and transitions meet performance targets |
-| M9.4 | not-started | Run end-to-end user acceptance testing | UAT signoff from stakeholders |
+| M9.1 | not-started | Expand automated tests for critical user journeys | Core flows covered by stable tests |
+| M9.2 | not-started | Perform security hardening and secret management audit | No secrets exposed and auth flows validated |
+| M9.3 | not-started | Add analytics dashboards and operational alerts | Product and reliability telemetry available |
+| M9.4 | not-started | Finalize legal copy (privacy policy, terms, disclosures) | Store-compliant legal docs available |
 
-### M10 - Monetization Readiness
+### M10 - Final UI Fixes and Operability Fixes
 | Task ID | Status | Description | Notes |
 | --- | --- | --- | --- |
-| M10.1 | not-started | Configure subscription products for iOS and Android | Products testable in sandbox environments |
-| M10.2 | not-started | Build paywall UX and entitlement restoration flows | Purchase, restore, and cancel paths validated |
-| M10.3 | not-started | Validate regional pricing and trial strategy | Pricing matrix approved for launch markets |
+| M10.1 | not-started | Polish UI interactions and accessibility | All screens pass WCAG AA accessibility audit |
+| M10.2 | not-started | Fix operability edge cases and error recovery | Edge cases in critical flows handled gracefully |
+| M10.3 | not-started | Optimize app performance and startup time | App launch and transitions meet performance targets |
+| M10.4 | not-started | Run end-to-end user acceptance testing | UAT signoff from stakeholders |
 
-### M11 - Release and Store Deployment
+### M11 - Monetization Readiness
 | Task ID | Status | Description | Notes |
 | --- | --- | --- | --- |
-| M11.1 | not-started | Prepare release build pipelines and signing setup | Signed release candidates generated |
-| M11.2 | not-started | Complete App Store listing assets and metadata | Apple submission package ready |
-| M11.3 | not-started | Complete Google Play listing assets and metadata | Play submission package ready |
-| M11.4 | not-started | Run beta testing cycles (TestFlight/Internal Testing) | Critical launch blockers resolved |
-| M11.5 | not-started | Submit and publish to both stores | App live in both stores |
+| M11.1 | not-started | Configure subscription products for iOS and Android | Products testable in sandbox environments |
+| M11.2 | not-started | Build paywall UX and entitlement restoration flows | Purchase, restore, and cancel paths validated |
+| M11.3 | not-started | Validate regional pricing and trial strategy | Pricing matrix approved for launch markets |
+
+### M12 - Release and Store Deployment
+| Task ID | Status | Description | Notes |
+| --- | --- | --- | --- |
+| M12.1 | not-started | Prepare release build pipelines and signing setup | Signed release candidates generated |
+| M12.2 | not-started | Complete App Store listing assets and metadata | Apple submission package ready |
+| M12.3 | not-started | Complete Google Play listing assets and metadata | Play submission package ready |
+| M12.4 | not-started | Run beta testing cycles (TestFlight/Internal Testing) | Critical launch blockers resolved |
+| M12.5 | not-started | Submit and publish to both stores | App live in both stores |
 
 ## Update Rules
 - Read this file before starting a task.

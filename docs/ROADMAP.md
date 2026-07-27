@@ -67,45 +67,53 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M6.4 | not-started | Add .ics import/export/share support | .ics round-trip validated with sample events |
 | M6.5 | not-started | Build conflict resolution and sync diagnostics UI | Sync errors are actionable for users |
 
-### M7 - Premium and AI Goal Assistant
+### M7 - To-Do List and Task Conversion
 | Task ID | Status | Description | Exit Criteria |
 | --- | --- | --- | --- |
-| M7.1 | not-started | Implement premium entitlement model and feature gates | Premium gates enforced client and server side |
-| M7.2 | not-started | Build AI-assisted goal planning service integration | AI returns editable milestones and steps |
-| M7.3 | not-started | Add AI safety, fallback, and failure UX | Users receive clear recovery paths on failure |
-| M7.4 | not-started | Instrument premium funnel from upgrade to activation | Conversion analytics captured end-to-end |
+| M7.1 | not-started | Add to-do list screen and unscheduled task model | Users can access a dedicated task list for unscheduled work |
+| M7.2 | not-started | Implement task create, edit, and delete flows | Simple task CRUD works reliably from the list and modal views |
+| M7.3 | not-started | Add convert-to-event flow from the task modal | Task can create a calendar event from its detail view |
+| M7.4 | not-started | Add soft-delete completion handling and completed toggle | Converted tasks are hidden by default and visible when completed filter is enabled |
 
-### M8 - Quality, Security, and Compliance
+### M8 - Premium and AI Goal Assistant
 | Task ID | Status | Description | Exit Criteria |
 | --- | --- | --- | --- |
-| M8.1 | not-started | Expand automated tests for critical user journeys | Core flows covered by stable tests |
-| M8.2 | not-started | Perform security hardening and secret management audit | No secrets exposed and auth flows validated |
-| M8.3 | not-started | Add analytics dashboards and operational alerts | Product and reliability telemetry available |
-| M8.4 | not-started | Finalize legal copy (privacy policy, terms, disclosures) | Store-compliant legal docs available |
+| M8.1 | not-started | Implement premium entitlement model and feature gates | Premium gates enforced client and server side |
+| M8.2 | not-started | Build AI-assisted goal planning service integration | AI returns editable milestones and steps |
+| M8.3 | not-started | Add AI safety, fallback, and failure UX | Users receive clear recovery paths on failure |
+| M8.4 | not-started | Instrument premium funnel from upgrade to activation | Conversion analytics captured end-to-end |
 
-### M9 - Final UI Fixes and Operability Fixes
+### M9 - Quality, Security, and Compliance
 | Task ID | Status | Description | Exit Criteria |
 | --- | --- | --- | --- |
-| M9.1 | not-started | Polish UI interactions and accessibility | All screens pass WCAG AA accessibility audit |
-| M9.2 | not-started | Fix operability edge cases and error recovery | Edge cases in critical flows handled gracefully |
-| M9.3 | not-started | Optimize app performance and startup time | App launch and transitions meet performance targets |
-| M9.4 | not-started | Run end-to-end user acceptance testing | UAT signoff from stakeholders |
+| M9.1 | not-started | Expand automated tests for critical user journeys | Core flows covered by stable tests |
+| M9.2 | not-started | Perform security hardening and secret management audit | No secrets exposed and auth flows validated |
+| M9.3 | not-started | Add analytics dashboards and operational alerts | Product and reliability telemetry available |
+| M9.4 | not-started | Finalize legal copy (privacy policy, terms, disclosures) | Store-compliant legal docs available |
 
-### M10 - Monetization Readiness
+### M10 - Final UI Fixes and Operability Fixes
 | Task ID | Status | Description | Exit Criteria |
 | --- | --- | --- | --- |
-| M10.1 | not-started | Configure subscription products for iOS and Android | Products testable in sandbox environments |
-| M10.2 | not-started | Build paywall UX and entitlement restoration flows | Purchase, restore, and cancel paths validated |
-| M10.3 | not-started | Validate regional pricing and trial strategy | Pricing matrix approved for launch markets |
+| M10.1 | not-started | Polish UI interactions and accessibility | All screens pass WCAG AA accessibility audit |
+| M10.2 | not-started | Fix operability edge cases and error recovery | Edge cases in critical flows handled gracefully |
+| M10.3 | not-started | Optimize app performance and startup time | App launch and transitions meet performance targets |
+| M10.4 | not-started | Run end-to-end user acceptance testing | UAT signoff from stakeholders |
 
-### M11 - Release and Store Deployment
+### M11 - Monetization Readiness
 | Task ID | Status | Description | Exit Criteria |
 | --- | --- | --- | --- |
-| M11.1 | not-started | Prepare release build pipelines and signing setup | Signed release candidates generated |
-| M11.2 | not-started | Complete App Store listing assets and metadata | Apple submission package ready |
-| M11.3 | not-started | Complete Google Play listing assets and metadata | Play submission package ready |
-| M11.4 | not-started | Run beta testing cycles (TestFlight/Internal Testing) | Critical launch blockers resolved |
-| M11.5 | not-started | Submit and publish to both stores | App live in both stores |
+| M11.1 | not-started | Configure subscription products for iOS and Android | Products testable in sandbox environments |
+| M11.2 | not-started | Build paywall UX and entitlement restoration flows | Purchase, restore, and cancel paths validated |
+| M11.3 | not-started | Validate regional pricing and trial strategy | Pricing matrix approved for launch markets |
+
+### M12 - Release and Store Deployment
+| Task ID | Status | Description | Exit Criteria |
+| --- | --- | --- | --- |
+| M12.1 | not-started | Prepare release build pipelines and signing setup | Signed release candidates generated |
+| M12.2 | not-started | Complete App Store listing assets and metadata | Apple submission package ready |
+| M12.3 | not-started | Complete Google Play listing assets and metadata | Play submission package ready |
+| M12.4 | not-started | Run beta testing cycles (TestFlight/Internal Testing) | Critical launch blockers resolved |
+| M12.5 | not-started | Submit and publish to both stores | App live in both stores |
 
 ## Dependency Order Summary
 1. M0 Product definition
@@ -113,11 +121,12 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 3. M2 UX foundations
 4. M3-M5 Core feature pillars (Calendar, Goals, Notes/Profile)
 5. M6 Integrations and interoperability
-6. M7 Premium and AI layer
-7. M8 Quality, security, compliance
-8. M9 Final UI and operability fixes
-9. M10 Monetization readiness
-10. M11 Store release
+6. M7 To-do list and task conversion
+7. M8 Premium and AI layer
+8. M9 Quality, security, compliance
+9. M10 Final UI and operability fixes
+10. M11 Monetization readiness
+11. M12 Store release
 
 ## Validation Gates Per Milestone
 - Functional gate: Acceptance criteria met for milestone exit.
@@ -128,3 +137,4 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 ## Immediate Next Steps
 1. Start M6.1 by designing the Google Calendar connection flow, account-link state model, and first read/write sync slice.
 2. Start M6.4 by defining the .ics import/export/share contract and validation fixtures before provider-specific integration work expands.
+3. Refine M7 task lifecycle details for list behavior, event conversion, and completed-task visibility before implementation starts.
