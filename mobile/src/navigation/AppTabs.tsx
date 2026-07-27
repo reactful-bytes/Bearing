@@ -67,7 +67,6 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
 const styles = StyleSheet.create({
   tabBar: {
     height: layout.tabBarHeight,
-    paddingBottom: layout.tabBarPaddingVertical,
     paddingTop: layout.tabBarPaddingVertical,
     backgroundColor: componentTokens.tabBar.backgroundColor,
     borderTopColor: componentTokens.tabBar.borderTopColor,
