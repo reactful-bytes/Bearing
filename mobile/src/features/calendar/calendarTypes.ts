@@ -29,6 +29,13 @@ export type CreateEventInput = {
   stepId?: string | null;
 };
 
+export type CreateMirroredEventInput = CreateEventInput & {
+  source: Exclude<EventSource, 'local'>;
+  externalEventId?: string | null;
+  calendarConnectionId?: string | null;
+  status?: EventStatus;
+};
+
 export type UpdateEventInput = Partial<CreateEventInput & { status: EventStatus }>;
 
 export type CalendarUiState = 'loading' | 'error' | 'empty' | 'ready';

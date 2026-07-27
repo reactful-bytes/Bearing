@@ -63,11 +63,11 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 ### M6 - Calendar Integrations and ICS Interop
 | Task ID | Status | Description | Notes |
 | --- | --- | --- | --- |
-| M6.1 | not-started | Integrate Google Calendar connectivity | Read/write sync works for connected account |
-| M6.2 | not-started | Integrate Microsoft calendar connectivity | Read/write sync works for connected account |
-| M6.3 | not-started | Integrate Apple calendar pathway and constraints handling | Compatible import/export path validated |
-| M6.4 | not-started | Add .ics import/export/share support | .ics round-trip validated with sample events |
-| M6.5 | not-started | Build conflict resolution and sync diagnostics UI | Sync errors are actionable for users |
+| M6.1 | in-progress | Integrate Google Calendar connectivity | Client-side connection state, secured-account gating, provider env readiness messaging, and connection management modal implemented; live OAuth and sync remain blocked on provider credentials and Functions deployment |
+| M6.2 | in-progress | Integrate Microsoft calendar connectivity | Client-side connection state, secured-account gating, provider env readiness messaging, multi-tenant assumptions, and connection management modal implemented; live OAuth and sync remain blocked on provider credentials and Functions deployment |
+| M6.3 | in-progress | Integrate Apple calendar pathway and constraints handling | Apple `.ics` import/export/share UI implemented in Profile; direct iCloud sync remains intentionally out of scope |
+| M6.4 | in-progress | Add .ics import/export/share support | ICS serializer/parser, native share, web download fallback, and Firestore import path implemented for timed events; recurrence, all-day, attendees, conference links, and reminders remain deferred by approved scope |
+| M6.5 | in-progress | Build conflict resolution and sync diagnostics UI | Profile now surfaces sync status, last-sync timing, calendar selection, and disconnect controls; provider delete propagation and background-sync execution still depend on live provider integration |
 
 ### M7 - Premium and AI Goal Assistant
 | Task ID | Status | Description | Notes |
@@ -153,3 +153,6 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | 2026-07-22 | M5.1-M5.4 | Notes and Profile milestone implementation started | in-progress | Approved scope: note edit/delete, unified note detail flow, email/password auth entry with reset password, persisted profile settings, random tips alert, and sound preview via Expo-supported audio APIs |
 | 2026-07-22 | M5.1-M5.4 | Notes and Profile automated validation pass | completed | npm test (8 suites, 47 tests), targeted M5 Jest suites, npx tsc --noEmit, npm run lint, and npx expo export --platform web passed |
 | 2026-07-22 | M5.1-M5.4 | Notes and Profile milestone accepted | completed | User accepted the implemented Notes/Profile UX including note CRUD, email/password account flows, timezone/locale selectors, Tips & Wisdom modal, and sound preview/settings |
+| 2026-07-22 | M6.1-M6.5 | Calendar integrations planning started | in-progress | Added docs/M6_ENGINEERING_TICKETS.md with proposed architecture, ticket breakdown, open questions, and manual prerequisite checklist; implementation remains blocked pending user answers and provider/environment setup decisions |
+| 2026-07-26 | M6.1-M6.5 | Calendar integrations implementation authorized | in-progress | User approved provider-canonical mirror model, multi-calendar visibility, automatic two-way sync, provider-wins conflicts, background sync, secured-account-only connections, web + native support, Apple `.ics`-only scope, multi-tenant Microsoft, and Firebase Cloud Functions |
+| 2026-07-26 | M6.1-M6.5 | Calendar integrations client foundation and ICS slice validated | in-progress | Added calendar connection types/services/hooks, secured-account-only Profile connection management, provider env readiness messaging, Apple `.ics` import/export/share UI, mirrored ICS import path, and focused Jest coverage; `npx tsc --noEmit`, `npm run lint`, `npx jest src/__tests__/icsInterop.test.ts src/__tests__/ProfileScreen.test.tsx --runInBand` passed |
