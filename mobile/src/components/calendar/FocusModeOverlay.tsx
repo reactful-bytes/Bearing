@@ -8,6 +8,7 @@ import { CreateNoteInput } from '../../features/notes/noteTypes';
 type FocusModeOverlayProps = {
   visible: boolean;
   events: CalendarEvent[];
+  preferredEventId?: string | null;
   onClose: () => void;
   onSaveIdeaDump: (input: CreateNoteInput) => Promise<void>;
 };
@@ -23,7 +24,13 @@ function formatDuration(ms: number): string {
   return [hours, minutes, seconds].map((part) => String(part).padStart(2, '0')).join(':');
 }
 
-export function FocusModeOverlay({ visible, events, onClose, onSaveIdeaDump }: FocusModeOverlayProps) {
+export function FocusModeOverlay({
+  visible,
+  events,
+  preferredEventId = null,
+  onClose,
+  onSaveIdeaDump,
+}: FocusModeOverlayProps) {
   const [now, setNow] = useState<Date>(new Date());
   const [ideaBody, setIdeaBody] = useState('');
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -68,7 +75,10 @@ export function FocusModeOverlay({ visible, events, onClose, onSaveIdeaDump }: F
   }, []);
 
   const focusSummary = useMemo(() => {
-    const activeEvent = events.find((event) => now >= event.startAt && now < event.endAt) ?? null;
+    const preferredEvent = preferredEventId
+      ? events.find((event) => event.id === preferredEventId && now >= event.startAt && now < event.endAt) ?? null
+      : null;
+    const activeEvent = preferredEvent ?? events.find((event) => now >= event.startAt && now < event.endAt) ?? null;
     const nextEvent = activeEvent
       ? null
       : events.find((event) => event.startAt > now) ?? null;
@@ -100,7 +110,7 @@ export function FocusModeOverlay({ visible, events, onClose, onSaveIdeaDump }: F
       timerValue: '--:--:--',
       event: null,
     };
-  }, [events, now]);
+  }, [events, now, preferredEventId]);
 
   function clearHoldTracking(): void {
     if (holdTimeoutRef.current) {

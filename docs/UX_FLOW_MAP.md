@@ -5,8 +5,9 @@ Map user flows for all four tabs, modal transitions, and key branch points so im
 
 ## Global Navigation
 - Primary navigation is bottom tabs:
-  - Calendar
   - Goals
+   - Tasks
+   - Calendar
   - Notes
   - Profile
 - Modals are layered per-tab where needed.
@@ -50,6 +51,21 @@ Map user flows for all four tabs, modal transitions, and key branch points so im
    - View linked event list
    - Back to Goal Details
 
+## Tasks Flow
+1. User lands on Tasks tab and sees active unscheduled tasks by default.
+2. User can toggle completed tasks into view.
+3. User taps FAB to create a task with title and optional description.
+4. User taps an existing task card.
+5. Task Details modal opens.
+6. User options in Task Details:
+   - Edit task
+   - Mark task complete manually
+   - Schedule task into Calendar using a prefilled event modal
+   - Start Now by entering a duration in minutes
+   - Delete task
+7. Schedule and Start Now both mark the task completed and remove it from the default active list.
+8. Start Now switches the user to Calendar and opens Focus Mode on the newly created event.
+
 ## Notes Flow
 1. User lands on Notes tab and sees note cards.
 2. User taps FAB to create note.
@@ -78,48 +94,56 @@ flowchart TD
     B -->|Yes| D[Bottom Tab Shell]
 
     D --> E[Calendar Tab]
-    D --> F[Goals Tab]
-    D --> G[Notes Tab]
-    D --> H[Profile Tab]
+   D --> F[Goals Tab]
+   D --> G[Tasks Tab]
+   D --> H[Notes Tab]
+   D --> I[Profile Tab]
 
-    E --> I[Focus Mode Modal]
-    I --> J[Save Idea Dump]
-    J --> G
+   E --> J[Focus Mode Modal]
+   J --> K[Save Idea Dump]
+   K --> H
 
-    F --> K[Create Goal Wizard]
-    K --> L{Premium + Use AI?}
-    L -->|Yes| M[AI Plan Step]
-    L -->|No| N[Manual Date Step]
-    M --> O[Step Creation]
-    N --> O
-    O --> P[Goal Created]
-    P --> F
+   F --> L[Create Goal Wizard]
+   L --> M{Premium + Use AI?}
+   M -->|Yes| N[AI Plan Step]
+   M -->|No| O[Manual Date Step]
+   N --> P[Step Creation]
+   O --> P
+   P --> Q[Goal Created]
+   Q --> F
 
-    F --> Q[Goal Details Modal]
-    Q --> R[Edit Goal Modal State]
-    Q --> S[Add Step Modal]
-    Q --> T[Step Details Modal]
-    T --> U[Edit Step Modal State]
-    T --> V[Schedule Linked Event]
-    T --> Q
+   F --> R[Goal Details Modal]
+   R --> S[Edit Goal Modal State]
+   R --> T[Add Step Modal]
+   R --> U[Step Details Modal]
+   U --> V[Edit Step Modal State]
+   U --> W[Schedule Linked Event]
+   U --> R
 
-   G --> W[Create Note]
-   G --> X[Open Note Details]
-   X --> Y[Edit Note]
-   X --> ZA[Delete Note]
+   G --> X[Task Detail Modal]
+   G --> Y[Create Task]
+   X --> Z[Schedule Task Event]
+   X --> AA[Start Now Prompt]
+   AA --> J
 
-   H --> Z[Account Settings]
-   H --> AA[Password Reset]
-   H --> AB[Tips and Wisdom Modal]
-   AB --> AC[Refresh Tip]
-   H --> AD[Sound Settings]
-   H --> AE[Disabled Premium Placeholder]
-   H --> AF[Disabled Calendar Connection Placeholders]
+   H --> AB[Create Note]
+   H --> AC[Open Note Details]
+   AC --> AD[Edit Note]
+   AC --> AE[Delete Note]
+
+   I --> AF[Account Settings]
+   I --> AG[Password Reset]
+   I --> AH[Tips and Wisdom Modal]
+   AH --> AI[Refresh Tip]
+   I --> AJ[Sound Settings]
+   I --> AK[Disabled Premium Placeholder]
+   I --> AL[Disabled Calendar Connection Placeholders]
 ```
 
 ## Route and State Planning Notes
 - Keep tab routes stable for analytics and deep linking.
 - Keep Goal Details and Step Details as explicit modal routes for predictable back behavior.
+- Keep Task Details, Schedule Task, and Start Now as modal flows layered from the Tasks tab.
 - Ensure Step Details back action always returns to Goal Details (not directly to tab root).
 - Preserve pending form state during multi-step wizard transitions.
 
@@ -128,6 +152,7 @@ flowchart TD
 - Goal wizard cancellation at each step.
 - Reordering steps while some are completed.
 - Creating event from Step Details when calendar connection is unavailable.
+- Starting a task immediately while another event is already active.
 - Deleting notes created from Idea Dump without breaking source references.
 
 ## Test Coverage Targets (Behavior-Oriented)

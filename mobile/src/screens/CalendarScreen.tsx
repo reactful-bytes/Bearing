@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
@@ -18,6 +18,8 @@ import {
 } from '../features/calendar/calendarTypes';
 import { useCalendarEvents } from '../features/calendar/useCalendarEvents';
 import { CreateNoteInput as CreateNotePayload } from '../features/notes/noteTypes';
+import { CalendarFocusLaunch } from '../navigation/navigationTypes';
+import { getFirebaseAuth } from '../services/firebase/firebaseAuth';
 import { useNotes } from '../features/notes/useNotes';
 
 // ---------------------------------------------------------------------------
@@ -56,6 +58,14 @@ export type CalendarScreenProps = {
   eventsOverride?: CalendarEvent[];
   initialDateOverride?: Date;
   initialViewMode?: ViewMode;
+  route?: {
+    params?: {
+      focusLaunch?: CalendarFocusLaunch;
+    };
+  };
+  navigation?: {
+    setParams?: (params: { focusLaunch?: CalendarFocusLaunch }) => void;
+  };
 };
 
 // ---------------------------------------------------------------------------
@@ -67,12 +77,16 @@ export function CalendarScreen({
   eventsOverride,
   initialDateOverride,
   initialViewMode = 'day',
+  route,
+  navigation,
 }: CalendarScreenProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(initialDateOverride ?? new Date());
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
   const [activeEvent, setActiveEvent] = useState<CalendarEvent | null>(null);
   const [addEventVisible, setAddEventVisible] = useState(false);
   const [focusModeVisible, setFocusModeVisible] = useState(false);
+  const [pendingFocusEvent, setPendingFocusEvent] = useState<CalendarEvent | null>(null);
+  const [preferredFocusEventId, setPreferredFocusEventId] = useState<string | null>(null);
   const { width: screenWidth } = useWindowDimensions();
   const year = selectedDate.getFullYear();
   const month = selectedDate.getMonth();
@@ -101,11 +115,67 @@ export function CalendarScreen({
 
   const flatListRef = useRef<FlatList<MonthItem>>(null);
   const [visibleMonthIndex, setVisibleMonthIndex] = useState(initialMonthIndex);
-  const today = new Date();
-  const focusEvents =
-    year === today.getFullYear() && month === today.getMonth()
-      ? calendarEvents.filter((event) => isSameCalendarDay(event.startAt, today))
-      : [];
+  const focusEvents = useMemo(() => {
+    const today = new Date();
+
+    if (year !== today.getFullYear() || month !== today.getMonth()) {
+      return [];
+    }
+
+    return calendarEvents.filter((event) => isSameCalendarDay(event.startAt, today));
+  }, [calendarEvents, month, year]);
+  const mergedFocusEvents = useMemo(() => {
+    if (!pendingFocusEvent) {
+      return focusEvents;
+    }
+
+    return [pendingFocusEvent, ...focusEvents.filter((event) => event.id !== pendingFocusEvent.id)];
+  }, [focusEvents, pendingFocusEvent]);
+  const focusLaunchToken = route?.params?.focusLaunch?.token;
+
+  useEffect(() => {
+    if (!pendingFocusEvent) {
+      return;
+    }
+
+    if (focusEvents.some((event) => event.id === pendingFocusEvent.id)) {
+      setPendingFocusEvent(null);
+    }
+  }, [focusEvents, pendingFocusEvent]);
+
+  useEffect(() => {
+    const focusLaunch = route?.params?.focusLaunch;
+    if (!focusLaunch) {
+      return;
+    }
+
+    const userId = getFirebaseAuth().currentUser?.uid ?? 'unknown-user';
+    const launchStartAt = new Date(focusLaunch.startAtIso);
+    const launchEndAt = new Date(focusLaunch.endAtIso);
+
+    setSelectedDate(launchStartAt);
+    setViewMode('day');
+    setPreferredFocusEventId(focusLaunch.eventId);
+    setPendingFocusEvent({
+      id: focusLaunch.eventId,
+      userId,
+      title: focusLaunch.title,
+      description: focusLaunch.description,
+      startAt: launchStartAt,
+      endAt: launchEndAt,
+      timezone: focusLaunch.timezone,
+      source: 'local',
+      externalEventId: null,
+      calendarConnectionId: null,
+      goalId: null,
+      stepId: null,
+      status: 'scheduled',
+      createdAt: launchStartAt,
+      updatedAt: launchStartAt,
+    });
+    setFocusModeVisible(true);
+    navigation?.setParams?.({ focusLaunch: undefined });
+  }, [focusLaunchToken, navigation, route?.params?.focusLaunch]);
 
   const handleViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: { index: number | null }[] }) => {
@@ -171,6 +241,11 @@ export function CalendarScreen({
 
   function handlePressFocusMode(): void {
     setFocusModeVisible(true);
+  }
+
+  function handleCloseFocusMode(): void {
+    setFocusModeVisible(false);
+    setPreferredFocusEventId(null);
   }
 
   function handlePressEvent(event: CalendarEvent): void {
@@ -296,8 +371,9 @@ export function CalendarScreen({
       <EventDetailModal event={activeEvent} onClose={() => setActiveEvent(null)} onDelete={handleDeleteEvent} />
       <FocusModeOverlay
         visible={focusModeVisible}
-        events={focusEvents}
-        onClose={() => setFocusModeVisible(false)}
+        events={mergedFocusEvents}
+        preferredEventId={preferredFocusEventId}
+        onClose={handleCloseFocusMode}
         onSaveIdeaDump={handleSaveIdeaDump}
       />
     </View>

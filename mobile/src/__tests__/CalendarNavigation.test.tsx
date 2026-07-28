@@ -112,6 +112,41 @@ describe('CalendarScreen navigation', () => {
     expect(screen.queryByLabelText('Idea dump input')).toBeNull();
     jest.useRealTimers();
   });
+
+  it('opens Focus Mode for a Start Now launch from the Tasks tab', () => {
+    jest.useFakeTimers();
+    const startAt = new Date(2026, 6, 17, 10, 0, 0);
+    const endAt = new Date(2026, 6, 17, 10, 30, 0);
+    const setParams = jest.fn();
+
+    jest.setSystemTime(new Date(2026, 6, 17, 10, 5, 0));
+
+    render(
+      <CalendarScreen
+        initialDateOverride={FIXED_DATE}
+        route={{
+          params: {
+            focusLaunch: {
+              token: 'launch-1',
+              eventId: 'task-event-1',
+              title: 'Deep work sprint',
+              description: 'Draft the proposal now.',
+              startAtIso: startAt.toISOString(),
+              endAtIso: endAt.toISOString(),
+              timezone: 'UTC',
+            },
+          },
+        }}
+        navigation={{ setParams }}
+      />,
+    );
+
+    expect(screen.getByText('Deep work sprint')).toBeTruthy();
+    expect(screen.getByLabelText('Idea dump input')).toBeTruthy();
+    expect(setParams).toHaveBeenCalledWith({ focusLaunch: undefined });
+
+    jest.useRealTimers();
+  });
 });
 
 describe('formatDayLabel', () => {

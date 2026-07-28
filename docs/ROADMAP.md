@@ -70,10 +70,10 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 ### M7 - To-Do List and Task Conversion
 | Task ID | Status | Description | Exit Criteria |
 | --- | --- | --- | --- |
-| M7.1 | not-started | Add to-do list screen and unscheduled task model | Users can access a dedicated task list for unscheduled work |
-| M7.2 | not-started | Implement task create, edit, and delete flows | Simple task CRUD works reliably from the list and modal views |
-| M7.3 | not-started | Add convert-to-event flow from the task modal | Task can create a calendar event from its detail view |
-| M7.4 | not-started | Add soft-delete completion handling and completed toggle | Converted tasks are hidden by default and visible when completed filter is enabled |
+| M7.1 | completed | Add to-do list screen and unscheduled task model | Users can access a dedicated task list for unscheduled work |
+| M7.2 | completed | Implement task create, edit, and delete flows | Simple task CRUD works reliably from the list and modal views |
+| M7.3 | completed | Add convert-to-event flow from the task modal | Task can create a calendar event from its detail view |
+| M7.4 | completed | Add soft-delete completion handling and completed toggle | Converted tasks are hidden by default and visible when completed filter is enabled |
 
 ### M8 - Premium and AI Goal Assistant
 | Task ID | Status | Description | Exit Criteria |
@@ -137,4 +137,4 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 ## Immediate Next Steps
 1. Start M6.1 by designing the Google Calendar connection flow, account-link state model, and first read/write sync slice.
 2. Start M6.4 by defining the .ics import/export/share contract and validation fixtures before provider-specific integration work expands.
-3. Refine M7 task lifecycle details for list behavior, event conversion, and completed-task visibility before implementation starts.
+3. Choose whether M6 or M8 is the next implementation milestone so roadmap sequencing and dependency notes stay current.

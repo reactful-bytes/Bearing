@@ -1,19 +1,14 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { CalendarScreen } from '../screens/CalendarScreen';
 import { GoalsScreen } from '../screens/GoalsScreen';
 import { NotesScreen } from '../screens/NotesScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { TasksScreen } from '../screens/TasksScreen';
 import { colors, componentTokens, layout, typography } from '../design/tokens';
-
-export type AppTabParamList = {
-  Calendar: undefined;
-  Goals: undefined;
-  Notes: undefined;
-  Profile: undefined;
-};
+import { AppTabParamList } from './navigationTypes';
 
 type AppTabsProps = {
   onPressSignOut: () => Promise<void> | void;
@@ -22,14 +17,22 @@ type AppTabsProps = {
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
 
-const TAB_ICON_TEXT: Record<keyof AppTabParamList, string> = {
-  Calendar: 'C',
+const TAB_ICON_TEXT: Record<Exclude<keyof AppTabParamList, 'Calendar'>, string> = {
   Goals: 'G',
+  Tasks: 'T',
   Notes: 'N',
   Profile: 'P',
 };
 
 function TabIcon({ routeName, focused }: { routeName: keyof AppTabParamList; focused: boolean }) {
+  if (routeName === 'Calendar') {
+    return (
+      <View style={[styles.logoCircle, focused ? styles.logoCircleFocused : null]}>
+        <Image source={require('../../assets/logoBlueBackground.png')} style={styles.logoImage} />
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.iconCircle, focused ? styles.iconCircleFocused : null]}>
       <Text style={[styles.iconText, focused ? styles.iconTextFocused : null]}>{TAB_ICON_TEXT[routeName]}</Text>
@@ -53,8 +56,15 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
           ),
         })}
       >
-        <Tab.Screen name="Calendar" component={CalendarScreen} />
         <Tab.Screen name="Goals" component={GoalsScreen} />
+        <Tab.Screen name="Tasks" component={TasksScreen} />
+        <Tab.Screen
+          name="Calendar"
+          component={CalendarScreen}
+          options={{
+            tabBarLabel: () => null,
+          }}
+        />
         <Tab.Screen name="Notes" component={NotesScreen} />
         <Tab.Screen name="Profile">
           {() => <ProfileScreen onPressSignOut={onPressSignOut} isSignOutPending={isSignOutPending} />}
@@ -91,5 +101,23 @@ const styles = StyleSheet.create({
   },
   iconTextFocused: {
     color: componentTokens.tabIcon.focusedTextColor,
+  },
+  logoCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  logoCircleFocused: {
+    borderColor: colors.brand,
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
   },
 });

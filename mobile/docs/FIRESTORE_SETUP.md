@@ -2,6 +2,8 @@
 
 This guide enables Cloud Firestore for the Bearing mobile app and configures the required indexes and security rules for calendar event storage.
 
+Committed Firebase CLI config now lives at the workspace root in `firebase.json`, `firestore.rules`, and `firestore.indexes.json`.
+
 ## Prerequisites
 - Firebase project created and configured (see FIREBASE_SETUP.md for initial setup)
 - Anonymous authentication enabled
@@ -67,6 +69,12 @@ service cloud.firestore {
       allow create: if request.auth.uid == request.resource.data.userId;
     }
 
+      // Users can manage their own tasks
+      match /tasks/{taskId} {
+         allow read, write: if request.auth.uid == resource.data.userId;
+         allow create: if request.auth.uid == request.resource.data.userId;
+      }
+
     // Users can view their calendar connections
     match /calendarConnections/{connectionId} {
       allow read, write: if request.auth.uid == resource.data.userId;
@@ -115,6 +123,7 @@ For M4+ milestones, consider creating these indexes preemptively:
 | `goalSteps` | userId + goalId + status | Filter goal steps by status |
 | `notes` | userId + updatedAt | Sort notes by recent update |
 | `notes` | userId + source + createdAt | Filter notes by source (manual/idea_dump) |
+| `tasks` | userId + updatedAt | Sort tasks by recent update |
 
 ## 4) Test Firestore Connectivity
 

@@ -4,16 +4,25 @@ import { componentTokens, radii, spacing, typography } from '../../design/tokens
 
 type FloatingActionButtonProps = {
   label?: string;
+  accessibilityLabel?: string;
   onPress: () => void;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
   labelColor?: string;
 };
 
-export function FloatingActionButton({ label, onPress, disabled = false, style, labelColor }: FloatingActionButtonProps) {
+export function FloatingActionButton({
+  label,
+  accessibilityLabel,
+  onPress,
+  disabled = false,
+  style,
+  labelColor,
+}: FloatingActionButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label ?? 'Floating action button'}
       onPress={onPress}
       disabled={disabled}
       style={({ pressed }) => [

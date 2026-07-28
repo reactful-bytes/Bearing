@@ -72,10 +72,10 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 ### M7 - To-Do List and Task Conversion
 | Task ID | Status | Description | Notes |
 | --- | --- | --- | --- |
-| M7.1 | not-started | Add to-do list screen and unscheduled task model | Dedicated task surface for unscheduled work; detailed product refinement still pending |
-| M7.2 | not-started | Implement task create, edit, and delete flows | Scope currently limited to simple list CRUD with task detail modal |
-| M7.3 | not-started | Add convert-to-event flow from the task modal | Creating an event from a task should transition the task out of the default active list |
-| M7.4 | not-started | Add soft-delete completion handling and completed toggle | Converted tasks remain recoverable/visible only when completed filtering is enabled |
+| M7.1 | completed | Add to-do list screen and unscheduled task model | Fifth bottom tab named Tasks implemented with order Goals, Tasks, Calendar, Notes, Profile; task fields limited to title + description in v1 |
+| M7.2 | completed | Implement task create, edit, and delete flows | Task list, create modal, detail/edit modal, manual completion, and delete confirmation implemented and accepted |
+| M7.3 | completed | Add convert-to-event flow from the task modal | Schedule prefill and Start Now flow implemented with immediate event creation, Calendar tab switch, and Focus Mode launch |
+| M7.4 | completed | Add soft-delete completion handling and completed toggle | Schedule and Start Now auto-complete tasks; completed items hidden by default and visible through the completed toggle |
 
 ### M8 - Premium and AI Goal Assistant
 | Task ID | Status | Description | Notes |
@@ -164,3 +164,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | 2026-07-22 | M6.1-M6.5 | Calendar integrations planning started | in-progress | Added docs/M6_ENGINEERING_TICKETS.md with proposed architecture, ticket breakdown, open questions, and manual prerequisite checklist; implementation remains blocked pending user answers and provider/environment setup decisions |
 | 2026-07-26 | M6.1-M6.5 | Calendar integrations implementation authorized | in-progress | User approved provider-canonical mirror model, multi-calendar visibility, automatic two-way sync, provider-wins conflicts, background sync, secured-account-only connections, web + native support, Apple `.ics`-only scope, multi-tenant Microsoft, and Firebase Cloud Functions |
 | 2026-07-26 | M6.1-M6.5 | Calendar integrations client foundation and ICS slice validated | in-progress | Added calendar connection types/services/hooks, secured-account-only Profile connection management, provider env readiness messaging, Apple `.ics` import/export/share UI, mirrored ICS import path, and focused Jest coverage; `npx tsc --noEmit`, `npm run lint`, `npx jest src/__tests__/icsInterop.test.ts src/__tests__/ProfileScreen.test.tsx --runInBand` passed |
+| 2026-07-28 | M7.1-M7.4 | Tasks milestone implementation started | in-progress | Approved scope: fifth Tasks tab, title + description task model, schedule-to-event prefill, Start Now duration prompt with 30-minute default, auto-complete on conversion, and Calendar Focus Mode handoff |
+| 2026-07-28 | M7.1-M7.4 | Tasks milestone initial implementation and automated validation | in-progress | Added Firestore-backed Tasks tab, task CRUD/detail flows, schedule/start-now conversion, completed toggle, Calendar logo tab icon, and Start Now Focus Mode handoff; focused Jest suites, full `npm test`, `npx tsc --noEmit`, and `npm run lint` passed |
+| 2026-07-28 | M7.1-M7.4 | Tasks Firestore config and FAB refinement | in-progress | Added committed Firebase CLI config files for Firestore rules and composite indexes, including task access and task list indexing; changed the Tasks FAB to a plus-only button while preserving accessibility |
+| 2026-07-28 | M7.1-M7.4 | Tasks milestone accepted and complete | completed | User confirmed live Firestore-backed task creation, scheduling, Start Now, and completed-task behavior are working |

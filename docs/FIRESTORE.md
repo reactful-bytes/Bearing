@@ -15,6 +15,11 @@ Enable Cloud Firestore for Bearing and configure the minimum rules, indexes, and
 
 Related setup guide: `mobile/docs/FIREBASE_SETUP.md`
 
+Repository config:
+- `firebase.json` points Firebase CLI at the committed Firestore config.
+- `firestore.rules` contains the published rule set.
+- `firestore.indexes.json` contains the committed composite indexes.
+
 ## 1. Enable Firestore Database
 1. Open Firebase Console: https://console.firebase.google.com/
 2. Select the Bearing Firebase project.
@@ -72,6 +77,14 @@ service cloud.firestore {
         && request.auth.uid == resource.data.userId;
     }
 
+    match /tasks/{taskId} {
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.userId;
+
+      allow read, update, delete: if request.auth != null
+        && request.auth.uid == resource.data.userId;
+    }
+
     match /calendarConnections/{connectionId} {
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.userId;
@@ -97,6 +110,7 @@ service cloud.firestore {
 Why this baseline is enough now:
 - M3.2 needs user-scoped event CRUD.
 - M3.3 will need user-scoped note creation and reads.
+- M7 needs user-scoped task CRUD and task completion writes.
 - Everything else remains explicitly denied unless a collection is known.
 
 ## 3. Create Required Composite Indexes
@@ -135,6 +149,23 @@ You can create these now to avoid another setup step when the notes list lands.
 Notes:
 - The data model spec currently plans `userId + updatedAt` and `userId + source + createdAt`.
 - If the final implementation sorts descending for newest-first display, match the index direction to the query.
+
+### Tasks Index Required For M7
+The task subscription uses `where('userId', '==', userId)` and `orderBy('updatedAt', 'desc')`.
+
+Create this index:
+- Collection ID: `tasks`
+- Field: `userId` ascending
+- Field: `updatedAt` descending
+
+### Goal Step Events Index Required For M4.5+
+The linked-step event subscription uses `userId`, `stepId`, and `startAt`.
+
+Create this index:
+- Collection ID: `events`
+- Field: `userId` ascending
+- Field: `stepId` ascending
+- Field: `startAt` ascending
 
 ## 4. Verify Authentication Before Testing Firestore
 Firestore writes will fail if the app is not authenticated.
@@ -185,6 +216,7 @@ You do not need to manually create collections in advance. Firestore will create
 - `notes`
 - `goals`
 - `goalSteps`
+- `tasks`
 - `users`
 - `calendarConnections`
 - `subscriptions`
@@ -198,6 +230,7 @@ Symptoms:
 
 Fix:
 - Create the exact index requested by the error, or the `events userId + startAt` index above if it is the existing month query.
+- For Tasks load failures, ensure the `tasks userId + updatedAt` index is enabled.
 - Wait for index status to become enabled.
 
 ### Permission denied

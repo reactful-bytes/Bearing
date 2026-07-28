@@ -13,6 +13,7 @@ Define an initial Firebase-aligned data model for Bearing that supports Calendar
 - One user owns many goals, notes, calendar events, and integrations.
 - One goal has many steps.
 - One step can link to many scheduled events.
+- One user owns many tasks for unscheduled work.
 - Focus Mode Idea Dump creates notes linked to optional source event.
 - Premium entitlement controls AI planning availability.
 
@@ -103,6 +104,24 @@ Indexes (planned):
 - userId + stepId + startAt
 - userId + source + updatedAt
 
+### tasks
+Document ID: taskId
+
+Fields:
+- userId: string
+- title: string
+- description: string
+- status: enum (active, completed)
+- completionSource: enum (manual, scheduled, start_now) | null
+- completedAt: timestamp | null
+- completedEventId: string | null
+- createdAt: timestamp
+- updatedAt: timestamp
+
+Indexes (planned):
+- userId + status + updatedAt
+- userId + updatedAt
+
 ### notes
 Document ID: noteId
 
@@ -184,6 +203,7 @@ Notes:
 - Deleting a goal should soft-delete by default to preserve history.
 - Step order must be unique per goal and normalized after drag reorder.
 - Events tied to steps should retain linkage even if calendar source changes.
+- Tasks converted into events should keep the linked event ID for traceability and stay hidden from the default active list.
 - Idea Dump notes should preserve source metadata for traceability.
 
 ## Error Handling Requirements
