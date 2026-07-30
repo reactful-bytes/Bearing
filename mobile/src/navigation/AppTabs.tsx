@@ -1,6 +1,6 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CalendarScreen } from '../screens/CalendarScreen';
 import { GoalsScreen } from '../screens/GoalsScreen';
@@ -27,7 +27,7 @@ const TAB_ICON_TEXT: Record<Exclude<keyof AppTabParamList, 'Calendar'>, string> 
 function TabIcon({ routeName, focused }: { routeName: keyof AppTabParamList; focused: boolean }) {
   if (routeName === 'Calendar') {
     return (
-      <View style={[styles.logoCircle, focused ? styles.logoCircleFocused : null]}>
+      <View testID="calendar-tab-icon" style={[styles.logoCircle, focused ? styles.logoCircleFocused : null]}>
         <Image source={require('../../assets/logoBlueBackground.png')} style={styles.logoImage} />
       </View>
     );
@@ -63,6 +63,9 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
           component={CalendarScreen}
           options={{
             tabBarLabel: () => null,
+            tabBarButton: (props) => (
+              <Pressable {...props} testID="calendar-tab-button" style={[props.style, styles.calendarTabButton]} />
+            ),
           }}
         />
         <Tab.Screen name="Notes" component={NotesScreen} />
@@ -80,6 +83,7 @@ const styles = StyleSheet.create({
     paddingTop: layout.tabBarPaddingVertical,
     backgroundColor: componentTokens.tabBar.backgroundColor,
     borderTopColor: componentTokens.tabBar.borderTopColor,
+    overflow: 'visible',
   },
   tabBarLabel: {
     ...typography.tabLabel,
@@ -102,10 +106,18 @@ const styles = StyleSheet.create({
   iconTextFocused: {
     color: componentTokens.tabIcon.focusedTextColor,
   },
+  calendarTabButton: {
+    width: 76,
+    height: layout.tabBarHeight + 12,
+    marginTop: -17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible',
+  },
   logoCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',

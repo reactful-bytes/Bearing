@@ -233,7 +233,7 @@ describe('ProfileScreen', () => {
     mockProfileHooks({
       userProfile: {
         authUser: { isAnonymous: true, email: null } as never,
-        profile: makeProfile({ email: '' }),
+        profile: makeProfile({ email: '', premiumStatus: 'premium', premiumSource: 'ios' }),
         isAnonymous: true,
         email: null,
       },
@@ -247,8 +247,24 @@ describe('ProfileScreen', () => {
     ).toBeGreaterThan(0);
   });
 
+  it('opens the premium paywall for free external calendar access', () => {
+    mockProfileHooks();
+
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+
+    fireEvent.press(screen.getByLabelText('Google Calendar'));
+
+    expect(screen.getByText('Bearing Premium')).toBeTruthy();
+    expect(screen.getByText('Unlock external calendar integrations.')).toBeTruthy();
+    expect(screen.getByText('Continue on Free Plan')).toBeTruthy();
+  });
+
   it('opens a connected calendar modal and updates selected calendars', async () => {
-    const { updateConnectionCalendars } = mockProfileHooks();
+    const { updateConnectionCalendars } = mockProfileHooks({
+      userProfile: {
+        profile: makeProfile({ premiumStatus: 'premium', premiumSource: 'ios' }),
+      },
+    });
     const mockedUseCalendarConnections =
       useCalendarConnections as jest.MockedFunction<typeof useCalendarConnections>;
 

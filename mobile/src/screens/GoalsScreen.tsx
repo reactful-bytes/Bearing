@@ -6,6 +6,7 @@ import { AddStepModal } from '../components/goals/AddStepModal';
 import { CreateGoalModal } from '../components/goals/CreateGoalModal';
 import { GoalDetailsModal } from '../components/goals/GoalDetailsModal';
 import { StepDetailModal } from '../components/goals/StepDetailModal';
+import { PremiumPaywallModal } from '../components/premium/PremiumPaywallModal';
 import { AppCard } from '../components/ui/AppCard';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
@@ -16,6 +17,8 @@ import {
   GoalStepRecord,
   GoalWithSteps,
 } from '../features/goals/goalTypes';
+import { PremiumFeature, hasActivePremiumStatus } from '../features/premium/premiumAccess';
+import { useUserProfile } from '../features/profile/useUserProfile';
 import { useGoals } from '../features/goals/useGoals';
 import { useGoalStepEvents } from '../features/goals/useGoalStepEvents';
 import { createEvent as createFirebaseEvent } from '../services/firebase/firebaseEvents';
@@ -31,6 +34,7 @@ function formatDate(date: Date): string {
 }
 
 export function GoalsScreen() {
+  const { profile, uiState: profileUiState, isAnonymous } = useUserProfile();
   const { goals, uiState, createGoal, updateGoal, markGoalCompleted, createStep, deleteStep, updateStep, reorderSteps } =
     useGoals();
   const [createGoalVisible, setCreateGoalVisible] = useState(false);
@@ -38,6 +42,8 @@ export function GoalsScreen() {
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [scheduleStepId, setScheduleStepId] = useState<string | null>(null);
+  const [premiumPaywallFeature, setPremiumPaywallFeature] = useState<PremiumFeature | null>(null);
+  const hasPremiumAccess = hasActivePremiumStatus(profile?.premiumStatus);
 
   const selectedGoal = useMemo(
     () => goals.find((goal) => goal.id === selectedGoalId) ?? null,
@@ -126,6 +132,10 @@ export function GoalsScreen() {
     setAddStepVisible(false);
   }
 
+  function closePremiumPaywall(): void {
+    setPremiumPaywallFeature(null);
+  }
+
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.contentContainer}>
@@ -185,7 +195,21 @@ export function GoalsScreen() {
         <FloatingActionButton label="New Goal" onPress={() => setCreateGoalVisible(true)} style={styles.smallFab} />
       </View>
 
-      <CreateGoalModal visible={createGoalVisible} onClose={() => setCreateGoalVisible(false)} onSave={handleCreateGoal} />
+      <CreateGoalModal
+        visible={createGoalVisible}
+        onClose={() => setCreateGoalVisible(false)}
+        onSave={handleCreateGoal}
+        hasPremiumAccess={hasPremiumAccess}
+        isPremiumStatusResolved={profileUiState === 'ready'}
+        onOpenPremiumPaywall={() => setPremiumPaywallFeature('ai_goal_builder')}
+      />
+
+      <PremiumPaywallModal
+        visible={premiumPaywallFeature !== null}
+        feature={premiumPaywallFeature}
+        isAnonymous={isAnonymous}
+        onClose={closePremiumPaywall}
+      />
 
       <GoalDetailsModal
         goal={selectedGoal}

@@ -1,10 +1,12 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { GoalsScreen } from '../screens/GoalsScreen';
 import { CreateGoalInput, GoalStepRecord, GoalWithSteps } from '../features/goals/goalTypes';
 import { useGoals } from '../features/goals/useGoals';
 import { useGoalStepEvents } from '../features/goals/useGoalStepEvents';
+import { useUserProfile } from '../features/profile/useUserProfile';
+import { UserProfileRecord } from '../features/profile/profileTypes';
 import { createEvent } from '../services/firebase/firebaseEvents';
 
 jest.mock('../features/goals/useGoals', () => ({
@@ -13,6 +15,10 @@ jest.mock('../features/goals/useGoals', () => ({
 
 jest.mock('../features/goals/useGoalStepEvents', () => ({
   useGoalStepEvents: jest.fn(),
+}));
+
+jest.mock('../features/profile/useUserProfile', () => ({
+  useUserProfile: jest.fn(),
 }));
 
 jest.mock('../services/firebase/firebaseEvents', () => ({
@@ -26,6 +32,41 @@ jest.mock('../services/firebase/firebaseEvents', () => ({
 jest.mock('../services/firebase/firebaseAuth', () => ({
   getFirebaseAuth: jest.fn(() => ({ currentUser: { uid: 'test-user' } })),
 }));
+
+function makeProfile(overrides: Partial<UserProfileRecord> = {}): UserProfileRecord {
+  return {
+    userId: 'user-1',
+    displayName: 'Preston',
+    email: 'preston@example.com',
+    timezone: 'America/New_York',
+    locale: 'en-US',
+    premiumStatus: 'free',
+    premiumSource: 'none',
+    tipsEnabled: true,
+    reminderSoundId: 'signal-pulse',
+    alarmSoundId: 'summit-chime',
+    createdAt: new Date(2026, 6, 20),
+    updatedAt: new Date(2026, 6, 20),
+    ...overrides,
+  };
+}
+
+function mockUserProfile(overrides: Partial<ReturnType<typeof useUserProfile>> = {}): void {
+  const mockedUseUserProfile = useUserProfile as jest.MockedFunction<typeof useUserProfile>;
+
+  mockedUseUserProfile.mockReturnValue({
+    authUser: { isAnonymous: false, email: 'preston@example.com' } as never,
+    profile: makeProfile(),
+    uiState: 'ready',
+    error: null,
+    isAnonymous: false,
+    email: 'preston@example.com',
+    updateProfile: jest.fn(async () => undefined),
+    sendPasswordReset: jest.fn(async () => undefined),
+    linkAnonymousAccount: jest.fn(async () => undefined),
+    ...overrides,
+  });
+}
 
 function makeStep(overrides: Partial<GoalStepRecord> = {}): GoalStepRecord {
   return {
@@ -96,6 +137,11 @@ function makeOrderedGoal(): GoalWithSteps {
 }
 
 describe('GoalsScreen', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUserProfile();
+  });
+
   it('renders the empty state', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
     const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
@@ -181,9 +227,10 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Select goal target day 01'));
     fireEvent.press(screen.getByLabelText('Open goal target year dropdown'));
     fireEvent.press(screen.getByLabelText('Select goal target year 2026'));
-    expect(screen.queryByText('AI planning is coming soon.')).toBeNull();
+    expect(screen.queryByText('Unlock AI goal builder with Premium.')).toBeNull();
     fireEvent.press(screen.getByLabelText('Continue'));
-    expect(screen.getByText('AI planning is coming soon.')).toBeTruthy();
+    expect(screen.getByText('Unlock AI goal builder with Premium.')).toBeTruthy();
+    expect(screen.getByText('View Premium Plans')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Draft step 1 name'), 'Buy running shoes');
     fireEvent.changeText(screen.getByLabelText('Draft step 1 description'), 'Choose a supportive pair.');
@@ -215,6 +262,72 @@ describe('GoalsScreen', () => {
       expect(createGoalMock).toHaveBeenCalledTimes(1);
       expect(savedGoalInput?.steps[0].estimatedFinishDate).toEqual(new Date(2026, 7, 5));
     });
+  });
+
+  it('opens the premium paywall from the AI planning step for free users', () => {
+    const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+
+    mockedUseGoals.mockReturnValue({
+      goals: [],
+      uiState: 'empty',
+      createGoal: async () => undefined,
+      updateGoal: async () => undefined,
+      markGoalCompleted: async () => undefined,
+      createStep: async () => undefined,
+      deleteStep: async () => undefined,
+      updateStep: async () => undefined,
+      reorderSteps: async () => undefined,
+    });
+    mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
+
+    render(<GoalsScreen />);
+
+    fireEvent.press(screen.getByText('New Goal'));
+    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
+    fireEvent.changeText(screen.getByLabelText('Goal description'), 'Train consistently for eight weeks.');
+    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('View premium plans for AI goal builder'));
+
+    expect(screen.getByText('Bearing Premium')).toBeTruthy();
+    expect(screen.getByText('Unlock AI goal planning.')).toBeTruthy();
+    expect(screen.getByText('Continue on Free Plan')).toBeTruthy();
+  });
+
+  it('shows the premium-ready AI message for premium users', () => {
+    const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+
+    mockUserProfile({
+      profile: makeProfile({ premiumStatus: 'premium', premiumSource: 'ios' }),
+    });
+
+    mockedUseGoals.mockReturnValue({
+      goals: [],
+      uiState: 'empty',
+      createGoal: async () => undefined,
+      updateGoal: async () => undefined,
+      markGoalCompleted: async () => undefined,
+      createStep: async () => undefined,
+      deleteStep: async () => undefined,
+      updateStep: async () => undefined,
+      reorderSteps: async () => undefined,
+    });
+    mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
+
+    render(<GoalsScreen />);
+
+    fireEvent.press(screen.getByText('New Goal'));
+    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
+    fireEvent.changeText(screen.getByLabelText('Goal description'), 'Train consistently for eight weeks.');
+    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Continue'));
+
+    expect(screen.getByText('Premium AI planning slot is ready.')).toBeTruthy();
+    expect(screen.queryByLabelText('View premium plans for AI goal builder')).toBeNull();
   });
 
   it('limits year choices to the present or future and rejects a non-future target date', () => {

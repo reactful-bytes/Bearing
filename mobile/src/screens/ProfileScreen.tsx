@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AppModal } from '../components/ui/AppModal';
+import { PremiumPaywallModal } from '../components/premium/PremiumPaywallModal';
 import { ProfileSelectionModal } from '../components/profile/ProfileSelectionModal';
 import { SoundPickerModal } from '../components/profile/SoundPickerModal';
 import { TipsWisdomModal } from '../components/profile/TipsWisdomModal';
@@ -29,6 +30,11 @@ import {
   PROFILE_LOCALE_OPTIONS,
   PROFILE_TIMEZONE_OPTIONS,
 } from '../features/profile/profileOptions';
+import {
+  PremiumFeature,
+  getPremiumEntitlementLabel,
+  hasActivePremiumStatus,
+} from '../features/premium/premiumAccess';
 import { getProfileSoundOption } from '../features/profile/profileSounds';
 import { getDifferentRandomProfileTip } from '../features/profile/profileTips';
 import { useSoundPreview } from '../features/profile/useSoundPreview';
@@ -75,11 +81,13 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   const [activeConnectionProvider, setActiveConnectionProvider] = useState<CalendarConnectionProvider | null>(null);
   const [connectionPending, setConnectionPending] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [premiumPaywallFeature, setPremiumPaywallFeature] = useState<PremiumFeature | null>(null);
   const [icsModalVisible, setIcsModalVisible] = useState(false);
   const [icsPending, setIcsPending] = useState(false);
   const [icsError, setIcsError] = useState<string | null>(null);
   const [icsFeedback, setIcsFeedback] = useState<string | null>(null);
   const providerEnvStatus = getCalendarProviderEnvStatus();
+  const hasPremiumAccess = hasActivePremiumStatus(profile?.premiumStatus);
 
   useEffect(() => {
     if (!profile) {
@@ -237,6 +245,12 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   }
 
   function getConnectionDescription(provider: CalendarConnectionProvider): string {
+    if (!hasPremiumAccess) {
+      return isAnonymous
+        ? `${getCalendarProviderLabel(provider)} sync is part of Bearing Premium. Secure your account before live purchases and provider connections are enabled.`
+        : `${getCalendarProviderLabel(provider)} sync is part of Bearing Premium. Unlock direct sync, calendar selection, and diagnostics from this screen.`;
+    }
+
     if (isAnonymous) {
       return 'Secure your account before connecting external calendars.';
     }
@@ -254,6 +268,10 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   }
 
   function getConnectionTrailingText(provider: CalendarConnectionProvider): string {
+    if (!hasPremiumAccess) {
+      return 'Upgrade';
+    }
+
     if (isAnonymous) {
       return 'Secure account first';
     }
@@ -268,6 +286,11 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
 
   function handleOpenConnection(provider: CalendarConnectionProvider): void {
     setConnectionError(null);
+
+    if (!hasPremiumAccess) {
+      setPremiumPaywallFeature('external_calendar_integrations');
+      return;
+    }
 
     if (isAnonymous) {
       setConnectionError('Secure your account before connecting external calendars.');
@@ -288,6 +311,22 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   function closeConnectionModal(): void {
     setActiveConnectionProvider(null);
     setConnectionError(null);
+  }
+
+  function closePremiumPaywall(): void {
+    setPremiumPaywallFeature(null);
+  }
+
+  function getPremiumAccessDescription(): string {
+    if (hasPremiumAccess) {
+      return 'Premium is active for AI goal builder access and Google/Microsoft calendar integrations. Store purchase and restore wiring still land in the monetization milestone.';
+    }
+
+    if (profile?.premiumStatus === 'canceled') {
+      return 'Premium access is not active. Rejoin to unlock AI goal builder access and Google/Microsoft calendar integrations when live billing ships.';
+    }
+
+    return 'AI goal builder access plus Google and Microsoft calendar integrations are reserved for Bearing Premium. This in-app paywall is ready before live store checkout is connected.';
   }
 
   function closeIcsModal(): void {
@@ -679,24 +718,23 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
 
             <View style={styles.actionBlock}>
               <ListItem
+                onPress={!hasPremiumAccess ? () => setPremiumPaywallFeature('premium_overview') : undefined}
                 title="Premium access"
-                description="Purchases, restore, and entitlement management arrive in the monetization milestone."
-                trailingText="Coming soon"
-                disabled
+                description={getPremiumAccessDescription()}
+                trailingText={hasPremiumAccess ? getPremiumEntitlementLabel(profile.premiumStatus) : 'View plans'}
+                disabled={hasPremiumAccess}
               />
               <ListItem
                 onPress={() => handleOpenConnection('google')}
                 title="Google Calendar"
                 description={getConnectionDescription('google')}
                 trailingText={getConnectionTrailingText('google')}
-                disabled={isAnonymous}
               />
               <ListItem
                 onPress={() => handleOpenConnection('microsoft')}
                 title="Microsoft Calendar"
                 description={getConnectionDescription('microsoft')}
                 trailingText={getConnectionTrailingText('microsoft')}
-                disabled={isAnonymous}
               />
               <ListItem
                 onPress={() => setIcsModalVisible(true)}
@@ -760,6 +798,13 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
         tip={activeTip}
         onClose={() => setTipModalVisible(false)}
         onRefresh={handleRefreshTip}
+      />
+
+      <PremiumPaywallModal
+        visible={premiumPaywallFeature !== null}
+        feature={premiumPaywallFeature}
+        isAnonymous={isAnonymous}
+        onClose={closePremiumPaywall}
       />
 
       <AppModal

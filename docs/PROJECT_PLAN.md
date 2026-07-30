@@ -80,7 +80,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 ### M8 - Premium and AI Goal Assistant
 | Task ID | Status | Description | Notes |
 | --- | --- | --- | --- |
-| M8.1 | not-started | Implement premium entitlement model and feature gates | Premium gates enforced client and server side |
+| M8.1 | in-progress | Implement premium entitlement model and feature gates | Internal app slice in progress: client-side premium gate/paywall shell for AI goal builder and external calendar integrations, plus stable iOS/Android identifiers; store billing and server enforcement remain pending |
 | M8.2 | not-started | Build AI-assisted goal planning service integration | AI returns editable milestones and steps |
 | M8.3 | not-started | Add AI safety, fallback, and failure UX | Users receive clear recovery paths on failure |
 | M8.4 | not-started | Instrument premium funnel from upgrade to activation | Conversion analytics captured end-to-end |
@@ -168,3 +168,4 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | 2026-07-28 | M7.1-M7.4 | Tasks milestone initial implementation and automated validation | in-progress | Added Firestore-backed Tasks tab, task CRUD/detail flows, schedule/start-now conversion, completed toggle, Calendar logo tab icon, and Start Now Focus Mode handoff; focused Jest suites, full `npm test`, `npx tsc --noEmit`, and `npm run lint` passed |
 | 2026-07-28 | M7.1-M7.4 | Tasks Firestore config and FAB refinement | in-progress | Added committed Firebase CLI config files for Firestore rules and composite indexes, including task access and task list indexing; changed the Tasks FAB to a plus-only button while preserving accessibility |
 | 2026-07-28 | M7.1-M7.4 | Tasks milestone accepted and complete | completed | User confirmed live Firestore-backed task creation, scheduling, Start Now, and completed-task behavior are working |
+| 2026-07-30 | M8.1 | Premium gate implementation started | in-progress | Scope approved: app identifiers, internal premium paywall shell, and client-side gating for AI goal builder assistant plus Google/Microsoft calendar integrations |

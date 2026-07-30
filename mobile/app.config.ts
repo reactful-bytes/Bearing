@@ -12,8 +12,10 @@ const config: ExpoConfig = {
   plugins: ['expo-audio', 'expo-sharing'],
   ios: {
     supportsTablet: true,
+    bundleIdentifier: 'com.reactfulbytes.bearing',
   },
   android: {
+    package: 'com.reactfulbytes.bearing',
     adaptiveIcon: {
       foregroundImage: './assets/android-icon-foreground.png',
       backgroundImage: './assets/android-icon-background.png',

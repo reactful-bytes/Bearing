@@ -23,6 +23,9 @@ type CreateGoalModalProps = {
   visible: boolean;
   onClose: () => void;
   onSave: (input: CreateGoalInput) => Promise<void>;
+  hasPremiumAccess: boolean;
+  isPremiumStatusResolved: boolean;
+  onOpenPremiumPaywall: () => void;
 };
 
 type DraftGoalStep = CreateGoalStepInput & {
@@ -53,7 +56,14 @@ function makeEmptyDraftStep(index: number, baseDate: Date): DraftGoalStep {
   };
 }
 
-export function CreateGoalModal({ visible, onClose, onSave }: CreateGoalModalProps) {
+export function CreateGoalModal({
+  visible,
+  onClose,
+  onSave,
+  hasPremiumAccess,
+  isPremiumStatusResolved,
+  onOpenPremiumPaywall,
+}: CreateGoalModalProps) {
   const today = useMemo(() => new Date(), []);
   const [wizardIndex, setWizardIndex] = useState(0);
   const [title, setTitle] = useState('');
@@ -311,15 +321,42 @@ export function CreateGoalModal({ visible, onClose, onSave }: CreateGoalModalPro
         ) : null}
 
         {wizardIndex === 3 ? (
-          <AppCard style={styles.card}>
-            <Text style={styles.cardTitle}>AI planning is coming soon.</Text>
-            <Text style={styles.cardBody}>
-              You will be able to generate milestones and steps here once premium AI planning ships.
-            </Text>
-            <View style={styles.disabledBadge}>
-              <Text style={styles.disabledBadgeText}>Coming Soon</Text>
-            </View>
-          </AppCard>
+          !isPremiumStatusResolved ? (
+            <AppCard style={styles.card}>
+              <Text style={styles.cardTitle}>Checking premium access...</Text>
+              <Text style={styles.cardBody}>
+                Bearing is confirming whether AI goal planning should be unlocked for this account.
+              </Text>
+            </AppCard>
+          ) : hasPremiumAccess ? (
+            <AppCard style={styles.card}>
+              <Text style={styles.cardTitle}>Premium AI planning slot is ready.</Text>
+              <Text style={styles.cardBody}>
+                Your premium gate is clear. The AI milestone and step generator will plug into this step in M8.2, and manual planning stays available in the meantime.
+              </Text>
+              <View style={styles.enabledBadge}>
+                <Text style={styles.enabledBadgeText}>Premium Enabled</Text>
+              </View>
+            </AppCard>
+          ) : (
+            <AppCard style={styles.card}>
+              <Text style={styles.cardTitle}>Unlock AI goal builder with Premium.</Text>
+              <Text style={styles.cardBody}>
+                Bearing Premium will open AI-generated milestones and steps here once the service integration ships. You can keep building the goal manually right now.
+              </Text>
+              <View style={styles.disabledBadge}>
+                <Text style={styles.disabledBadgeText}>Premium Required</Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="View premium plans for AI goal builder"
+                onPress={onOpenPremiumPaywall}
+                style={({ pressed }) => [styles.primaryButton, pressed ? styles.buttonPressed : null]}
+              >
+                <Text style={styles.primaryButtonText}>View Premium Plans</Text>
+              </Pressable>
+            </AppCard>
+          )
         ) : null}
 
         {wizardIndex === 2 ? (
@@ -510,6 +547,20 @@ const styles = StyleSheet.create({
   disabledBadgeText: {
     ...typography.helper,
     color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  enabledBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceBrand,
+    borderWidth: 1,
+    borderColor: colors.brand,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  enabledBadgeText: {
+    ...typography.helper,
+    color: colors.brand,
     fontWeight: '600',
   },
   fieldGroup: {
