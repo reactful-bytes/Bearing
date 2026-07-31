@@ -54,12 +54,12 @@ export function docToCalendarEvent(snapshot: QueryDocumentSnapshot<DocumentData>
   return decodeCalendarEventData(snapshot.id, snapshot.data());
 }
 
-function buildEventPayload(
+export function buildEventPayload(
   userId: string,
   input: CreateEventInput,
   publication: CalendarPublicationMetadata,
+  now: Timestamp = Timestamp.now(),
 ): Record<string, unknown> {
-  const now = Timestamp.now();
   const recurrenceRule = input.recurrenceRule
     ? {
         ...input.recurrenceRule,

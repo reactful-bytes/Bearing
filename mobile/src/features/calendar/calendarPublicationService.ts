@@ -261,6 +261,23 @@ export function createCalendarPublicationService(
       return publishExisting(userId, event.id, event, markerId, dependencies);
     },
 
+    async publishEvent(
+      userId: string,
+      eventId: string,
+      input: CreateEventInput,
+    ): Promise<CalendarPublicationResult> {
+      const markerId = createOpaqueLinkId(dependencies.random);
+      await dependencies.updatePublication(userId, eventId, {
+        status: 'publishing',
+        markerId,
+        commonHash: canonicalCalendarFieldHash(eventFields(input)),
+        lastError: null,
+        retryable: true,
+        deletionIntent: false,
+      });
+      return publishExisting(userId, eventId, input, markerId, dependencies);
+    },
+
     async reconcileEvent(
       userId: string,
       event: BearingEvent,

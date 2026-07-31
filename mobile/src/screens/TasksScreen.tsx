@@ -43,8 +43,9 @@ function completionLabel(task: TaskRecord): string {
 
 export function TasksScreen() {
   const navigation = useNavigation<NavigationProp<AppTabParamList>>();
-  const { createEvent, publicationCalendarTitle } = useCalendarPublication();
-  const { tasks, uiState, createTask, updateTask, completeTask, deleteTask } = useTasks();
+  const { publicationCalendarTitle, publishEvent } = useCalendarPublication();
+  const { tasks, uiState, createTask, updateTask, completeTask, convertTaskToEvent, deleteTask } =
+    useTasks();
   const [addTaskVisible, setAddTaskVisible] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -98,11 +99,10 @@ export function TasksScreen() {
       throw new Error('Task not found.');
     }
 
-    const eventId = await createEvent(input, options);
-    await completeTask(scheduleTask.id, {
-      completionSource: 'scheduled',
-      completedEventId: eventId,
-    });
+    const conversion = await convertTaskToEvent(scheduleTask.id, input, 'scheduled');
+    if (options.publishToDevice) {
+      await publishEvent(conversion.eventId, conversion.eventInput);
+    }
 
     setScheduleTaskId(null);
     setSelectedTaskId(null);
@@ -117,30 +117,26 @@ export function TasksScreen() {
     const endAt = new Date(startAt.getTime() + minutes * 60_000);
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    const eventId = await createEvent(
-      {
-        title: startNowTask.title,
-        description: startNowTask.description,
-        startAt,
-        endAt,
-        timezone,
-      },
-      options,
-    );
-
-    await completeTask(startNowTask.id, {
-      completionSource: 'start_now',
-      completedEventId: eventId,
-    });
-
-    const focusLaunch: CalendarFocusLaunch = {
-      token: `${eventId}-${Date.now()}`,
-      eventId,
+    const input: CreateEventInput = {
       title: startNowTask.title,
       description: startNowTask.description,
-      startAtIso: startAt.toISOString(),
-      endAtIso: endAt.toISOString(),
+      startAt,
+      endAt,
       timezone,
+    };
+    const conversion = await convertTaskToEvent(startNowTask.id, input, 'start_now');
+    if (options.publishToDevice) {
+      await publishEvent(conversion.eventId, conversion.eventInput);
+    }
+
+    const focusLaunch: CalendarFocusLaunch = {
+      token: `${conversion.eventId}-${Date.now()}`,
+      eventId: conversion.eventId,
+      title: conversion.eventInput.title,
+      description: conversion.eventInput.description,
+      startAtIso: conversion.eventInput.startAt.toISOString(),
+      endAtIso: conversion.eventInput.endAt.toISOString(),
+      timezone: conversion.eventInput.timezone,
     };
 
     setStartNowTaskId(null);

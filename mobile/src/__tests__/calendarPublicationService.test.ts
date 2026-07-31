@@ -187,6 +187,33 @@ describe('calendarPublicationService', () => {
     );
   });
 
+  it('publishes an existing converted event without creating another Firestore event', async () => {
+    const adapter = makeAdapter();
+    (adapter.createEvent as jest.MockedFunction<typeof adapter.createEvent>).mockRejectedValue(
+      new Error('Permission revoked'),
+    );
+    const dependencies = makeDependencies(adapter);
+    const service = createCalendarPublicationService(dependencies);
+
+    await expect(service.publishEvent('user-1', 'task-task-1', input)).resolves.toEqual({
+      eventId: 'task-task-1',
+      status: 'failed',
+    });
+
+    expect(dependencies.createBearingEvent).not.toHaveBeenCalled();
+    expect(dependencies.updatePublication).toHaveBeenNthCalledWith(
+      1,
+      'user-1',
+      'task-task-1',
+      expect.objectContaining({ status: 'publishing', retryable: true }),
+    );
+    expect(dependencies.updatePublication).toHaveBeenLastCalledWith(
+      'user-1',
+      'task-task-1',
+      expect.objectContaining({ status: 'failed', retryable: true }),
+    );
+  });
+
   it('reuses a confirmed local copy on retry instead of creating a duplicate', async () => {
     const adapter = makeAdapter();
     (adapter.lookupEvent as jest.MockedFunction<typeof adapter.lookupEvent>).mockResolvedValue({

@@ -147,6 +147,7 @@ describe('GoalsScreen', () => {
     (useCalendarPublication as jest.MockedFunction<typeof useCalendarPublication>).mockReturnValue({
       publicationCalendarTitle: null,
       createEvent: jest.fn(async () => 'event-new'),
+      publishEvent: jest.fn(async () => undefined),
     });
   });
 
@@ -565,6 +566,7 @@ describe('GoalsScreen', () => {
     (useCalendarPublication as jest.MockedFunction<typeof useCalendarPublication>).mockReturnValue({
       publicationCalendarTitle: 'Work',
       createEvent,
+      publishEvent: jest.fn(async () => undefined),
     });
 
     mockedUseGoals.mockReturnValue({

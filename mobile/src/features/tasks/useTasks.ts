@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getFirebaseAuth } from '../../services/firebase/firebaseAuth';
 import {
   completeTask as completeFirebaseTask,
+  convertTaskToEvent as convertFirebaseTaskToEvent,
   createTask as createFirebaseTask,
   deleteTask as deleteFirebaseTask,
   subscribeToTasks,
@@ -15,6 +16,8 @@ import {
   TaskUiState,
   UpdateTaskInput,
 } from './taskTypes';
+import { CreateEventInput } from '../calendar/calendarTypes';
+import { TaskConversionCompletionSource, TaskConversionResult } from './taskConversionService';
 
 export type UseTasksReturn = {
   tasks: TaskRecord[];
@@ -22,6 +25,11 @@ export type UseTasksReturn = {
   createTask: (input: CreateTaskInput) => Promise<void>;
   updateTask: (taskId: string, fields: UpdateTaskInput) => Promise<void>;
   completeTask: (taskId: string, input: CompleteTaskInput) => Promise<void>;
+  convertTaskToEvent: (
+    taskId: string,
+    input: CreateEventInput,
+    completionSource: TaskConversionCompletionSource,
+  ) => Promise<TaskConversionResult>;
   deleteTask: (taskId: string) => Promise<void>;
 };
 
@@ -92,5 +100,26 @@ export function useTasks(): UseTasksReturn {
     await deleteFirebaseTask(userId, taskId);
   }, []);
 
-  return { tasks, uiState, createTask, updateTask, completeTask, deleteTask };
+  const convertTaskToEvent = useCallback(
+    async (
+      taskId: string,
+      input: CreateEventInput,
+      completionSource: TaskConversionCompletionSource,
+    ): Promise<TaskConversionResult> => {
+      const userId = getFirebaseAuth().currentUser?.uid;
+      if (!userId) throw new Error('User is not authenticated.');
+      return convertFirebaseTaskToEvent(userId, taskId, input, completionSource);
+    },
+    [],
+  );
+
+  return {
+    tasks,
+    uiState,
+    createTask,
+    updateTask,
+    completeTask,
+    convertTaskToEvent,
+    deleteTask,
+  };
 }

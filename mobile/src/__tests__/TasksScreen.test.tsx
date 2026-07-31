@@ -5,6 +5,7 @@ import { TasksScreen } from '../screens/TasksScreen';
 import { useTasks } from '../features/tasks/useTasks';
 import { TaskRecord } from '../features/tasks/taskTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
+import { CreateEventInput } from '../features/calendar/calendarTypes';
 
 const mockNavigate = jest.fn();
 
@@ -55,6 +56,7 @@ describe('TasksScreen', () => {
     (useCalendarPublication as jest.MockedFunction<typeof useCalendarPublication>).mockReturnValue({
       publicationCalendarTitle: null,
       createEvent: jest.fn(async () => 'event-new'),
+      publishEvent: jest.fn(async () => undefined),
     });
   });
 
@@ -76,6 +78,17 @@ describe('TasksScreen', () => {
       createTask: async () => undefined,
       updateTask: async () => undefined,
       completeTask: async () => undefined,
+      convertTaskToEvent: async () => ({
+        eventId: 'task-task-1',
+        eventInput: {
+          title: 'Inbox zero',
+          description: '',
+          startAt: new Date(),
+          endAt: new Date(),
+          timezone: 'UTC',
+        },
+        created: true,
+      }),
       deleteTask: async () => undefined,
     });
 
@@ -99,6 +112,17 @@ describe('TasksScreen', () => {
       createTask: createTaskMock,
       updateTask: async () => undefined,
       completeTask: async () => undefined,
+      convertTaskToEvent: async () => ({
+        eventId: 'task-task-1',
+        eventInput: {
+          title: 'Inbox zero',
+          description: '',
+          startAt: new Date(),
+          endAt: new Date(),
+          timezone: 'UTC',
+        },
+        created: true,
+      }),
       deleteTask: async () => undefined,
     });
 
@@ -129,11 +153,16 @@ describe('TasksScreen', () => {
 
     const completeTaskMock = jest.fn(async () => undefined);
     const mockedUseTasks = useTasks as jest.MockedFunction<typeof useTasks>;
-    const mockedCreateEvent = jest.fn(async () => 'event-123');
+    const convertTaskToEvent = jest.fn(async (_taskId: string, eventInput: CreateEventInput) => ({
+      eventId: 'task-task-1',
+      eventInput,
+      created: true,
+    }));
 
     (useCalendarPublication as jest.MockedFunction<typeof useCalendarPublication>).mockReturnValue({
       publicationCalendarTitle: 'Work',
-      createEvent: mockedCreateEvent,
+      createEvent: jest.fn(async () => 'event-new'),
+      publishEvent: jest.fn(async () => undefined),
     });
     mockedUseTasks.mockReturnValue({
       tasks: [makeTask()],
@@ -141,6 +170,7 @@ describe('TasksScreen', () => {
       createTask: async () => undefined,
       updateTask: async () => undefined,
       completeTask: completeTaskMock,
+      convertTaskToEvent,
       deleteTask: async () => undefined,
     });
 
@@ -157,18 +187,16 @@ describe('TasksScreen', () => {
     });
 
     await waitFor(() => {
-      expect(mockedCreateEvent).toHaveBeenCalledWith(
+      expect(convertTaskToEvent).toHaveBeenCalledWith(
+        'task-1',
         expect.objectContaining({
           title: 'Inbox zero',
           description: 'Clear the remaining work messages.',
           timezone: expect.any(String),
         }),
-        { publishToDevice: false },
+        'scheduled',
       );
-      expect(completeTaskMock).toHaveBeenCalledWith('task-1', {
-        completionSource: 'scheduled',
-        completedEventId: 'event-123',
-      });
+      expect(completeTaskMock).not.toHaveBeenCalled();
     });
 
     jest.useRealTimers();
@@ -181,11 +209,17 @@ describe('TasksScreen', () => {
 
     const completeTaskMock = jest.fn(async () => undefined);
     const mockedUseTasks = useTasks as jest.MockedFunction<typeof useTasks>;
-    const mockedCreateEvent = jest.fn(async () => 'event-456');
+    const convertTaskToEvent = jest.fn(async (_taskId: string, eventInput: CreateEventInput) => ({
+      eventId: 'task-task-1',
+      eventInput,
+      created: true,
+    }));
+    const publishEvent = jest.fn(async () => undefined);
 
     (useCalendarPublication as jest.MockedFunction<typeof useCalendarPublication>).mockReturnValue({
       publicationCalendarTitle: 'Work',
-      createEvent: mockedCreateEvent,
+      createEvent: jest.fn(async () => 'event-new'),
+      publishEvent,
     });
     mockedUseTasks.mockReturnValue({
       tasks: [
@@ -195,6 +229,7 @@ describe('TasksScreen', () => {
       createTask: async () => undefined,
       updateTask: async () => undefined,
       completeTask: completeTaskMock,
+      convertTaskToEvent,
       deleteTask: async () => undefined,
     });
 
@@ -211,7 +246,8 @@ describe('TasksScreen', () => {
     });
 
     await waitFor(() => {
-      expect(mockedCreateEvent).toHaveBeenCalledWith(
+      expect(convertTaskToEvent).toHaveBeenCalledWith(
+        'task-1',
         {
           title: 'Write proposal',
           description: 'Focus on the executive summary.',
@@ -219,15 +255,19 @@ describe('TasksScreen', () => {
           endAt: new Date(2026, 6, 28, 14, 30, 0),
           timezone: expect.any(String),
         },
-        { publishToDevice: true },
+        'start_now',
       );
-      expect(completeTaskMock).toHaveBeenCalledWith('task-1', {
-        completionSource: 'start_now',
-        completedEventId: 'event-456',
-      });
+      expect(publishEvent).toHaveBeenCalledWith(
+        'task-task-1',
+        expect.objectContaining({ title: 'Write proposal' }),
+      );
+      expect(convertTaskToEvent.mock.invocationCallOrder[0]).toBeLessThan(
+        publishEvent.mock.invocationCallOrder[0],
+      );
+      expect(completeTaskMock).not.toHaveBeenCalled();
       expect(mockNavigate).toHaveBeenCalledWith('Calendar', {
         focusLaunch: expect.objectContaining({
-          eventId: 'event-456',
+          eventId: 'task-task-1',
           title: 'Write proposal',
           description: 'Focus on the executive summary.',
           startAtIso: startAt.toISOString(),

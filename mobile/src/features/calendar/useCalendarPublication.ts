@@ -9,6 +9,7 @@ import { subscribeDeviceCalendarSettings } from '../../services/calendar/deviceC
 export type UseCalendarPublicationReturn = {
   publicationCalendarTitle: string | null;
   createEvent: (input: CreateEventInput, options?: CreateEventOptions) => Promise<string>;
+  publishEvent: (eventId: string, input: CreateEventInput) => Promise<void>;
 };
 
 export function useCalendarPublication(): UseCalendarPublicationReturn {
@@ -43,5 +44,13 @@ export function useCalendarPublication(): UseCalendarPublicationReturn {
     [userId],
   );
 
-  return { publicationCalendarTitle, createEvent };
+  const publishEvent = useCallback(
+    async (eventId: string, input: CreateEventInput): Promise<void> => {
+      if (!userId) throw new Error('User is not authenticated.');
+      await calendarPublicationService.publishEvent(userId, eventId, input);
+    },
+    [userId],
+  );
+
+  return { publicationCalendarTitle, createEvent, publishEvent };
 }
