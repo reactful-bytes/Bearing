@@ -1,0 +1,27 @@
+appId: com.reactfulbytes.bearing
+name: Create and start a task
+---
+- runFlow: 00-startup-auth.yaml
+- tapOn: Tasks
+- extendedWaitUntil:
+    visible: New task
+    timeout: 15000
+- tapOn: New task
+- tapOn: Task title
+- inputText: E2E Task ${RUN_ID}
+- tapOn: Task description
+- inputText: Converted to a focus event by Maestro.
+- hideKeyboard
+- tapOn: Save task
+- extendedWaitUntil:
+    visible: Open task E2E Task ${RUN_ID}
+    timeout: 20000
+- tapOn: Open task E2E Task ${RUN_ID}
+- tapOn: Start task now
+- assertVisible: Start Now
+- tapOn: Confirm start now
+- extendedWaitUntil:
+    visible: Idea dump input
+    timeout: 20000
+- assertVisible: Focus Mode
+- assertVisible: E2E Task ${RUN_ID}

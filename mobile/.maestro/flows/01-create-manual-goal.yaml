@@ -1,0 +1,32 @@
+appId: com.reactfulbytes.bearing
+name: Create a manual goal
+---
+- runFlow: 00-startup-auth.yaml
+- tapOn: Goals
+- extendedWaitUntil:
+    visible: New Goal
+    timeout: 15000
+- tapOn: New Goal
+- tapOn: Continue
+- tapOn: Goal name
+- inputText: E2E Goal ${RUN_ID}
+- tapOn: Goal description
+- inputText: Created by the Maestro manual goal flow.
+- hideKeyboard
+- tapOn: Continue
+- tapOn: Continue
+- extendedWaitUntil:
+    visible: Unlock AI goal builder with Premium.
+    timeout: 10000
+- tapOn: Continue
+- tapOn: Draft step 1 name
+- inputText: E2E First Step ${RUN_ID}
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: Save Goal
+    direction: DOWN
+- tapOn: Save goal
+- extendedWaitUntil:
+    visible: Open goal E2E Goal ${RUN_ID}
+    timeout: 20000

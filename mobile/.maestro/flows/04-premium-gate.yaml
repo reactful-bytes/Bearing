@@ -1,0 +1,21 @@
+appId: com.reactfulbytes.bearing
+name: Open the premium gate
+---
+- runFlow: 00-startup-auth.yaml
+- tapOn: Goals
+- tapOn: New Goal
+- tapOn: Continue
+- tapOn: Goal name
+- inputText: Unsaved Premium Check ${RUN_ID}
+- hideKeyboard
+- tapOn: Continue
+- tapOn: Continue
+- extendedWaitUntil:
+    visible: View premium plans for AI goal builder
+    timeout: 10000
+- tapOn: View premium plans for AI goal builder
+- assertVisible: Bearing Premium
+- assertVisible: Premium Required
+- assertVisible: Unlock AI goal planning.
+- tapOn: Close premium paywall
+- tapOn: Close Create Goal

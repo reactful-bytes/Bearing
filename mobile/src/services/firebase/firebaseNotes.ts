@@ -18,6 +18,7 @@ import {
 
 import { getFirebaseApp } from './firebaseApp';
 import { CreateNoteInput, NoteRecord, UpdateNoteInput } from '../../features/notes/noteTypes';
+import { shouldInjectNotesSubscriptionFailure } from '../../features/testing/e2eFaults';
 
 let cachedDb: Firestore | null = null;
 
@@ -77,6 +78,11 @@ export function subscribeToNotes(
   onNext: (notes: NoteRecord[]) => void,
   onError: (error: Error) => void,
 ): Unsubscribe {
+  if (shouldInjectNotesSubscriptionFailure()) {
+    queueMicrotask(() => onError(new Error('Failed to load notes.')));
+    return () => undefined;
+  }
+
   const db = getFirebaseFirestore();
   const notesQuery = query(
     collection(db, 'notes'),

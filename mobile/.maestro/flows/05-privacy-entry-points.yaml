@@ -1,0 +1,28 @@
+appId: com.reactfulbytes.bearing
+name: Open privacy controls without deleting data
+---
+- runFlow: 00-startup-auth.yaml
+- tapOn: Profile
+- extendedWaitUntil:
+    visible: Profile display name
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      text: Export all data
+    direction: DOWN
+- tapOn: Export all data
+- assertVisible: Account Data Export
+- assertVisible: Export JSON File
+- assertVisible: Share JSON File
+- tapOn: Close Account Data Export
+- scrollUntilVisible:
+    element:
+      text: Delete account
+    direction: DOWN
+- tapOn: Delete account
+- assertVisible: Delete Account
+- assertVisible: Account deletion current password
+- assertVisible: Account deletion confirmation
+- assertVisible: Remove linked system calendar copies
+- assertVisible: Permanently Delete Account
+- tapOn: Close Delete Account

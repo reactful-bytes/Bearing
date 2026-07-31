@@ -1,0 +1,14 @@
+appId: com.reactfulbytes.bearing
+name: Recover a failed Firestore listener
+---
+- runFlow: 00-startup-auth.yaml
+- tapOn: Notes
+- extendedWaitUntil:
+    visible: Unable to load notes.
+    timeout: 10000
+- assertVisible: Check your connection, then retry.
+- tapOn: Try Again
+- extendedWaitUntil:
+    visible: New Note
+    timeout: 20000
+- assertNotVisible: Unable to load notes.

@@ -1,0 +1,20 @@
+appId: com.reactfulbytes.bearing
+name: Startup and authentication
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: Email address
+    timeout: 20000
+- tapOn: Email address
+- inputText: ${E2E_EMAIL}
+- tapOn: Password
+- inputText: ${E2E_PASSWORD}
+- hideKeyboard
+- tapOn: Sign in
+- extendedWaitUntil:
+    visible: Goals
+    timeout: 20000
+- assertVisible: Tasks
+- assertVisible: Notes
+- assertVisible: Profile
