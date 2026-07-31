@@ -64,6 +64,8 @@ Required variables:
 Optional release variable:
 
 - EXPO_PUBLIC_SUPPORT_EMAIL (monitored support and privacy-request address)
+- EXPO_PUBLIC_REVENUECAT_IOS_API_KEY (public iOS SDK key)
+- EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY (public Android SDK key)
 
 Environment strategy:
 
@@ -73,3 +75,9 @@ Environment strategy:
 
 Do not commit `.env` files with real values. `EXPO_PUBLIC_*` values are embedded in the client and
 must never contain private keys, service-account credentials, billing secrets, or API secrets.
+
+## Release Builds
+
+`eas.json` defines development, preview, and production profiles. See
+`../docs/RELEASE_HANDOFF.md` for EAS linking, signing, versioning, store metadata, and beta evidence,
+and `../docs/MONETIZATION_RELEASE.md` for RevenueCat/store setup and sandbox acceptance.

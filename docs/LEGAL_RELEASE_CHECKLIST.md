@@ -40,12 +40,16 @@ drafts, not legal advice.
 
 ## Subscriptions
 
-- [ ] Complete M11 products, entitlement reconciliation, purchase, restore, cancel, and refund UX.
+- [x] Implement entitlement reconciliation, purchase, restore, store-management, deletion cleanup,
+      and failure UX in the repository.
+- [ ] Configure and approve M11 products, RevenueCat project, restore transfer policy, secrets, and
+      webhook in staging and production.
 - [ ] Show live localized price, billing period, trial/intro terms, auto-renewal, and included features
       before purchase.
 - [ ] Link approved Privacy and Terms from the paywall.
 - [ ] State that store settings control cancellation/refunds and account deletion does not cancel.
 - [ ] Verify Apple and Google subscription disclosures in sandbox and signed release builds.
+- [ ] Approve the regional monthly/annual pricing matrix and no-trial launch strategy.
 
 ## Privacy Request Procedure
 

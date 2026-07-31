@@ -199,9 +199,27 @@ Fields:
 Notes:
 
 - This UID-keyed server-owned document is the authoritative premium entitlement read model.
+- RevenueCat uses the Firebase UID as App User ID. An authenticated webhook triggers a canonical
+  subscriber lookup; clients and webhook event names do not directly grant access.
 - A missing document means free access. Clients must fail closed on missing, malformed, loading, or error states.
 - Only `active` and `in_grace_period` unlock premium features.
 - Clients may read only their own document and may not write subscription state.
+
+### revenueCatWebhookEvents
+
+Document ID: RevenueCat event ID
+
+Fields:
+
+- userId: string
+- receivedAt: timestamp
+
+Notes:
+
+- Server-only idempotency receipt; clients cannot read or write this collection.
+- The receipt is committed in the same transaction as the canonical subscription update.
+- Retention must cover RevenueCat's documented retry window and the approved operational audit
+  period, then be enforced by an owner-configured lifecycle process.
 
 ### aiPlans
 

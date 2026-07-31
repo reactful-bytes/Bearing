@@ -10,7 +10,8 @@ Release placeholders that must be replaced before publication:
 - Support email and public terms URL: `[REQUIRED]`
 - Minimum age and legal-capacity rules: `[REQUIRED]`
 - Governing law, venue, and regional consumer notices: `[REQUIRED]`
-- Final subscription products, prices, trial terms, and included features: `[M11 REQUIRED]`
+- Final subscription products, regional prices, no-trial strategy, and included features:
+  `[OWNER APPROVAL REQUIRED]`
 
 ## Agreement and Eligibility
 
@@ -55,12 +56,14 @@ Apple, Google, Firebase, Gemini, and other third-party services have separate te
 
 ## Premium Subscriptions
 
-When Premium launches, the app must display product, price, currency, billing period, trial or
-introductory terms, renewal behavior, and included features before purchase. Store subscriptions
-may renew automatically unless canceled through the Apple or Google account settings before the
-renewal date. The applicable store processes payment and controls cancellation and refund requests,
-subject to mandatory law. Deleting the app or Bearing account does not itself cancel a store
-subscription. Restore and entitlement behavior must match the approved M11 implementation.
+Bearing Premium is planned as monthly and annual auto-renewing subscriptions with USD reference
+prices of 7.99 and 59.99 and no launch trial. The live store-localized product, price, currency,
+billing period, any introductory terms, renewal behavior, and included features are displayed before
+purchase. Store subscriptions may renew automatically unless canceled through the Apple or Google
+account settings before the renewal date. The applicable store processes payment and controls
+cancellation and refund requests, subject to mandatory law. Deleting the app or Bearing account
+does not itself cancel a store subscription. Purchases can be restored to the secured Bearing
+account under the approved one-purchase/one-account transfer policy.
 
 ## Availability, Changes, and Termination
 

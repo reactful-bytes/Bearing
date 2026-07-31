@@ -42,3 +42,19 @@ Every client callable must:
 `backendStatus` is the minimal convention probe. It returns no user or environment data. Deploying
 or invoking it in staging requires an authenticated Firebase CLI session and an App Check-enabled
 client.
+
+## RevenueCat Reconciliation
+
+`revenueCatWebhook` validates the configured Authorization header and timestamped raw-body HMAC,
+then fetches the canonical RevenueCat subscriber by Firebase UID. It writes the server-owned
+`subscriptions/{uid}` record and an idempotent webhook receipt in one transaction. The account
+deletion callable removes the RevenueCat customer before Firestore and Firebase Authentication.
+
+Required managed secrets:
+
+- `REVENUECAT_SECRET_API_KEY`
+- `REVENUECAT_WEBHOOK_AUTHORIZATION`
+- `REVENUECAT_WEBHOOK_SIGNING_SECRET`
+
+Use separate non-production and production values. See `../docs/MONETIZATION_RELEASE.md` for console
+configuration, deployment order, restore policy, and sandbox evidence.

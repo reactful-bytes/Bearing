@@ -24,6 +24,10 @@ transport.
 | `calendar_permission_result`  | `outcome`                     | Can users grant native calendar access?       |
 | `calendar_publication_result` | `operation`, `outcome`        | Are requested native publications succeeding? |
 | `calendar_export_result`      | `action`, `format`, `outcome` | Are portability workflows succeeding?         |
+| `premium_purchase_started`    | `period`                      | Which fixed billing period reaches checkout?  |
+| `premium_purchase_result`     | `period`, `outcome`           | Does store checkout succeed or get canceled?  |
+| `premium_restore_result`      | `outcome`                     | Do store restores complete?                   |
+| `premium_activation_result`   | `source`, `outcome`           | Does Firestore entitlement activate in time?  |
 
 Unknown names, extra keys, arbitrary strings, and unsupported enum values are rejected. Changes to
 this catalog require matching client and Functions validators, tests for forbidden properties, and
@@ -46,6 +50,10 @@ jsonPayload.name="premium_paywall_viewed"
 jsonPayload.name="ai_goal_plan_result"
 jsonPayload.name="calendar_publication_result"
 jsonPayload.name="calendar_export_result"
+jsonPayload.name="premium_purchase_started"
+jsonPayload.name="premium_purchase_result"
+jsonPayload.name="premium_restore_result"
+jsonPayload.name="premium_activation_result"
 ```
 
 For failures, append:
@@ -73,10 +81,13 @@ Create one product dashboard and one reliability dashboard in the production pro
 Product dashboard:
 
 1. Premium entry views by `feature`.
-2. AI goal-plan success rate: successes divided by all AI outcomes.
-3. Calendar permission outcomes by result.
-4. Calendar publication success rate by operation.
-5. Export outcomes by format and action.
+2. Purchase starts and results by `period`, excluding canceled outcomes from failures.
+3. Firestore activation success/delay by purchase or restore source.
+4. Restore success rate.
+5. AI goal-plan success rate: successes divided by all AI outcomes.
+6. Calendar permission outcomes by result.
+7. Calendar publication success rate by operation.
+8. Export outcomes by format and action.
 
 Reliability dashboard:
 
@@ -87,10 +98,11 @@ Reliability dashboard:
 5. App Check invalid-request metrics.
 6. Backup workflow recency and billing-budget status.
 7. Account deletion success rate from the server operational event.
+8. RevenueCat webhook 4xx/5xx, latency, and duplicate-delivery trend.
 
-The premium conversion funnel remains incomplete until M11 emits store-owned purchase-start,
-purchase-result, restore-result, and server entitlement-activation outcomes. Do not infer paid
-conversion from paywall views or AI access.
+Purchase telemetry reports client workflow outcomes, while Firestore activation confirms the
+server-owned entitlement became visible. Do not infer authorization from client telemetry or
+RevenueCat `CustomerInfo`.
 
 ## Alerts
 
@@ -103,6 +115,8 @@ minimum volume protects against noisy percentages.
 | Callable p95 latency              | greater than 8 seconds           | 15 minutes | 20 requests    | warning      |
 | AI failure rate                   | at least 20%                     | 30 minutes | 10 outcomes    | warning      |
 | Calendar publication failure rate | at least 10%                     | 30 minutes | 20 outcomes    | warning      |
+| Premium activation delayed        | at least 5%                      | 30 minutes | 20 outcomes    | page         |
+| RevenueCat webhook 5xx            | greater than 2%                  | 10 minutes | 10 requests    | page         |
 | Account deletion failure          | at least 3 failures              | 60 minutes | 3 outcomes     | page         |
 | App Check rejection spike         | greater than 25 requests         | 10 minutes | 25 requests    | warning      |
 | Firestore quota                   | at least 80%                     | 15 minutes | not applicable | warning      |

@@ -28,8 +28,8 @@ User content includes Bearing calendar events, goals, SMART goal fields, milesto
 notes, completion history, links among those records, and accepted AI-assisted plan fields.
 
 Subscription records include platform, product identifier, entitlement state, period dates, and
-server reconciliation timestamps after store billing is implemented. Bearing does not store full
-payment-card details.
+server reconciliation timestamps. RevenueCat receives the Firebase UID as its App User ID and
+reconciles Apple and Google purchase state. Bearing does not store full payment-card details.
 
 Device-local information includes selected calendar IDs, a writable default calendar ID, opaque
 links to published system-calendar copies, and the account-scoped diagnostics preference. Exported
@@ -88,9 +88,10 @@ events to advertising or data-broker systems.
 ## Sharing and Processors
 
 Bearing uses Google Firebase for authentication, Firestore, Functions, App Check, backups, and
-operational logging; Google Gemini for requested AI generation; Apple and Google for distribution
-and future in-app billing; and GitHub for source and release automation. The authoritative purpose,
-data, configuration, retention, and approval inventory is in `docs/DATA_PROCESSORS.md`.
+operational logging; Google Gemini for requested AI generation; RevenueCat for purchase and
+entitlement reconciliation; Apple and Google for distribution and billing; and GitHub for source
+and release automation. The authoritative purpose, data, configuration, retention, and approval
+inventory is in `docs/DATA_PROCESSORS.md`.
 
 Information may also be disclosed when required by law, to protect users or the service, during an
 approved business transaction, or with the user's direction. The operator must publish applicable
@@ -100,8 +101,9 @@ international-transfer mechanisms and processor agreements before launch.
 
 - Active account content remains until the user deletes it or the service applies an approved
   inactivity policy.
-- After recent verification, a successful deletion request removes active Firestore records and
-  Firebase Authentication. The current installation then attempts to purge account-scoped calendar
+- After recent verification, a successful deletion request removes the RevenueCat customer record,
+  active Firestore records, and Firebase Authentication. It does not cancel the separate Apple or
+  Google subscription. The current installation then attempts to purge account-scoped calendar
   settings and diagnostics consent; settings on other installations remain local until app data is
   removed there.
 - Product outcome logs have a target retention of 30 days.
@@ -118,6 +120,7 @@ The release owner must verify actual provider settings match these periods befor
 
 Users can deny or revoke calendar access, disable product diagnostics, export account data as JSON,
 export Bearing events as ICS, edit saved content, and request account deletion from Profile.
+Premium users can restore purchases and open store subscription management from the app.
 Deletion of an email account requires recent password verification. Users may optionally remove
 reachable linked system-calendar copies first. If backend deletion does not complete, the account
 remains available for an idempotent retry. If current-device cleanup fails after server confirmation,
