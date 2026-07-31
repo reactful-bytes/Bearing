@@ -43,3 +43,8 @@ Review these findings during each Expo SDK upgrade. Keep `npx expo install --che
 Firebase Functions must perform premium entitlement, billing, AI, export, and account-deletion
 operations with managed secrets and Admin SDK authorization. Enable and enforce App Check for those
 callable/HTTP endpoints before production rollout.
+
+Firebase currently supports Node 22 as its newest Functions deployment runtime. The Functions
+package is therefore deployed with `nodejs22` while its local and CI quality gate also runs on the
+repository's Node 24 LTS baseline. Do not change the deployment runtime to Node 24 until Firebase
+lists it as supported.

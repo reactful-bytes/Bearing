@@ -30,7 +30,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M1.3    | completed   | Add lint, formatter, tests, and CI baseline      | CI validates lint and tests on PR                                                                                                             |
 | M1.4    | completed   | Set up navigation shell with bottom tabs         | Calendar, Goals, Notes, Profile tabs routable                                                                                                 |
 | M1.5    | in-progress | Restore reproducible engineering baseline        | Node 24/npm 11 fresh install and every required quality command pass locally and in CI                                                        |
-| M1.6    | not-started | Add shared Firebase Functions foundation         | Secure staging callable validates backend conventions without calendar-provider code                                                          |
+| M1.6    | in-progress | Add shared Firebase Functions foundation         | Local/CI callable conventions pass; authenticated staging invocation remains                                                                  |
 
 ### M2 - Design System and UX Foundation
 
