@@ -79,7 +79,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M6.9      | completed   | Aggregate live device and Firestore events           | Selected system events display without Firestore mirrors or duplicate linked copies            |
 | M6.10     | completed   | Build complete Bearing event editor                  | Supported ordinary and recurring event fields can be created and edited with capability checks |
 | M6.11     | completed   | Publish and reconcile linked Bearing events          | Optional copies rediscover across devices and recover honestly from partial writes/deletions   |
-| M6.12     | not-started | Retain general Bearing ICS export                    | Timed, all-day, timezone, location, recurrence, alarm, and text fixtures pass                  |
+| M6.12     | completed   | Retain general Bearing ICS export                    | Timed, all-day, timezone, location, recurrence, alarm, and text fixtures pass                  |
 | M6.13     | not-started | Complete native and cross-device validation          | Current iOS/Android and two-device acceptance matrices pass                                    |
 
 ### M7 - To-Do List and Task Conversion
@@ -172,6 +172,6 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ## Immediate Next Steps
 
-1. Implement M6.12 general Bearing ICS export coverage.
-2. Validate the M6.7 development-build workflow on current iOS and Android devices.
-3. Complete M6.13 native and cross-device acceptance validation.
+1. Establish and validate the M6.7 development-build workflow.
+2. Complete M6.13 current-device calendar acceptance on iOS and Android.
+3. Complete M6.13 two-device publication and reconciliation acceptance.
