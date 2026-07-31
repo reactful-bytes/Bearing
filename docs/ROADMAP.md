@@ -15,22 +15,23 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M0 - Product Definition and Planning
 
-| Task ID | Status    | Description                                               | Exit Criteria                                  |
-| ------- | --------- | --------------------------------------------------------- | ---------------------------------------------- |
-| M0.1    | completed | Create custom delivery agent rules and operating workflow | Agent in place and usable                      |
-| M0.2    | completed | Produce concise product brief                             | Product scope and requirements documented      |
-| M0.3    | completed | Produce implementation roadmap                            | Ordered milestones and dependencies documented |
+| Task ID | Status    | Description                                               | Exit Criteria                                                           |
+| ------- | --------- | --------------------------------------------------------- | ----------------------------------------------------------------------- |
+| M0.1    | completed | Create custom delivery agent rules and operating workflow | Agent in place and usable                                               |
+| M0.2    | completed | Produce concise product brief                             | Product scope and requirements documented                               |
+| M0.3    | completed | Produce implementation roadmap                            | Ordered milestones and dependencies documented                          |
+| M0.7    | completed | Reconcile launch scope and implementation plans           | Native calendar, mobile release, and M11-M13 ownership boundaries agree |
 
 ### M1 - App Foundation and Tooling
 
-| Task ID | Status      | Description                                      | Exit Criteria                                                                                                                                 |
-| ------- | ----------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| M1.1    | completed   | Initialize Expo app and folder structure         | Expo TypeScript app scaffolded in mobile/ with baseline structure and config; platform runtime validation deferred per user environment setup |
-| M1.2    | completed   | Configure Firebase project, auth, env management | Firebase init/auth bootstrap and env strategy validated in development                                                                        |
-| M1.3    | completed   | Add lint, formatter, tests, and CI baseline      | CI validates lint and tests on PR                                                                                                             |
-| M1.4    | completed   | Set up navigation shell with bottom tabs         | Calendar, Goals, Notes, Profile tabs routable                                                                                                 |
-| M1.5    | in-progress | Restore reproducible engineering baseline        | Node 24/npm 11 fresh install and every required quality command pass locally and in CI                                                        |
-| M1.6    | in-progress | Add shared Firebase Functions foundation         | Local/CI callable conventions pass; authenticated staging invocation remains                                                                  |
+| Task ID | Status         | Description                                      | Exit Criteria                                                                                                                                 |
+| ------- | -------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| M1.1    | completed      | Initialize Expo app and folder structure         | Expo TypeScript app scaffolded in mobile/ with baseline structure and config; platform runtime validation deferred per user environment setup |
+| M1.2    | completed      | Configure Firebase project, auth, env management | Firebase init/auth bootstrap and env strategy validated in development                                                                        |
+| M1.3    | completed      | Add lint, formatter, tests, and CI baseline      | CI validates lint and tests on PR                                                                                                             |
+| M1.4    | completed      | Set up navigation shell with bottom tabs         | Calendar, Goals, Notes, Profile tabs routable                                                                                                 |
+| M1.5    | in-progress    | Restore reproducible engineering baseline        | Node 24/npm 11 fresh install and every required quality command pass locally and in CI                                                        |
+| M1.6    | manual-handoff | Add shared Firebase Functions foundation         | Repository and CI conventions pass; owner deploys and invokes authenticated staging services                                                  |
 
 ### M2 - Design System and UX Foundation
 
@@ -94,18 +95,18 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M8 - Premium and AI Goal Assistant
 
-| Task ID | Status      | Description                                           | Exit Criteria                                                                                        |
-| ------- | ----------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| M8.1    | completed   | Implement premium entitlement model and feature gates | Premium gates enforced client and server side                                                        |
-| M8.2    | completed   | Build AI-assisted goal planning service integration   | AI returns editable milestones and steps                                                             |
-| M8.3    | completed   | Add AI safety, fallback, and failure UX               | Users receive clear recovery paths on failure                                                        |
-| M8.4    | in-progress | Instrument premium funnel from upgrade to activation  | Paywall and AI outcomes are available; M11 must add store purchase and entitlement activation events |
+| Task ID | Status    | Description                                           | Exit Criteria                                                                                           |
+| ------- | --------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| M8.1    | completed | Implement premium entitlement model and feature gates | Premium gates enforced client and server side                                                           |
+| M8.2    | completed | Build AI-assisted goal planning service integration   | AI returns editable milestones and steps                                                                |
+| M8.3    | completed | Add AI safety, fallback, and failure UX               | Users receive clear recovery paths on failure                                                           |
+| M8.4    | completed | Instrument premium funnel from upgrade to activation  | Strict paywall, purchase, restore, Firestore activation, and AI outcome events pass client/server tests |
 
 ### M9 - Quality, Security, and Compliance
 
 | Task ID | Status         | Description                                              | Exit Criteria                                                                                                        |
 | ------- | -------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| M9.1    | in-progress    | Expand automated tests for critical user journeys        | Critical app, privacy, AI, and recovery paths are stable; coverage thresholds and native E2E remain                  |
+| M9.1    | manual-handoff | Expand automated tests for critical user journeys        | Jest and Maestro coverage are repository-ready; owner runs native flows on installed Android and iOS builds          |
 | M9.2    | completed      | Perform security hardening and secret management audit   | No secrets exposed and auth flows validated                                                                          |
 | M9.3    | manual-handoff | Add analytics dashboards and operational alerts          | Consent-aware events, queries, and alert thresholds are repository-ready; owner activates cloud resources            |
 | M9.4    | manual-handoff | Finalize legal copy (privacy policy, terms, disclosures) | Draft copy, in-app access, and release checklist are ready; owner/legal approval and public hosting remain           |
@@ -123,37 +124,37 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M10.0d  | completed      | Improve Tasks presentation and filtering           | Task cards, counts, and Active/Completed/All filtering are clear                  |
 | M10.0e  | completed      | Normalize forms, modals, sizing, and accessibility | Screens avoid clipping and expose consistent control semantics                    |
 | M10.1   | manual-handoff | Polish UI interactions and accessibility           | Automated accessibility checks pass; native assistive-tech review remains manual  |
-| M10.2   | in-progress    | Fix operability edge cases and error recovery      | Core startup and Firestore failures now expose executable retry                   |
+| M10.2   | completed      | Fix operability edge cases and error recovery      | Core startup and Firestore failures expose tested executable retry                |
 | M10.3   | manual-handoff | Optimize app performance and startup time          | Repository controls pass; release-device launch, FPS, and memory evidence remains |
 | M10.4   | manual-handoff | Run end-to-end user acceptance testing             | Owner completes native UAT signoff                                                |
 
 ### M11 - Monetization Readiness
 
-| Task ID | Status      | Description                                         | Exit Criteria                                 |
-| ------- | ----------- | --------------------------------------------------- | --------------------------------------------- |
-| M11.1   | not-started | Configure subscription products for iOS and Android | Products testable in sandbox environments     |
-| M11.2   | not-started | Build paywall UX and entitlement restoration flows  | Purchase, restore, and cancel paths validated |
-| M11.3   | not-started | Validate regional pricing and trial strategy        | Pricing matrix approved for launch markets    |
+| Task ID | Status         | Description                                         | Exit Criteria                                                                                |
+| ------- | -------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| M11.1   | manual-handoff | Configure subscription products for iOS and Android | Repository contract is ready; owner configures stores/RevenueCat and proves sandbox products |
+| M11.2   | manual-handoff | Build paywall UX and entitlement restoration flows  | Purchase, restore, management, webhook, and cleanup pass; native store paths remain          |
+| M11.3   | manual-handoff | Validate regional pricing and trial strategy        | Reference prices/no-trial plan documented; owner approves regional matrix                    |
 
 ### M12 - Release and Store Deployment
 
-| Task ID | Status         | Description                                           | Exit Criteria                                        |
-| ------- | -------------- | ----------------------------------------------------- | ---------------------------------------------------- |
-| M12.1   | not-started    | Prepare release build pipelines and signing setup     | Signed release candidates generated                  |
-| M12.2   | not-started    | Complete App Store listing assets and metadata        | Apple submission package ready                       |
-| M12.3   | not-started    | Complete Google Play listing assets and metadata      | Play submission package ready                        |
-| M12.4   | not-started    | Run beta testing cycles (TestFlight/Internal Testing) | Critical launch blockers resolved                    |
-| M12.5   | manual-handoff | Submit and publish to both stores                     | Owner completes store-console submission and release |
+| Task ID | Status         | Description                                           | Exit Criteria                                                              |
+| ------- | -------------- | ----------------------------------------------------- | -------------------------------------------------------------------------- |
+| M12.1   | manual-handoff | Prepare release build pipelines and signing setup     | EAS profiles/checklist ready; owner generates signed candidates            |
+| M12.2   | manual-handoff | Complete App Store listing assets and metadata        | Source copy/checklist ready; owner assembles and approves Apple package    |
+| M12.3   | manual-handoff | Complete Google Play listing assets and metadata      | Source copy/checklist ready; owner assembles and approves Play package     |
+| M12.4   | manual-handoff | Run beta testing cycles (TestFlight/Internal Testing) | Evidence template/blocker policy ready; owner runs and records beta cycles |
+| M12.5   | manual-handoff | Submit and publish to both stores                     | Owner completes store-console submission and release                       |
 
 ### M13 - Launch Operations
 
-| Task ID | Status      | Description                   | Exit Criteria                                                                    |
-| ------- | ----------- | ----------------------------- | -------------------------------------------------------------------------------- |
-| M13.1   | not-started | Run staged rollout            | 5%, 25%, 50%, and 100% gates pass documented halt thresholds                     |
-| M13.2   | not-started | Operate launch monitoring     | Daily checks cover reliability, billing, AI, backups, costs, and support         |
-| M13.3   | not-started | Publish operational runbooks  | Incident, rollback, privacy, subscription, and support procedures have owners    |
-| M13.4   | not-started | Complete launch reviews       | 7-day and 30-day findings produce owned follow-up work                           |
-| M13.5   | not-started | Establish maintenance cadence | SDK, dependency, secret, restore, legal, store, and OS reviews recur on schedule |
+| Task ID | Status         | Description                   | Exit Criteria                                                              |
+| ------- | -------------- | ----------------------------- | -------------------------------------------------------------------------- |
+| M13.1   | manual-handoff | Run staged rollout            | Gates and halt thresholds ready; owner records live rollout decisions      |
+| M13.2   | manual-handoff | Operate launch monitoring     | Daily checklist ready; owner activates dashboards and records daily checks |
+| M13.3   | manual-handoff | Publish operational runbooks  | Runbooks ready; owner assigns people/routes and validates a drill          |
+| M13.4   | manual-handoff | Complete launch reviews       | Templates ready; live 7-day and 30-day findings remain                     |
+| M13.5   | manual-handoff | Establish maintenance cadence | Schedule ready; owner creates recurring calendar and evidence              |
 
 ## Dependency Order Summary
 
@@ -178,6 +179,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ## Immediate Next Steps
 
-1. Complete M9.1 coverage/E2E and the remaining M10.2 operability matrix.
-2. Measure and optimize release performance under M10.3.
-3. Complete monetization, release, and operations repository work under M8.4 and M11-M13, then execute the M9.3-M9.4 owner handoffs.
+1. Run native M6.13, M9.1, M10.1, M10.3, and M10.4 acceptance on installed release candidates.
+2. Execute M11 store/RevenueCat setup, deployment, sandbox, and regional pricing handoffs.
+3. Link EAS, sign candidates, assemble store packages, run beta cycles, and complete legal approval.
+4. Execute M9.3-M9.6 and M13 owner handoffs, then record rollout and launch evidence.
