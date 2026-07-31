@@ -1,16 +1,19 @@
 # Data Model Spec (First Pass)
 
 ## Purpose
+
 Define an initial Firebase-aligned data model for Bearing that supports Calendar, Goals, Notes, Profile, premium entitlements, and AI-assisted goal planning.
 
 ## Architecture Assumptions
+
 - Firebase Authentication for identity.
 - Cloud Firestore as primary app datastore.
 - Cloud Functions for privileged operations and integrations.
 - Optional Cloud Storage for future attachments (not required in v1).
 
 ## Entity Relationship Overview
-- One user owns many goals, notes, calendar events, and integrations.
+
+- One user owns many goals, notes, tasks, and Bearing calendar events.
 - One goal has many steps.
 - One step can link to many scheduled events.
 - One user owns many tasks for unscheduled work.
@@ -20,9 +23,11 @@ Define an initial Firebase-aligned data model for Bearing that supports Calendar
 ## Collection Layout
 
 ### users
+
 Document ID: userId
 
 Fields:
+
 - displayName: string
 - email: string
 - timezone: string
@@ -36,9 +41,11 @@ Fields:
 - updatedAt: timestamp
 
 ### goals
+
 Document ID: goalId
 
 Fields:
+
 - userId: string
 - title: string
 - description: string
@@ -57,13 +64,16 @@ Fields:
 - updatedAt: timestamp
 
 Indexes (planned):
+
 - userId + status + estimatedCompletionDate
 - userId + updatedAt
 
 ### goalSteps
+
 Document ID: stepId
 
 Fields:
+
 - userId: string
 - goalId: string
 - title: string
@@ -77,22 +87,32 @@ Fields:
 - updatedAt: timestamp
 
 Indexes (planned):
+
 - goalId + order
 - userId + goalId + status
 
 ### events
+
 Document ID: eventId
 
 Fields:
+
 - userId: string
 - title: string
 - description: string
 - startAt: timestamp
 - endAt: timestamp
 - timezone: string
-- source: enum (local, google, microsoft, apple, ics_import)
-- externalEventId: string | null
-- calendarConnectionId: string | null
+- ownership: enum (bearing)
+- isAllDay: boolean
+- location: string | null
+- recurrenceRule: map | null
+- alarms: array
+- availability: enum (busy, free, tentative, unavailable) | null
+- url: string | null
+- publicationStatus: enum (unpublished, publishing, published, diverged, delete_pending)
+- publicationLinkKey: string | null
+- publicationBaselineHash: string | null
 - goalId: string | null
 - stepId: string | null
 - status: enum (scheduled, completed, canceled)
@@ -100,14 +120,17 @@ Fields:
 - updatedAt: timestamp
 
 Indexes (planned):
+
 - userId + startAt
 - userId + stepId + startAt
-- userId + source + updatedAt
+- userId + publicationStatus + updatedAt
 
 ### tasks
+
 Document ID: taskId
 
 Fields:
+
 - userId: string
 - title: string
 - description: string
@@ -119,13 +142,16 @@ Fields:
 - updatedAt: timestamp
 
 Indexes (planned):
+
 - userId + status + updatedAt
 - userId + updatedAt
 
 ### notes
+
 Document ID: noteId
 
 Fields:
+
 - userId: string
 - title: string
 - body: string
@@ -138,30 +164,23 @@ Fields:
 - updatedAt: timestamp
 
 Indexes (planned):
+
 - userId + updatedAt
 - userId + source + createdAt
 
-### calendarConnections
-Document ID: connectionId
+### Device Calendar Data (Not Firestore)
 
-Fields:
-- userId: string
-- provider: enum (google, microsoft, apple)
-- status: enum (connected, disconnected, error)
-- accountLabel: string
-- tokenRef: string
-- lastSyncAt: timestamp | null
-- lastSyncStatus: enum (ok, warning, failed, never)
-- createdAt: timestamp
-- updatedAt: timestamp
-
-Notes:
-- tokenRef points to secure token storage; never store raw tokens in Firestore.
+- Device-originated events are loaded live through `expo-calendar` and remain ephemeral.
+- Visible calendar IDs, one writable destination ID, and native event-ID caches are stored in AsyncStorage under a Firebase-UID-scoped key.
+- Native calendar/event IDs are device-local and must not be stored as portable identifiers in Firestore.
+- A published system copy contains an opaque Bearing link marker and last-common-state hash in its notes. The stable link key is not a provider credential and does not contain the Firebase UID.
 
 ### subscriptions
+
 Document ID: subscriptionId
 
 Fields:
+
 - userId: string
 - platform: enum (ios, android, web)
 - productId: string
@@ -174,9 +193,11 @@ Fields:
 - updatedAt: timestamp
 
 ### aiPlans
+
 Document ID: aiPlanId
 
 Fields:
+
 - userId: string
 - goalId: string
 - promptVersion: number
@@ -191,32 +212,39 @@ Fields:
 - createdAt: timestamp
 
 Notes:
+
 - Keep output editable by user before final commit to goals and steps.
 
 ## Suggested Firestore Security Rules (High Level)
+
 - Users can only read/write documents where userId equals request.auth.uid.
 - Disallow client-side writes for privileged subscription validation state.
-- Restrict calendar connection token references to server-owned processes.
+- Deny client writes to subscription, AI usage, export-job, and deletion-job authority fields.
 - Validate required fields and allowed enum values on write.
 
 ## Data Integrity Rules
+
 - Deleting a goal should soft-delete by default to preserve history.
 - Step order must be unique per goal and normalized after drag reorder.
-- Events tied to steps should retain linkage even if calendar source changes.
+- Events tied to steps retain their Bearing linkage regardless of optional system-calendar publication.
+- Firestore creation succeeds before native publication is attempted; publication failure never removes the Bearing event.
+- A confirmed external deletion marks a linked Bearing event unpublished rather than deleting it.
 - Tasks converted into events should keep the linked event ID for traceability and stay hidden from the default active list.
 - Idea Dump notes should preserve source metadata for traceability.
 
 ## Error Handling Requirements
+
 - Return actionable errors for missing relationships (goal not found, step not found).
 - Preserve causal context in Cloud Function failures.
-- Never log tokens, auth credentials, or payment payload secrets.
+- Never log auth credentials, payment payload secrets, calendar content, native calendar IDs, or publication link keys.
 
 ## Migration and Versioning Strategy (Initial)
+
 - Add schemaVersion field to mutable entities if structure changes become frequent.
 - Use additive migrations first; avoid destructive field replacement.
 - Keep one migration note section in docs for each release.
 
 ## Open Questions
+
 - Final definition and downstream behavior of starter field on goal steps.
-- Whether events are canonical in app and synced outward, or provider calendars are canonical and mirrored inward.
 - Retention policy for AI plan generations and rejected drafts.
