@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppCard } from '../ui/AppCard';
@@ -6,21 +6,30 @@ import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { colors, radii, spacing, typography } from '../../design/tokens';
 import { PremiumFeature, getPremiumPaywallCopy } from '../../features/premium/premiumAccess';
+import { usePremiumPurchase } from '../../features/premium/usePremiumPurchase';
 import { recordTelemetryEvent } from '../../services/telemetry/telemetry';
+import { LEGAL_DOCUMENTS, LegalDocumentId } from '../../features/profile/legalDocuments';
+import { LegalDocumentModal } from '../profile/LegalDocumentModal';
 
 type PremiumPaywallModalProps = {
   visible: boolean;
   feature: PremiumFeature | null;
+  userId: string | null;
   isAnonymous: boolean;
+  hasPremiumAccess: boolean;
   onClose: () => void;
 };
 
 export function PremiumPaywallModal({
   visible,
   feature,
+  userId,
   isAnonymous,
+  hasPremiumAccess,
   onClose,
 }: PremiumPaywallModalProps) {
+  const [legalDocumentId, setLegalDocumentId] = useState<LegalDocumentId | null>(null);
+  const purchase = usePremiumPurchase(userId, !isAnonymous, visible, hasPremiumAccess);
   useEffect(() => {
     if (visible && feature) {
       void recordTelemetryEvent('premium_paywall_viewed', { feature });
@@ -34,65 +43,119 @@ export function PremiumPaywallModal({
   const copy = getPremiumPaywallCopy(feature);
 
   return (
-    <AppModal visible={visible} title="Bearing Premium" onClose={onClose}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.heroBlock}>
-          <Text style={styles.badge}>{copy.badge}</Text>
-          <Text style={styles.headline}>{copy.headline}</Text>
-          <Text style={styles.body}>{copy.body}</Text>
-        </View>
+    <>
+      <AppModal
+        visible={visible && legalDocumentId === null}
+        title="Bearing Premium"
+        onClose={onClose}
+      >
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.heroBlock}>
+            <Text style={styles.badge}>{copy.badge}</Text>
+            <Text style={styles.headline}>{copy.headline}</Text>
+            <Text style={styles.body}>{copy.body}</Text>
+          </View>
 
-        <AppCard style={styles.highlightsCard}>
-          <Text style={styles.sectionTitle}>Included with Premium</Text>
-          <View style={styles.highlightList}>
-            {copy.highlights.map((highlight) => (
-              <View key={highlight} style={styles.highlightRow}>
-                <View style={styles.highlightDot} />
-                <Text style={styles.highlightText}>{highlight}</Text>
-              </View>
+          <AppCard style={styles.highlightsCard}>
+            <Text style={styles.sectionTitle}>Included with Premium</Text>
+            <View style={styles.highlightList}>
+              {copy.highlights.map((highlight) => (
+                <View key={highlight} style={styles.highlightRow}>
+                  <View style={styles.highlightDot} />
+                  <Text style={styles.highlightText}>{highlight}</Text>
+                </View>
+              ))}
+            </View>
+          </AppCard>
+
+          {purchase.loading ? <Text style={styles.planMeta}>Loading store plans...</Text> : null}
+
+          <View style={styles.planColumn}>
+            {purchase.plans.map((plan) => (
+              <AppCard key={plan.packageIdentifier} style={styles.planCard}>
+                <Text style={styles.planName}>{plan.title}</Text>
+                <Text style={styles.planPrice}>
+                  {plan.priceText} {plan.billingPeriodText}
+                </Text>
+                {plan.introductoryTermsText ? (
+                  <Text style={styles.planMeta}>{plan.introductoryTermsText}</Text>
+                ) : null}
+                <AppButton
+                  label={`Choose ${plan.title}`}
+                  accessibilityLabel={`Purchase ${plan.title} Premium plan`}
+                  onPress={() => void purchase.purchase(plan)}
+                  loading={purchase.pendingAction === plan.packageIdentifier}
+                  loadingLabel="Opening store..."
+                  disabled={purchase.awaitingActivation || hasPremiumAccess}
+                />
+              </AppCard>
             ))}
           </View>
-        </AppCard>
 
-        <View style={styles.planColumn}>
-          <AppCard style={styles.planCard}>
-            <Text style={styles.planName}>Monthly</Text>
-            <Text style={styles.planSummary}>Flexible access for short goal-planning sprints.</Text>
-            <Text style={styles.planMeta}>
-              Store pricing loads here after App Store and Google Play billing are connected.
+          {purchase.availability !== 'available' && !isAnonymous ? (
+            <Text style={styles.accountNote}>
+              {purchase.availability === 'web'
+                ? 'Premium checkout is available in the iOS and Android apps.'
+                : purchase.availability === 'expo_go'
+                  ? 'Use an installed development build to test real store purchases.'
+                  : 'Store billing is not configured in this build.'}
             </Text>
-          </AppCard>
+          ) : null}
 
-          <AppCard style={styles.planCard}>
-            <Text style={styles.planName}>Annual</Text>
-            <Text style={styles.planSummary}>
-              Best fit for longer goal cycles and ongoing AI-assisted planning.
+          {isAnonymous ? (
+            <Text style={styles.accountNote}>
+              Secure this anonymous session before purchasing so Premium can be restored across
+              devices.
             </Text>
-            <Text style={styles.planMeta}>
-              Plan pricing and intro offers will load from the stores in the monetization milestone.
-            </Text>
-          </AppCard>
-        </View>
+          ) : null}
 
-        <Text style={styles.footnote}>
-          This is the in-app paywall shell. Store checkout, restore, and live entitlement wiring
-          land in the subscription setup slice.
-        </Text>
+          {purchase.error ? <Text style={styles.errorText}>{purchase.error}</Text> : null}
+          {purchase.feedback ? <Text style={styles.successText}>{purchase.feedback}</Text> : null}
 
-        {isAnonymous ? (
-          <Text style={styles.accountNote}>
-            Secure this anonymous session before live purchases ship so premium access can attach to
-            a permanent account.
+          <AppButton
+            label="Restore Purchases"
+            variant="secondary"
+            accessibilityLabel="Restore Premium purchases"
+            onPress={() => void purchase.restore()}
+            loading={purchase.pendingAction === 'restore'}
+            loadingLabel="Restoring..."
+            disabled={
+              isAnonymous || purchase.availability !== 'available' || purchase.awaitingActivation
+            }
+          />
+
+          <Text style={styles.footnote}>
+            Subscriptions renew automatically unless canceled in Apple or Google account settings.
+            Deleting Bearing does not cancel a store subscription.
           </Text>
-        ) : null}
 
-        <AppButton
-          label="Continue on Free Plan"
-          accessibilityLabel="Close premium paywall"
-          onPress={onClose}
-        />
-      </ScrollView>
-    </AppModal>
+          <View style={styles.legalActions}>
+            <AppButton
+              label="Privacy Policy"
+              variant="secondary"
+              accessibilityLabel="Open Privacy Policy"
+              onPress={() => setLegalDocumentId('privacy')}
+            />
+            <AppButton
+              label="Terms of Service"
+              variant="secondary"
+              accessibilityLabel="Open Terms of Service"
+              onPress={() => setLegalDocumentId('terms')}
+            />
+          </View>
+
+          <AppButton
+            label="Continue on Free Plan"
+            accessibilityLabel="Close premium paywall"
+            onPress={onClose}
+          />
+        </ScrollView>
+      </AppModal>
+      <LegalDocumentModal
+        document={legalDocumentId ? LEGAL_DOCUMENTS[legalDocumentId] : null}
+        onClose={() => setLegalDocumentId(null)}
+      />
+    </>
   );
 }
 
@@ -156,6 +219,10 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textPrimary,
   },
+  planPrice: {
+    ...typography.button,
+    color: colors.brand,
+  },
   planMeta: {
     ...typography.helper,
     color: colors.textSecondary,
@@ -166,10 +233,21 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 20,
   },
+  legalActions: {
+    gap: spacing.sm,
+  },
   accountNote: {
     ...typography.helper,
     color: colors.brand,
     lineHeight: 20,
+  },
+  errorText: {
+    ...typography.helper,
+    color: colors.dangerText,
+  },
+  successText: {
+    ...typography.helper,
+    color: colors.brand,
   },
   primaryButton: {
     borderRadius: radii.md,

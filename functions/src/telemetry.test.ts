@@ -116,4 +116,60 @@ describe("telemetry callable", () => {
       properties: { outcome: "undetermined" },
     });
   });
+
+  it("accepts the complete premium activation funnel", async () => {
+    const events = [
+      {
+        schemaVersion: 1 as const,
+        name: "premium_purchase_started" as const,
+        properties: { period: "annual" },
+      },
+      {
+        schemaVersion: 1 as const,
+        name: "premium_purchase_result" as const,
+        properties: { period: "annual", outcome: "cancelled" },
+      },
+      {
+        schemaVersion: 1 as const,
+        name: "premium_restore_result" as const,
+        properties: { outcome: "success" },
+      },
+      {
+        schemaVersion: 1 as const,
+        name: "premium_activation_result" as const,
+        properties: { source: "restore", outcome: "delayed" },
+      },
+    ];
+    const writtenEvents: TelemetryEvent[] = [];
+
+    for (const data of events) {
+      await recordTelemetryEvent({ ...verifiedRequest, data }, (event) => {
+        writtenEvents.push(event);
+      });
+    }
+
+    assert.deepEqual(writtenEvents, events);
+  });
+
+  it("rejects extra properties from premium purchase events", async () => {
+    await assert.rejects(
+      recordTelemetryEvent(
+        {
+          ...verifiedRequest,
+          data: {
+            schemaVersion: 1,
+            name: "premium_purchase_result",
+            properties: {
+              period: "monthly",
+              outcome: "success",
+              productId: "private-store-product",
+            },
+          },
+        },
+        () => undefined,
+      ),
+      (error: unknown) =>
+        error instanceof HttpsError && error.code === "invalid-argument",
+    );
+  });
 });

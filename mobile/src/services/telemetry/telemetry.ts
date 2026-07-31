@@ -25,6 +25,20 @@ export type TelemetryEventProperties = {
   premium_paywall_viewed: {
     feature: 'ai_goal_builder' | 'premium_overview';
   };
+  premium_purchase_started: {
+    period: 'monthly' | 'annual';
+  };
+  premium_purchase_result: {
+    period: 'monthly' | 'annual';
+    outcome: 'success' | 'cancelled' | 'failure';
+  };
+  premium_restore_result: {
+    outcome: 'success' | 'failure';
+  };
+  premium_activation_result: {
+    source: 'purchase' | 'restore';
+    outcome: 'success' | 'delayed';
+  };
 };
 
 export type TelemetryEventName = keyof TelemetryEventProperties;
@@ -120,6 +134,30 @@ export function buildTelemetryPayload(name: unknown, properties: unknown): Telem
     case 'premium_paywall_viewed':
       if (!hasExactKeys(properties, ['feature'])) return null;
       if (!isOneOf(properties.feature, ['ai_goal_builder', 'premium_overview'])) return null;
+      break;
+    case 'premium_purchase_started':
+      if (!hasExactKeys(properties, ['period'])) return null;
+      if (!isOneOf(properties.period, ['monthly', 'annual'])) return null;
+      break;
+    case 'premium_purchase_result':
+      if (!hasExactKeys(properties, ['outcome', 'period'])) return null;
+      if (
+        !isOneOf(properties.period, ['monthly', 'annual']) ||
+        !isOneOf(properties.outcome, ['success', 'cancelled', 'failure'])
+      )
+        return null;
+      break;
+    case 'premium_restore_result':
+      if (!hasExactKeys(properties, ['outcome'])) return null;
+      if (!isOneOf(properties.outcome, ['success', 'failure'])) return null;
+      break;
+    case 'premium_activation_result':
+      if (!hasExactKeys(properties, ['outcome', 'source'])) return null;
+      if (
+        !isOneOf(properties.source, ['purchase', 'restore']) ||
+        !isOneOf(properties.outcome, ['success', 'delayed'])
+      )
+        return null;
       break;
     default:
       return null;

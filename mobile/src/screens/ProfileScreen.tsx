@@ -54,11 +54,7 @@ import {
   PROFILE_LOCALE_OPTIONS,
   PROFILE_TIMEZONE_OPTIONS,
 } from '../features/profile/profileOptions';
-import {
-  PremiumFeature,
-  getPremiumEntitlementLabel,
-  hasActivePremiumStatus,
-} from '../features/premium/premiumAccess';
+import { PremiumFeature, hasActivePremiumStatus } from '../features/premium/premiumAccess';
 import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
 import { getProfileSoundOption } from '../features/profile/profileSounds';
 import { getDifferentRandomProfileTip } from '../features/profile/profileTips';
@@ -73,6 +69,7 @@ import {
   exportCurrentUserData,
 } from '../services/firebase/firebasePrivacy';
 import { recordTelemetryEvent } from '../services/telemetry/telemetry';
+import { showPremiumSubscriptionManagement } from '../services/purchases/revenueCatClient';
 
 type ProfileScreenProps = {
   onPressSignOut: () => Promise<void> | void;
@@ -327,14 +324,29 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
 
   function getPremiumAccessDescription(): string {
     if (hasPremiumAccess) {
-      return 'Premium is active for AI goal builder access. Store purchase and restore wiring still land in the monetization milestone.';
+      return 'Premium is active for AI goal builder access. Billing and cancellation are managed by the store account used to subscribe.';
     }
 
     if (entitlement?.status === 'canceled' || entitlement?.status === 'expired') {
-      return 'Premium access is not active. Rejoin to unlock AI goal builder access when live billing ships.';
+      return 'Premium access is not active. Rejoin or restore purchases to unlock AI goal planning.';
     }
 
-    return 'AI goal builder access is reserved for Bearing Premium. Device calendar access remains free. This in-app paywall is ready before live store checkout is connected.';
+    return 'AI goal builder access is reserved for Bearing Premium. Device calendar access remains free.';
+  }
+
+  async function handlePremiumAction(): Promise<void> {
+    if (!hasPremiumAccess) {
+      setPremiumPaywallFeature('premium_overview');
+      return;
+    }
+    if (!authUser || isAnonymous) return;
+
+    setAccountError(null);
+    try {
+      await showPremiumSubscriptionManagement(authUser.uid);
+    } catch {
+      setAccountError('Unable to open store subscription settings on this device.');
+    }
   }
 
   function closeIcsModal(): void {
@@ -773,15 +785,10 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
             <View style={styles.section}>
               <SectionHeading title="Plan" description="Review your current Bearing access." />
               <ListItem
-                onPress={
-                  !hasPremiumAccess ? () => setPremiumPaywallFeature('premium_overview') : undefined
-                }
+                onPress={() => void handlePremiumAction()}
                 title="Premium access"
                 description={getPremiumAccessDescription()}
-                trailingText={
-                  hasPremiumAccess ? getPremiumEntitlementLabel(entitlement?.status) : 'View plans'
-                }
-                disabled={hasPremiumAccess}
+                trailingText={hasPremiumAccess ? 'Manage' : 'View plans'}
               />
             </View>
 
@@ -893,7 +900,9 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
       <PremiumPaywallModal
         visible={premiumPaywallFeature !== null}
         feature={premiumPaywallFeature}
+        userId={authUser?.uid ?? null}
         isAnonymous={isAnonymous}
+        hasPremiumAccess={hasPremiumAccess}
         onClose={closePremiumPaywall}
       />
 

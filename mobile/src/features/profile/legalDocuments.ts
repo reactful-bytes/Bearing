@@ -38,7 +38,7 @@ export const LEGAL_DOCUMENTS: Record<LegalDocumentId, LegalDocument> = {
       },
       {
         heading: 'Service providers',
-        body: 'Bearing relies on Google Firebase for authentication, database, server functions, App Check, and operational logs; Google Gemini for requested AI generation; Apple and Google for app distribution and future in-app billing; and GitHub for source and release automation. These providers process information under their own terms and data-protection commitments.',
+        body: 'Bearing relies on Google Firebase for authentication, database, server functions, App Check, and operational logs; Google Gemini for requested AI generation; RevenueCat for subscription entitlement reconciliation; Apple and Google for app distribution and billing; and GitHub for source and release automation. These providers process information under their own terms and data-protection commitments.',
       },
       {
         heading: 'Retention and security',
@@ -46,7 +46,7 @@ export const LEGAL_DOCUMENTS: Record<LegalDocumentId, LegalDocument> = {
       },
       {
         heading: 'Your choices and requests',
-        body: 'You can disable diagnostics and calendar access, export account data as JSON, export Bearing events as ICS, and request account deletion from Profile. After recent verification, a successful deletion request removes active Bearing cloud records and authentication. This installation then attempts to purge account-scoped calendar settings and diagnostics consent. Reachable linked calendar copies can be removed first; other devices, external calendars, exports, logs, or backup remnants may persist as described in the hosted policy.',
+        body: 'You can disable diagnostics and calendar access, export account data as JSON, export Bearing events as ICS, restore purchases, manage a subscription in store settings, and request account deletion from Profile. After recent verification, deletion removes the RevenueCat customer record before active Bearing cloud records and authentication. Account deletion does not cancel the store subscription. This installation then attempts to purge account-scoped calendar settings and diagnostics consent. Reachable linked calendar copies can be removed first; other devices, external calendars, exports, logs, or backup remnants may persist as described in the hosted policy.',
       },
       {
         heading: 'Children and changes',
@@ -87,7 +87,7 @@ export const LEGAL_DOCUMENTS: Record<LegalDocumentId, LegalDocument> = {
       },
       {
         heading: 'Subscriptions',
-        body: 'If Premium subscriptions are offered, price, billing period, trial terms, and included features will be shown before purchase. Store subscriptions may renew automatically unless canceled through Apple or Google account settings before renewal. The applicable store controls billing, cancellation, and refund requests. Deleting Bearing does not by itself cancel a store subscription.',
+        body: 'Bearing Premium is offered through monthly and annual auto-renewing store subscriptions. The live localized price, billing period, any introductory terms, and included features are shown before purchase. No trial is planned for launch. Apple or Google processes payment and controls cancellation and refund requests. Purchases can be restored to the secured Bearing account. Deleting Bearing does not by itself cancel a store subscription.',
       },
       {
         heading: 'Availability and changes',

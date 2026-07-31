@@ -10,7 +10,11 @@ export type TelemetryEvent = {
     | "calendar_export_result"
     | "calendar_permission_result"
     | "calendar_publication_result"
-    | "premium_paywall_viewed";
+    | "premium_paywall_viewed"
+    | "premium_purchase_started"
+    | "premium_purchase_result"
+    | "premium_restore_result"
+    | "premium_activation_result";
   properties: Record<string, string>;
 };
 
@@ -106,6 +110,40 @@ export function parseTelemetryEvent(data: unknown): TelemetryEvent {
       if (
         !hasExactKeys(properties, ["feature"]) ||
         !isOneOf(properties.feature, ["ai_goal_builder", "premium_overview"])
+      ) {
+        throw new HttpsError("invalid-argument", "Telemetry event is invalid.");
+      }
+      break;
+    case "premium_purchase_started":
+      if (
+        !hasExactKeys(properties, ["period"]) ||
+        !isOneOf(properties.period, ["monthly", "annual"])
+      ) {
+        throw new HttpsError("invalid-argument", "Telemetry event is invalid.");
+      }
+      break;
+    case "premium_purchase_result":
+      if (
+        !hasExactKeys(properties, ["period", "outcome"]) ||
+        !isOneOf(properties.period, ["monthly", "annual"]) ||
+        !isOneOf(properties.outcome, ["success", "cancelled", "failure"])
+      ) {
+        throw new HttpsError("invalid-argument", "Telemetry event is invalid.");
+      }
+      break;
+    case "premium_restore_result":
+      if (
+        !hasExactKeys(properties, ["outcome"]) ||
+        !isOneOf(properties.outcome, ["success", "failure"])
+      ) {
+        throw new HttpsError("invalid-argument", "Telemetry event is invalid.");
+      }
+      break;
+    case "premium_activation_result":
+      if (
+        !hasExactKeys(properties, ["source", "outcome"]) ||
+        !isOneOf(properties.source, ["purchase", "restore"]) ||
+        !isOneOf(properties.outcome, ["success", "delayed"])
       ) {
         throw new HttpsError("invalid-argument", "Telemetry event is invalid.");
       }

@@ -6,6 +6,7 @@ import {
 } from "firebase-admin/firestore";
 
 import { UserDataDeleter, UserDataReader } from "./privacy";
+import { deleteRevenueCatCustomer } from "./revenueCat";
 
 const OWNED_COLLECTIONS = [
   "events",
@@ -78,7 +79,7 @@ export const readUserDataAdmin: UserDataReader = async (userId) => {
   };
 };
 
-export const deleteUserDataAdmin: UserDataDeleter = async (userId) => {
+async function deleteLocalUserData(userId: string): Promise<void> {
   const db = getFirestore();
   const writer = db.bulkWriter();
   const snapshots = await Promise.all(
@@ -94,4 +95,25 @@ export const deleteUserDataAdmin: UserDataDeleter = async (userId) => {
   writer.delete(db.doc(`subscriptions/${userId}`));
   await writer.close();
   await getAuth().deleteUser(userId);
-};
+}
+
+export async function deleteUserDataWithProcessorCleanup(
+  userId: string,
+  deleteProcessorData: (userId: string) => Promise<void>,
+  deleteLocalData: (userId: string) => Promise<void>,
+): Promise<void> {
+  await deleteProcessorData(userId);
+  await deleteLocalData(userId);
+}
+
+export function createUserDataAdminDeleter(
+  revenueCatApiKey: string,
+): UserDataDeleter {
+  return (userId) =>
+    deleteUserDataWithProcessorCleanup(
+      userId,
+      (targetUserId) =>
+        deleteRevenueCatCustomer(targetUserId, revenueCatApiKey),
+      deleteLocalUserData,
+    );
+}

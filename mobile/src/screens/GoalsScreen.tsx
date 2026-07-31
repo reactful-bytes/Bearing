@@ -322,7 +322,9 @@ export function GoalsScreen() {
       <PremiumPaywallModal
         visible={premiumPaywallFeature !== null}
         feature={premiumPaywallFeature}
+        userId={authUser?.uid ?? null}
         isAnonymous={isAnonymous}
+        hasPremiumAccess={hasPremiumAccess}
         onClose={closePremiumPaywall}
       />
 

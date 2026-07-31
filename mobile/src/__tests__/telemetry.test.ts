@@ -79,6 +79,34 @@ describe('telemetry privacy boundary', () => {
     });
   });
 
+  it('accepts only fixed premium purchase and activation outcomes', () => {
+    expect(buildTelemetryPayload('premium_purchase_started', { period: 'monthly' })).toEqual({
+      schemaVersion: 1,
+      name: 'premium_purchase_started',
+      properties: { period: 'monthly' },
+    });
+    expect(
+      buildTelemetryPayload('premium_purchase_result', {
+        period: 'annual',
+        outcome: 'cancelled',
+      }),
+    ).not.toBeNull();
+    expect(buildTelemetryPayload('premium_restore_result', { outcome: 'success' })).not.toBeNull();
+    expect(
+      buildTelemetryPayload('premium_activation_result', {
+        source: 'purchase',
+        outcome: 'delayed',
+      }),
+    ).not.toBeNull();
+    expect(
+      buildTelemetryPayload('premium_purchase_result', {
+        period: 'monthly',
+        outcome: 'success',
+        productId: 'private-store-product',
+      }),
+    ).toBeNull();
+  });
+
   it('contains transport failures without disrupting the user workflow', async () => {
     const storage = createStorage('enabled');
     const transport = jest.fn(async () => {
