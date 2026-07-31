@@ -10,6 +10,7 @@ const config: ExpoConfig = {
   icon: './assets/icon.png',
   userInterfaceStyle: 'light',
   plugins: [
+    'expo-dev-client',
     'expo-audio',
     'expo-sharing',
     [

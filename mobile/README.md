@@ -4,21 +4,25 @@ Expo React Native mobile application for Bearing.
 
 ## Prerequisites
 
-- Node.js 20+
-- npm 10+
-- Expo Go app on device or Android emulator
-- macOS + Xcode only if running local iOS simulator
+- Node.js 20.x
+- npm 10.x
+- Android Studio, Android SDK, and a running emulator or USB-debuggable device for Android
+- macOS, Xcode, and an iOS simulator or registered device for iOS
 
 ## Setup
 
 1. Install dependencies:
    - npm install
-2. Start dev server:
-   - npx expo start
-3. Run Android:
-   - npx expo start --android
-4. Run iOS (macOS only):
-   - npx expo start --ios
+2. Compile, install, and launch the Android development build:
+   - npm run android
+3. Or, on macOS, compile, install, and launch the iOS development build:
+   - npm run ios
+4. For later JavaScript-only sessions, start Metro and open the installed Bearing development build:
+   - npm start
+
+Calendar access requires the Bearing development build and is unavailable in Expo Go. See
+[Development Builds](docs/DEVELOPMENT_BUILDS.md) for physical-device commands, native rebuilds, and
+the permission smoke test.
 
 ## Project Structure
 
@@ -29,6 +33,7 @@ Expo React Native mobile application for Bearing.
 - src/features: feature modules
 - src/services: service and integration layer
 - docs: mobile app-specific docs
+- docs/DEVELOPMENT_BUILDS.md: local iOS and Android development-build workflow
 - docs/FIREBASE_SETUP.md: Firebase console and local env setup for M1.2
 
 ## Environment Variables
