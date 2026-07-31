@@ -65,8 +65,8 @@ service cloud.firestore {
       allow update: if ownsExistingDocument() && ownsIncomingDocument();
     }
 
-    match /subscriptions/{subscriptionId} {
-      allow read: if ownsExistingDocument();
+    match /subscriptions/{userId} {
+      allow read: if isCurrentUser(userId);
 
       allow write: if false;
     }

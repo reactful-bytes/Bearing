@@ -31,6 +31,7 @@ import {
   getPremiumEntitlementLabel,
   hasActivePremiumStatus,
 } from '../features/premium/premiumAccess';
+import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
 import { getProfileSoundOption } from '../features/profile/profileSounds';
 import { getDifferentRandomProfileTip } from '../features/profile/profileTips';
 import { useSoundPreview } from '../features/profile/useSoundPreview';
@@ -55,6 +56,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
     sendPasswordReset,
     linkAnonymousAccount,
   } = useUserProfile();
+  const { entitlement } = usePremiumEntitlement(authUser?.uid ?? null);
   const deviceCalendars = useDeviceCalendars(authUser?.uid ?? null);
   const { previewSound, stopPreview, previewError, playingSoundId } = useSoundPreview();
   const [displayName, setDisplayName] = useState('');
@@ -84,7 +86,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   const [icsPending, setIcsPending] = useState(false);
   const [icsError, setIcsError] = useState<string | null>(null);
   const [icsFeedback, setIcsFeedback] = useState<string | null>(null);
-  const hasPremiumAccess = hasActivePremiumStatus(profile?.premiumStatus);
+  const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
 
   useEffect(() => {
     if (!profile) {
@@ -246,7 +248,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
       return 'Premium is active for AI goal builder access. Store purchase and restore wiring still land in the monetization milestone.';
     }
 
-    if (profile?.premiumStatus === 'canceled') {
+    if (entitlement?.status === 'canceled' || entitlement?.status === 'expired') {
       return 'Premium access is not active. Rejoin to unlock AI goal builder access when live billing ships.';
     }
 
@@ -588,9 +590,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                 title="Premium access"
                 description={getPremiumAccessDescription()}
                 trailingText={
-                  hasPremiumAccess
-                    ? getPremiumEntitlementLabel(profile.premiumStatus)
-                    : 'View plans'
+                  hasPremiumAccess ? getPremiumEntitlementLabel(entitlement?.status) : 'View plans'
                 }
                 disabled={hasPremiumAccess}
               />

@@ -18,11 +18,16 @@ import {
 import { serializeEventsToIcs } from '../features/calendar/icsInterop';
 import { CalendarEvent, createUnpublishedMetadata } from '../features/calendar/calendarTypes';
 import { listUserEvents } from '../services/firebase/firebaseEvents';
+import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
 
 jest.setTimeout(10000);
 
 jest.mock('../features/profile/useUserProfile', () => ({
   useUserProfile: jest.fn(),
+}));
+
+jest.mock('../features/premium/usePremiumEntitlement', () => ({
+  usePremiumEntitlement: jest.fn(),
 }));
 
 jest.mock('../features/calendar/icsFileInterop', () => ({
@@ -127,6 +132,9 @@ function mockProfileHooks(
     typeof useDeviceCalendars
   >;
   const mockedUseSoundPreview = useSoundPreview as jest.MockedFunction<typeof useSoundPreview>;
+  const mockedUsePremiumEntitlement = usePremiumEntitlement as jest.MockedFunction<
+    typeof usePremiumEntitlement
+  >;
 
   mockedUseUserProfile.mockReturnValue({
     authUser: { isAnonymous: false, email: 'preston@example.com' } as never,
@@ -175,6 +183,12 @@ function mockProfileHooks(
     previewSound,
     stopPreview,
     ...overrides.soundPreview,
+  });
+
+  mockedUsePremiumEntitlement.mockReturnValue({
+    entitlement: null,
+    uiState: 'ready',
+    error: null,
   });
 
   return {

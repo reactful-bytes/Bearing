@@ -8,6 +8,7 @@ import { useGoalStepEvents } from '../features/goals/useGoalStepEvents';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { UserProfileRecord } from '../features/profile/profileTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
+import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
 
 jest.mock('../features/goals/useGoals', () => ({
   useGoals: jest.fn(),
@@ -23,6 +24,10 @@ jest.mock('../features/profile/useUserProfile', () => ({
 
 jest.mock('../features/calendar/useCalendarPublication', () => ({
   useCalendarPublication: jest.fn(),
+}));
+
+jest.mock('../features/premium/usePremiumEntitlement', () => ({
+  usePremiumEntitlement: jest.fn(),
 }));
 
 jest.mock('../services/firebase/firebaseEvents', () => ({
@@ -144,6 +149,11 @@ describe('GoalsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUserProfile();
+    (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
+      entitlement: null,
+      uiState: 'ready',
+      error: null,
+    });
     (useCalendarPublication as jest.MockedFunction<typeof useCalendarPublication>).mockReturnValue({
       publicationCalendarTitle: null,
       createEvent: jest.fn(async () => 'event-new'),
@@ -389,8 +399,10 @@ describe('GoalsScreen', () => {
       typeof useGoalStepEvents
     >;
 
-    mockUserProfile({
-      profile: makeProfile({ premiumStatus: 'premium', premiumSource: 'ios' }),
+    (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
+      entitlement: { status: 'active' } as never,
+      uiState: 'ready',
+      error: null,
     });
 
     mockedUseGoals.mockReturnValue({

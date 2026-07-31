@@ -1,4 +1,4 @@
-import { PremiumStatus } from '../profile/profileTypes';
+import { SubscriptionStatus } from './premiumTypes';
 
 export type PremiumFeature = 'premium_overview' | 'ai_goal_builder';
 
@@ -32,19 +32,20 @@ const PREMIUM_PAYWALL_COPY: Record<PremiumFeature, PremiumPaywallCopy> = {
   },
 };
 
-export function hasActivePremiumStatus(status: PremiumStatus | null | undefined): boolean {
-  return status === 'premium' || status === 'grace_period';
+export function hasActivePremiumStatus(status: SubscriptionStatus | null | undefined): boolean {
+  return status === 'active' || status === 'in_grace_period';
 }
 
-export function getPremiumEntitlementLabel(status: PremiumStatus | null | undefined): string {
+export function getPremiumEntitlementLabel(status: SubscriptionStatus | null | undefined): string {
   switch (status) {
-    case 'premium':
+    case 'active':
       return 'Active';
-    case 'grace_period':
+    case 'in_grace_period':
       return 'Grace Period';
     case 'canceled':
       return 'Canceled';
-    case 'free':
+    case 'expired':
+      return 'Expired';
     default:
       return 'Free';
   }

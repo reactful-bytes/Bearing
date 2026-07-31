@@ -3,7 +3,7 @@ const {
   assertSucceeds,
   initializeTestEnvironment,
 } = require('@firebase/rules-unit-testing');
-const { afterAll, beforeAll, beforeEach, describe, it } = require('@jest/globals');
+const { afterAll, beforeAll, beforeEach, describe, expect, it } = require('@jest/globals');
 const {
   doc,
   getDoc,
@@ -102,15 +102,19 @@ describe('Firestore ownership rules', () => {
   });
 
   it('keeps subscriptions server-owned and user-readable', async () => {
-    await seedDocument('subscriptions', 'subscription-1', {
+    await seedDocument('subscriptions', OWNER_ID, {
       userId: OWNER_ID,
       status: 'active',
     });
 
-    await assertSucceeds(getDoc(doc(firestoreFor(OWNER_ID), 'subscriptions', 'subscription-1')));
-    await assertFails(getDoc(doc(firestoreFor(OTHER_ID), 'subscriptions', 'subscription-1')));
+    await assertSucceeds(getDoc(doc(firestoreFor(OWNER_ID), 'subscriptions', OWNER_ID)));
+    await assertFails(getDoc(doc(firestoreFor(OTHER_ID), 'subscriptions', OWNER_ID)));
+    const missingSubscription = await assertSucceeds(
+      getDoc(doc(firestoreFor(OTHER_ID), 'subscriptions', OTHER_ID)),
+    );
+    expect(missingSubscription.exists()).toBe(false);
     await assertFails(
-      updateDoc(doc(firestoreFor(OWNER_ID), 'subscriptions', 'subscription-1'), {
+      updateDoc(doc(firestoreFor(OWNER_ID), 'subscriptions', OWNER_ID), {
         status: 'cancelled',
       }),
     );

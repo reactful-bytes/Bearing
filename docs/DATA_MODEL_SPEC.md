@@ -32,8 +32,8 @@ Fields:
 - email: string
 - timezone: string
 - locale: string
-- premiumStatus: enum (free, premium, grace_period, canceled)
-- premiumSource: enum (ios, android, stripe, none)
+- premiumStatus: enum (free, premium, grace_period, canceled), legacy server-owned mirror only
+- premiumSource: enum (ios, android, stripe, none), legacy server-owned mirror only
 - tipsEnabled: boolean
 - reminderSoundId: string
 - alarmSoundId: string
@@ -178,7 +178,7 @@ Indexes (planned):
 
 ### subscriptions
 
-Document ID: subscriptionId
+Document ID: userId
 
 Fields:
 
@@ -192,6 +192,13 @@ Fields:
 - lastValidatedAt: timestamp
 - createdAt: timestamp
 - updatedAt: timestamp
+
+Notes:
+
+- This UID-keyed server-owned document is the authoritative premium entitlement read model.
+- A missing document means free access. Clients must fail closed on missing, malformed, loading, or error states.
+- Only `active` and `in_grace_period` unlock premium features.
+- Clients may read only their own document and may not write subscription state.
 
 ### aiPlans
 

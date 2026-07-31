@@ -19,6 +19,7 @@ import {
   GoalWithSteps,
 } from '../features/goals/goalTypes';
 import { PremiumFeature, hasActivePremiumStatus } from '../features/premium/premiumAccess';
+import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { useGoals } from '../features/goals/useGoals';
 import { useGoalStepEvents } from '../features/goals/useGoalStepEvents';
@@ -49,7 +50,8 @@ function getGoalProgressPercent(goal: GoalWithSteps): number {
 
 export function GoalsScreen() {
   const { createEvent, publicationCalendarTitle } = useCalendarPublication();
-  const { profile, uiState: profileUiState, isAnonymous } = useUserProfile();
+  const { authUser, isAnonymous } = useUserProfile();
+  const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
   const {
     goals,
     uiState,
@@ -68,7 +70,7 @@ export function GoalsScreen() {
   const [scheduleStepId, setScheduleStepId] = useState<string | null>(null);
   const [premiumPaywallFeature, setPremiumPaywallFeature] = useState<PremiumFeature | null>(null);
   const [goalFilter, setGoalFilter] = useState<GoalFilter>('active');
-  const hasPremiumAccess = hasActivePremiumStatus(profile?.premiumStatus);
+  const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
 
   const activeGoalCount = useMemo(
     () => goals.filter((goal) => goal.status === 'active').length,
@@ -310,7 +312,7 @@ export function GoalsScreen() {
         onClose={() => setCreateGoalVisible(false)}
         onSave={handleCreateGoal}
         hasPremiumAccess={hasPremiumAccess}
-        isPremiumStatusResolved={profileUiState === 'ready'}
+        isPremiumStatusResolved={entitlementUiState === 'ready'}
         onOpenPremiumPaywall={() => setPremiumPaywallFeature('ai_goal_builder')}
       />
 
