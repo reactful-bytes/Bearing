@@ -19,11 +19,43 @@ import { serializeEventsToIcs } from '../features/calendar/icsInterop';
 import { CalendarEvent, createUnpublishedMetadata } from '../features/calendar/calendarTypes';
 import { listUserEvents } from '../services/firebase/firebaseEvents';
 import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
+import {
+  downloadDataExportOnWeb,
+  shareDataExportFile,
+  writeDataExportFile,
+} from '../features/profile/dataExportFileInterop';
+import { cleanupLinkedCalendarCopies } from '../features/profile/accountDeletionService';
+import { reauthenticateCurrentUser } from '../services/firebase/firebaseAuthActions';
+import {
+  deleteCurrentUserAccount,
+  exportCurrentUserData,
+} from '../services/firebase/firebasePrivacy';
 
 jest.setTimeout(10000);
 
 jest.mock('../features/profile/useUserProfile', () => ({
   useUserProfile: jest.fn(),
+}));
+
+jest.mock('../services/firebase/firebasePrivacy', () => ({
+  exportCurrentUserData: jest.fn(),
+  deleteCurrentUserAccount: jest.fn(),
+}));
+
+jest.mock('../services/firebase/firebaseAuthActions', () => ({
+  reauthenticateCurrentUser: jest.fn(),
+}));
+
+jest.mock('../features/profile/accountDeletionService', () => ({
+  cleanupLinkedCalendarCopies: jest.fn(),
+}));
+
+jest.mock('../features/profile/dataExportFileInterop', () => ({
+  buildDataExportFilename: jest.fn(() => 'bearing-data-20260731.json'),
+  serializeDataExport: jest.fn(() => '{"userId":"user-1"}\n'),
+  downloadDataExportOnWeb: jest.fn(),
+  shareDataExportFile: jest.fn(async () => true),
+  writeDataExportFile: jest.fn(async () => 'file:///bearing-data-20260731.json'),
 }));
 
 jest.mock('../features/premium/usePremiumEntitlement', () => ({
@@ -209,6 +241,15 @@ describe('ProfileScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.spyOn(Math, 'random').mockRestore?.();
+    (
+      cleanupLinkedCalendarCopies as jest.MockedFunction<typeof cleanupLinkedCalendarCopies>
+    ).mockResolvedValue({ removedCount: 0, failedCount: 0 });
+    (
+      reauthenticateCurrentUser as jest.MockedFunction<typeof reauthenticateCurrentUser>
+    ).mockResolvedValue();
+    (
+      deleteCurrentUserAccount as jest.MockedFunction<typeof deleteCurrentUserAccount>
+    ).mockResolvedValue();
   });
 
   it('saves account settings and sends a password reset email', async () => {
@@ -453,5 +494,76 @@ describe('ProfileScreen', () => {
     expect(writeIcsExportFile).not.toHaveBeenCalled();
     expect(shareIcsExportFile).not.toHaveBeenCalled();
     expect(screen.getByText('Downloaded bearing-export-20260726.ics.')).toBeTruthy();
+  });
+
+  it('exports all account data to a native JSON file', async () => {
+    (exportCurrentUserData as jest.MockedFunction<typeof exportCurrentUserData>).mockResolvedValue({
+      exportedAt: '2026-07-31T12:00:00.000Z',
+      userId: 'user-1',
+      profile: null,
+      subscription: null,
+      events: [],
+      goals: [],
+      goalSteps: [],
+      notes: [],
+      tasks: [],
+    });
+    mockProfileHooks();
+
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    fireEvent.press(screen.getByLabelText('Export all data'));
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Export JSON File'));
+    });
+
+    expect(exportCurrentUserData).toHaveBeenCalled();
+    expect(writeDataExportFile).toHaveBeenCalledWith(
+      'bearing-data-20260731.json',
+      '{"userId":"user-1"}\n',
+    );
+    expect(shareDataExportFile).not.toHaveBeenCalled();
+    expect(downloadDataExportOnWeb).not.toHaveBeenCalled();
+  });
+
+  it('reauthenticates, removes linked copies, and deletes an email account', async () => {
+    mockProfileHooks({
+      userProfile: {
+        authUser: { uid: 'user-1', isAnonymous: false, email: 'preston@example.com' } as never,
+      },
+    });
+
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    fireEvent.press(screen.getByLabelText('Delete account'));
+    fireEvent.changeText(screen.getByLabelText('Account deletion current password'), 'hunter2!');
+    fireEvent.changeText(screen.getByLabelText('Account deletion confirmation'), 'DELETE');
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Permanently Delete Account'));
+    });
+
+    expect(reauthenticateCurrentUser).toHaveBeenCalledWith('hunter2!');
+    expect(cleanupLinkedCalendarCopies).toHaveBeenCalledWith('user-1');
+    expect(deleteCurrentUserAccount).toHaveBeenCalled();
+  });
+
+  it('blocks backend deletion when linked-copy cleanup needs retry', async () => {
+    (
+      cleanupLinkedCalendarCopies as jest.MockedFunction<typeof cleanupLinkedCalendarCopies>
+    ).mockResolvedValue({ removedCount: 0, failedCount: 1 });
+    mockProfileHooks({
+      userProfile: {
+        authUser: { uid: 'user-1', isAnonymous: false, email: 'preston@example.com' } as never,
+      },
+    });
+
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    fireEvent.press(screen.getByLabelText('Delete account'));
+    fireEvent.changeText(screen.getByLabelText('Account deletion current password'), 'hunter2!');
+    fireEvent.changeText(screen.getByLabelText('Account deletion confirmation'), 'DELETE');
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Permanently Delete Account'));
+    });
+
+    expect(screen.getByText(/Could not remove 1 linked system calendar copy/)).toBeTruthy();
+    expect(deleteCurrentUserAccount).not.toHaveBeenCalled();
   });
 });

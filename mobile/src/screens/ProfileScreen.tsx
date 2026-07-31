@@ -21,6 +21,14 @@ import {
 } from '../features/calendar/icsFileInterop';
 import { serializeEventsToIcs } from '../features/calendar/icsInterop';
 import { useDeviceCalendars } from '../features/calendar/useDeviceCalendars';
+import { cleanupLinkedCalendarCopies } from '../features/profile/accountDeletionService';
+import {
+  buildDataExportFilename,
+  downloadDataExportOnWeb,
+  serializeDataExport,
+  shareDataExportFile,
+  writeDataExportFile,
+} from '../features/profile/dataExportFileInterop';
 import {
   getProfileSelectionLabel,
   PROFILE_LOCALE_OPTIONS,
@@ -38,6 +46,11 @@ import { useSoundPreview } from '../features/profile/useSoundPreview';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { ProfileTip } from '../features/profile/profileTypes';
 import { listUserEvents } from '../services/firebase/firebaseEvents';
+import { reauthenticateCurrentUser } from '../services/firebase/firebaseAuthActions';
+import {
+  deleteCurrentUserAccount,
+  exportCurrentUserData,
+} from '../services/firebase/firebasePrivacy';
 
 type ProfileScreenProps = {
   onPressSignOut: () => Promise<void> | void;
@@ -86,6 +99,16 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   const [icsPending, setIcsPending] = useState(false);
   const [icsError, setIcsError] = useState<string | null>(null);
   const [icsFeedback, setIcsFeedback] = useState<string | null>(null);
+  const [dataExportVisible, setDataExportVisible] = useState(false);
+  const [dataExportPending, setDataExportPending] = useState(false);
+  const [dataExportError, setDataExportError] = useState<string | null>(null);
+  const [dataExportFeedback, setDataExportFeedback] = useState<string | null>(null);
+  const [deleteAccountVisible, setDeleteAccountVisible] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deleteLinkedCopies, setDeleteLinkedCopies] = useState(true);
+  const [deletePending, setDeletePending] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
 
   useEffect(() => {
@@ -354,6 +377,84 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
     }
   }
 
+  async function handleExportData(shareAfterExport: boolean): Promise<void> {
+    setDataExportPending(true);
+    setDataExportError(null);
+    setDataExportFeedback(null);
+
+    try {
+      const content = serializeDataExport(await exportCurrentUserData());
+      const filename = buildDataExportFilename();
+      if (Platform.OS === 'web') {
+        await downloadDataExportOnWeb(filename, content);
+        setDataExportFeedback(`Downloaded ${filename}.`);
+        return;
+      }
+
+      const uri = await writeDataExportFile(filename, content);
+      if (shareAfterExport) {
+        const shared = await shareDataExportFile(uri);
+        setDataExportFeedback(shared ? 'Shared the JSON export.' : `Saved ${filename} to ${uri}.`);
+      } else {
+        setDataExportFeedback(`Saved ${filename} to ${uri}.`);
+      }
+    } catch (exportError) {
+      setDataExportError(
+        exportError instanceof Error ? exportError.message : 'Failed to export account data.',
+      );
+    } finally {
+      setDataExportPending(false);
+    }
+  }
+
+  function closeDeleteAccount(): void {
+    if (deletePending) return;
+    setDeleteAccountVisible(false);
+    setDeletePassword('');
+    setDeleteConfirmation('');
+    setDeleteError(null);
+  }
+
+  async function handleDeleteAccount(): Promise<void> {
+    if (!authUser) {
+      setDeleteError('User is not authenticated.');
+      return;
+    }
+    if (deleteConfirmation !== 'DELETE') {
+      setDeleteError('Type DELETE exactly to confirm permanent account deletion.');
+      return;
+    }
+    if (!isAnonymous && !deletePassword) {
+      setDeleteError('Enter the current password to continue.');
+      return;
+    }
+
+    setDeletePending(true);
+    setDeleteError(null);
+    try {
+      if (!isAnonymous) await reauthenticateCurrentUser(deletePassword);
+      if (deleteLinkedCopies) {
+        const cleanup = await cleanupLinkedCalendarCopies(authUser.uid);
+        if (cleanup.failedCount > 0) {
+          throw new Error(
+            `Could not remove ${cleanup.failedCount} linked system calendar ${cleanup.failedCount === 1 ? 'copy' : 'copies'}. Retry with calendar access or turn off linked-copy cleanup.`,
+          );
+        }
+      }
+      await deleteCurrentUserAccount();
+      setDeleteAccountVisible(false);
+      Alert.alert('Account deleted', 'Bearing account data was permanently deleted.');
+    } catch (deletionError) {
+      setDeleteError(
+        deletionError instanceof Error
+          ? deletionError.message
+          : 'Account deletion failed before completion. Please retry.',
+      );
+    } finally {
+      setDeletePending(false);
+    }
+  }
+
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.contentContainer}>
@@ -579,6 +680,12 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                 description="Export Bearing events to a general .ics file."
                 trailingText="Export"
               />
+              <ListItem
+                onPress={() => setDataExportVisible(true)}
+                title="Export all data"
+                description="Download your profile, plan, events, goals, notes, and tasks as JSON."
+                trailingText="Export"
+              />
             </View>
 
             <View style={styles.section}>
@@ -604,6 +711,12 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                 description="End the current session on this device."
                 trailingText={isSignOutPending ? 'Working...' : 'Action'}
                 disabled={isSignOutPending}
+              />
+              <ListItem
+                onPress={() => setDeleteAccountVisible(true)}
+                title="Delete account"
+                description="Permanently delete this account and its Bearing data."
+                trailingText="Delete"
               />
             </View>
           </>
@@ -843,6 +956,83 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
         {icsError ? <Text style={styles.errorText}>{icsError}</Text> : null}
         {icsFeedback ? <Text style={styles.successText}>{icsFeedback}</Text> : null}
       </AppModal>
+
+      <AppModal
+        visible={dataExportVisible}
+        title="Account Data Export"
+        onClose={() => {
+          setDataExportVisible(false);
+          setDataExportError(null);
+          setDataExportFeedback(null);
+        }}
+      >
+        <Text style={styles.stateDescription}>
+          Export all server-held Bearing account data as portable JSON. Device-only calendar data
+          remains on this device.
+        </Text>
+        <AppButton
+          label="Export JSON File"
+          variant="secondary"
+          onPress={() => void handleExportData(false)}
+          loading={dataExportPending}
+        />
+        <AppButton
+          label="Share JSON File"
+          variant="secondary"
+          onPress={() => void handleExportData(true)}
+          loading={dataExportPending}
+        />
+        {dataExportError ? <Text style={styles.errorText}>{dataExportError}</Text> : null}
+        {dataExportFeedback ? <Text style={styles.successText}>{dataExportFeedback}</Text> : null}
+      </AppModal>
+
+      <AppModal visible={deleteAccountVisible} title="Delete Account" onClose={closeDeleteAccount}>
+        <Text style={styles.stateDescription}>
+          This permanently deletes your Bearing profile, events, goals, steps, notes, tasks, and
+          subscription record. This action cannot be undone.
+        </Text>
+        {!isAnonymous ? (
+          <FormField
+            label="Current password"
+            accessibilityLabel="Account deletion current password"
+            value={deletePassword}
+            onChangeText={setDeletePassword}
+            secureTextEntry
+          />
+        ) : (
+          <Text style={styles.stateDescription}>
+            Anonymous sessions can only be deleted while their sign-in is recent. Secure the account
+            first if Firebase requires verification.
+          </Text>
+        )}
+        <FormField
+          label="Type DELETE to confirm"
+          accessibilityLabel="Account deletion confirmation"
+          value={deleteConfirmation}
+          onChangeText={setDeleteConfirmation}
+          autoCapitalize="characters"
+        />
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityLabel="Remove linked system calendar copies"
+          accessibilityState={{ checked: deleteLinkedCopies }}
+          onPress={() => setDeleteLinkedCopies((current) => !current)}
+          style={styles.deletionOption}
+        >
+          <Text style={styles.optionStateText}>{deleteLinkedCopies ? 'Checked' : 'Unchecked'}</Text>
+          <Text style={styles.stateDescription}>
+            Remove reachable system-calendar copies linked from this device before deletion.
+          </Text>
+        </Pressable>
+        <AppButton
+          label="Permanently Delete Account"
+          variant="danger"
+          onPress={() => void handleDeleteAccount()}
+          loading={deletePending}
+          loadingLabel="Deleting..."
+        />
+        {deleteError ? <Text style={styles.errorText}>{deleteError}</Text> : null}
+      </AppModal>
     </View>
   );
 }
@@ -876,6 +1066,10 @@ const styles = StyleSheet.create({
   },
   sectionBody: {
     gap: spacing.md,
+  },
+  deletionOption: {
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
   },
   sectionTitle: {
     ...typography.button,

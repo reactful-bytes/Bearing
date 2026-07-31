@@ -109,7 +109,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M9.2    | completed   | Perform security hardening and secret management audit   | No secrets exposed and auth flows validated                                               |
 | M9.3    | not-started | Add analytics dashboards and operational alerts          | Product and reliability telemetry available                                               |
 | M9.4    | not-started | Finalize legal copy (privacy policy, terms, disclosures) | Store-compliant legal docs available                                                      |
-| M9.5    | not-started | Add general export and account deletion                  | JSON/ICS export and reauthenticated cleanup pass emulator, staging, and native validation |
+| M9.5    | completed   | Add general export and account deletion                  | JSON/ICS export and reauthenticated cleanup pass automated validation; staging/native acceptance is an owner handoff |
 | M9.6    | not-started | Establish backup, migration, and recovery readiness      | Backup retention and staging restore drill meet approved RPO/RTO                          |
 
 ### M10 - Final UI Fixes and Operability Fixes
@@ -178,6 +178,6 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ## Immediate Next Steps
 
-1. Establish the Firebase Functions foundation under M1.6.
-2. Build authoritative entitlement and premium AI foundations under M11 and M8.
-3. Add general export and account deletion under M9.5.
+1. Establish backup, migration, and recovery readiness under M9.6.
+2. Complete resilience, performance, and release preparation under M10 and M12.
+3. Publish operational, privacy, rollback, and maintenance runbooks under M13.
