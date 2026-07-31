@@ -76,7 +76,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M6.6      | completed   | Remove provider integration and migrate legacy data  | Provider UI/services/gates and ICS import are gone without losing imported Bearing events      |
 | M6.7      | in-progress | Add `expo-calendar`, permissions, and adapter        | Host validation passes; current-device development-build verification remains                  |
 | M6.8      | completed   | Add per-device calendar settings                     | Users select visible calendars and one writable default independently on each device           |
-| M6.9      | not-started | Aggregate live device and Firestore events           | Selected system events display without Firestore mirrors or duplicate linked copies            |
+| M6.9      | completed   | Aggregate live device and Firestore events           | Selected system events display without Firestore mirrors or duplicate linked copies            |
 | M6.10     | not-started | Build complete Bearing event editor                  | Supported ordinary and recurring event fields can be created and edited with capability checks |
 | M6.11     | not-started | Publish and reconcile linked Bearing events          | Optional copies rediscover across devices and recover honestly from partial writes/deletions   |
 | M6.12     | not-started | Retain general Bearing ICS export                    | Timed, all-day, timezone, location, recurrence, alarm, and text fixtures pass                  |
@@ -173,5 +173,5 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 ## Immediate Next Steps
 
 1. Validate the M6.7 development-build workflow on current iOS and Android devices.
-2. Implement M6.9 live Firestore/device event aggregation and deterministic refresh triggers.
-3. Continue through M6.10-M6.13 event editing, publication, export, and native acceptance validation.
+2. Implement M6.10 complete Bearing and writable-device event editing.
+3. Continue through M6.11-M6.13 publication, export, and native acceptance validation.

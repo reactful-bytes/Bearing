@@ -568,6 +568,7 @@ describe('GoalsScreen', () => {
     mockedUseGoalStepEvents.mockReturnValue({
       events: [
         {
+          ownership: 'bearing',
           id: 'event-1',
           userId: 'user-1',
           title: 'Treadmill session',
@@ -575,6 +576,12 @@ describe('GoalsScreen', () => {
           startAt: new Date(2026, 6, 27, 9, 0, 0),
           endAt: new Date(2026, 6, 27, 10, 0, 0),
           timezone: 'UTC',
+          allDay: false,
+          location: '',
+          recurrenceRule: null,
+          alarms: [],
+          availability: 'busy',
+          url: null,
           goalId: 'goal-1',
           stepId: 'step-1',
           status: 'scheduled',

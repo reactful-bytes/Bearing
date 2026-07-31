@@ -12,6 +12,24 @@ jest.mock('../features/notes/useNotes', () => ({
   })),
 }));
 
+jest.mock('../features/calendar/useDeviceCalendars', () => {
+  const state = {
+    calendars: [],
+    permission: 'unavailable',
+    selectedCalendarIds: [],
+    defaultCalendarId: null,
+    uiState: 'unavailable',
+    error: null,
+    staleSelectionRecovered: false,
+    requestPermission: jest.fn(),
+    refresh: jest.fn(),
+    toggleCalendar: jest.fn(),
+    setDefaultCalendar: jest.fn(),
+    openSettings: jest.fn(),
+  };
+  return { useDeviceCalendars: jest.fn(() => state) };
+});
+
 // Mock Firebase services
 jest.mock('../services/firebase/firebaseAuth', () => ({
   getFirebaseAuth: jest.fn(() => ({ currentUser: { uid: 'test-user' } })),
@@ -37,6 +55,7 @@ function makeTestEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
   const startAt = new Date(2026, 6, 17, 10, 0, 0);
   const endAt = new Date(2026, 6, 17, 11, 0, 0);
   return {
+    ownership: 'bearing',
     id: 'test-event-1',
     userId: 'u1',
     title: 'Test event',
@@ -44,6 +63,12 @@ function makeTestEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
     startAt,
     endAt,
     timezone: 'UTC',
+    allDay: false,
+    location: '',
+    recurrenceRule: null,
+    alarms: [],
+    availability: 'busy',
+    url: null,
     goalId: null,
     stepId: null,
     status: 'scheduled',

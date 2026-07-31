@@ -1,3 +1,10 @@
+import type {
+  EventAlarm,
+  EventAvailability,
+  EventRecurrenceRule,
+  EventStatus,
+} from './calendarTypes';
+
 export type DeviceCalendarPermissionState =
   'unavailable' | 'undetermined' | 'granted' | 'denied' | 'blocked';
 
@@ -13,7 +20,7 @@ export type DeviceCalendar = {
   allowsModifications: boolean;
 };
 
-export type DeviceCalendarEvent = {
+export type DeviceCalendarEventRecord = {
   id: string;
   calendarId: string;
   title: string;
@@ -21,6 +28,13 @@ export type DeviceCalendarEvent = {
   startDate: Date;
   endDate: Date;
   allDay: boolean;
+  location: string;
+  timeZone: string;
+  url: string | null;
+  alarms: EventAlarm[];
+  recurrenceRule: EventRecurrenceRule | null;
+  availability: EventAvailability;
+  status: EventStatus;
 };
 
 export type DeviceCalendarEventInput = {

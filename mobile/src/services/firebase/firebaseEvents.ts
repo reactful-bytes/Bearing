@@ -54,6 +54,16 @@ export function docToCalendarEvent(snapshot: QueryDocumentSnapshot<DocumentData>
 
 function buildEventPayload(userId: string, input: CreateEventInput): Record<string, unknown> {
   const now = Timestamp.now();
+  const recurrenceRule = input.recurrenceRule
+    ? {
+        ...input.recurrenceRule,
+        endAt: input.recurrenceRule.endAt ? Timestamp.fromDate(input.recurrenceRule.endAt) : null,
+      }
+    : null;
+  const alarms = (input.alarms ?? []).map((alarm) => ({
+    absoluteAt: alarm.absoluteAt ? Timestamp.fromDate(alarm.absoluteAt) : null,
+    relativeOffsetMinutes: alarm.relativeOffsetMinutes,
+  }));
 
   return {
     userId,
@@ -62,6 +72,12 @@ function buildEventPayload(userId: string, input: CreateEventInput): Record<stri
     startAt: Timestamp.fromDate(input.startAt),
     endAt: Timestamp.fromDate(input.endAt),
     timezone: input.timezone,
+    allDay: input.allDay ?? false,
+    location: input.location ?? '',
+    recurrenceRule,
+    alarms,
+    availability: input.availability ?? 'busy',
+    url: input.url ?? null,
     goalId: input.goalId ?? null,
     stepId: input.stepId ?? null,
     status: 'scheduled',
@@ -169,6 +185,26 @@ export async function updateEvent(
   if (fields.startAt !== undefined) updates.startAt = Timestamp.fromDate(fields.startAt);
   if (fields.endAt !== undefined) updates.endAt = Timestamp.fromDate(fields.endAt);
   if (fields.timezone !== undefined) updates.timezone = fields.timezone;
+  if (fields.allDay !== undefined) updates.allDay = fields.allDay;
+  if (fields.location !== undefined) updates.location = fields.location;
+  if (fields.recurrenceRule !== undefined) {
+    updates.recurrenceRule = fields.recurrenceRule
+      ? {
+          ...fields.recurrenceRule,
+          endAt: fields.recurrenceRule.endAt
+            ? Timestamp.fromDate(fields.recurrenceRule.endAt)
+            : null,
+        }
+      : null;
+  }
+  if (fields.alarms !== undefined) {
+    updates.alarms = fields.alarms.map((alarm) => ({
+      absoluteAt: alarm.absoluteAt ? Timestamp.fromDate(alarm.absoluteAt) : null,
+      relativeOffsetMinutes: alarm.relativeOffsetMinutes,
+    }));
+  }
+  if (fields.availability !== undefined) updates.availability = fields.availability;
+  if (fields.url !== undefined) updates.url = fields.url;
   if (fields.status !== undefined) updates.status = fields.status;
 
   await updateDoc(doc(db, 'events', eventId), updates);

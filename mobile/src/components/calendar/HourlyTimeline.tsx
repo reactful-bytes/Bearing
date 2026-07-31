@@ -2,12 +2,16 @@ import { useEffect, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radii, spacing, typography } from '../../design/tokens';
-import { CalendarEvent, CalendarUiState, EventStatus } from '../../features/calendar/calendarTypes';
+import {
+  CalendarDisplayEvent,
+  CalendarUiState,
+  EventStatus,
+} from '../../features/calendar/calendarTypes';
 
 type HourlyTimelineProps = {
   date: Date;
-  events: CalendarEvent[];
-  onPressEvent: (event: CalendarEvent) => void;
+  events: CalendarDisplayEvent[];
+  onPressEvent: (event: CalendarDisplayEvent) => void;
   uiState: CalendarUiState;
 };
 
@@ -142,7 +146,10 @@ export function HourlyTimeline({ date, events, onPressEvent, uiState }: HourlyTi
         {/* Event blocks */}
         {(uiState === 'ready' || uiState === 'empty') && events.length > 0
           ? events.map((event) => {
-              const bgColor = getEventBgColor(event.status);
+              const bgColor =
+                event.ownership === 'device' && event.calendarColor
+                  ? event.calendarColor
+                  : getEventBgColor(event.status);
               const textColor = getEventTextColor(event.status);
               return (
                 <Pressable

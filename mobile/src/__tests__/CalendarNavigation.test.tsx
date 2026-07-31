@@ -12,6 +12,24 @@ jest.mock('../features/notes/useNotes', () => ({
   })),
 }));
 
+jest.mock('../features/calendar/useDeviceCalendars', () => {
+  const state = {
+    calendars: [],
+    permission: 'unavailable',
+    selectedCalendarIds: [],
+    defaultCalendarId: null,
+    uiState: 'unavailable',
+    error: null,
+    staleSelectionRecovered: false,
+    requestPermission: jest.fn(),
+    refresh: jest.fn(),
+    toggleCalendar: jest.fn(),
+    setDefaultCalendar: jest.fn(),
+    openSettings: jest.fn(),
+  };
+  return { useDeviceCalendars: jest.fn(() => state) };
+});
+
 // Mock Firebase services
 jest.mock('../services/firebase/firebaseAuth', () => ({
   getFirebaseAuth: jest.fn(() => ({ currentUser: { uid: 'test-user' } })),

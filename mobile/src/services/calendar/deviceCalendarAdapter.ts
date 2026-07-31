@@ -1,8 +1,14 @@
 import { Linking, Platform } from 'react-native';
 
 import {
+  EventAlarm,
+  EventAvailability,
+  EventRecurrenceRule,
+  EventStatus,
+} from '../../features/calendar/calendarTypes';
+import {
   DeviceCalendar,
-  DeviceCalendarEvent,
+  DeviceCalendarEventRecord,
   DeviceCalendarEventInput,
   DeviceCalendarEventUpdate,
   DeviceCalendarPermissionState,
@@ -22,6 +28,18 @@ type NativeCalendarEvent = {
   startDate: Date | string;
   endDate: Date | string;
   allDay: boolean;
+  location: string | null;
+  timeZone: string;
+  url?: string;
+  alarms: { absoluteDate?: string; relativeOffset?: number }[];
+  recurrenceRule: {
+    frequency: string;
+    interval?: number;
+    endDate?: Date | string | null;
+    occurrence?: number | null;
+  } | null;
+  availability: string;
+  status: string;
   update(details: DeviceCalendarEventUpdate): Promise<void>;
   delete(): Promise<void>;
 };
@@ -53,8 +71,15 @@ export type DeviceCalendarAdapter = {
   getPermissionState(): Promise<DeviceCalendarPermissionState>;
   requestPermission(): Promise<DeviceCalendarPermissionState>;
   getCalendars(): Promise<DeviceCalendar[]>;
-  listEvents(calendarIds: string[], startDate: Date, endDate: Date): Promise<DeviceCalendarEvent[]>;
-  createEvent(calendarId: string, input: DeviceCalendarEventInput): Promise<DeviceCalendarEvent>;
+  listEvents(
+    calendarIds: string[],
+    startDate: Date,
+    endDate: Date,
+  ): Promise<DeviceCalendarEventRecord[]>;
+  createEvent(
+    calendarId: string,
+    input: DeviceCalendarEventInput,
+  ): Promise<DeviceCalendarEventRecord>;
   updateEvent(eventId: string, fields: DeviceCalendarEventUpdate): Promise<void>;
   deleteEvent(eventId: string): Promise<void>;
   openSettings(): Promise<void>;
@@ -88,7 +113,37 @@ function normalizeCalendar(calendar: NativeCalendar): DeviceCalendar {
   };
 }
 
-function normalizeEvent(event: NativeCalendarEvent): DeviceCalendarEvent {
+function normalizeAvailability(value: string): EventAvailability {
+  if (value === 'notSupported') return 'not-supported';
+  return ['busy', 'free', 'tentative', 'unavailable'].includes(value)
+    ? (value as EventAvailability)
+    : 'busy';
+}
+
+function normalizeStatus(value: string): EventStatus {
+  return value === 'canceled' ? 'canceled' : 'scheduled';
+}
+
+function normalizeRecurrenceRule(
+  value: NativeCalendarEvent['recurrenceRule'],
+): EventRecurrenceRule | null {
+  if (!value || !['daily', 'weekly', 'monthly', 'yearly'].includes(value.frequency)) return null;
+  return {
+    frequency: value.frequency as EventRecurrenceRule['frequency'],
+    interval: value.interval && value.interval > 0 ? value.interval : 1,
+    endAt: value.endDate ? new Date(value.endDate) : null,
+    occurrenceCount: value.occurrence && value.occurrence > 0 ? value.occurrence : null,
+  };
+}
+
+function normalizeAlarms(value: NativeCalendarEvent['alarms']): EventAlarm[] {
+  return value.map((alarm) => ({
+    absoluteAt: alarm.absoluteDate ? new Date(alarm.absoluteDate) : null,
+    relativeOffsetMinutes: typeof alarm.relativeOffset === 'number' ? alarm.relativeOffset : null,
+  }));
+}
+
+function normalizeEvent(event: NativeCalendarEvent): DeviceCalendarEventRecord {
   return {
     id: event.id,
     calendarId: event.calendarId,
@@ -97,6 +152,13 @@ function normalizeEvent(event: NativeCalendarEvent): DeviceCalendarEvent {
     startDate: new Date(event.startDate),
     endDate: new Date(event.endDate),
     allDay: event.allDay,
+    location: event.location ?? '',
+    timeZone: event.timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+    url: event.url ?? null,
+    alarms: normalizeAlarms(event.alarms ?? []),
+    recurrenceRule: normalizeRecurrenceRule(event.recurrenceRule),
+    availability: normalizeAvailability(event.availability),
+    status: normalizeStatus(event.status),
   };
 }
 

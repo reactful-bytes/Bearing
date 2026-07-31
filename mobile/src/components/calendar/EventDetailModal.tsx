@@ -3,10 +3,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppModal } from '../ui/AppModal';
 import { colors, radii, spacing, typography } from '../../design/tokens';
-import { CalendarEvent } from '../../features/calendar/calendarTypes';
+import { CalendarDisplayEvent } from '../../features/calendar/calendarTypes';
 
 type EventDetailModalProps = {
-  event: CalendarEvent | null;
+  event: CalendarDisplayEvent | null;
   onClose: () => void;
   onDelete: (eventId: string) => Promise<void>;
 };
@@ -45,7 +45,7 @@ function formatFullDate(date: Date): string {
   return `${month} ${day}, ${year}`;
 }
 
-function statusLabel(status: CalendarEvent['status']): string {
+function statusLabel(status: CalendarDisplayEvent['status']): string {
   if (status === 'completed') return 'Completed';
   if (status === 'canceled') return 'Canceled';
   return 'Scheduled';
@@ -83,6 +83,15 @@ export function EventDetailModal({ event, onClose, onDelete }: EventDetailModalP
           <Text style={styles.eventTitle}>{event.title}</Text>
 
           <View style={styles.metaRow}>
+            <Text style={styles.metaLabel}>Calendar</Text>
+            <Text style={styles.metaValue}>
+              {event.ownership === 'bearing'
+                ? 'Bearing'
+                : `${event.calendarTitle} · ${event.sourceLabel}`}
+            </Text>
+          </View>
+
+          <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>Date</Text>
             <Text style={styles.metaValue}>{formatFullDate(event.startAt)}</Text>
           </View>
@@ -117,7 +126,7 @@ export function EventDetailModal({ event, onClose, onDelete }: EventDetailModalP
 
           {deleteError ? <Text style={styles.errorText}>{deleteError}</Text> : null}
 
-          {!confirmingDelete ? (
+          {event.ownership === 'bearing' && !confirmingDelete ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Delete event"
@@ -129,7 +138,7 @@ export function EventDetailModal({ event, onClose, onDelete }: EventDetailModalP
             >
               <Text style={styles.deleteButtonText}>Delete Event</Text>
             </Pressable>
-          ) : (
+          ) : event.ownership === 'bearing' ? (
             <View style={styles.confirmRow}>
               <Text style={styles.confirmText}>Delete this event permanently?</Text>
               <View style={styles.confirmButtons}>
@@ -160,7 +169,7 @@ export function EventDetailModal({ event, onClose, onDelete }: EventDetailModalP
                 </Pressable>
               </View>
             </View>
-          )}
+          ) : null}
         </>
       ) : null}
     </AppModal>

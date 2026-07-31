@@ -11,6 +11,7 @@ import { EventDetailModal } from '../components/calendar/EventDetailModal';
 import { FocusModeOverlay } from '../components/calendar/FocusModeOverlay';
 import { colors, layout, spacing, typography } from '../design/tokens';
 import {
+  CalendarDisplayEvent,
   CalendarEvent,
   CalendarUiState,
   CreateEventInput,
@@ -55,7 +56,7 @@ function isSameCalendarDay(a: Date, b: Date): boolean {
 
 export type CalendarScreenProps = {
   stateOverride?: CalendarUiState;
-  eventsOverride?: CalendarEvent[];
+  eventsOverride?: CalendarDisplayEvent[];
   initialDateOverride?: Date;
   initialViewMode?: ViewMode;
   route?: {
@@ -82,7 +83,7 @@ export function CalendarScreen({
 }: CalendarScreenProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(initialDateOverride ?? new Date());
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
-  const [activeEvent, setActiveEvent] = useState<CalendarEvent | null>(null);
+  const [activeEvent, setActiveEvent] = useState<CalendarDisplayEvent | null>(null);
   const [addEventVisible, setAddEventVisible] = useState(false);
   const [focusModeVisible, setFocusModeVisible] = useState(false);
   const [pendingFocusEvent, setPendingFocusEvent] = useState<CalendarEvent | null>(null);
@@ -98,12 +99,14 @@ export function CalendarScreen({
     uiState: realUiState,
     createEvent,
     deleteEvent,
+    refresh: refreshEvents,
+    deviceError,
   } = useCalendarEvents(selectedDate);
   const { createNote } = useNotes();
 
   const uiState: CalendarUiState = stateOverride ?? realUiState;
   const calendarEvents = eventsOverride ?? realEvents;
-  const dayEvents: CalendarEvent[] = eventsOverride
+  const dayEvents: CalendarDisplayEvent[] = eventsOverride
     ? calendarEvents.filter((event) => isSameCalendarDay(event.startAt, selectedDate))
     : eventsForDate(selectedDate);
 
@@ -162,6 +165,7 @@ export function CalendarScreen({
     setViewMode('day');
     setPreferredFocusEventId(focusLaunch.eventId);
     setPendingFocusEvent({
+      ownership: 'bearing',
       id: focusLaunch.eventId,
       userId,
       title: focusLaunch.title,
@@ -169,6 +173,12 @@ export function CalendarScreen({
       startAt: launchStartAt,
       endAt: launchEndAt,
       timezone: focusLaunch.timezone,
+      allDay: false,
+      location: '',
+      recurrenceRule: null,
+      alarms: [],
+      availability: 'busy',
+      url: null,
       goalId: null,
       stepId: null,
       status: 'scheduled',
@@ -250,7 +260,7 @@ export function CalendarScreen({
     setPreferredFocusEventId(null);
   }
 
-  function handlePressEvent(event: CalendarEvent): void {
+  function handlePressEvent(event: CalendarDisplayEvent): void {
     setActiveEvent(event);
   }
 
@@ -267,7 +277,20 @@ export function CalendarScreen({
 
   return (
     <View style={styles.screen}>
-      <ViewModeToggle mode={viewMode} onChange={setViewMode} />
+      <View style={styles.calendarToolbar}>
+        <ViewModeToggle mode={viewMode} onChange={setViewMode} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Refresh calendar events"
+          onPress={() => void refreshEvents()}
+          style={({ pressed }) => [styles.refreshButton, pressed ? styles.buttonPressed : null]}
+        >
+          <Text style={styles.refreshButtonText}>Refresh</Text>
+        </Pressable>
+      </View>
+      {deviceError ? (
+        <Text style={styles.deviceErrorText}>Device events could not be refreshed.</Text>
+      ) : null}
 
       {viewMode === 'day' ? (
         <>
@@ -330,7 +353,7 @@ export function CalendarScreen({
             onViewableItemsChanged={handleViewableItemsChanged}
             renderItem={({ item: { year, month } }) => {
               const eventDays = new Set<number>();
-              realEvents.forEach((event) => {
+              calendarEvents.forEach((event) => {
                 if (event.startAt.getFullYear() === year && event.startAt.getMonth() === month) {
                   eventDays.add(event.startAt.getDate());
                 }
@@ -393,6 +416,28 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  calendarToolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingRight: spacing.md,
+  },
+  refreshButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  buttonPressed: {
+    opacity: 0.65,
+  },
+  refreshButtonText: {
+    ...typography.button,
+    color: colors.brand,
+  },
+  deviceErrorText: {
+    ...typography.helper,
+    color: colors.dangerText,
+    paddingHorizontal: spacing.md,
   },
   monthContainer: {
     flex: 1,

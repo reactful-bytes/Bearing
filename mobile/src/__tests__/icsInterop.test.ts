@@ -5,6 +5,7 @@ import { serializeEventsToIcs } from '../features/calendar/icsInterop';
 
 function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
   return {
+    ownership: 'bearing',
     id: 'event-1',
     userId: 'user-1',
     title: 'Deep work block',
@@ -12,6 +13,12 @@ function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
     startAt: new Date(Date.UTC(2026, 6, 26, 13, 0, 0)),
     endAt: new Date(Date.UTC(2026, 6, 26, 14, 30, 0)),
     timezone: 'America/New_York',
+    allDay: false,
+    location: '',
+    recurrenceRule: null,
+    alarms: [],
+    availability: 'busy',
+    url: null,
     goalId: 'goal-1',
     stepId: 'step-1',
     status: 'scheduled',

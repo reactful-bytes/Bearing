@@ -14,6 +14,13 @@ function makeModule(overrides: Partial<DeviceCalendarModule> = {}): DeviceCalend
     startDate: new Date(2026, 6, 31, 9),
     endDate: new Date(2026, 6, 31, 10),
     allDay: false,
+    location: null,
+    timeZone: 'America/New_York',
+    url: 'https://example.com/plan',
+    alarms: [{ relativeOffset: -15 }],
+    recurrenceRule: { frequency: 'weekly', interval: 2, occurrence: 4 },
+    availability: 'tentative',
+    status: 'confirmed',
     update: jest.fn(async () => undefined),
     delete: jest.fn(async () => undefined),
   };

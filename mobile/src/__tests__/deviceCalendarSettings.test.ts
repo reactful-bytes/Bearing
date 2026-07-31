@@ -5,6 +5,7 @@ import {
   loadDeviceCalendarSettings,
   purgeDeviceCalendarSettings,
   saveDeviceCalendarSettings,
+  subscribeDeviceCalendarSettings,
   validateDeviceCalendarSettings,
 } from '../services/calendar/deviceCalendarSettings';
 
@@ -43,6 +44,22 @@ describe('deviceCalendarSettings', () => {
 
     await purgeDeviceCalendarSettings('user/one', storage);
     await expect(loadDeviceCalendarSettings('user/one', storage)).resolves.toBeNull();
+  });
+
+  it('notifies only listeners for the changed Firebase UID', async () => {
+    const storage = makeStorage();
+    const userOneListener = jest.fn();
+    const userTwoListener = jest.fn();
+    const unsubscribe = subscribeDeviceCalendarSettings('user/one', userOneListener);
+    subscribeDeviceCalendarSettings('user/two', userTwoListener);
+
+    await saveDeviceCalendarSettings('user/one', settings, storage);
+    expect(userOneListener).toHaveBeenCalledTimes(1);
+    expect(userTwoListener).not.toHaveBeenCalled();
+
+    unsubscribe();
+    await purgeDeviceCalendarSettings('user/one', storage);
+    expect(userOneListener).toHaveBeenCalledTimes(1);
   });
 
   it('removes stale selections and a read-only default while preserving link cache', () => {

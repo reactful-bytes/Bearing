@@ -13,6 +13,22 @@ export type CalendarSettingsStorage = Pick<
 >;
 
 const STORAGE_PREFIX = '@bearing/device-calendar/v1/';
+const settingsListeners = new Map<string, Set<() => void>>();
+
+function notifySettingsChanged(userId: string): void {
+  settingsListeners.get(userId)?.forEach((listener) => listener());
+}
+
+export function subscribeDeviceCalendarSettings(userId: string, listener: () => void): () => void {
+  const listeners = settingsListeners.get(userId) ?? new Set<() => void>();
+  listeners.add(listener);
+  settingsListeners.set(userId, listeners);
+
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0) settingsListeners.delete(userId);
+  };
+}
 
 function getStorageKey(userId: string): string {
   if (!userId.trim()) {
@@ -74,6 +90,7 @@ export async function saveDeviceCalendarSettings(
   storage: CalendarSettingsStorage = AsyncStorage,
 ): Promise<void> {
   await storage.setItem(getStorageKey(userId), JSON.stringify(settings));
+  notifySettingsChanged(userId);
 }
 
 export async function purgeDeviceCalendarSettings(
@@ -81,6 +98,7 @@ export async function purgeDeviceCalendarSettings(
   storage: CalendarSettingsStorage = AsyncStorage,
 ): Promise<void> {
   await storage.removeItem(getStorageKey(userId));
+  notifySettingsChanged(userId);
 }
 
 export function validateDeviceCalendarSettings(

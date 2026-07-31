@@ -2,12 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { radii, spacing, typography } from '../../design/tokens';
-import { CalendarEvent } from '../../features/calendar/calendarTypes';
+import { CalendarDisplayEvent } from '../../features/calendar/calendarTypes';
 import { CreateNoteInput } from '../../features/notes/noteTypes';
 
 type FocusModeOverlayProps = {
   visible: boolean;
-  events: CalendarEvent[];
+  events: CalendarDisplayEvent[];
   preferredEventId?: string | null;
   onClose: () => void;
   onSaveIdeaDump: (input: CreateNoteInput) => Promise<void>;
@@ -165,7 +165,8 @@ export function FocusModeOverlay({
         body: trimmedBody,
         source: 'idea_dump',
         sourceEventId: focusSummary.event?.id ?? null,
-        sourceStepId: focusSummary.event?.stepId ?? null,
+        sourceStepId:
+          focusSummary.event?.ownership === 'bearing' ? focusSummary.event.stepId : null,
       });
       setIdeaBody('');
     } catch {
