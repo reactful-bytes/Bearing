@@ -139,4 +139,33 @@ describe('EventDetailModal', () => {
     expect(screen.queryByLabelText('Edit event')).toBeNull();
     expect(screen.queryByLabelText('Delete event')).toBeNull();
   });
+
+  it('retries a failed linked copy without changing the Bearing event', async () => {
+    const event = makeBearingEvent();
+    event.publication = {
+      status: 'failed',
+      markerId: '0123456789abcdef0123456789abcdef',
+      commonHash: null,
+      lastError: 'Device publication failed.',
+      retryable: true,
+      deletionIntent: false,
+    };
+    const onRetryPublication = jest.fn(async () => undefined);
+    render(
+      <EventDetailModal
+        event={event}
+        onClose={jest.fn()}
+        onUpdate={jest.fn(async () => undefined)}
+        onDelete={jest.fn(async () => undefined)}
+        onRetryPublication={onRetryPublication}
+      />,
+    );
+
+    expect(screen.getByText('Needs attention')).toBeTruthy();
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Retry device publication'));
+    });
+
+    expect(onRetryPublication).toHaveBeenCalledWith(event);
+  });
 });

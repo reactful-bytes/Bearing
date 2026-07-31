@@ -1,23 +1,32 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { AppModal } from '../ui/AppModal';
 import { colors, radii, spacing, typography } from '../../design/tokens';
 import { TaskRecord } from '../../features/tasks/taskTypes';
+import { CreateEventOptions } from '../../features/calendar/calendarTypes';
 
 type StartNowModalProps = {
   visible: boolean;
   task: TaskRecord | null;
+  publicationCalendarTitle?: string | null;
   onClose: () => void;
-  onConfirm: (minutes: number) => Promise<void>;
+  onConfirm: (minutes: number, options: CreateEventOptions) => Promise<void>;
 };
 
 const DEFAULT_MINUTES = '30';
 
-export function StartNowModal({ visible, task, onClose, onConfirm }: StartNowModalProps) {
+export function StartNowModal({
+  visible,
+  task,
+  publicationCalendarTitle,
+  onClose,
+  onConfirm,
+}: StartNowModalProps) {
   const [minutes, setMinutes] = useState(DEFAULT_MINUTES);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [publishToDevice, setPublishToDevice] = useState(false);
 
   useEffect(() => {
     if (!visible) {
@@ -27,6 +36,7 @@ export function StartNowModal({ visible, task, onClose, onConfirm }: StartNowMod
     setMinutes(DEFAULT_MINUTES);
     setError(null);
     setSaving(false);
+    setPublishToDevice(false);
   }, [visible]);
 
   async function handleConfirm(): Promise<void> {
@@ -41,7 +51,7 @@ export function StartNowModal({ visible, task, onClose, onConfirm }: StartNowMod
     setError(null);
 
     try {
-      await onConfirm(parsedMinutes);
+      await onConfirm(parsedMinutes, { publishToDevice });
       onClose();
     } catch {
       setError('Failed to start the task right now. Please try again.');
@@ -56,6 +66,22 @@ export function StartNowModal({ visible, task, onClose, onConfirm }: StartNowMod
         <Text style={styles.summaryLabel}>Task</Text>
         <Text style={styles.summaryTitle}>{task?.title ?? 'Task'}</Text>
       </View>
+
+      {publicationCalendarTitle ? (
+        <View style={styles.switchRow}>
+          <View style={styles.switchLabelGroup}>
+            <Text style={styles.label}>Add to {publicationCalendarTitle}</Text>
+            <Text style={styles.helperText}>Creates a linked copy in your device calendar.</Text>
+          </View>
+          <Switch
+            value={publishToDevice}
+            onValueChange={setPublishToDevice}
+            trackColor={{ false: colors.border, true: colors.surfaceBrand }}
+            thumbColor={publishToDevice ? colors.brand : colors.textSecondary}
+            accessibilityLabel={`Add to ${publicationCalendarTitle}`}
+          />
+        </View>
+      ) : null}
 
       <View style={styles.formField}>
         <Text style={styles.label}>Minutes</Text>
@@ -111,6 +137,17 @@ const styles = StyleSheet.create({
   },
   formField: {
     gap: spacing.sm,
+  },
+  switchRow: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  switchLabelGroup: {
+    flex: 1,
+    gap: spacing.xs,
+    paddingRight: spacing.md,
   },
   label: {
     ...typography.label,

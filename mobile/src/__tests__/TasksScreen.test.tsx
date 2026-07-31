@@ -1,10 +1,10 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { TasksScreen } from '../screens/TasksScreen';
 import { useTasks } from '../features/tasks/useTasks';
 import { TaskRecord } from '../features/tasks/taskTypes';
-import { createEvent } from '../services/firebase/firebaseEvents';
+import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 
 const mockNavigate = jest.fn();
 
@@ -16,6 +16,10 @@ jest.mock('@react-navigation/native', () => ({
 
 jest.mock('../features/tasks/useTasks', () => ({
   useTasks: jest.fn(),
+}));
+
+jest.mock('../features/calendar/useCalendarPublication', () => ({
+  useCalendarPublication: jest.fn(),
 }));
 
 jest.mock('../services/firebase/firebaseEvents', () => ({
@@ -46,6 +50,14 @@ function makeTask(overrides: Partial<TaskRecord> = {}): TaskRecord {
 }
 
 describe('TasksScreen', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useCalendarPublication as jest.MockedFunction<typeof useCalendarPublication>).mockReturnValue({
+      publicationCalendarTitle: null,
+      createEvent: jest.fn(async () => 'event-new'),
+    });
+  });
+
   it('shows active tasks by default and reveals completed tasks when toggled', () => {
     const mockedUseTasks = useTasks as jest.MockedFunction<typeof useTasks>;
 
@@ -117,9 +129,12 @@ describe('TasksScreen', () => {
 
     const completeTaskMock = jest.fn(async () => undefined);
     const mockedUseTasks = useTasks as jest.MockedFunction<typeof useTasks>;
-    const mockedCreateEvent = createEvent as jest.MockedFunction<typeof createEvent>;
+    const mockedCreateEvent = jest.fn(async () => 'event-123');
 
-    mockedCreateEvent.mockResolvedValue('event-123');
+    (useCalendarPublication as jest.MockedFunction<typeof useCalendarPublication>).mockReturnValue({
+      publicationCalendarTitle: 'Work',
+      createEvent: mockedCreateEvent,
+    });
     mockedUseTasks.mockReturnValue({
       tasks: [makeTask()],
       uiState: 'ready',
@@ -143,12 +158,12 @@ describe('TasksScreen', () => {
 
     await waitFor(() => {
       expect(mockedCreateEvent).toHaveBeenCalledWith(
-        'test-user',
         expect.objectContaining({
           title: 'Inbox zero',
           description: 'Clear the remaining work messages.',
           timezone: expect.any(String),
         }),
+        { publishToDevice: false },
       );
       expect(completeTaskMock).toHaveBeenCalledWith('task-1', {
         completionSource: 'scheduled',
@@ -166,9 +181,12 @@ describe('TasksScreen', () => {
 
     const completeTaskMock = jest.fn(async () => undefined);
     const mockedUseTasks = useTasks as jest.MockedFunction<typeof useTasks>;
-    const mockedCreateEvent = createEvent as jest.MockedFunction<typeof createEvent>;
+    const mockedCreateEvent = jest.fn(async () => 'event-456');
 
-    mockedCreateEvent.mockResolvedValue('event-456');
+    (useCalendarPublication as jest.MockedFunction<typeof useCalendarPublication>).mockReturnValue({
+      publicationCalendarTitle: 'Work',
+      createEvent: mockedCreateEvent,
+    });
     mockedUseTasks.mockReturnValue({
       tasks: [
         makeTask({ title: 'Write proposal', description: 'Focus on the executive summary.' }),
@@ -186,19 +204,23 @@ describe('TasksScreen', () => {
     fireEvent.press(screen.getByLabelText('Start task now'));
 
     expect(screen.getByDisplayValue('30')).toBeTruthy();
+    fireEvent(screen.getByLabelText('Add to Work'), 'valueChange', true);
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Confirm start now'));
     });
 
     await waitFor(() => {
-      expect(mockedCreateEvent).toHaveBeenCalledWith('test-user', {
-        title: 'Write proposal',
-        description: 'Focus on the executive summary.',
-        startAt,
-        endAt: new Date(2026, 6, 28, 14, 30, 0),
-        timezone: expect.any(String),
-      });
+      expect(mockedCreateEvent).toHaveBeenCalledWith(
+        {
+          title: 'Write proposal',
+          description: 'Focus on the executive summary.',
+          startAt,
+          endAt: new Date(2026, 6, 28, 14, 30, 0),
+          timezone: expect.any(String),
+        },
+        { publishToDevice: true },
+      );
       expect(completeTaskMock).toHaveBeenCalledWith('task-1', {
         completionSource: 'start_now',
         completedEventId: 'event-456',

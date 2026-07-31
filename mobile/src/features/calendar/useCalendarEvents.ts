@@ -10,23 +10,20 @@ import {
   loadDeviceCalendarSettings,
   subscribeDeviceCalendarSettings,
 } from '../../services/calendar/deviceCalendarSettings';
-import {
-  createEvent as createFirebaseEvent,
-  deleteEvent as deleteFirebaseEvent,
-  subscribeToEventsByDateRange,
-  updateEvent as updateFirebaseEvent,
-} from '../../services/firebase/firebaseEvents';
+import { subscribeToEventsByDateRange } from '../../services/firebase/firebaseEvents';
 import {
   BearingEvent,
   CalendarDisplayEvent,
   DeviceCalendarEvent,
   CalendarUiState,
   CreateEventInput,
+  CreateEventOptions,
   UpdateEventInput,
 } from './calendarTypes';
 import { mergeCalendarEvents, normalizeDeviceCalendarEvents } from './calendarEventAggregation';
 import { DeviceCalendarLink } from './deviceCalendarTypes';
 import { useDeviceCalendars } from './useDeviceCalendars';
+import { createCalendarPublicationService } from './calendarPublicationService';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -59,10 +56,12 @@ export type UseCalendarEventsReturn = {
   eventsForDate: (date: Date) => CalendarDisplayEvent[];
   uiState: CalendarUiState;
   deviceError: Error | null;
+  publicationCalendarTitle: string | null;
   refresh: () => Promise<void>;
-  createEvent: (input: CreateEventInput) => Promise<void>;
+  createEvent: (input: CreateEventInput, options?: CreateEventOptions) => Promise<string>;
   updateEvent: (event: CalendarDisplayEvent, fields: UpdateEventInput) => Promise<void>;
   deleteEvent: (event: CalendarDisplayEvent) => Promise<void>;
+  retryPublication: (event: BearingEvent) => Promise<void>;
 };
 
 /**
@@ -75,12 +74,18 @@ export function useCalendarEvents(
 ): UseCalendarEventsReturn {
   const userId = getFirebaseAuth().currentUser?.uid ?? null;
   const deviceCalendars = useDeviceCalendars(userId, adapter);
+  const publicationService = useMemo(
+    () => createCalendarPublicationService({ adapter }),
+    [adapter],
+  );
   const [bearingEvents, setBearingEvents] = useState<BearingEvent[]>([]);
   const [deviceEvents, setDeviceEvents] = useState<DeviceCalendarEvent[]>([]);
   const [linkCache, setLinkCache] = useState<Record<string, DeviceCalendarLink>>({});
   const [firestoreState, setFirestoreState] = useState<CalendarUiState>('loading');
   const [deviceError, setDeviceError] = useState<Error | null>(null);
   const nativeRequestIdRef = useRef(0);
+  const bearingEventsRef = useRef<BearingEvent[]>([]);
+  const deviceRecordsRef = useRef<Awaited<ReturnType<DeviceCalendarAdapter['listEvents']>>>([]);
   const calendars = deviceCalendars.calendars;
   const selectedCalendarIds = deviceCalendars.selectedCalendarIds;
   const refreshDeviceCalendars = deviceCalendars.refresh;
@@ -103,6 +108,7 @@ export function useCalendarEvents(
       monthStart,
       monthEnd,
       (fetched) => {
+        bearingEventsRef.current = fetched;
         setBearingEvents(fetched);
         setFirestoreState(fetched.length === 0 ? 'empty' : 'ready');
       },
@@ -119,6 +125,7 @@ export function useCalendarEvents(
 
     if (!userId || deviceCalendars.permission !== 'granted' || selectedCalendarIds.length === 0) {
       setDeviceEvents([]);
+      deviceRecordsRef.current = [];
       setLinkCache({});
       setDeviceError(null);
       return;
@@ -131,8 +138,15 @@ export function useCalendarEvents(
       ]);
       if (requestId !== nativeRequestIdRef.current) return;
 
+      deviceRecordsRef.current = records;
       setDeviceEvents(normalizeDeviceCalendarEvents(records, calendars));
-      setLinkCache(settings?.linkCache ?? {});
+      const synchronizedLinks = await publicationService.synchronizeVisibleEvents(
+        userId,
+        bearingEventsRef.current,
+        records,
+      );
+      if (requestId !== nativeRequestIdRef.current) return;
+      setLinkCache(synchronizedLinks ?? settings?.linkCache ?? {});
       setDeviceError(null);
     } catch (nativeError) {
       if (requestId !== nativeRequestIdRef.current) return;
@@ -149,6 +163,7 @@ export function useCalendarEvents(
     deviceCalendars.permission,
     monthEnd,
     monthStart,
+    publicationService,
     selectedCalendarIds,
     userId,
   ]);
@@ -159,6 +174,22 @@ export function useCalendarEvents(
       nativeRequestIdRef.current += 1;
     };
   }, [refreshDeviceEvents]);
+
+  useEffect(() => {
+    if (!userId || firestoreState === 'loading' || deviceCalendars.permission !== 'granted') {
+      return;
+    }
+
+    let canceled = false;
+    void publicationService
+      .synchronizeVisibleEvents(userId, bearingEvents, deviceRecordsRef.current)
+      .then((synchronizedLinks) => {
+        if (!canceled) setLinkCache(synchronizedLinks);
+      });
+    return () => {
+      canceled = true;
+    };
+  }, [bearingEvents, deviceCalendars.permission, firestoreState, publicationService, userId]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
@@ -184,6 +215,10 @@ export function useCalendarEvents(
       : events.length === 0
         ? 'empty'
         : 'ready';
+  const publicationCalendarTitle = deviceCalendars.defaultCalendarId
+    ? (calendars.find((calendar) => calendar.id === deviceCalendars.defaultCalendarId)?.title ??
+      null)
+    : null;
 
   const eventsForDate = useCallback(
     (date: Date): CalendarDisplayEvent[] =>
@@ -192,13 +227,17 @@ export function useCalendarEvents(
   );
 
   const createEvent = useCallback(
-    async (input: CreateEventInput): Promise<void> => {
+    async (
+      input: CreateEventInput,
+      options: CreateEventOptions = { publishToDevice: false },
+    ): Promise<string> => {
       const userId = getFirebaseAuth().currentUser?.uid;
       if (!userId) throw new Error('User is not authenticated.');
-      await createFirebaseEvent(userId, input);
+      const result = await publicationService.createEvent(userId, input, options);
       await refreshDeviceEvents();
+      return result.eventId;
     },
-    [refreshDeviceEvents],
+    [publicationService, refreshDeviceEvents],
   );
 
   const updateEvent = useCallback(
@@ -207,7 +246,7 @@ export function useCalendarEvents(
       if (!userId) throw new Error('User is not authenticated.');
 
       if (event.ownership === 'bearing') {
-        await updateFirebaseEvent(userId, event.id, fields);
+        await publicationService.updateEvent(userId, event, fields);
       } else {
         if (!event.allowsModifications) {
           throw new Error('This device calendar event is read-only.');
@@ -216,7 +255,7 @@ export function useCalendarEvents(
       }
       await refreshDeviceEvents();
     },
-    [adapter, refreshDeviceEvents],
+    [adapter, publicationService, refreshDeviceEvents],
   );
 
   const deleteEvent = useCallback(
@@ -225,7 +264,7 @@ export function useCalendarEvents(
       if (!userId) throw new Error('User is not authenticated.');
 
       if (event.ownership === 'bearing') {
-        await deleteFirebaseEvent(userId, event.id);
+        await publicationService.deleteEvent(userId, event);
       } else {
         if (!event.allowsModifications) {
           throw new Error('This device calendar event is read-only.');
@@ -234,7 +273,17 @@ export function useCalendarEvents(
       }
       await refreshDeviceEvents();
     },
-    [adapter, refreshDeviceEvents],
+    [adapter, publicationService, refreshDeviceEvents],
+  );
+
+  const retryPublication = useCallback(
+    async (event: BearingEvent): Promise<void> => {
+      const userId = getFirebaseAuth().currentUser?.uid;
+      if (!userId) throw new Error('User is not authenticated.');
+      await publicationService.retryPublication(userId, event);
+      await refreshDeviceEvents();
+    },
+    [publicationService, refreshDeviceEvents],
   );
 
   return {
@@ -242,9 +291,11 @@ export function useCalendarEvents(
     eventsForDate,
     uiState,
     deviceError,
+    publicationCalendarTitle,
     refresh: refreshDeviceEvents,
     createEvent,
     updateEvent,
     deleteEvent,
+    retryPublication,
   };
 }

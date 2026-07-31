@@ -7,7 +7,7 @@ import { useGoals } from '../features/goals/useGoals';
 import { useGoalStepEvents } from '../features/goals/useGoalStepEvents';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { UserProfileRecord } from '../features/profile/profileTypes';
-import { createEvent } from '../services/firebase/firebaseEvents';
+import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 
 jest.mock('../features/goals/useGoals', () => ({
   useGoals: jest.fn(),
@@ -19,6 +19,10 @@ jest.mock('../features/goals/useGoalStepEvents', () => ({
 
 jest.mock('../features/profile/useUserProfile', () => ({
   useUserProfile: jest.fn(),
+}));
+
+jest.mock('../features/calendar/useCalendarPublication', () => ({
+  useCalendarPublication: jest.fn(),
 }));
 
 jest.mock('../services/firebase/firebaseEvents', () => ({
@@ -140,6 +144,10 @@ describe('GoalsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUserProfile();
+    (useCalendarPublication as jest.MockedFunction<typeof useCalendarPublication>).mockReturnValue({
+      publicationCalendarTitle: null,
+      createEvent: jest.fn(async () => 'event-new'),
+    });
   });
 
   it('renders the empty state', () => {
@@ -553,6 +561,11 @@ describe('GoalsScreen', () => {
     const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
       typeof useGoalStepEvents
     >;
+    const createEvent = jest.fn(async () => 'event-new');
+    (useCalendarPublication as jest.MockedFunction<typeof useCalendarPublication>).mockReturnValue({
+      publicationCalendarTitle: 'Work',
+      createEvent,
+    });
 
     mockedUseGoals.mockReturnValue({
       goals: [makeGoal()],
@@ -585,6 +598,14 @@ describe('GoalsScreen', () => {
           goalId: 'goal-1',
           stepId: 'step-1',
           status: 'scheduled',
+          publication: {
+            status: 'unpublished',
+            markerId: null,
+            commonHash: null,
+            lastError: null,
+            retryable: false,
+            deletionIntent: false,
+          },
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -608,12 +629,12 @@ describe('GoalsScreen', () => {
 
     await waitFor(() => {
       expect(createEvent).toHaveBeenCalledWith(
-        'test-user',
         expect.objectContaining({
           title: 'Buy running shoes',
           goalId: 'goal-1',
           stepId: 'step-1',
         }),
+        { publishToDevice: false },
       );
     });
   });

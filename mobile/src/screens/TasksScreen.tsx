@@ -10,12 +10,11 @@ import { AppCard } from '../components/ui/AppCard';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { colors, layout, radii, spacing, typography } from '../design/tokens';
-import { CreateEventInput } from '../features/calendar/calendarTypes';
+import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
+import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { useTasks } from '../features/tasks/useTasks';
 import { CreateTaskInput, TaskRecord, UpdateTaskInput } from '../features/tasks/taskTypes';
 import { AppTabParamList, CalendarFocusLaunch } from '../navigation/navigationTypes';
-import { getFirebaseAuth } from '../services/firebase/firebaseAuth';
-import { createEvent as createFirebaseEvent } from '../services/firebase/firebaseEvents';
 
 function formatDateTime(date: Date): string {
   return date.toLocaleString(undefined, {
@@ -44,6 +43,7 @@ function completionLabel(task: TaskRecord): string {
 
 export function TasksScreen() {
   const navigation = useNavigation<NavigationProp<AppTabParamList>>();
+  const { createEvent, publicationCalendarTitle } = useCalendarPublication();
   const { tasks, uiState, createTask, updateTask, completeTask, deleteTask } = useTasks();
   const [addTaskVisible, setAddTaskVisible] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
@@ -90,17 +90,15 @@ export function TasksScreen() {
     setSelectedTaskId(null);
   }
 
-  async function handleScheduleTaskEvent(input: CreateEventInput): Promise<void> {
+  async function handleScheduleTaskEvent(
+    input: CreateEventInput,
+    options: CreateEventOptions,
+  ): Promise<void> {
     if (!scheduleTask) {
       throw new Error('Task not found.');
     }
 
-    const userId = getFirebaseAuth().currentUser?.uid;
-    if (!userId) {
-      throw new Error('User is not authenticated.');
-    }
-
-    const eventId = await createFirebaseEvent(userId, input);
+    const eventId = await createEvent(input, options);
     await completeTask(scheduleTask.id, {
       completionSource: 'scheduled',
       completedEventId: eventId,
@@ -110,27 +108,25 @@ export function TasksScreen() {
     setSelectedTaskId(null);
   }
 
-  async function handleStartNow(minutes: number): Promise<void> {
+  async function handleStartNow(minutes: number, options: CreateEventOptions): Promise<void> {
     if (!startNowTask) {
       throw new Error('Task not found.');
-    }
-
-    const userId = getFirebaseAuth().currentUser?.uid;
-    if (!userId) {
-      throw new Error('User is not authenticated.');
     }
 
     const startAt = new Date();
     const endAt = new Date(startAt.getTime() + minutes * 60_000);
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    const eventId = await createFirebaseEvent(userId, {
-      title: startNowTask.title,
-      description: startNowTask.description,
-      startAt,
-      endAt,
-      timezone,
-    });
+    const eventId = await createEvent(
+      {
+        title: startNowTask.title,
+        description: startNowTask.description,
+        startAt,
+        endAt,
+        timezone,
+      },
+      options,
+    );
 
     await completeTask(startNowTask.id, {
       completionSource: 'start_now',
@@ -273,6 +269,7 @@ export function TasksScreen() {
               }
             : undefined
         }
+        publicationCalendarTitle={publicationCalendarTitle}
         onClose={() => setScheduleTaskId(null)}
         onSave={handleScheduleTaskEvent}
       />
@@ -280,6 +277,7 @@ export function TasksScreen() {
       <StartNowModal
         visible={startNowTask !== null}
         task={startNowTask}
+        publicationCalendarTitle={publicationCalendarTitle}
         onClose={() => setStartNowTaskId(null)}
         onConfirm={handleStartNow}
       />

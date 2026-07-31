@@ -3,7 +3,11 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppModal } from '../ui/AppModal';
 import { colors, radii, spacing, typography } from '../../design/tokens';
-import { CalendarDisplayEvent, CreateEventInput } from '../../features/calendar/calendarTypes';
+import {
+  BearingEvent,
+  CalendarDisplayEvent,
+  CreateEventInput,
+} from '../../features/calendar/calendarTypes';
 import { EventForm } from './EventForm';
 
 type EventDetailModalProps = {
@@ -11,6 +15,7 @@ type EventDetailModalProps = {
   onClose: () => void;
   onUpdate: (event: CalendarDisplayEvent, input: CreateEventInput) => Promise<void>;
   onDelete: (event: CalendarDisplayEvent) => Promise<void>;
+  onRetryPublication?: (event: BearingEvent) => Promise<void>;
 };
 
 const MONTH_NAMES_SHORT = [
@@ -53,16 +58,25 @@ function statusLabel(status: CalendarDisplayEvent['status']): string {
   return 'Scheduled';
 }
 
-export function EventDetailModal({ event, onClose, onUpdate, onDelete }: EventDetailModalProps) {
+export function EventDetailModal({
+  event,
+  onClose,
+  onUpdate,
+  onDelete,
+  onRetryPublication,
+}: EventDetailModalProps) {
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [retryingPublication, setRetryingPublication] = useState(false);
+  const [publicationError, setPublicationError] = useState<string | null>(null);
 
   useEffect(() => {
     setEditing(false);
     setConfirmingDelete(false);
     setDeleteError(null);
+    setPublicationError(null);
   }, [event]);
 
   function handleClose(): void {
@@ -90,6 +104,19 @@ export function EventDetailModal({ event, onClose, onUpdate, onDelete }: EventDe
     if (!event) return;
     await onUpdate(event, input);
     setEditing(false);
+  }
+
+  async function handleRetryPublication(): Promise<void> {
+    if (!event || event.ownership !== 'bearing' || !onRetryPublication) return;
+    setRetryingPublication(true);
+    setPublicationError(null);
+    try {
+      await onRetryPublication(event);
+    } catch {
+      setPublicationError('Device publication failed again. Your Bearing event is unchanged.');
+    } finally {
+      setRetryingPublication(false);
+    }
   }
 
   const mutable =
@@ -121,6 +148,44 @@ export function EventDetailModal({ event, onClose, onUpdate, onDelete }: EventDe
                 : `${event.calendarTitle} · ${event.sourceLabel}`}
             </Text>
           </View>
+
+          {event.ownership === 'bearing' ? (
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Device copy</Text>
+              <Text style={styles.metaValue}>
+                {event.publication.status === 'published'
+                  ? 'Linked'
+                  : event.publication.status === 'publishing'
+                    ? 'Publishing'
+                    : event.publication.status === 'failed'
+                      ? 'Needs attention'
+                      : 'Not linked'}
+              </Text>
+            </View>
+          ) : null}
+
+          {event.ownership === 'bearing' &&
+          event.publication.retryable &&
+          !event.publication.deletionIntent &&
+          onRetryPublication ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Retry device publication"
+              disabled={retryingPublication}
+              onPress={handleRetryPublication}
+              style={({ pressed }) => [
+                styles.retryButton,
+                pressed && !retryingPublication ? styles.actionButtonPressed : null,
+                retryingPublication ? styles.retryButtonDisabled : null,
+              ]}
+            >
+              <Text style={styles.retryButtonText}>
+                {retryingPublication ? 'Retrying...' : 'Retry Device Copy'}
+              </Text>
+            </Pressable>
+          ) : null}
+
+          {publicationError ? <Text style={styles.errorText}>{publicationError}</Text> : null}
 
           <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>Date</Text>
@@ -248,6 +313,19 @@ const styles = StyleSheet.create({
   readOnlyText: {
     ...typography.helper,
     color: colors.textSecondary,
+  },
+  retryButton: {
+    borderRadius: radii.sm,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.surfaceBrand,
+    alignItems: 'center',
+  },
+  retryButtonDisabled: {
+    opacity: 0.5,
+  },
+  retryButtonText: {
+    ...typography.button,
+    color: colors.brand,
   },
   actionRow: {
     flexDirection: 'row',

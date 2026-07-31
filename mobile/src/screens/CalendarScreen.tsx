@@ -15,7 +15,9 @@ import {
   CalendarEvent,
   CalendarUiState,
   CreateEventInput,
+  CreateEventOptions,
   ViewMode,
+  createUnpublishedMetadata,
 } from '../features/calendar/calendarTypes';
 import { useCalendarEvents } from '../features/calendar/useCalendarEvents';
 import { CreateNoteInput as CreateNotePayload } from '../features/notes/noteTypes';
@@ -100,8 +102,10 @@ export function CalendarScreen({
     createEvent,
     updateEvent,
     deleteEvent,
+    retryPublication,
     refresh: refreshEvents,
     deviceError,
+    publicationCalendarTitle,
   } = useCalendarEvents(selectedDate);
   const { createNote } = useNotes();
 
@@ -183,6 +187,7 @@ export function CalendarScreen({
       goalId: null,
       stepId: null,
       status: 'scheduled',
+      publication: createUnpublishedMetadata(),
       createdAt: launchStartAt,
       updatedAt: launchStartAt,
     });
@@ -228,9 +233,12 @@ export function CalendarScreen({
     flatListRef.current?.scrollToIndex({ index: newIndex, animated: true });
   }
 
-  async function handleAddEvent(input: CreateEventInput): Promise<void> {
+  async function handleAddEvent(
+    input: CreateEventInput,
+    options: CreateEventOptions,
+  ): Promise<void> {
     try {
-      await createEvent(input);
+      await createEvent(input, options);
       setAddEventVisible(false);
     } catch (error) {
       console.error('Failed to add event:', error);
@@ -407,6 +415,7 @@ export function CalendarScreen({
       <AddEventModal
         visible={addEventVisible}
         initialDate={selectedDate}
+        publicationCalendarTitle={publicationCalendarTitle}
         onClose={() => setAddEventVisible(false)}
         onSave={handleAddEvent}
       />
@@ -415,6 +424,7 @@ export function CalendarScreen({
         onClose={() => setActiveEvent(null)}
         onUpdate={handleUpdateEvent}
         onDelete={handleDeleteEvent}
+        onRetryPublication={retryPublication}
       />
       <FocusModeOverlay
         visible={focusModeVisible}

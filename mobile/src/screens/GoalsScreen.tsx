@@ -21,9 +21,8 @@ import { PremiumFeature, hasActivePremiumStatus } from '../features/premium/prem
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { useGoals } from '../features/goals/useGoals';
 import { useGoalStepEvents } from '../features/goals/useGoalStepEvents';
-import { createEvent as createFirebaseEvent } from '../services/firebase/firebaseEvents';
-import { getFirebaseAuth } from '../services/firebase/firebaseAuth';
-import { CreateEventInput } from '../features/calendar/calendarTypes';
+import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
+import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString(undefined, {
@@ -34,6 +33,7 @@ function formatDate(date: Date): string {
 }
 
 export function GoalsScreen() {
+  const { createEvent, publicationCalendarTitle } = useCalendarPublication();
   const { profile, uiState: profileUiState, isAnonymous } = useUserProfile();
   const {
     goals,
@@ -128,13 +128,11 @@ export function GoalsScreen() {
     });
   }
 
-  async function handleScheduleStepEvent(input: CreateEventInput): Promise<void> {
-    const userId = getFirebaseAuth().currentUser?.uid;
-    if (!userId) {
-      throw new Error('User is not authenticated.');
-    }
-
-    await createFirebaseEvent(userId, input);
+  async function handleScheduleStepEvent(
+    input: CreateEventInput,
+    options: CreateEventOptions,
+  ): Promise<void> {
+    await createEvent(input, options);
     setScheduleStepId(null);
   }
 
@@ -296,6 +294,7 @@ export function GoalsScreen() {
               }
             : undefined
         }
+        publicationCalendarTitle={publicationCalendarTitle}
         onClose={() => setScheduleStepId(null)}
         onSave={handleScheduleStepEvent}
       />

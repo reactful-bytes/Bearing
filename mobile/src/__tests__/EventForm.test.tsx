@@ -50,6 +50,32 @@ describe('EventForm', () => {
         availability: 'free',
         url: 'https://example.com/release',
       }),
+      { publishToDevice: false },
     );
+  });
+
+  it('offers a default-off linked copy only when a publication calendar is available', async () => {
+    const onSave = jest.fn(async () => undefined);
+    render(
+      <EventForm
+        active
+        initialDate={new Date('2026-07-31T09:00:00.000Z')}
+        publicationCalendarTitle="Work"
+        onSave={onSave}
+      />,
+    );
+
+    const publicationSwitch = screen.getByLabelText('Add to Work');
+    expect(publicationSwitch.props.value).toBe(false);
+    fireEvent(publicationSwitch, 'valueChange', true);
+    fireEvent.changeText(screen.getByLabelText('Event title'), 'Publish me');
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Save event'));
+    });
+
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ title: 'Publish me' }), {
+      publishToDevice: true,
+    });
   });
 });

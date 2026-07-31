@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { colors, radii, spacing, typography } from '../../design/tokens';
-import { CreateEventInput, EventAvailability } from '../../features/calendar/calendarTypes';
+import {
+  CreateEventInput,
+  CreateEventOptions,
+  EventAvailability,
+} from '../../features/calendar/calendarTypes';
 import {
   CalendarEventFormValues,
   EventFormRecurrenceFrequency,
@@ -14,8 +18,9 @@ type EventFormProps = {
   active: boolean;
   initialDate: Date;
   initialValues?: Partial<CreateEventInput>;
+  publicationCalendarTitle?: string | null;
   saveLabel?: string;
-  onSave: (input: CreateEventInput) => Promise<void>;
+  onSave: (input: CreateEventInput, options: CreateEventOptions) => Promise<void>;
 };
 
 const RECURRENCE_OPTIONS: { label: string; value: EventFormRecurrenceFrequency }[] = [
@@ -44,6 +49,7 @@ export function EventForm({
   active,
   initialDate,
   initialValues,
+  publicationCalendarTitle,
   saveLabel = 'Save Event',
   onSave,
 }: EventFormProps) {
@@ -53,6 +59,7 @@ export function EventForm({
   const [advancedVisible, setAdvancedVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [publishToDevice, setPublishToDevice] = useState(false);
 
   useEffect(() => {
     if (!active) return;
@@ -60,6 +67,7 @@ export function EventForm({
     setAdvancedVisible(false);
     setError(null);
     setSaving(false);
+    setPublishToDevice(false);
   }, [active, initialDate, initialValues]);
 
   function updateValue<Key extends keyof CalendarEventFormValues>(
@@ -92,7 +100,7 @@ export function EventForm({
 
     setSaving(true);
     try {
-      await onSave(result.input);
+      await onSave(result.input, { publishToDevice });
     } catch {
       setError('Failed to save event. Please try again.');
     } finally {
@@ -197,6 +205,22 @@ export function EventForm({
               accessibilityLabel="End time"
             />
           </View>
+        </View>
+      ) : null}
+
+      {publicationCalendarTitle ? (
+        <View style={styles.switchRow}>
+          <View style={styles.switchLabelGroup}>
+            <Text style={styles.fieldLabel}>Add to {publicationCalendarTitle}</Text>
+            <Text style={styles.helperText}>Creates a linked copy in your device calendar.</Text>
+          </View>
+          <Switch
+            value={publishToDevice}
+            onValueChange={setPublishToDevice}
+            trackColor={{ false: colors.border, true: colors.surfaceBrand }}
+            thumbColor={publishToDevice ? colors.brand : colors.textSecondary}
+            accessibilityLabel={`Add to ${publicationCalendarTitle}`}
+          />
         </View>
       ) : null}
 
@@ -415,6 +439,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  switchLabelGroup: {
+    flex: 1,
+    gap: spacing.xs,
+    paddingRight: spacing.md,
+  },
+  helperText: {
+    ...typography.helper,
+    color: colors.textSecondary,
   },
   dateRow: {
     flexDirection: 'row',
