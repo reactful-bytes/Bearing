@@ -103,14 +103,14 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M9 - Quality, Security, and Compliance
 
-| Task ID | Status      | Description                                              | Exit Criteria                                                                             |
-| ------- | ----------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| M9.1    | not-started | Expand automated tests for critical user journeys        | Core flows covered by stable tests                                                        |
-| M9.2    | completed   | Perform security hardening and secret management audit   | No secrets exposed and auth flows validated                                               |
-| M9.3    | not-started | Add analytics dashboards and operational alerts          | Product and reliability telemetry available                                               |
-| M9.4    | not-started | Finalize legal copy (privacy policy, terms, disclosures) | Store-compliant legal docs available                                                      |
-| M9.5    | completed   | Add general export and account deletion                  | JSON/ICS export and reauthenticated cleanup pass automated validation; staging/native acceptance is an owner handoff |
-| M9.6    | not-started | Establish backup, migration, and recovery readiness      | Backup retention and staging restore drill meet approved RPO/RTO                          |
+| Task ID | Status         | Description                                              | Exit Criteria                                                                                                        |
+| ------- | -------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| M9.1    | not-started    | Expand automated tests for critical user journeys        | Core flows covered by stable tests                                                                                   |
+| M9.2    | completed      | Perform security hardening and secret management audit   | No secrets exposed and auth flows validated                                                                          |
+| M9.3    | not-started    | Add analytics dashboards and operational alerts          | Product and reliability telemetry available                                                                          |
+| M9.4    | not-started    | Finalize legal copy (privacy policy, terms, disclosures) | Store-compliant legal docs available                                                                                 |
+| M9.5    | completed      | Add general export and account deletion                  | JSON/ICS export and reauthenticated cleanup pass automated validation; staging/native acceptance is an owner handoff |
+| M9.6    | manual-handoff | Establish backup, migration, and recovery readiness      | Workflow/runbook are ready; owner configures cloud retention and records the staging restore drill                   |
 
 ### M10 - Final UI Fixes and Operability Fixes
 

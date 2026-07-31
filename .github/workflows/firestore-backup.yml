@@ -1,0 +1,39 @@
+name: Firestore Backup
+
+on:
+  schedule:
+    - cron: "30 5 * * *"
+  workflow_dispatch:
+    inputs:
+      backup_prefix:
+        description: Optional backup path suffix
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  export:
+    if: ${{ vars.FIREBASE_PROJECT_ID != '' && vars.FIRESTORE_BACKUP_BUCKET != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_BACKUP_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v3
+
+      - name: Export Firestore
+        env:
+          BACKUP_BUCKET: ${{ vars.FIRESTORE_BACKUP_BUCKET }}
+          BACKUP_PREFIX: ${{ inputs.backup_prefix }}
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          suffix="${BACKUP_PREFIX:-$(date -u +%Y%m%dT%H%M%SZ)}"
+          gcloud firestore export "gs://${BACKUP_BUCKET}/bearing/${suffix}" \
+            --project="${FIREBASE_PROJECT_ID}" \
+            --database='(default)'

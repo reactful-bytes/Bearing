@@ -147,14 +147,14 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 ### M9 - Quality, Security, and Compliance
 
-| Task ID | Status      | Description                                              | Notes                                                                                                                    |
-| ------- | ----------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| M9.1    | not-started | Expand automated tests for critical user journeys        | Core flows covered by stable tests                                                                                       |
-| M9.2    | completed   | Perform security hardening and secret management audit   | No secrets exposed and auth flows validated                                                                              |
-| M9.3    | not-started | Add analytics dashboards and operational alerts          | Product and reliability telemetry available                                                                              |
-| M9.4    | not-started | Finalize legal copy (privacy policy, terms, disclosures) | Store-compliant legal docs available                                                                                     |
-| M9.5    | completed   | Add general export and account deletion                  | JSON/ICS export, password reauthentication, explicit confirmation, retryable backend cleanup, and optional linked-copy cleanup pass automated validation |
-| M9.6    | not-started | Establish backup, migration, and recovery readiness      | Firestore exports, schema ownership, rollback, and restore drill meet approved RPO/RTO                                   |
+| Task ID | Status         | Description                                              | Notes                                                                                                                                                    |
+| ------- | -------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M9.1    | not-started    | Expand automated tests for critical user journeys        | Core flows covered by stable tests                                                                                                                       |
+| M9.2    | completed      | Perform security hardening and secret management audit   | No secrets exposed and auth flows validated                                                                                                              |
+| M9.3    | not-started    | Add analytics dashboards and operational alerts          | Product and reliability telemetry available                                                                                                              |
+| M9.4    | not-started    | Finalize legal copy (privacy policy, terms, disclosures) | Store-compliant legal docs available                                                                                                                     |
+| M9.5    | completed      | Add general export and account deletion                  | JSON/ICS export, password reauthentication, explicit confirmation, retryable backend cleanup, and optional linked-copy cleanup pass automated validation |
+| M9.6    | manual-handoff | Establish backup, migration, and recovery readiness      | Daily/manual export workflow and RPO/RTO runbook are ready; owner configures WIF/bucket and records the first staging restore drill                      |
 
 ### M10 - Final UI Fixes and Operability Fixes
 
