@@ -117,14 +117,6 @@ export async function ensureUserProfile(user: User): Promise<void> {
     updates.locale = locale;
   }
 
-  if (!(data.premiumStatus as string | undefined)) {
-    updates.premiumStatus = 'free';
-  }
-
-  if (!(data.premiumSource as string | undefined)) {
-    updates.premiumSource = 'none';
-  }
-
   if (typeof data.tipsEnabled !== 'boolean') {
     updates.tipsEnabled = true;
   }

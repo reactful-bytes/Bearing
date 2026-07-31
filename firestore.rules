@@ -1,53 +1,72 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isCurrentUser(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function ownsExistingDocument() {
+      return isSignedIn() && request.auth.uid == resource.data.userId;
+    }
+
+    function ownsIncomingDocument() {
+      return isSignedIn() && request.auth.uid == request.resource.data.userId;
+    }
+
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, delete: if isCurrentUser(userId);
+      allow create: if isCurrentUser(userId)
+        && request.resource.data.premiumStatus == 'free'
+        && request.resource.data.premiumSource == 'none';
+      allow update: if isCurrentUser(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName',
+          'email',
+          'timezone',
+          'locale',
+          'tipsEnabled',
+          'reminderSoundId',
+          'alarmSoundId',
+          'updatedAt'
+        ]);
     }
 
     match /events/{eventId} {
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.userId;
-
-      allow read, update, delete: if request.auth != null
-        && request.auth.uid == resource.data.userId;
+      allow create: if ownsIncomingDocument();
+      allow read, delete: if ownsExistingDocument();
+      allow update: if ownsExistingDocument() && ownsIncomingDocument();
     }
 
     match /notes/{noteId} {
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.userId;
-
-      allow read, update, delete: if request.auth != null
-        && request.auth.uid == resource.data.userId;
+      allow create: if ownsIncomingDocument();
+      allow read, delete: if ownsExistingDocument();
+      allow update: if ownsExistingDocument() && ownsIncomingDocument();
     }
 
     match /goals/{goalId} {
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.userId;
-
-      allow read, update, delete: if request.auth != null
-        && request.auth.uid == resource.data.userId;
+      allow create: if ownsIncomingDocument();
+      allow read, delete: if ownsExistingDocument();
+      allow update: if ownsExistingDocument() && ownsIncomingDocument();
     }
 
     match /goalSteps/{stepId} {
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.userId;
-
-      allow read, update, delete: if request.auth != null
-        && request.auth.uid == resource.data.userId;
+      allow create: if ownsIncomingDocument();
+      allow read, delete: if ownsExistingDocument();
+      allow update: if ownsExistingDocument() && ownsIncomingDocument();
     }
 
     match /tasks/{taskId} {
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.userId;
-
-      allow read, update, delete: if request.auth != null
-        && request.auth.uid == resource.data.userId;
+      allow create: if ownsIncomingDocument();
+      allow read, delete: if ownsExistingDocument();
+      allow update: if ownsExistingDocument() && ownsIncomingDocument();
     }
 
     match /subscriptions/{subscriptionId} {
-      allow read: if request.auth != null
-        && request.auth.uid == resource.data.userId;
+      allow read: if ownsExistingDocument();
 
       allow write: if false;
     }
