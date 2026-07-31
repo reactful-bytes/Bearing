@@ -18,6 +18,7 @@ import { TipsWisdomModal } from '../components/profile/TipsWisdomModal';
 import { AppCard } from '../components/ui/AppCard';
 import { ListItem } from '../components/ui/ListItem';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
+import { SectionHeading } from '../components/ui/SectionHeading';
 import { colors, layout, radii, spacing, typography } from '../design/tokens';
 import {
   buildIcsFilename,
@@ -387,8 +388,23 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
 
         {profile ? (
           <>
-            <AppCard style={styles.cardSection}>
-              <Text style={styles.sectionTitle}>Account settings</Text>
+            <View style={styles.section}>
+              <SectionHeading title="Account" description="Your identity in Bearing." />
+              <View style={styles.identitySummary}>
+                <View style={styles.identityMark}>
+                  <Text style={styles.identityInitial}>
+                    {(displayName || email || '?').trim().charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <View style={styles.identityCopy}>
+                  <Text numberOfLines={1} style={styles.identityName}>
+                    {displayName || 'Unnamed account'}
+                  </Text>
+                  <Text numberOfLines={1} style={styles.identityEmail}>
+                    {email || 'Anonymous session'}
+                  </Text>
+                </View>
+              </View>
               <View style={styles.fieldGroup}>
                 <Text style={styles.label}>Display name</Text>
                 <TextInput
@@ -399,12 +415,100 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                   style={styles.input}
                 />
               </View>
+            </View>
 
-              <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>Email</Text>
-                <Text style={styles.metaValue}>{email || 'Anonymous session'}</Text>
-              </View>
+            <View style={styles.section}>
+              <SectionHeading title="Security" description="Protect access to this account." />
+              {isAnonymous ? (
+                <View style={styles.sectionBody}>
+                  <Text style={styles.sectionTitle}>Secure this anonymous session</Text>
+                  <Text style={styles.stateDescription}>
+                    Add email and password to keep the same app data while turning this session into
+                    a real account.
+                  </Text>
 
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.label}>Display name</Text>
+                    <TextInput
+                      accessibilityLabel="Secure account display name"
+                      value={linkDisplayName}
+                      onChangeText={setLinkDisplayName}
+                      placeholder="Your name"
+                      style={styles.input}
+                    />
+                  </View>
+
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.label}>Email</Text>
+                    <TextInput
+                      accessibilityLabel="Secure account email"
+                      value={linkEmail}
+                      onChangeText={setLinkEmail}
+                      placeholder="you@example.com"
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                      style={styles.input}
+                    />
+                  </View>
+
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.label}>Password</Text>
+                    <TextInput
+                      accessibilityLabel="Secure account password"
+                      value={linkPassword}
+                      onChangeText={setLinkPassword}
+                      secureTextEntry
+                      placeholder="At least 6 characters"
+                      style={styles.input}
+                    />
+                  </View>
+
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.label}>Confirm password</Text>
+                    <TextInput
+                      accessibilityLabel="Secure account confirm password"
+                      value={linkPasswordConfirm}
+                      onChangeText={setLinkPasswordConfirm}
+                      secureTextEntry
+                      placeholder="Re-enter password"
+                      style={styles.input}
+                    />
+                  </View>
+
+                  {linkError ? <Text style={styles.errorText}>{linkError}</Text> : null}
+
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Secure anonymous account"
+                    onPress={() => void handleLinkAnonymousAccount()}
+                    disabled={linkPending}
+                    style={({ pressed }) => [
+                      styles.primaryButton,
+                      pressed && !linkPending ? styles.buttonPressed : null,
+                      linkPending ? styles.buttonDisabled : null,
+                    ]}
+                  >
+                    <Text style={styles.primaryButtonText}>
+                      {linkPending ? 'Securing...' : 'Secure Account'}
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <ListItem
+                  onPress={() => void handleSendPasswordReset()}
+                  title="Reset password"
+                  description="Send a Firebase reset email to the current account address."
+                  trailingText={passwordResetPending ? 'Working...' : 'Send'}
+                  disabled={passwordResetPending}
+                />
+              )}
+            </View>
+
+            <View style={styles.section}>
+              <SectionHeading
+                title="Preferences"
+                description="Set your region, prompts, and alert sounds."
+              />
               <View style={styles.fieldGroup}>
                 <Text style={styles.label}>Timezone</Text>
                 <Pressable
@@ -451,6 +555,29 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                 </Pressable>
               </View>
 
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Tips and wisdom"
+                onPress={handleOpenTipModal}
+                style={({ pressed }) => [styles.tipsButton, pressed ? styles.buttonPressed : null]}
+              >
+                <Text style={styles.tipsButtonText}>Tips & Wisdom</Text>
+              </Pressable>
+
+              <ListItem
+                onPress={() => setSoundPicker('alarm')}
+                title="Timer sound"
+                description="Pick the sound used when timer-style alerts finish."
+                trailingText={getProfileSoundOption(profile.alarmSoundId).label}
+              />
+              <ListItem
+                onPress={() => setSoundPicker('reminder')}
+                title="Reminder sound"
+                description="Pick the sound used before scheduled events."
+                trailingText={getProfileSoundOption(profile.reminderSoundId).label}
+              />
+              {soundError ? <Text style={styles.errorText}>{soundError}</Text> : null}
+
               {accountError ? <Text style={styles.errorText}>{accountError}</Text> : null}
               {accountFeedback ? <Text style={styles.successText}>{accountFeedback}</Text> : null}
 
@@ -466,135 +593,15 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                 ]}
               >
                 <Text style={styles.primaryButtonText}>
-                  {accountPending ? 'Saving...' : 'Save Account Settings'}
+                  {accountPending ? 'Saving...' : 'Save Preferences'}
                 </Text>
               </Pressable>
-            </AppCard>
-
-            {isAnonymous ? (
-              <AppCard style={styles.cardSection}>
-                <Text style={styles.sectionTitle}>Secure this anonymous session</Text>
-                <Text style={styles.stateDescription}>
-                  Add email and password to keep the same app data while turning this session into a
-                  real account.
-                </Text>
-
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Display name</Text>
-                  <TextInput
-                    accessibilityLabel="Secure account display name"
-                    value={linkDisplayName}
-                    onChangeText={setLinkDisplayName}
-                    placeholder="Your name"
-                    style={styles.input}
-                  />
-                </View>
-
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Email</Text>
-                  <TextInput
-                    accessibilityLabel="Secure account email"
-                    value={linkEmail}
-                    onChangeText={setLinkEmail}
-                    placeholder="you@example.com"
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    style={styles.input}
-                  />
-                </View>
-
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Password</Text>
-                  <TextInput
-                    accessibilityLabel="Secure account password"
-                    value={linkPassword}
-                    onChangeText={setLinkPassword}
-                    secureTextEntry
-                    placeholder="At least 6 characters"
-                    style={styles.input}
-                  />
-                </View>
-
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Confirm password</Text>
-                  <TextInput
-                    accessibilityLabel="Secure account confirm password"
-                    value={linkPasswordConfirm}
-                    onChangeText={setLinkPasswordConfirm}
-                    secureTextEntry
-                    placeholder="Re-enter password"
-                    style={styles.input}
-                  />
-                </View>
-
-                {linkError ? <Text style={styles.errorText}>{linkError}</Text> : null}
-
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Secure anonymous account"
-                  onPress={() => void handleLinkAnonymousAccount()}
-                  disabled={linkPending}
-                  style={({ pressed }) => [
-                    styles.primaryButton,
-                    pressed && !linkPending ? styles.buttonPressed : null,
-                    linkPending ? styles.buttonDisabled : null,
-                  ]}
-                >
-                  <Text style={styles.primaryButtonText}>
-                    {linkPending ? 'Securing...' : 'Secure Account'}
-                  </Text>
-                </Pressable>
-              </AppCard>
-            ) : (
-              <View style={styles.actionBlock}>
-                <ListItem
-                  onPress={() => void handleSendPasswordReset()}
-                  title="Reset password"
-                  description="Send a Firebase reset email to the current account address."
-                  trailingText={passwordResetPending ? 'Working...' : 'Send'}
-                  disabled={passwordResetPending}
-                />
-              </View>
-            )}
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Tips and wisdom"
-              onPress={handleOpenTipModal}
-              style={({ pressed }) => [styles.tipsButton, pressed ? styles.buttonPressed : null]}
-            >
-              <Text style={styles.tipsButtonText}>Tips & Wisdom</Text>
-            </Pressable>
-
-            <View style={styles.actionBlock}>
-              <ListItem
-                onPress={() => setSoundPicker('alarm')}
-                title="Timer sound"
-                description="Pick the sound used when timer-style alerts finish."
-                trailingText={getProfileSoundOption(profile.alarmSoundId).label}
-              />
-              <ListItem
-                onPress={() => setSoundPicker('reminder')}
-                title="Reminder sound"
-                description="Pick the sound used before scheduled events."
-                trailingText={getProfileSoundOption(profile.reminderSoundId).label}
-              />
-              {soundError ? <Text style={styles.errorText}>{soundError}</Text> : null}
             </View>
 
-            <View style={styles.actionBlock}>
-              <ListItem
-                onPress={
-                  !hasPremiumAccess ? () => setPremiumPaywallFeature('premium_overview') : undefined
-                }
-                title="Premium access"
-                description={getPremiumAccessDescription()}
-                trailingText={
-                  hasPremiumAccess
-                    ? getPremiumEntitlementLabel(profile.premiumStatus)
-                    : 'View plans'
-                }
-                disabled={hasPremiumAccess}
+            <View style={styles.section}>
+              <SectionHeading
+                title="Calendars & Data"
+                description="Connect device calendars and take your events with you."
               />
               <ListItem
                 onPress={() => setDeviceCalendarsModalVisible(true)}
@@ -610,7 +617,25 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
               />
             </View>
 
-            <View style={styles.actionBlock}>
+            <View style={styles.section}>
+              <SectionHeading title="Plan" description="Review your current Bearing access." />
+              <ListItem
+                onPress={
+                  !hasPremiumAccess ? () => setPremiumPaywallFeature('premium_overview') : undefined
+                }
+                title="Premium access"
+                description={getPremiumAccessDescription()}
+                trailingText={
+                  hasPremiumAccess
+                    ? getPremiumEntitlementLabel(profile.premiumStatus)
+                    : 'View plans'
+                }
+                disabled={hasPremiumAccess}
+              />
+            </View>
+
+            <View style={styles.section}>
+              <SectionHeading title="Session" description="Manage this device session." />
               <ListItem
                 onPress={onPressSignOut}
                 title="Sign Out"
@@ -914,7 +939,13 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginTop: spacing.sm,
   },
-  cardSection: {
+  section: {
+    gap: spacing.md,
+    paddingBottom: spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  sectionBody: {
     gap: spacing.md,
   },
   sectionTitle: {
@@ -929,6 +960,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   input: {
+    minHeight: 44,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radii.md,
@@ -938,6 +970,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   selectionButton: {
+    minHeight: 44,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radii.md,
@@ -958,18 +991,43 @@ const styles = StyleSheet.create({
     ...typography.helper,
     color: colors.textSecondary,
   },
-  metaRow: {
+  identitySummary: {
+    minHeight: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  identityMark: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.brand,
+  },
+  identityInitial: {
+    ...typography.button,
+    color: colors.surface,
+  },
+  identityCopy: {
+    flex: 1,
+    minWidth: 0,
     gap: spacing.xs,
   },
-  metaLabel: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  metaValue: {
-    ...typography.body,
+  identityName: {
+    ...typography.button,
     color: colors.text,
   },
+  identityEmail: {
+    ...typography.helper,
+    color: colors.textSecondary,
+  },
   primaryButton: {
+    minHeight: 44,
     borderRadius: radii.md,
     backgroundColor: colors.brand,
     alignItems: 'center',
@@ -1054,6 +1112,8 @@ const styles = StyleSheet.create({
     color: colors.dangerText,
   },
   tipsButton: {
+    minHeight: 44,
+    justifyContent: 'center',
     alignSelf: 'flex-start',
     borderRadius: radii.md,
     backgroundColor: colors.surface,

@@ -6,6 +6,8 @@ import { AppModal } from '../components/ui/AppModal';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ListItem } from '../components/ui/ListItem';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
+import { SectionHeading } from '../components/ui/SectionHeading';
+import { SegmentedControl } from '../components/ui/SegmentedControl';
 
 describe('UI primitives', () => {
   it('renders a header with eyebrow and description', () => {
@@ -25,6 +27,38 @@ describe('UI primitives', () => {
 
     expect(screen.getByText('Route ID')).toBeTruthy();
     expect(screen.getByText('tabs/calendar')).toBeTruthy();
+  });
+
+  it('renders a reusable section heading', () => {
+    render(<SectionHeading title="Preferences" description="Choose how Bearing feels." />);
+
+    expect(screen.getByRole('header', { name: 'Preferences' })).toBeTruthy();
+    expect(screen.getByText('Choose how Bearing feels.')).toBeTruthy();
+  });
+
+  it('renders segmented labels and counts with selected accessibility state', () => {
+    const handleChange = jest.fn();
+
+    render(
+      <SegmentedControl
+        accessibilityLabel="Task filter"
+        options={[
+          { value: 'active', label: 'Active', count: 2 },
+          { value: 'completed', label: 'Completed', count: 1 },
+          { value: 'all', label: 'All', count: 3 },
+        ]}
+        value="active"
+        onChange={handleChange}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Active, 2', selected: true })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Completed, 1', selected: false })).toBeTruthy();
+    expect(screen.getByText('3')).toBeTruthy();
+
+    fireEvent.press(screen.getByRole('button', { name: 'All, 3' }));
+
+    expect(handleChange).toHaveBeenCalledWith('all');
   });
 
   it('fires presses from the list item primitive', () => {

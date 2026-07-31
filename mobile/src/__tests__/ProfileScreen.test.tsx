@@ -202,6 +202,15 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
 
+    expect(screen.getByRole('header', { name: 'Account' })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Security' })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Preferences' })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Calendars & Data' })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Plan' })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Session' })).toBeTruthy();
+    expect(screen.getByText('Preston')).toBeTruthy();
+    expect(screen.getAllByText('preston@example.com').length).toBeGreaterThan(0);
+
     fireEvent.changeText(screen.getByLabelText('Profile display name'), 'Preston Bateman');
     fireEvent.press(screen.getByLabelText('Open timezone picker'));
     fireEvent.press(screen.getByLabelText('Select Timezone America/Chicago'));
@@ -227,6 +236,16 @@ describe('ProfileScreen', () => {
     await waitFor(() => {
       expect(sendPasswordReset).toHaveBeenCalled();
     });
+  });
+
+  it('preserves the session sign-out action', () => {
+    const handleSignOut = jest.fn(() => undefined);
+    mockProfileHooks();
+
+    render(<ProfileScreen onPressSignOut={handleSignOut} isSignOutPending={false} />);
+    fireEvent.press(screen.getByLabelText('Sign Out'));
+
+    expect(handleSignOut).toHaveBeenCalledTimes(1);
   });
 
   it('opens the tips modal, refreshes the tip, and updates sound selections with preview', async () => {

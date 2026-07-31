@@ -60,7 +60,7 @@ describe('TasksScreen', () => {
     });
   });
 
-  it('shows active tasks by default and reveals completed tasks when toggled', () => {
+  it('filters active, completed, and all tasks with counts and selected state', () => {
     const mockedUseTasks = useTasks as jest.MockedFunction<typeof useTasks>;
 
     mockedUseTasks.mockReturnValue({
@@ -96,10 +96,52 @@ describe('TasksScreen', () => {
 
     expect(screen.getByText('Inbox zero')).toBeTruthy();
     expect(screen.queryByText('Archived planning note')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Active, 1', selected: true })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Completed, 1', selected: false })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'All, 2', selected: false })).toBeTruthy();
 
-    fireEvent.press(screen.getByLabelText('Show completed tasks'));
+    fireEvent.press(screen.getByRole('button', { name: 'Completed, 1' }));
 
     expect(screen.getByText('Archived planning note')).toBeTruthy();
+    expect(screen.queryByText('Inbox zero')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Completed, 1', selected: true })).toBeTruthy();
+
+    fireEvent.press(screen.getByRole('button', { name: 'All, 2' }));
+
+    expect(screen.getByText('Inbox zero')).toBeTruthy();
+    expect(screen.getByText('Archived planning note')).toBeTruthy();
+  });
+
+  it('shows filter-specific empty copy', () => {
+    const mockedUseTasks = useTasks as jest.MockedFunction<typeof useTasks>;
+
+    mockedUseTasks.mockReturnValue({
+      tasks: [makeTask()],
+      uiState: 'ready',
+      createTask: async () => undefined,
+      updateTask: async () => undefined,
+      completeTask: async () => undefined,
+      convertTaskToEvent: async () => ({
+        eventId: 'task-task-1',
+        eventInput: {
+          title: 'Inbox zero',
+          description: '',
+          startAt: new Date(),
+          endAt: new Date(),
+          timezone: 'UTC',
+        },
+        created: true,
+      }),
+      deleteTask: async () => undefined,
+    });
+
+    render(<TasksScreen />);
+    fireEvent.press(screen.getByRole('button', { name: 'Completed, 0' }));
+
+    expect(screen.getByText('No completed tasks.')).toBeTruthy();
+    expect(
+      screen.getByText('Tasks you finish, schedule, or start now will appear here.'),
+    ).toBeTruthy();
   });
 
   it('creates a task from the modal', async () => {

@@ -9,12 +9,15 @@ import { TaskDetailModal } from '../components/tasks/TaskDetailModal';
 import { AppCard } from '../components/ui/AppCard';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
+import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { colors, layout, radii, spacing, typography } from '../design/tokens';
 import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { useTasks } from '../features/tasks/useTasks';
 import { CreateTaskInput, TaskRecord, UpdateTaskInput } from '../features/tasks/taskTypes';
 import { AppTabParamList, CalendarFocusLaunch } from '../navigation/navigationTypes';
+
+type TaskFilter = 'active' | 'completed' | 'all';
 
 function formatDateTime(date: Date): string {
   return date.toLocaleString(undefined, {
@@ -47,7 +50,7 @@ export function TasksScreen() {
   const { tasks, uiState, createTask, updateTask, completeTask, convertTaskToEvent, deleteTask } =
     useTasks();
   const [addTaskVisible, setAddTaskVisible] = useState(false);
-  const [showCompleted, setShowCompleted] = useState(false);
+  const [taskFilter, setTaskFilter] = useState<TaskFilter>('active');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [scheduleTaskId, setScheduleTaskId] = useState<string | null>(null);
   const [startNowTaskId, setStartNowTaskId] = useState<string | null>(null);
@@ -64,10 +67,26 @@ export function TasksScreen() {
     () => tasks.find((task) => task.id === startNowTaskId) ?? null,
     [startNowTaskId, tasks],
   );
-  const visibleTasks = useMemo(
-    () => (showCompleted ? tasks : tasks.filter((task) => task.status === 'active')),
-    [showCompleted, tasks],
+  const activeTaskCount = useMemo(
+    () => tasks.filter((task) => task.status === 'active').length,
+    [tasks],
   );
+  const completedTaskCount = tasks.length - activeTaskCount;
+  const taskFilterOptions = useMemo(
+    () => [
+      { value: 'active' as const, label: 'Active', count: activeTaskCount },
+      { value: 'completed' as const, label: 'Completed', count: completedTaskCount },
+      { value: 'all' as const, label: 'All', count: tasks.length },
+    ],
+    [activeTaskCount, completedTaskCount, tasks.length],
+  );
+  const visibleTasks = useMemo(() => {
+    if (taskFilter === 'all') {
+      return tasks;
+    }
+
+    return tasks.filter((task) => task.status === taskFilter);
+  }, [taskFilter, tasks]);
 
   async function handleCreateTask(input: CreateTaskInput): Promise<void> {
     await createTask(input);
@@ -153,19 +172,12 @@ export function TasksScreen() {
           description="Keep unscheduled work in one list, then either schedule it or start a focused session immediately."
         />
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={showCompleted ? 'Hide completed tasks' : 'Show completed tasks'}
-          onPress={() => setShowCompleted((current) => !current)}
-          style={({ pressed }) => [
-            styles.filterButton,
-            pressed ? styles.filterButtonPressed : null,
-          ]}
-        >
-          <Text style={styles.filterButtonText}>
-            {showCompleted ? 'Hide Completed' : 'Show Completed'}
-          </Text>
-        </Pressable>
+        <SegmentedControl
+          accessibilityLabel="Task filter"
+          options={taskFilterOptions}
+          value={taskFilter}
+          onChange={setTaskFilter}
+        />
 
         {uiState === 'loading' ? (
           <AppCard>
@@ -183,25 +195,26 @@ export function TasksScreen() {
           </AppCard>
         ) : null}
 
-        {uiState === 'empty' ? (
+        {(uiState === 'empty' || uiState === 'ready') && visibleTasks.length === 0 ? (
           <AppCard>
-            <Text style={styles.stateTitle}>No tasks yet.</Text>
+            <Text style={styles.stateTitle}>
+              {taskFilter === 'active'
+                ? 'No active tasks.'
+                : taskFilter === 'completed'
+                  ? 'No completed tasks.'
+                  : 'No tasks yet.'}
+            </Text>
             <Text style={styles.stateDescription}>
-              Add a task to capture work before it belongs on the calendar.
+              {taskFilter === 'active'
+                ? 'Add a task to capture work before it belongs on the calendar.'
+                : taskFilter === 'completed'
+                  ? 'Tasks you finish, schedule, or start now will appear here.'
+                  : 'Add a task to start building your unscheduled work list.'}
             </Text>
           </AppCard>
         ) : null}
 
-        {uiState === 'ready' && visibleTasks.length === 0 ? (
-          <AppCard>
-            <Text style={styles.stateTitle}>No active tasks.</Text>
-            <Text style={styles.stateDescription}>
-              Turn on completed tasks to review items you already scheduled or finished.
-            </Text>
-          </AppCard>
-        ) : null}
-
-        {uiState === 'ready'
+        {uiState === 'ready' || uiState === 'empty'
           ? visibleTasks.map((task) => (
               <Pressable
                 key={task.id}
@@ -214,14 +227,14 @@ export function TasksScreen() {
                 ]}
               >
                 <AppCard style={styles.taskCard}>
-                  <View style={styles.taskMetaRow}>
+                  <View style={styles.taskHeaderRow}>
+                    <Text style={styles.taskTitle}>{task.title}</Text>
                     <Text style={styles.taskStatus}>{completionLabel(task)}</Text>
-                    <Text style={styles.taskDate}>{formatDateTime(task.updatedAt)}</Text>
                   </View>
-                  <Text style={styles.taskTitle}>{task.title}</Text>
-                  <Text style={styles.taskDescription}>
+                  <Text numberOfLines={2} style={styles.taskDescription}>
                     {task.description.trim() ? task.description : 'No description added.'}
                   </Text>
+                  <Text style={styles.taskDate}>Updated {formatDateTime(task.updatedAt)}</Text>
                 </AppCard>
               </Pressable>
             ))
@@ -293,20 +306,6 @@ const styles = StyleSheet.create({
     gap: spacing.xl,
     paddingBottom: 120,
   },
-  filterButton: {
-    alignSelf: 'flex-start',
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceMuted,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  filterButtonPressed: {
-    opacity: 0.88,
-  },
-  filterButtonText: {
-    ...typography.button,
-    color: colors.textPrimary,
-  },
   stateTitle: {
     ...typography.button,
     color: colors.text,
@@ -323,12 +322,12 @@ const styles = StyleSheet.create({
     opacity: 0.92,
   },
   taskCard: {
-    gap: spacing.md,
+    gap: spacing.sm,
   },
-  taskMetaRow: {
+  taskHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.md,
   },
   taskStatus: {
@@ -342,6 +341,7 @@ const styles = StyleSheet.create({
   taskTitle: {
     ...typography.button,
     color: colors.text,
+    flex: 1,
   },
   taskDescription: {
     ...typography.body,

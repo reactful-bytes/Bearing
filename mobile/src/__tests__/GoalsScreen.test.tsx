@@ -172,11 +172,68 @@ describe('GoalsScreen', () => {
 
     render(<GoalsScreen />);
 
-    expect(screen.getByText('No goals yet.')).toBeTruthy();
+    expect(screen.getByText('No active goals.')).toBeTruthy();
     expect(screen.getByText('New Goal')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Active, 0', selected: true })).toBeTruthy();
   });
 
-  it('renders goal cards with target date and next step', () => {
+  it('filters goals with counts, selected state, and filter-specific empty copy', () => {
+    const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
+
+    const activeGoal = makeGoal();
+    const completedGoal = makeGoal({
+      id: 'goal-2',
+      title: 'Read twelve books',
+      status: 'completed',
+      completedStepCount: 1,
+      progressText: '1 of 1 steps completed',
+    });
+
+    mockedUseGoals.mockReturnValue({
+      goals: [activeGoal, completedGoal],
+      uiState: 'ready',
+      createGoal: async () => undefined,
+      updateGoal: async () => undefined,
+      markGoalCompleted: async () => undefined,
+      createStep: async () => undefined,
+      deleteStep: async () => undefined,
+      updateStep: async () => undefined,
+      reorderSteps: async () => undefined,
+    });
+    mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
+
+    render(<GoalsScreen />);
+
+    expect(screen.getByText('Run a 10k')).toBeTruthy();
+    expect(screen.queryByText('Read twelve books')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Active, 1', selected: true })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Completed, 1', selected: false })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'All, 2', selected: false })).toBeTruthy();
+    expect(screen.getByText('Next: Buy running shoes')).toBeTruthy();
+    expect(screen.getByText('0 of 1 steps completed')).toBeTruthy();
+    expect(screen.getByLabelText('Goal progress Run a 10k').props.accessibilityValue).toEqual({
+      min: 0,
+      max: 100,
+      now: 0,
+      text: '0 of 1 steps completed',
+    });
+
+    fireEvent.press(screen.getByRole('button', { name: 'Completed, 1' }));
+
+    expect(screen.getByText('Read twelve books')).toBeTruthy();
+    expect(screen.queryByText('Run a 10k')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Completed, 1', selected: true })).toBeTruthy();
+
+    fireEvent.press(screen.getByRole('button', { name: 'All, 2' }));
+
+    expect(screen.getByText('Run a 10k')).toBeTruthy();
+    expect(screen.getByText('Read twelve books')).toBeTruthy();
+  });
+
+  it('shows completed-filter empty copy', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
     const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
       typeof useGoalStepEvents
@@ -196,10 +253,10 @@ describe('GoalsScreen', () => {
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
     render(<GoalsScreen />);
+    fireEvent.press(screen.getByRole('button', { name: 'Completed, 0' }));
 
-    expect(screen.getByText('Run a 10k')).toBeTruthy();
-    expect(screen.getByText('Next task: Buy running shoes')).toBeTruthy();
-    expect(screen.getByText('0 of 1 steps completed')).toBeTruthy();
+    expect(screen.getByText('No completed goals.')).toBeTruthy();
+    expect(screen.getByText('Goals you finish will stay available here.')).toBeTruthy();
   });
 
   it('walks the manual goal wizard and saves a goal', async () => {
