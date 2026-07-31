@@ -35,11 +35,23 @@ function makeUseNotesReturn(
     createNote: async () => undefined,
     updateNote: async () => undefined,
     deleteNote: async () => undefined,
+    retry: jest.fn(),
     ...overrides,
   };
 }
 
 describe('NotesScreen', () => {
+  it('retries after the notes subscription fails', () => {
+    const retry = jest.fn();
+    const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
+    mockedUseNotes.mockReturnValue(makeUseNotesReturn({ uiState: 'error', retry }));
+
+    render(<NotesScreen />);
+    fireEvent.press(screen.getByRole('button', { name: 'Try Again' }));
+
+    expect(retry).toHaveBeenCalledTimes(1);
+  });
+
   it('renders the empty state', () => {
     const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
     mockedUseNotes.mockReturnValue(makeUseNotesReturn());

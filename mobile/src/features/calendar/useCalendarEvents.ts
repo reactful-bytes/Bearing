@@ -82,6 +82,7 @@ export function useCalendarEvents(
   const [deviceEvents, setDeviceEvents] = useState<DeviceCalendarEvent[]>([]);
   const [linkCache, setLinkCache] = useState<Record<string, DeviceCalendarLink>>({});
   const [firestoreState, setFirestoreState] = useState<CalendarUiState>('loading');
+  const [firestoreRevision, setFirestoreRevision] = useState(0);
   const [deviceError, setDeviceError] = useState<Error | null>(null);
   const nativeRequestIdRef = useRef(0);
   const bearingEventsRef = useRef<BearingEvent[]>([]);
@@ -118,7 +119,7 @@ export function useCalendarEvents(
     );
 
     return unsubscribe;
-  }, [monthEnd, monthStart, userId]);
+  }, [firestoreRevision, monthEnd, monthStart, userId]);
 
   const refreshDeviceEvents = useCallback(async (): Promise<void> => {
     const requestId = ++nativeRequestIdRef.current;
@@ -226,6 +227,12 @@ export function useCalendarEvents(
     [events],
   );
 
+  const refresh = useCallback(async (): Promise<void> => {
+    setFirestoreState('loading');
+    setFirestoreRevision((current) => current + 1);
+    await refreshDeviceEvents();
+  }, [refreshDeviceEvents]);
+
   const createEvent = useCallback(
     async (
       input: CreateEventInput,
@@ -292,7 +299,7 @@ export function useCalendarEvents(
     uiState,
     deviceError,
     publicationCalendarTitle,
-    refresh: refreshDeviceEvents,
+    refresh,
     createEvent,
     updateEvent,
     deleteEvent,

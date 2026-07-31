@@ -5,6 +5,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppButton } from './src/components/ui/AppButton';
 import { FormField } from './src/components/ui/FormField';
+import { RecoveryCard } from './src/components/ui/RecoveryCard';
 import { AppTabs } from './src/navigation/AppTabs';
 import { useAuthBootstrap } from './src/features/auth/useAuthBootstrap';
 import {
@@ -16,7 +17,7 @@ import {
 import { colors, layout, spacing, typography } from './src/design/tokens';
 
 function AppContent() {
-  const { status, user, error } = useAuthBootstrap();
+  const { status, user, error, retry } = useAuthBootstrap();
   const [authActionError, setAuthActionError] = useState<string | null>(null);
   const [authActionMessage, setAuthActionMessage] = useState<string | null>(null);
   const [isAuthActionPending, setIsAuthActionPending] = useState(false);
@@ -261,10 +262,11 @@ function AppContent() {
           ) : null}
 
           {showError ? (
-            <View style={styles.block}>
-              <Text style={styles.errorTitle}>Startup error</Text>
-              <Text style={styles.errorText}>{error?.message ?? 'Unknown startup error.'}</Text>
-            </View>
+            <RecoveryCard
+              title="Startup error"
+              description={error?.message ?? 'Unknown startup error.'}
+              onRetry={retry}
+            />
           ) : null}
         </ScrollView>
       </SafeAreaView>

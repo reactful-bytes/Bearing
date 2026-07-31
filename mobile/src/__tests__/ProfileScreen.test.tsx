@@ -151,6 +151,7 @@ function mockProfileHooks(
   const updateProfile = jest.fn(async () => undefined);
   const sendPasswordReset = jest.fn(async () => undefined);
   const linkAnonymousAccount = jest.fn(async () => undefined);
+  const retryProfile = jest.fn();
   const requestPermission = jest.fn(async () => undefined);
   const refreshCalendars = jest.fn(async () => undefined);
   const toggleCalendar = jest.fn(async () => undefined);
@@ -178,6 +179,7 @@ function mockProfileHooks(
     updateProfile,
     sendPasswordReset,
     linkAnonymousAccount,
+    retry: retryProfile,
     ...overrides.userProfile,
   });
 
@@ -250,6 +252,23 @@ describe('ProfileScreen', () => {
     (
       deleteCurrentUserAccount as jest.MockedFunction<typeof deleteCurrentUserAccount>
     ).mockResolvedValue();
+  });
+
+  it('retries after the profile subscription fails', () => {
+    const retry = jest.fn();
+    mockProfileHooks({
+      userProfile: {
+        profile: null,
+        uiState: 'error',
+        error: new Error('Network unavailable.'),
+        retry,
+      },
+    });
+
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    fireEvent.press(screen.getByRole('button', { name: 'Try Again' }));
+
+    expect(retry).toHaveBeenCalledTimes(1);
   });
 
   it('saves account settings and sends a password reset email', async () => {

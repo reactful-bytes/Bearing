@@ -82,6 +82,7 @@ describe('App shell', () => {
       status: 'unauthenticated',
       user: null,
       error: null,
+      retry: jest.fn(),
     });
 
     render(<App />);
@@ -102,6 +103,7 @@ describe('App shell', () => {
       status: 'unauthenticated',
       user: null,
       error: null,
+      retry: jest.fn(),
     });
 
     render(<App />);
@@ -127,6 +129,7 @@ describe('App shell', () => {
       status: 'unauthenticated',
       user: null,
       error: null,
+      retry: jest.fn(),
     });
 
     render(<App />);
@@ -148,6 +151,7 @@ describe('App shell', () => {
       status: 'authenticated',
       user: { uid: 'user-123' } as never,
       error: null,
+      retry: jest.fn(),
     });
 
     render(<App />);
@@ -170,5 +174,21 @@ describe('App shell', () => {
 
     fireEvent.press(screen.getByText('Profile'));
     expect(screen.getByText('Sign Out')).toBeTruthy();
+  });
+
+  it('retries auth bootstrap after a startup error', () => {
+    const retry = jest.fn();
+    const mockedUseAuthBootstrap = useAuthBootstrap as jest.MockedFunction<typeof useAuthBootstrap>;
+    mockedUseAuthBootstrap.mockReturnValue({
+      status: 'error',
+      user: null,
+      error: new Error('Network unavailable.'),
+      retry,
+    });
+
+    render(<App />);
+    fireEvent.press(screen.getByRole('button', { name: 'Try Again' }));
+
+    expect(retry).toHaveBeenCalledTimes(1);
   });
 });

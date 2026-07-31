@@ -10,6 +10,7 @@ import { AppCard } from '../components/ui/AppCard';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
+import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { colors, layout, radii, spacing, typography } from '../design/tokens';
 import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
@@ -47,8 +48,16 @@ function completionLabel(task: TaskRecord): string {
 export function TasksScreen() {
   const navigation = useNavigation<NavigationProp<AppTabParamList>>();
   const { publicationCalendarTitle, publishEvent } = useCalendarPublication();
-  const { tasks, uiState, createTask, updateTask, completeTask, convertTaskToEvent, deleteTask } =
-    useTasks();
+  const {
+    tasks,
+    uiState,
+    createTask,
+    updateTask,
+    completeTask,
+    convertTaskToEvent,
+    deleteTask,
+    retry,
+  } = useTasks();
   const [addTaskVisible, setAddTaskVisible] = useState(false);
   const [taskFilter, setTaskFilter] = useState<TaskFilter>('active');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -187,12 +196,11 @@ export function TasksScreen() {
         ) : null}
 
         {uiState === 'error' ? (
-          <AppCard>
-            <Text style={styles.stateTitle}>Unable to load tasks.</Text>
-            <Text style={styles.stateDescription}>
-              Check your connection and try again in a moment.
-            </Text>
-          </AppCard>
+          <RecoveryCard
+            title="Unable to load tasks."
+            description="Check your connection, then retry."
+            onRetry={retry}
+          />
         ) : null}
 
         {(uiState === 'empty' || uiState === 'ready') && visibleTasks.length === 0 ? (

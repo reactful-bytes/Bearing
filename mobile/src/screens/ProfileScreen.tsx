@@ -12,6 +12,7 @@ import { AppCard } from '../components/ui/AppCard';
 import { ListItem } from '../components/ui/ListItem';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { SectionHeading } from '../components/ui/SectionHeading';
+import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { colors, layout, radii, spacing, typography } from '../design/tokens';
 import {
   buildIcsFilename,
@@ -68,6 +69,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
     updateProfile,
     sendPasswordReset,
     linkAnonymousAccount,
+    retry: retryProfile,
   } = useUserProfile();
   const { entitlement } = usePremiumEntitlement(authUser?.uid ?? null);
   const deviceCalendars = useDeviceCalendars(authUser?.uid ?? null);
@@ -474,12 +476,11 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
         ) : null}
 
         {uiState === 'error' ? (
-          <AppCard>
-            <Text style={styles.stateTitle}>Unable to load profile.</Text>
-            <Text style={styles.stateDescription}>
-              {error?.message ?? 'Try again in a moment.'}
-            </Text>
-          </AppCard>
+          <RecoveryCard
+            title="Unable to load profile."
+            description={error?.message ?? 'Check your connection, then retry.'}
+            onRetry={retryProfile}
+          />
         ) : null}
 
         {profile ? (

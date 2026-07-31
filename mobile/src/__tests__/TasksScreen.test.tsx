@@ -60,6 +60,36 @@ describe('TasksScreen', () => {
     });
   });
 
+  it('retries after the tasks subscription fails', () => {
+    const retry = jest.fn();
+    const mockedUseTasks = useTasks as jest.MockedFunction<typeof useTasks>;
+    mockedUseTasks.mockReturnValue({
+      tasks: [],
+      uiState: 'error',
+      createTask: async () => undefined,
+      updateTask: async () => undefined,
+      completeTask: async () => undefined,
+      convertTaskToEvent: async () => ({
+        eventId: 'task-task-1',
+        eventInput: {
+          title: 'Inbox zero',
+          description: '',
+          startAt: new Date(),
+          endAt: new Date(),
+          timezone: 'UTC',
+        },
+        created: true,
+      }),
+      deleteTask: async () => undefined,
+      retry,
+    });
+
+    render(<TasksScreen />);
+    fireEvent.press(screen.getByRole('button', { name: 'Try Again' }));
+
+    expect(retry).toHaveBeenCalledTimes(1);
+  });
+
   it('filters active, completed, and all tasks with counts and selected state', () => {
     const mockedUseTasks = useTasks as jest.MockedFunction<typeof useTasks>;
 
@@ -90,6 +120,7 @@ describe('TasksScreen', () => {
         created: true,
       }),
       deleteTask: async () => undefined,
+      retry: jest.fn(),
     });
 
     render(<TasksScreen />);
@@ -133,6 +164,7 @@ describe('TasksScreen', () => {
         created: true,
       }),
       deleteTask: async () => undefined,
+      retry: jest.fn(),
     });
 
     render(<TasksScreen />);
@@ -166,6 +198,7 @@ describe('TasksScreen', () => {
         created: true,
       }),
       deleteTask: async () => undefined,
+      retry: jest.fn(),
     });
 
     render(<TasksScreen />);
@@ -214,6 +247,7 @@ describe('TasksScreen', () => {
       completeTask: completeTaskMock,
       convertTaskToEvent,
       deleteTask: async () => undefined,
+      retry: jest.fn(),
     });
 
     render(<TasksScreen />);
@@ -273,6 +307,7 @@ describe('TasksScreen', () => {
       completeTask: completeTaskMock,
       convertTaskToEvent,
       deleteTask: async () => undefined,
+      retry: jest.fn(),
     });
 
     render(<TasksScreen />);

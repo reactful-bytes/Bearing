@@ -166,6 +166,34 @@ describe('useCalendarEvents', () => {
     expect(result.current.deviceError?.message).toBe('Permission revoked');
   });
 
+  it('re-subscribes to Firestore when refresh follows a listener error', async () => {
+    const unsubscribeFirst = jest.fn();
+    let reportError: ((error: Error) => void) | null = null;
+    const mockedSubscribe = subscribeToEventsByDateRange as jest.MockedFunction<
+      typeof subscribeToEventsByDateRange
+    >;
+    mockedSubscribe
+      .mockImplementationOnce((_userId, _start, _end, _onNext, onError) => {
+        reportError = onError;
+        return unsubscribeFirst;
+      })
+      .mockImplementationOnce((_userId, _start, _end, onNext) => {
+        onNext([]);
+        return jest.fn();
+      });
+    const adapter = makeAdapter(jest.fn(async () => []));
+    const { result } = renderHook(() => useCalendarEvents(new Date(2026, 6, 31), adapter));
+
+    act(() => reportError?.(new Error('Network unavailable.')));
+    expect(result.current.uiState).toBe('error');
+
+    await act(async () => result.current.refresh());
+    await waitFor(() => expect(mockedSubscribe).toHaveBeenCalledTimes(2));
+
+    expect(unsubscribeFirst).toHaveBeenCalledTimes(1);
+    expect(result.current.uiState).toBe('empty');
+  });
+
   it('ignores stale native results after the visible month changes', async () => {
     let resolveJuly: ((value: ReturnType<typeof nativeRecord>[]) => void) | undefined;
     const july = new Promise<ReturnType<typeof nativeRecord>[]>((resolve) => {

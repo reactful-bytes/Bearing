@@ -28,6 +28,7 @@ export type UseUserProfileReturn = {
     password: string;
     displayName: string;
   }) => Promise<void>;
+  retry: () => void;
 };
 
 export function useUserProfile(): UseUserProfileReturn {
@@ -35,6 +36,7 @@ export function useUserProfile(): UseUserProfileReturn {
   const [profile, setProfile] = useState<UserProfileRecord | null>(null);
   const [uiState, setUiState] = useState<UserProfileUiState>('loading');
   const [error, setError] = useState<Error | null>(null);
+  const [revision, setRevision] = useState(0);
 
   useEffect(() => {
     const auth = getFirebaseAuth();
@@ -103,7 +105,13 @@ export function useUserProfile(): UseUserProfileReturn {
       cancelled = true;
       unsubscribe();
     };
-  }, [authUser]);
+  }, [authUser, revision]);
+
+  const retry = useCallback(() => {
+    setUiState('loading');
+    setError(null);
+    setRevision((current) => current + 1);
+  }, []);
 
   const updateProfile = useCallback(
     async (fields: UpdateUserProfileInput): Promise<void> => {
@@ -160,5 +168,6 @@ export function useUserProfile(): UseUserProfileReturn {
     updateProfile,
     sendPasswordReset,
     linkAnonymousAccount,
+    retry,
   };
 }

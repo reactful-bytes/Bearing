@@ -51,6 +51,7 @@ export type UseGoalsReturn = {
   deleteStep: (stepId: string) => Promise<void>;
   updateStep: (stepId: string, fields: UpdateGoalStepInput) => Promise<void>;
   reorderSteps: (goalId: string, orderedStepIds: string[]) => Promise<void>;
+  retry: () => void;
 };
 
 export function useGoals(): UseGoalsReturn {
@@ -59,6 +60,7 @@ export function useGoals(): UseGoalsReturn {
   const [uiState, setUiState] = useState<GoalUiState>('loading');
   const [goalsLoaded, setGoalsLoaded] = useState(false);
   const [stepsLoaded, setStepsLoaded] = useState(false);
+  const [revision, setRevision] = useState(0);
 
   useEffect(() => {
     const userId = getFirebaseAuth().currentUser?.uid;
@@ -69,6 +71,8 @@ export function useGoals(): UseGoalsReturn {
     }
 
     setUiState('loading');
+    setGoalsLoaded(false);
+    setStepsLoaded(false);
 
     const unsubscribeGoals = subscribeToGoals(
       userId,
@@ -96,6 +100,11 @@ export function useGoals(): UseGoalsReturn {
       unsubscribeGoals();
       unsubscribeSteps();
     };
+  }, [revision]);
+
+  const retry = useCallback(() => {
+    setUiState('loading');
+    setRevision((current) => current + 1);
   }, []);
 
   const goalMap = useMemo(() => {
@@ -261,5 +270,6 @@ export function useGoals(): UseGoalsReturn {
     deleteStep,
     updateStep,
     reorderSteps,
+    retry,
   };
 }

@@ -31,11 +31,13 @@ export type UseTasksReturn = {
     completionSource: TaskConversionCompletionSource,
   ) => Promise<TaskConversionResult>;
   deleteTask: (taskId: string) => Promise<void>;
+  retry: () => void;
 };
 
 export function useTasks(): UseTasksReturn {
   const [tasks, setTasks] = useState<TaskRecord[]>([]);
   const [uiState, setUiState] = useState<TaskUiState>('loading');
+  const [revision, setRevision] = useState(0);
 
   useEffect(() => {
     const userId = getFirebaseAuth().currentUser?.uid;
@@ -59,6 +61,11 @@ export function useTasks(): UseTasksReturn {
     );
 
     return unsubscribe;
+  }, [revision]);
+
+  const retry = useCallback(() => {
+    setUiState('loading');
+    setRevision((current) => current + 1);
   }, []);
 
   const createTask = useCallback(async (input: CreateTaskInput): Promise<void> => {
@@ -121,5 +128,6 @@ export function useTasks(): UseTasksReturn {
     completeTask,
     convertTaskToEvent,
     deleteTask,
+    retry,
   };
 }

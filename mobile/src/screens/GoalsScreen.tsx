@@ -11,6 +11,7 @@ import { AppCard } from '../components/ui/AppCard';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
+import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { colors, layout, radii, spacing, typography } from '../design/tokens';
 import {
   CreateGoalInput,
@@ -63,6 +64,7 @@ export function GoalsScreen() {
     deleteStep,
     updateStep,
     reorderSteps,
+    retry,
   } = useGoals();
   const [createGoalVisible, setCreateGoalVisible] = useState(false);
   const [addStepVisible, setAddStepVisible] = useState(false);
@@ -216,12 +218,11 @@ export function GoalsScreen() {
         ) : null}
 
         {uiState === 'error' ? (
-          <AppCard>
-            <Text style={styles.stateTitle}>Unable to load goals.</Text>
-            <Text style={styles.stateDescription}>
-              Check your connection and try again in a moment.
-            </Text>
-          </AppCard>
+          <RecoveryCard
+            title="Unable to load goals."
+            description="Check your connection, then retry."
+            onRetry={retry}
+          />
         ) : null}
 
         {(uiState === 'empty' || uiState === 'ready') && visibleGoals.length === 0 ? (

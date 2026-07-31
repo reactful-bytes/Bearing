@@ -78,6 +78,7 @@ function mockUserProfile(overrides: Partial<ReturnType<typeof useUserProfile>> =
     updateProfile: jest.fn(async () => undefined),
     sendPasswordReset: jest.fn(async () => undefined),
     linkAnonymousAccount: jest.fn(async () => undefined),
+    retry: jest.fn(),
     ...overrides,
   });
 }
@@ -166,6 +167,32 @@ describe('GoalsScreen', () => {
     });
   });
 
+  it('retries after the goals subscriptions fail', () => {
+    const retry = jest.fn();
+    const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
+    mockedUseGoals.mockReturnValue({
+      goals: [],
+      uiState: 'error',
+      createGoal: async () => undefined,
+      updateGoal: async () => undefined,
+      markGoalCompleted: async () => undefined,
+      createStep: async () => undefined,
+      deleteStep: async () => undefined,
+      updateStep: async () => undefined,
+      reorderSteps: async () => undefined,
+      retry,
+    });
+    mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
+
+    render(<GoalsScreen />);
+    fireEvent.press(screen.getByRole('button', { name: 'Try Again' }));
+
+    expect(retry).toHaveBeenCalledTimes(1);
+  });
+
   it('renders the empty state', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
     const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
@@ -182,6 +209,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
@@ -217,6 +245,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
@@ -264,6 +293,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
@@ -294,6 +324,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
@@ -377,6 +408,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
@@ -424,6 +456,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
     mockedGenerateAiGoalPlanDraft.mockResolvedValue({
@@ -531,6 +564,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
@@ -573,6 +607,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
@@ -627,6 +662,7 @@ describe('GoalsScreen', () => {
       deleteStep: deleteStepMock,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
@@ -694,6 +730,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
@@ -730,6 +767,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
@@ -779,6 +817,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({
       events: [
@@ -858,6 +897,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: reorderStepsMock,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
@@ -891,6 +931,7 @@ describe('GoalsScreen', () => {
       deleteStep: deleteStepMock,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
@@ -926,6 +967,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'error' });
 
@@ -955,6 +997,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: updateStepMock,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 

@@ -105,7 +105,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 | Task ID | Status         | Description                                              | Exit Criteria                                                                                                        |
 | ------- | -------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| M9.1    | not-started    | Expand automated tests for critical user journeys        | Core flows covered by stable tests                                                                                   |
+| M9.1    | in-progress    | Expand automated tests for critical user journeys        | Critical app, privacy, AI, and recovery paths are stable; coverage thresholds and native E2E remain                  |
 | M9.2    | completed      | Perform security hardening and secret management audit   | No secrets exposed and auth flows validated                                                                          |
 | M9.3    | not-started    | Add analytics dashboards and operational alerts          | Product and reliability telemetry available                                                                          |
 | M9.4    | not-started    | Finalize legal copy (privacy policy, terms, disclosures) | Store-compliant legal docs available                                                                                 |
@@ -123,7 +123,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M10.0d  | completed      | Improve Tasks presentation and filtering           | Task cards, counts, and Active/Completed/All filtering are clear                 |
 | M10.0e  | completed      | Normalize forms, modals, sizing, and accessibility | Screens avoid clipping and expose consistent control semantics                   |
 | M10.1   | manual-handoff | Polish UI interactions and accessibility           | Automated accessibility checks pass; native assistive-tech review remains manual |
-| M10.2   | not-started    | Fix operability edge cases and error recovery      | Edge cases in critical flows handled gracefully                                  |
+| M10.2   | in-progress    | Fix operability edge cases and error recovery      | Core startup and Firestore failures now expose executable retry                  |
 | M10.3   | not-started    | Optimize app performance and startup time          | App launch and transitions meet performance targets                              |
 | M10.4   | manual-handoff | Run end-to-end user acceptance testing             | Owner completes native UAT signoff                                               |
 
@@ -178,6 +178,6 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ## Immediate Next Steps
 
-1. Establish backup, migration, and recovery readiness under M9.6.
-2. Complete resilience, performance, and release preparation under M10 and M12.
-3. Publish operational, privacy, rollback, and maintenance runbooks under M13.
+1. Complete M9.1 coverage/E2E and the remaining M10.2 operability matrix.
+2. Measure and optimize release performance under M10.3.
+3. Complete observability, legal, monetization, release, and operations repository handoffs under M8.4, M9.3-M9.4, and M11-M13.
