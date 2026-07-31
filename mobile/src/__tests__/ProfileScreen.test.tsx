@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { Platform } from 'react-native';
 
 import {
   UseDeviceCalendarsReturn,
@@ -9,6 +10,14 @@ import { ProfileScreen } from '../screens/ProfileScreen';
 import { useSoundPreview } from '../features/profile/useSoundPreview';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { UserProfileRecord } from '../features/profile/profileTypes';
+import {
+  downloadIcsFileOnWeb,
+  shareIcsExportFile,
+  writeIcsExportFile,
+} from '../features/calendar/icsFileInterop';
+import { serializeEventsToIcs } from '../features/calendar/icsInterop';
+import { CalendarEvent, createUnpublishedMetadata } from '../features/calendar/calendarTypes';
+import { listUserEvents } from '../services/firebase/firebaseEvents';
 
 jest.setTimeout(10000);
 
@@ -53,6 +62,33 @@ function makeProfile(overrides: Partial<UserProfileRecord> = {}): UserProfileRec
     alarmSoundId: 'summit-chime',
     createdAt: new Date(2026, 6, 22, 10, 0, 0),
     updatedAt: new Date(2026, 6, 22, 10, 0, 0),
+    ...overrides,
+  };
+}
+
+function makeCalendarEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
+  const startAt = new Date('2026-07-31T13:00:00.000Z');
+  return {
+    ownership: 'bearing',
+    id: 'event-1',
+    userId: 'user-1',
+    title: 'Planning',
+    description: '',
+    startAt,
+    endAt: new Date('2026-07-31T14:00:00.000Z'),
+    timezone: 'UTC',
+    allDay: false,
+    location: '',
+    recurrenceRule: null,
+    alarms: [],
+    availability: 'busy',
+    url: null,
+    goalId: null,
+    stepId: null,
+    status: 'scheduled',
+    publication: createUnpublishedMetadata(),
+    createdAt: startAt,
+    updatedAt: startAt,
     ...overrides,
   };
 }
@@ -299,5 +335,90 @@ describe('ProfileScreen', () => {
     expect(toggleCalendar).toHaveBeenCalledWith('work');
     expect(setDefaultCalendar).toHaveBeenCalledWith('work');
     expect(refreshCalendars).toHaveBeenCalled();
+  });
+
+  it('exports only canonical non-canceled Bearing events to a native ICS file', async () => {
+    const scheduledEvent = makeCalendarEvent();
+    const canceledEvent = makeCalendarEvent({ id: 'event-2', status: 'canceled' });
+    const mockedListUserEvents = listUserEvents as jest.MockedFunction<typeof listUserEvents>;
+    const mockedSerialize = serializeEventsToIcs as jest.MockedFunction<
+      typeof serializeEventsToIcs
+    >;
+    const mockedWrite = writeIcsExportFile as jest.MockedFunction<typeof writeIcsExportFile>;
+    const mockedShare = shareIcsExportFile as jest.MockedFunction<typeof shareIcsExportFile>;
+    mockedListUserEvents.mockResolvedValue([scheduledEvent, canceledEvent]);
+    mockProfileHooks({
+      userProfile: {
+        authUser: { uid: 'user-1', isAnonymous: false, email: 'preston@example.com' } as never,
+      },
+    });
+
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    fireEvent.press(screen.getByLabelText('Export calendar'));
+    expect(screen.getByText(/all-day, timezone, recurrence/)).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Export ics file'));
+    });
+
+    expect(mockedListUserEvents).toHaveBeenCalledWith('user-1');
+    expect(mockedSerialize).toHaveBeenCalledWith([scheduledEvent]);
+    expect(mockedWrite).toHaveBeenCalledWith(
+      'bearing-export-20260726.ics',
+      'BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n',
+    );
+    expect(mockedShare).not.toHaveBeenCalled();
+    expect(screen.getByText(/Saved bearing-export-20260726.ics/)).toBeTruthy();
+  });
+
+  it('writes then opens native sharing for an ICS export', async () => {
+    const event = makeCalendarEvent();
+    (listUserEvents as jest.MockedFunction<typeof listUserEvents>).mockResolvedValue([event]);
+    mockProfileHooks({
+      userProfile: {
+        authUser: { uid: 'user-1', isAnonymous: false, email: 'preston@example.com' } as never,
+      },
+    });
+
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    fireEvent.press(screen.getByLabelText('Export calendar'));
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Share ics file'));
+    });
+
+    expect(writeIcsExportFile).toHaveBeenCalled();
+    expect(shareIcsExportFile).toHaveBeenCalledWith('file:///bearing-export-20260726.ics');
+    expect(screen.getByText('Shared the .ics export.')).toBeTruthy();
+  });
+
+  it('downloads directly on development web without writing a native cache file', async () => {
+    const originalPlatform = Platform.OS;
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'web' });
+    (listUserEvents as jest.MockedFunction<typeof listUserEvents>).mockResolvedValue([
+      makeCalendarEvent(),
+    ]);
+    mockProfileHooks({
+      userProfile: {
+        authUser: { uid: 'user-1', isAnonymous: false, email: 'preston@example.com' } as never,
+      },
+    });
+
+    try {
+      render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+      fireEvent.press(screen.getByLabelText('Export calendar'));
+      await act(async () => {
+        fireEvent.press(screen.getByLabelText('Export ics file'));
+      });
+    } finally {
+      Object.defineProperty(Platform, 'OS', { configurable: true, value: originalPlatform });
+    }
+
+    expect(downloadIcsFileOnWeb).toHaveBeenCalledWith(
+      'bearing-export-20260726.ics',
+      'BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n',
+    );
+    expect(writeIcsExportFile).not.toHaveBeenCalled();
+    expect(shareIcsExportFile).not.toHaveBeenCalled();
+    expect(screen.getByText('Downloaded bearing-export-20260726.ics.')).toBeTruthy();
   });
 });

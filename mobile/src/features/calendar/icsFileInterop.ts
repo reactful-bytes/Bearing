@@ -63,8 +63,11 @@ export async function downloadIcsFileOnWeb(filename: string, content: string): P
   link.href = objectUrl;
   link.download = filename;
   globals.document.body?.appendChild(link);
-  link.click();
-  link.remove?.();
-  globals.document.body?.removeChild(link);
-  globals.URL.revokeObjectURL(objectUrl);
+  try {
+    link.click();
+  } finally {
+    if (link.remove) link.remove();
+    else globals.document.body?.removeChild(link);
+    globals.URL.revokeObjectURL(objectUrl);
+  }
 }

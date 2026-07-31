@@ -850,8 +850,8 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
 
       <AppModal visible={icsModalVisible} title="Calendar Export (.ics)" onClose={closeIcsModal}>
         <Text style={styles.stateDescription}>
-          Export Bearing-owned timed events to a portable .ics file. Expanded all-day, recurrence,
-          alarm, and timezone coverage remains scheduled for M6.12.
+          Export Bearing-owned events to a portable .ics file with all-day, timezone, recurrence,
+          location, alarm, and link details.
         </Text>
 
         <Pressable
