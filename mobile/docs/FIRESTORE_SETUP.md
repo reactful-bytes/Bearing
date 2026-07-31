@@ -30,62 +30,13 @@ Committed Firebase CLI config now lives at the workspace root in `firebase.json`
 
 1. In Firebase Console, go to **Build > Firestore Database**.
 2. Click the **Rules** tab.
-3. Replace the default rules with the following:
-
-```firestore
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Deny all access by default
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Users can manage their own profile
-    match /users/{userId} {
-      allow read, write: if request.auth.uid == userId;
-    }
-
-    // Users can read/write their own events
-    match /events/{eventId} {
-      allow read, write: if request.auth.uid == resource.data.userId;
-      allow create: if request.auth.uid == request.resource.data.userId;
-    }
-
-    // Users can manage their own goals
-    match /goals/{goalId} {
-      allow read, write: if request.auth.uid == resource.data.userId;
-      allow create: if request.auth.uid == request.resource.data.userId;
-    }
-
-    // Users can manage goal steps
-    match /goalSteps/{stepId} {
-      allow read, write: if request.auth.uid == resource.data.userId;
-      allow create: if request.auth.uid == request.resource.data.userId;
-    }
-
-    // Users can manage their own notes
-    match /notes/{noteId} {
-      allow read, write: if request.auth.uid == resource.data.userId;
-      allow create: if request.auth.uid == request.resource.data.userId;
-    }
-
-      // Users can manage their own tasks
-      match /tasks/{taskId} {
-         allow read, write: if request.auth.uid == resource.data.userId;
-         allow create: if request.auth.uid == request.resource.data.userId;
-      }
-
-    // Users can view their subscriptions
-    match /subscriptions/{subscriptionId} {
-      allow read: if request.auth.uid == resource.data.userId;
-      allow write: if false; // Subscriptions updated by server only
-    }
-  }
-}
-```
-
-4. Click **Publish** to deploy the rules.
+3. Confirm the displayed policy matches the authoritative `firestore.rules` file at the repository
+   root.
+4. Deploy from the repository root with `firebase deploy --only firestore:rules`, or paste that exact
+   committed file and click **Publish**.
+5. From `mobile/`, run `npm run test:rules` with Java 21 before deployment. The suite verifies
+   ownership isolation, immutable owner IDs, server-owned premium fields and subscriptions, default
+   denial, and atomic task conversion.
 
 ## 3) Create Composite Index for Calendar Events
 

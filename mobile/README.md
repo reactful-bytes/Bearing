@@ -48,6 +48,7 @@ the permission smoke test.
 - `npm run format:check`: verify Prettier formatting.
 - `npm run format`: apply Prettier formatting.
 - `npm run test -- --watch=false`: run Jest tests once.
+- `npm run test:rules`: run Firestore authorization tests in the local emulator (Java 21 required).
 - `npm run test:coverage`: run tests with coverage output.
 
 Required variables:
@@ -66,4 +67,5 @@ Environment strategy:
 - Staging: CI/EAS managed secrets
 - Production: CI/EAS managed secrets
 
-Do not commit `.env` files with real values.
+Do not commit `.env` files with real values. `EXPO_PUBLIC_*` values are embedded in the client and
+must never contain private keys, service-account credentials, billing secrets, or API secrets.

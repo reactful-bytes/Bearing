@@ -42,76 +42,30 @@ Recommended regions:
 
 ## 2. Publish Firestore Security Rules
 
-Use rules that scope reads and writes to the signed-in user's own documents. Replace the default rules with this baseline:
+The authoritative policy is the committed `firestore.rules` file at the repository root. Do not
+duplicate or edit a separate console-only copy. The policy:
 
-```firestore
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
+- requires authentication and matching `userId` ownership for events, notes, goals, goal steps, and
+  tasks;
+- requires both existing and incoming ownership on updates, preventing ownership transfer;
+- allows users to update only client-owned profile preference fields;
+- keeps premium entitlement fields and subscriptions server-owned; and
+- denies every unknown collection by default.
 
-    match /events/{eventId} {
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.userId;
+Deploy from the repository root:
 
-      allow read, update, delete: if request.auth != null
-        && request.auth.uid == resource.data.userId;
-    }
-
-    match /notes/{noteId} {
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.userId;
-
-      allow read, update, delete: if request.auth != null
-        && request.auth.uid == resource.data.userId;
-    }
-
-    match /goals/{goalId} {
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.userId;
-
-      allow read, update, delete: if request.auth != null
-        && request.auth.uid == resource.data.userId;
-    }
-
-    match /goalSteps/{stepId} {
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.userId;
-
-      allow read, update, delete: if request.auth != null
-        && request.auth.uid == resource.data.userId;
-    }
-
-    match /tasks/{taskId} {
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.userId;
-
-      allow read, update, delete: if request.auth != null
-        && request.auth.uid == resource.data.userId;
-    }
-
-    match /subscriptions/{subscriptionId} {
-      allow read: if request.auth != null
-        && request.auth.uid == resource.data.userId;
-
-      allow write: if false;
-    }
-
-    match /{document=**} {
-      allow read, write: if false;
-    }
-  }
-}
+```bash
+firebase deploy --only firestore:rules
 ```
 
-Why this baseline is enough now:
+Validate locally from `mobile/` before deployment:
 
-- M3.2 needs user-scoped event CRUD.
-- M3.3 will need user-scoped note creation and reads.
-- M7 needs user-scoped task CRUD and task completion writes.
-- Everything else remains explicitly denied unless a collection is known.
+```bash
+npm run test:rules
+```
+
+The emulator suite requires Java 21 and verifies owner CRUD, cross-user denial, immutable ownership,
+premium escalation denial, read-only subscriptions, default denial, and atomic task conversion.
 
 ## 3. Create Required Composite Indexes
 
