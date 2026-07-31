@@ -164,7 +164,12 @@ export function TaskDetailModal({
   ) : null;
 
   return (
-    <AppModal visible={visible} title="Task Details" onClose={handleClose} headerAccessory={headerAccessory}>
+    <AppModal
+      visible={visible}
+      title="Task Details"
+      onClose={handleClose}
+      headerAccessory={headerAccessory}
+    >
       {task ? (
         <ScrollView contentContainerStyle={styles.content}>
           <AppCard style={styles.summaryCard}>
@@ -233,7 +238,10 @@ export function TaskDetailModal({
                 accessibilityRole="button"
                 accessibilityLabel="Schedule task"
                 onPress={() => onSchedule(task)}
-                style={({ pressed }) => [styles.primaryButton, pressed ? styles.buttonPressed : null]}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  pressed ? styles.buttonPressed : null,
+                ]}
               >
                 <Text style={styles.primaryButtonText}>Schedule</Text>
               </Pressable>
@@ -242,7 +250,10 @@ export function TaskDetailModal({
                 accessibilityRole="button"
                 accessibilityLabel="Start task now"
                 onPress={() => onStartNow(task)}
-                style={({ pressed }) => [styles.secondaryButton, pressed ? styles.buttonPressed : null]}
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  pressed ? styles.buttonPressed : null,
+                ]}
               >
                 <Text style={styles.secondaryButtonText}>Start Now</Text>
               </Pressable>
@@ -257,7 +268,9 @@ export function TaskDetailModal({
                   pressed && !saving ? styles.buttonPressed : null,
                 ]}
               >
-                <Text style={styles.tertiaryButtonText}>{saving ? 'Working...' : 'Mark Complete'}</Text>
+                <Text style={styles.tertiaryButtonText}>
+                  {saving ? 'Working...' : 'Mark Complete'}
+                </Text>
               </Pressable>
             </View>
           ) : null}
@@ -279,7 +292,10 @@ export function TaskDetailModal({
                   accessibilityRole="button"
                   accessibilityLabel="Cancel task delete"
                   onPress={() => setConfirmingDelete(false)}
-                  style={({ pressed }) => [styles.secondaryButton, pressed ? styles.buttonPressed : null]}
+                  style={({ pressed }) => [
+                    styles.secondaryButton,
+                    pressed ? styles.buttonPressed : null,
+                  ]}
                 >
                   <Text style={styles.secondaryButtonText}>Cancel</Text>
                 </Pressable>
@@ -293,7 +309,9 @@ export function TaskDetailModal({
                     pressed && !saving ? styles.buttonPressed : null,
                   ]}
                 >
-                  <Text style={styles.confirmDeleteButtonText}>{saving ? 'Deleting...' : 'Yes, Delete'}</Text>
+                  <Text style={styles.confirmDeleteButtonText}>
+                    {saving ? 'Deleting...' : 'Yes, Delete'}
+                  </Text>
                 </Pressable>
               </View>
             </View>

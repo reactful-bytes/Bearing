@@ -33,7 +33,9 @@ export function FloatingActionButton({
       ]}
     >
       <Text style={styles.icon}>+</Text>
-      {label ? <Text style={[styles.label, labelColor ? { color: labelColor } : null]}>{label}</Text> : null}
+      {label ? (
+        <Text style={[styles.label, labelColor ? { color: labelColor } : null]}>{label}</Text>
+      ) : null}
     </Pressable>
   );
 }

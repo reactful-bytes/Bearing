@@ -27,7 +27,10 @@ const TAB_ICON_TEXT: Record<Exclude<keyof AppTabParamList, 'Calendar'>, string> 
 function TabIcon({ routeName, focused }: { routeName: keyof AppTabParamList; focused: boolean }) {
   if (routeName === 'Calendar') {
     return (
-      <View testID="calendar-tab-icon" style={[styles.logoCircle, focused ? styles.logoCircleFocused : null]}>
+      <View
+        testID="calendar-tab-icon"
+        style={[styles.logoCircle, focused ? styles.logoCircleFocused : null]}
+      >
         <Image source={require('../../assets/logoBlueBackground.png')} style={styles.logoImage} />
       </View>
     );
@@ -35,7 +38,9 @@ function TabIcon({ routeName, focused }: { routeName: keyof AppTabParamList; foc
 
   return (
     <View style={[styles.iconCircle, focused ? styles.iconCircleFocused : null]}>
-      <Text style={[styles.iconText, focused ? styles.iconTextFocused : null]}>{TAB_ICON_TEXT[routeName]}</Text>
+      <Text style={[styles.iconText, focused ? styles.iconTextFocused : null]}>
+        {TAB_ICON_TEXT[routeName]}
+      </Text>
     </View>
   );
 }
@@ -63,14 +68,25 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
           component={CalendarScreen}
           options={{
             tabBarLabel: () => null,
-            tabBarButton: (props) => (
-              <Pressable {...props} testID="calendar-tab-button" style={[props.style, styles.calendarTabButton]} />
+            tabBarButton: ({ children, onLongPress, onPress, accessibilityState, style }) => (
+              <Pressable
+                testID="calendar-tab-button"
+                accessibilityRole="button"
+                accessibilityState={accessibilityState}
+                onLongPress={onLongPress}
+                onPress={onPress}
+                style={[style, styles.calendarTabButton]}
+              >
+                {children}
+              </Pressable>
             ),
           }}
         />
         <Tab.Screen name="Notes" component={NotesScreen} />
         <Tab.Screen name="Profile">
-          {() => <ProfileScreen onPressSignOut={onPressSignOut} isSignOutPending={isSignOutPending} />}
+          {() => (
+            <ProfileScreen onPressSignOut={onPressSignOut} isSignOutPending={isSignOutPending} />
+          )}
         </Tab.Screen>
       </Tab.Navigator>
     </NavigationContainer>

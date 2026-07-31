@@ -92,8 +92,13 @@ export function CalendarScreen({
   const month = selectedDate.getMonth();
 
   // Real data from hook (test overrides only when eventsOverride provided)
-  const { events: realEvents, eventsForDate, uiState: realUiState, createEvent, deleteEvent } =
-    useCalendarEvents(selectedDate);
+  const {
+    events: realEvents,
+    eventsForDate,
+    uiState: realUiState,
+    createEvent,
+    deleteEvent,
+  } = useCalendarEvents(selectedDate);
   const { createNote } = useNotes();
 
   const uiState: CalendarUiState = stateOverride ?? realUiState;
@@ -285,7 +290,10 @@ export function CalendarScreen({
               accessibilityRole="button"
               accessibilityLabel="Previous month"
               onPress={handlePrevMonth}
-              style={({ pressed }) => [styles.monthArrow, pressed ? styles.monthArrowPressed : null]}
+              style={({ pressed }) => [
+                styles.monthArrow,
+                pressed ? styles.monthArrowPressed : null,
+              ]}
             >
               <Text style={styles.monthArrowText}>‹</Text>
             </Pressable>
@@ -298,7 +306,10 @@ export function CalendarScreen({
               accessibilityRole="button"
               accessibilityLabel="Next month"
               onPress={handleNextMonth}
-              style={({ pressed }) => [styles.monthArrow, pressed ? styles.monthArrowPressed : null]}
+              style={({ pressed }) => [
+                styles.monthArrow,
+                pressed ? styles.monthArrowPressed : null,
+              ]}
             >
               <Text style={styles.monthArrowText}>›</Text>
             </Pressable>
@@ -323,10 +334,7 @@ export function CalendarScreen({
             renderItem={({ item: { year, month } }) => {
               const eventDays = new Set<number>();
               realEvents.forEach((event) => {
-                if (
-                  event.startAt.getFullYear() === year &&
-                  event.startAt.getMonth() === month
-                ) {
+                if (event.startAt.getFullYear() === year && event.startAt.getMonth() === month) {
                   eventDays.add(event.startAt.getDate());
                 }
               });
@@ -368,7 +376,11 @@ export function CalendarScreen({
         onClose={() => setAddEventVisible(false)}
         onSave={handleAddEvent}
       />
-      <EventDetailModal event={activeEvent} onClose={() => setActiveEvent(null)} onDelete={handleDeleteEvent} />
+      <EventDetailModal
+        event={activeEvent}
+        onClose={() => setActiveEvent(null)}
+        onDelete={handleDeleteEvent}
+      />
       <FocusModeOverlay
         visible={focusModeVisible}
         events={mergedFocusEvents}

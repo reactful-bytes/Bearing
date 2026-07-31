@@ -30,7 +30,14 @@ describe('UI primitives', () => {
   it('fires presses from the list item primitive', () => {
     const handlePress = jest.fn();
 
-    render(<ListItem title="Sign Out" description="End the session." trailingText="Action" onPress={handlePress} />);
+    render(
+      <ListItem
+        title="Sign Out"
+        description="End the session."
+        trailingText="Action"
+        onPress={handlePress}
+      />,
+    );
 
     fireEvent.press(screen.getByText('Sign Out'));
 

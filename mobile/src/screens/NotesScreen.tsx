@@ -28,7 +28,9 @@ export function NotesScreen() {
   const [addNoteVisible, setAddNoteVisible] = useState(false);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
 
-  const selectedNote = selectedNoteId ? notes.find((note) => note.id === selectedNoteId) ?? null : null;
+  const selectedNote = selectedNoteId
+    ? (notes.find((note) => note.id === selectedNoteId) ?? null)
+    : null;
 
   async function handleCreateNote(input: CreateNoteInput): Promise<void> {
     await createNote(input);
@@ -62,7 +64,9 @@ export function NotesScreen() {
         {uiState === 'error' ? (
           <AppCard>
             <Text style={styles.stateTitle}>Unable to load notes.</Text>
-            <Text style={styles.stateDescription}>Check your connection and try again in a moment.</Text>
+            <Text style={styles.stateDescription}>
+              Check your connection and try again in a moment.
+            </Text>
           </AppCard>
         ) : null}
 

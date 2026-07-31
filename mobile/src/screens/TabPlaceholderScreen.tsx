@@ -12,7 +12,12 @@ type TabPlaceholderScreenProps = {
   children?: ReactNode;
 };
 
-export function TabPlaceholderScreen({ title, description, routeId, children }: TabPlaceholderScreenProps) {
+export function TabPlaceholderScreen({
+  title,
+  description,
+  routeId,
+  children,
+}: TabPlaceholderScreenProps) {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <ScreenHeader eyebrow="Tab placeholder" title={title} description={description} />

@@ -12,7 +12,10 @@ import {
 } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 
-import { DEFAULT_REMINDER_SOUND_ID, DEFAULT_TIMER_SOUND_ID } from '../../features/profile/profileSounds';
+import {
+  DEFAULT_REMINDER_SOUND_ID,
+  DEFAULT_TIMER_SOUND_ID,
+} from '../../features/profile/profileSounds';
 import { UpdateUserProfileInput, UserProfileRecord } from '../../features/profile/profileTypes';
 import { getFirebaseApp } from './firebaseApp';
 
@@ -60,8 +63,7 @@ function docToUserProfile(snapshot: DocumentSnapshot<DocumentData>): UserProfile
     premiumStatus: (data.premiumStatus as UserProfileRecord['premiumStatus'] | undefined) ?? 'free',
     premiumSource: (data.premiumSource as UserProfileRecord['premiumSource'] | undefined) ?? 'none',
     tipsEnabled: data.tipsEnabled !== false,
-    reminderSoundId:
-      (data.reminderSoundId as string | undefined) ?? DEFAULT_REMINDER_SOUND_ID,
+    reminderSoundId: (data.reminderSoundId as string | undefined) ?? DEFAULT_REMINDER_SOUND_ID,
     alarmSoundId: (data.alarmSoundId as string | undefined) ?? DEFAULT_TIMER_SOUND_ID,
     createdAt: timestampToDate(data.createdAt as Timestamp | undefined),
     updatedAt: timestampToDate(data.updatedAt as Timestamp | undefined),

@@ -27,14 +27,14 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 ### M1 - Foundation Setup
 
-| Task ID | Status      | Description                                                   | Notes                                                                                                                     |
-| ------- | ----------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| M1.1    | completed   | Initialize Expo application workspace structure               | Expo scaffold implemented in mobile/; iOS/Android runtime validation deferred per user environment setup                  |
-| M1.2    | completed   | Configure Firebase project and environment wiring             | Firebase init/auth/env setup complete with manual signed-in/signed-out verification in web dev runtime                    |
-| M1.3    | completed   | Set up linting, test runner, and baseline CI checks           | ESLint + Prettier config + Jest smoke test + PR CI workflow added                                                         |
-| M1.4    | completed   | Implement bottom tab navigation shell and screen placeholders | Authenticated tab shell implemented; manual iOS/Android tap-through validation confirmed                                  |
-| M1.5    | not-started | Restore a reproducible engineering baseline                   | Clean install, lint, format, typecheck, Jest, coverage, Expo Doctor, and reviewed dependency audit pass locally and in CI |
-| M1.6    | not-started | Add shared Firebase Functions foundation                      | Authenticated/App-Check-protected Functions conventions validated without calendar-provider code                          |
+| Task ID | Status      | Description                                                   | Notes                                                                                                    |
+| ------- | ----------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| M1.1    | completed   | Initialize Expo application workspace structure               | Expo scaffold implemented in mobile/; iOS/Android runtime validation deferred per user environment setup |
+| M1.2    | completed   | Configure Firebase project and environment wiring             | Firebase init/auth/env setup complete with manual signed-in/signed-out verification in web dev runtime   |
+| M1.3    | completed   | Set up linting, test runner, and baseline CI checks           | ESLint + Prettier config + Jest smoke test + PR CI workflow added                                        |
+| M1.4    | completed   | Implement bottom tab navigation shell and screen placeholders | Authenticated tab shell implemented; manual iOS/Android tap-through validation confirmed                 |
+| M1.5    | in-progress | Restore a reproducible engineering baseline                   | Local gates pass; awaiting the first expanded Node 20 CI run                                             |
+| M1.6    | not-started | Add shared Firebase Functions foundation                      | Authenticated/App-Check-protected Functions conventions validated without calendar-provider code         |
 
 ### M2 - Design System and UX Foundation
 
@@ -247,3 +247,4 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | 2026-07-28 | M7.1-M7.4 | Tasks milestone accepted and complete                                         | completed   | User confirmed live Firestore-backed task creation, scheduling, Start Now, and completed-task behavior are working                                                                                                                                                                                                                                                      |
 | 2026-07-30 | M8.1      | Premium gate implementation started                                           | in-progress | Scope approved: app identifiers, internal premium paywall shell, and client-side gating for AI goal builder assistant plus Google/Microsoft calendar integrations                                                                                                                                                                                                       |
 | 2026-07-31 | M0.7      | Calendar and launch scope reconciliation started                              | in-progress | Direct provider integrations and ICS import superseded by free native `expo-calendar` access, optional linked publication, general JSON/ICS export, and native-only launch                                                                                                                                                                                              |
+| 2026-07-31 | M1.5      | Engineering baseline recovery local validation                                | in-progress | `npm ci`, zero-warning lint, format check, typecheck, 60 tests, coverage, and Expo Doctor 20/20 passed; production audit exceptions documented; Node 20 CI confirmation remains                                                                                                                                                                                         |

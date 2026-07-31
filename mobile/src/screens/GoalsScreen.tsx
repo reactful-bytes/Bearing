@@ -35,8 +35,17 @@ function formatDate(date: Date): string {
 
 export function GoalsScreen() {
   const { profile, uiState: profileUiState, isAnonymous } = useUserProfile();
-  const { goals, uiState, createGoal, updateGoal, markGoalCompleted, createStep, deleteStep, updateStep, reorderSteps } =
-    useGoals();
+  const {
+    goals,
+    uiState,
+    createGoal,
+    updateGoal,
+    markGoalCompleted,
+    createStep,
+    deleteStep,
+    updateStep,
+    reorderSteps,
+  } = useGoals();
   const [createGoalVisible, setCreateGoalVisible] = useState(false);
   const [addStepVisible, setAddStepVisible] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
@@ -72,7 +81,9 @@ export function GoalsScreen() {
 
     return goals.find((goal) => goal.steps.some((step) => step.id === scheduleStepId)) ?? null;
   }, [goals, scheduleStepId]);
-  const { events: linkedEvents, uiState: linkedEventsState } = useGoalStepEvents(selectedStep?.id ?? null);
+  const { events: linkedEvents, uiState: linkedEventsState } = useGoalStepEvents(
+    selectedStep?.id ?? null,
+  );
 
   async function handleCreateGoal(input: CreateGoalInput): Promise<void> {
     await createGoal(input);
@@ -101,7 +112,12 @@ export function GoalsScreen() {
 
   async function handleSaveStep(
     stepId: string,
-    fields: { title: string; description: string; starter: string; estimatedFinishDate: Date | null },
+    fields: {
+      title: string;
+      description: string;
+      starter: string;
+      estimatedFinishDate: Date | null;
+    },
   ): Promise<void> {
     await updateStep(stepId, fields);
   }
@@ -148,21 +164,27 @@ export function GoalsScreen() {
         {uiState === 'loading' ? (
           <AppCard>
             <Text style={styles.stateTitle}>Loading goals...</Text>
-            <Text style={styles.stateDescription}>Pulling in your current goals and step order.</Text>
+            <Text style={styles.stateDescription}>
+              Pulling in your current goals and step order.
+            </Text>
           </AppCard>
         ) : null}
 
         {uiState === 'error' ? (
           <AppCard>
             <Text style={styles.stateTitle}>Unable to load goals.</Text>
-            <Text style={styles.stateDescription}>Check your connection and try again in a moment.</Text>
+            <Text style={styles.stateDescription}>
+              Check your connection and try again in a moment.
+            </Text>
           </AppCard>
         ) : null}
 
         {uiState === 'empty' ? (
           <AppCard>
             <Text style={styles.stateTitle}>No goals yet.</Text>
-            <Text style={styles.stateDescription}>Create your first goal to start building a step-by-step plan.</Text>
+            <Text style={styles.stateDescription}>
+              Create your first goal to start building a step-by-step plan.
+            </Text>
           </AppCard>
         ) : null}
 
@@ -173,16 +195,28 @@ export function GoalsScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`Open goal ${goal.title}`}
                 onPress={() => openGoal(goal)}
-                style={({ pressed }) => [styles.goalCardPressable, pressed ? styles.goalCardPressed : null]}
+                style={({ pressed }) => [
+                  styles.goalCardPressable,
+                  pressed ? styles.goalCardPressed : null,
+                ]}
               >
                 <AppCard style={styles.goalCard}>
                   <View style={styles.goalHeaderRow}>
                     <Text style={styles.goalTitle}>{goal.title}</Text>
-                    <Text style={styles.goalStatus}>{goal.status === 'completed' ? 'Completed' : 'Active'}</Text>
+                    <Text style={styles.goalStatus}>
+                      {goal.status === 'completed' ? 'Completed' : 'Active'}
+                    </Text>
                   </View>
-                  <Text style={styles.goalDate}>Target: {formatDate(goal.estimatedCompletionDate)}</Text>
+                  <Text style={styles.goalDate}>
+                    Target: {formatDate(goal.estimatedCompletionDate)}
+                  </Text>
                   <Text style={styles.goalNextStep}>
-                    Next task: {goal.nextStep ? goal.nextStep.title : goal.status === 'completed' ? 'Completed' : 'Add a step'}
+                    Next task:{' '}
+                    {goal.nextStep
+                      ? goal.nextStep.title
+                      : goal.status === 'completed'
+                        ? 'Completed'
+                        : 'Add a step'}
                   </Text>
                   <Text style={styles.goalProgress}>{goal.progressText}</Text>
                 </AppCard>
@@ -192,7 +226,11 @@ export function GoalsScreen() {
       </ScrollView>
 
       <View style={styles.fabContainer}>
-        <FloatingActionButton label="New Goal" onPress={() => setCreateGoalVisible(true)} style={styles.smallFab} />
+        <FloatingActionButton
+          label="New Goal"
+          onPress={() => setCreateGoalVisible(true)}
+          style={styles.smallFab}
+        />
       </View>
 
       <CreateGoalModal
@@ -223,7 +261,11 @@ export function GoalsScreen() {
         onReorderSteps={reorderSteps}
       />
 
-      <AddStepModal visible={addStepVisible} onClose={() => setAddStepVisible(false)} onSave={handleCreateStep} />
+      <AddStepModal
+        visible={addStepVisible}
+        onClose={() => setAddStepVisible(false)}
+        onSave={handleCreateStep}
+      />
 
       <StepDetailModal
         goalTitle={selectedGoal?.title ?? scheduleGoal?.title ?? 'Goal'}
@@ -241,7 +283,9 @@ export function GoalsScreen() {
       <AddEventModal
         visible={scheduleStep !== null}
         modalTitle="Schedule Step Event"
-        initialDate={scheduleStep?.estimatedFinishDate ?? scheduleGoal?.estimatedCompletionDate ?? new Date()}
+        initialDate={
+          scheduleStep?.estimatedFinishDate ?? scheduleGoal?.estimatedCompletionDate ?? new Date()
+        }
         initialValues={
           scheduleStep
             ? {

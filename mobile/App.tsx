@@ -82,7 +82,9 @@ export default function App() {
 
       resetAuthForm();
     } catch (actionError) {
-      setAuthActionError(actionError instanceof Error ? actionError.message : 'Authentication failed.');
+      setAuthActionError(
+        actionError instanceof Error ? actionError.message : 'Authentication failed.',
+      );
     } finally {
       setIsAuthActionPending(false);
     }
@@ -104,7 +106,9 @@ export default function App() {
       await sendPasswordResetForEmail(trimmedEmail);
       setAuthActionMessage('Password reset email sent. Check your inbox.');
     } catch (actionError) {
-      setAuthActionError(actionError instanceof Error ? actionError.message : 'Password reset failed.');
+      setAuthActionError(
+        actionError instanceof Error ? actionError.message : 'Password reset failed.',
+      );
     } finally {
       setIsAuthActionPending(false);
     }
@@ -147,7 +151,10 @@ export default function App() {
       {showLoading ? <Text style={styles.body}>Checking session...</Text> : null}
       {showSignedOut ? (
         <View style={styles.block}>
-          <Text style={styles.body}>Sign in with email and password to access your schedule, goals, notes, and profile settings.</Text>
+          <Text style={styles.body}>
+            Sign in with email and password to access your schedule, goals, notes, and profile
+            settings.
+          </Text>
 
           <View style={styles.formField}>
             <Text style={styles.label}>Email</Text>
@@ -209,13 +216,19 @@ export default function App() {
             accessibilityLabel={authMode === 'sign-in' ? 'Sign in' : 'Create account'}
           >
             <Text style={styles.buttonText}>
-              {isAuthActionPending ? 'Working...' : authMode === 'sign-in' ? 'Sign In' : 'Create Account'}
+              {isAuthActionPending
+                ? 'Working...'
+                : authMode === 'sign-in'
+                  ? 'Sign In'
+                  : 'Create Account'}
             </Text>
           </Pressable>
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={authMode === 'sign-in' ? 'Switch to create account' : 'Switch to sign in'}
+            accessibilityLabel={
+              authMode === 'sign-in' ? 'Switch to create account' : 'Switch to sign in'
+            }
             onPress={() => {
               resetAuthFeedback();
               setAuthMode((current) => (current === 'sign-in' ? 'create-account' : 'sign-in'));
@@ -224,7 +237,9 @@ export default function App() {
             style={({ pressed }) => [styles.secondaryButton, pressed ? styles.buttonPressed : null]}
           >
             <Text style={styles.secondaryButtonText}>
-              {authMode === 'sign-in' ? 'Need an account? Create one' : 'Already have an account? Sign in'}
+              {authMode === 'sign-in'
+                ? 'Need an account? Create one'
+                : 'Already have an account? Sign in'}
             </Text>
           </Pressable>
 
@@ -237,7 +252,10 @@ export default function App() {
             <Text style={styles.linkButtonText}>Send Password Reset Email</Text>
           </Pressable>
 
-          <Text style={styles.helper}>If you are still on an older anonymous session, keep that session signed in and secure it later from the Profile tab so its data stays attached to the same account.</Text>
+          <Text style={styles.helper}>
+            If you are still on an older anonymous session, keep that session signed in and secure
+            it later from the Profile tab so its data stays attached to the same account.
+          </Text>
         </View>
       ) : null}
 

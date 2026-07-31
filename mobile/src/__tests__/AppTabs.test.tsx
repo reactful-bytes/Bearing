@@ -30,18 +30,29 @@ jest.mock('@react-navigation/native', () => ({
 }));
 
 jest.mock('@react-navigation/bottom-tabs', () => {
-  const React = jest.requireActual('react');
-  const { View } = jest.requireActual('react-native');
+  const ReactModule = jest.requireActual<typeof import('react')>('react');
+  const { View } = jest.requireActual<typeof import('react-native')>('react-native');
 
   function Screen() {
     return null;
   }
 
-  function Navigator({ screenOptions, children }: { screenOptions: any; children: React.ReactNode }) {
+  function Navigator({
+    screenOptions,
+    children,
+  }: {
+    screenOptions: any;
+    children: React.ReactNode;
+  }) {
     return (
       <View>
-        {React.Children.map(children, (child: any) => {
-          if (!React.isValidElement(child)) {
+        {ReactModule.Children.map(children, (child) => {
+          if (
+            !ReactModule.isValidElement<{
+              name: string;
+              options?: Record<string, unknown>;
+            }>(child)
+          ) {
             return null;
           }
 
@@ -85,7 +96,7 @@ jest.mock('@react-navigation/bottom-tabs', () => {
 describe('AppTabs', () => {
   it('renders the Calendar tab button as an oversized floating action', () => {
     const { getByTestId } = render(
-      <AppTabs onPressSignOut={jest.fn()} isSignOutPending={false} />,
+      <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
     );
 
     const calendarTabButton = getByTestId('calendar-tab-button');
@@ -101,7 +112,9 @@ describe('AppTabs', () => {
       ]),
     );
     expect(calendarTabIcon.props.style).toEqual(
-      expect.arrayContaining([expect.objectContaining({ height: 76, width: 76, borderRadius: 38 })]),
+      expect.arrayContaining([
+        expect.objectContaining({ height: 76, width: 76, borderRadius: 38 }),
+      ]),
     );
   });
 });

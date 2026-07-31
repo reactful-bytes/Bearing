@@ -31,7 +31,9 @@ export function SoundPickerModal({
   return (
     <AppModal visible={visible} title={title} onClose={onClose}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.description}>These app-generated tones are safe to ship and can be previewed before you save.</Text>
+        <Text style={styles.description}>
+          These app-generated tones are safe to ship and can be previewed before you save.
+        </Text>
 
         {previewError ? <Text style={styles.errorText}>{previewError}</Text> : null}
 
@@ -44,7 +46,9 @@ export function SoundPickerModal({
               <View style={styles.soundCopy}>
                 <Text style={styles.soundTitle}>{sound.label}</Text>
                 <Text style={styles.soundDescription}>{sound.description}</Text>
-                <Text style={styles.soundMeta}>{isSelected ? 'Currently selected' : 'Tap Select to use this sound'}</Text>
+                <Text style={styles.soundMeta}>
+                  {isSelected ? 'Currently selected' : 'Tap Select to use this sound'}
+                </Text>
               </View>
 
               <View style={styles.actionsRow}>
@@ -52,9 +56,14 @@ export function SoundPickerModal({
                   accessibilityRole="button"
                   accessibilityLabel={`Preview sound ${sound.label}`}
                   onPress={() => void onPreview(sound.id)}
-                  style={({ pressed }) => [styles.secondaryButton, pressed ? styles.buttonPressed : null]}
+                  style={({ pressed }) => [
+                    styles.secondaryButton,
+                    pressed ? styles.buttonPressed : null,
+                  ]}
                 >
-                  <Text style={styles.secondaryButtonText}>{isPlaying ? 'Playing...' : 'Preview'}</Text>
+                  <Text style={styles.secondaryButtonText}>
+                    {isPlaying ? 'Playing...' : 'Preview'}
+                  </Text>
                 </Pressable>
 
                 <Pressable

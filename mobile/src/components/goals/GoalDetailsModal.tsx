@@ -25,7 +25,10 @@ type GoalDetailsModalProps = {
   goal: GoalWithSteps | null;
   visible: boolean;
   onClose: () => void;
-  onSaveGoal: (goalId: string, fields: { title: string; description: string; estimatedCompletionDate: Date }) => Promise<void>;
+  onSaveGoal: (
+    goalId: string,
+    fields: { title: string; description: string; estimatedCompletionDate: Date },
+  ) => Promise<void>;
   onMarkGoalCompleted: (goalId: string) => Promise<void>;
   onAddStep: () => void;
   onOpenStep: (step: GoalStepRecord) => void;
@@ -64,7 +67,10 @@ export function GoalDetailsModal({
     () => Array.from({ length: YEAR_OPTION_COUNT }, (_, index) => today.getFullYear() + index),
     [today],
   );
-  const dayOptions = useMemo(() => getDayOptions(dateParts.month, dateParts.year), [dateParts.month, dateParts.year]);
+  const dayOptions = useMemo(
+    () => getDayOptions(dateParts.month, dateParts.year),
+    [dateParts.month, dateParts.year],
+  );
 
   useEffect(() => {
     if (!goal || !visible) {
@@ -170,7 +176,12 @@ export function GoalDetailsModal({
   ) : null;
 
   return (
-    <AppModal visible={visible} title="Goal Details" onClose={handleClose} headerAccessory={headerAccessory}>
+    <AppModal
+      visible={visible}
+      title="Goal Details"
+      onClose={handleClose}
+      headerAccessory={headerAccessory}
+    >
       {goal ? (
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
           {editMode ? (
@@ -205,11 +216,16 @@ export function GoalDetailsModal({
                   dateParts={dateParts}
                   activeField={activeDateField}
                   optionsByField={{
-                    month: MONTH_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
+                    month: MONTH_OPTIONS.map((option) => ({
+                      value: option.value,
+                      label: option.label,
+                    })),
                     day: dayOptions.map((day) => ({ value: day, label: formatTwoDigits(day) })),
                     year: yearOptions.map((year) => ({ value: year, label: String(year) })),
                   }}
-                  onToggleField={(field) => setActiveDateField((current) => (current === field ? null : field))}
+                  onToggleField={(field) =>
+                    setActiveDateField((current) => (current === field ? null : field))
+                  }
                   onSelectField={updateDateField}
                 />
               </View>
@@ -226,7 +242,9 @@ export function GoalDetailsModal({
                     saving ? styles.buttonDisabled : null,
                   ]}
                 >
-                  <Text style={styles.primaryButtonText}>{saving ? 'Saving...' : 'Save Changes'}</Text>
+                  <Text style={styles.primaryButtonText}>
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </Text>
                 </Pressable>
 
                 {goal.status !== 'completed' ? (
@@ -250,9 +268,15 @@ export function GoalDetailsModal({
             <View style={styles.section}>
               <AppCard style={styles.summaryCard}>
                 <Text style={styles.goalTitle}>{goal.title}</Text>
-                <Text style={styles.goalDescription}>{goal.description || 'No description yet.'}</Text>
-                <Text style={styles.metaText}>Target date: {formatDateString(goal.estimatedCompletionDate)}</Text>
-                <Text style={styles.metaText}>Status: {goal.status === 'completed' ? 'Completed' : 'Active'}</Text>
+                <Text style={styles.goalDescription}>
+                  {goal.description || 'No description yet.'}
+                </Text>
+                <Text style={styles.metaText}>
+                  Target date: {formatDateString(goal.estimatedCompletionDate)}
+                </Text>
+                <Text style={styles.metaText}>
+                  Status: {goal.status === 'completed' ? 'Completed' : 'Active'}
+                </Text>
                 <Text style={styles.metaText}>{goal.progressText}</Text>
               </AppCard>
             </View>
@@ -265,7 +289,10 @@ export function GoalDetailsModal({
                 accessibilityRole="button"
                 accessibilityLabel="Add step"
                 onPress={onAddStep}
-                style={({ pressed }) => [styles.headerButton, pressed ? styles.buttonPressed : null]}
+                style={({ pressed }) => [
+                  styles.headerButton,
+                  pressed ? styles.buttonPressed : null,
+                ]}
               >
                 <Text style={styles.headerButtonText}>Add Step</Text>
               </Pressable>
@@ -273,7 +300,9 @@ export function GoalDetailsModal({
 
             {goal.steps.length === 0 ? (
               <AppCard style={styles.summaryCard}>
-                <Text style={styles.goalDescription}>No steps yet. Add the first action for this goal.</Text>
+                <Text style={styles.goalDescription}>
+                  No steps yet. Add the first action for this goal.
+                </Text>
               </AppCard>
             ) : (
               <DraggableStepList

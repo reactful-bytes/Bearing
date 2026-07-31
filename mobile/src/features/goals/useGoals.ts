@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import {
-  composeGoalWithSteps,
-  deriveGoalStatus,
-  normalizeGoalSteps,
-} from './goalHelpers';
+import { composeGoalWithSteps, deriveGoalStatus, normalizeGoalSteps } from './goalHelpers';
 import {
   CreateGoalInput,
   CreateGoalStepInput,
@@ -175,7 +171,14 @@ export function useGoals(): UseGoalsReturn {
         throw new Error('Goal not found.');
       }
 
-      await createFirebaseGoalStep(userId, goalId, input, goal.steps.length, goal.status, goal.nextStep?.id ?? null);
+      await createFirebaseGoalStep(
+        userId,
+        goalId,
+        input,
+        goal.steps.length,
+        goal.status,
+        goal.nextStep?.id ?? null,
+      );
     },
     [goalMap],
   );
@@ -197,12 +200,15 @@ export function useGoals(): UseGoalsReturn {
         throw new Error('Goal not found.');
       }
 
-      const remainingSteps = normalizeGoalSteps(targetGoal.steps.filter((step) => step.id !== stepId));
+      const remainingSteps = normalizeGoalSteps(
+        targetGoal.steps.filter((step) => step.id !== stepId),
+      );
       const nextGoalStatus = deriveGoalStatus(targetGoal.status, remainingSteps);
-      const nextStep = nextGoalStatus === 'completed' ? null : composeGoalWithSteps(
-        { ...targetGoal, status: nextGoalStatus },
-        remainingSteps,
-      ).nextStep;
+      const nextStep =
+        nextGoalStatus === 'completed'
+          ? null
+          : composeGoalWithSteps({ ...targetGoal, status: nextGoalStatus }, remainingSteps)
+              .nextStep;
 
       await deleteFirebaseGoalStep(
         userId,
@@ -233,14 +239,17 @@ export function useGoals(): UseGoalsReturn {
     [steps],
   );
 
-  const reorderSteps = useCallback(async (goalId: string, orderedStepIds: string[]): Promise<void> => {
-    const userId = getFirebaseAuth().currentUser?.uid;
-    if (!userId) {
-      throw new Error('User is not authenticated.');
-    }
+  const reorderSteps = useCallback(
+    async (goalId: string, orderedStepIds: string[]): Promise<void> => {
+      const userId = getFirebaseAuth().currentUser?.uid;
+      if (!userId) {
+        throw new Error('User is not authenticated.');
+      }
 
-    await reorderFirebaseGoalSteps(userId, goalId, orderedStepIds);
-  }, []);
+      await reorderFirebaseGoalSteps(userId, goalId, orderedStepIds);
+    },
+    [],
+  );
 
   return {
     goals: goalMap,

@@ -27,7 +27,13 @@ function noteSourceLabel(note: NoteRecord): string {
   return note.source === 'idea_dump' ? 'Idea Dump' : 'Manual Note';
 }
 
-export function NoteDetailModal({ visible, note, onClose, onSave, onDelete }: NoteDetailModalProps) {
+export function NoteDetailModal({
+  visible,
+  note,
+  onClose,
+  onSave,
+  onDelete,
+}: NoteDetailModalProps) {
   const [editMode, setEditMode] = useState(false);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -119,7 +125,12 @@ export function NoteDetailModal({ visible, note, onClose, onSave, onDelete }: No
   ) : null;
 
   return (
-    <AppModal visible={visible} title="Note Details" onClose={handleClose} headerAccessory={headerAccessory}>
+    <AppModal
+      visible={visible}
+      title="Note Details"
+      onClose={handleClose}
+      headerAccessory={headerAccessory}
+    >
       {note ? (
         <ScrollView contentContainerStyle={styles.content}>
           <AppCard style={styles.summaryCard}>
@@ -194,7 +205,10 @@ export function NoteDetailModal({ visible, note, onClose, onSave, onDelete }: No
                   accessibilityRole="button"
                   accessibilityLabel="Cancel note delete"
                   onPress={() => setConfirmingDelete(false)}
-                  style={({ pressed }) => [styles.secondaryButton, pressed ? styles.buttonPressed : null]}
+                  style={({ pressed }) => [
+                    styles.secondaryButton,
+                    pressed ? styles.buttonPressed : null,
+                  ]}
                 >
                   <Text style={styles.secondaryButtonText}>Cancel</Text>
                 </Pressable>
@@ -208,7 +222,9 @@ export function NoteDetailModal({ visible, note, onClose, onSave, onDelete }: No
                     pressed && !saving ? styles.buttonPressed : null,
                   ]}
                 >
-                  <Text style={styles.confirmDeleteButtonText}>{saving ? 'Deleting...' : 'Yes, Delete'}</Text>
+                  <Text style={styles.confirmDeleteButtonText}>
+                    {saving ? 'Deleting...' : 'Yes, Delete'}
+                  </Text>
                 </Pressable>
               </View>
             </View>

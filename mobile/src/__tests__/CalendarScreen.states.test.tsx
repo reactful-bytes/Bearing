@@ -82,9 +82,20 @@ describe('CalendarScreen interaction states', () => {
   it('renders event block titles in ready state with override events', () => {
     const events: CalendarEvent[] = [
       makeTestEvent({ id: 'e1', title: 'Morning standup' }),
-      makeTestEvent({ id: 'e2', title: 'Design review', startAt: new Date(2026, 6, 17, 14, 0), endAt: new Date(2026, 6, 17, 15, 0) }),
+      makeTestEvent({
+        id: 'e2',
+        title: 'Design review',
+        startAt: new Date(2026, 6, 17, 14, 0),
+        endAt: new Date(2026, 6, 17, 15, 0),
+      }),
     ];
-    render(<CalendarScreen stateOverride="ready" eventsOverride={events} initialDateOverride={new Date(2026, 6, 17)} />);
+    render(
+      <CalendarScreen
+        stateOverride="ready"
+        eventsOverride={events}
+        initialDateOverride={new Date(2026, 6, 17)}
+      />,
+    );
 
     expect(screen.getByText('Morning standup')).toBeTruthy();
     expect(screen.getByText('Design review')).toBeTruthy();

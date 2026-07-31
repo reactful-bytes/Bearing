@@ -68,7 +68,9 @@ export function CreateGoalModal({
   const [wizardIndex, setWizardIndex] = useState(0);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [goalDateParts, setGoalDateParts] = useState<GoalDateParts>(() => buildDefaultGoalDateParts(today));
+  const [goalDateParts, setGoalDateParts] = useState<GoalDateParts>(() =>
+    buildDefaultGoalDateParts(today),
+  );
   const [activeGoalDateField, setActiveGoalDateField] = useState<GoalDateField | null>(null);
   const [draftSteps, setDraftSteps] = useState<DraftGoalStep[]>([makeEmptyDraftStep(1, today)]);
   const [saving, setSaving] = useState(false);
@@ -279,7 +281,8 @@ export function CreateGoalModal({
           <AppCard style={styles.card}>
             <Text style={styles.cardTitle}>Build a SMART goal before you plan it.</Text>
             <Text style={styles.cardBody}>
-              Specific, measurable, achievable, relevant, and time-bound goals make the next step clear.
+              Specific, measurable, achievable, relevant, and time-bound goals make the next step
+              clear.
             </Text>
           </AppCard>
         ) : null}
@@ -332,7 +335,8 @@ export function CreateGoalModal({
             <AppCard style={styles.card}>
               <Text style={styles.cardTitle}>Premium AI planning slot is ready.</Text>
               <Text style={styles.cardBody}>
-                Your premium gate is clear. The AI milestone and step generator will plug into this step in M8.2, and manual planning stays available in the meantime.
+                Your premium gate is clear. The AI milestone and step generator will plug into this
+                step in M8.2, and manual planning stays available in the meantime.
               </Text>
               <View style={styles.enabledBadge}>
                 <Text style={styles.enabledBadgeText}>Premium Enabled</Text>
@@ -342,7 +346,8 @@ export function CreateGoalModal({
             <AppCard style={styles.card}>
               <Text style={styles.cardTitle}>Unlock AI goal builder with Premium.</Text>
               <Text style={styles.cardBody}>
-                Bearing Premium will open AI-generated milestones and steps here once the service integration ships. You can keep building the goal manually right now.
+                Bearing Premium will open AI-generated milestones and steps here once the service
+                integration ships. You can keep building the goal manually right now.
               </Text>
               <View style={styles.disabledBadge}>
                 <Text style={styles.disabledBadgeText}>Premium Required</Text>
@@ -351,7 +356,10 @@ export function CreateGoalModal({
                 accessibilityRole="button"
                 accessibilityLabel="View premium plans for AI goal builder"
                 onPress={onOpenPremiumPaywall}
-                style={({ pressed }) => [styles.primaryButton, pressed ? styles.buttonPressed : null]}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  pressed ? styles.buttonPressed : null,
+                ]}
               >
                 <Text style={styles.primaryButtonText}>View Premium Plans</Text>
               </Pressable>
@@ -430,7 +438,10 @@ export function CreateGoalModal({
                   dateParts={step.dateParts}
                   activeField={step.activeDateField}
                   optionsByField={{
-                    month: MONTH_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
+                    month: MONTH_OPTIONS.map((option) => ({
+                      value: option.value,
+                      label: option.label,
+                    })),
                     day: getDayOptions(step.dateParts.month, step.dateParts.year).map((day) => ({
                       value: day,
                       label: formatTwoDigits(day),
@@ -447,9 +458,15 @@ export function CreateGoalModal({
               accessibilityRole="button"
               accessibilityLabel="Add another draft step"
               onPress={() =>
-                setDraftSteps((current) => [...current, makeEmptyDraftStep(current.length + 1, today)])
+                setDraftSteps((current) => [
+                  ...current,
+                  makeEmptyDraftStep(current.length + 1, today),
+                ])
               }
-              style={({ pressed }) => [styles.secondaryButton, pressed ? styles.buttonPressed : null]}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                pressed ? styles.buttonPressed : null,
+              ]}
             >
               <Text style={styles.secondaryButtonText}>Add Another Step</Text>
             </Pressable>
@@ -464,7 +481,10 @@ export function CreateGoalModal({
               accessibilityRole="button"
               accessibilityLabel="Back"
               onPress={() => setWizardIndex((current) => Math.max(0, current - 1))}
-              style={({ pressed }) => [styles.secondaryButton, pressed ? styles.buttonPressed : null]}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                pressed ? styles.buttonPressed : null,
+              ]}
             >
               <Text style={styles.secondaryButtonText}>Back</Text>
             </Pressable>

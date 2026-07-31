@@ -202,7 +202,10 @@ export function AddStepModal({ visible, onClose, onSave }: AddStepModalProps) {
             accessibilityRole="button"
             accessibilityLabel="Open step target month dropdown"
             onPress={() => setActiveDateField((current) => (current === 'month' ? null : 'month'))}
-            style={({ pressed }) => [styles.dateFieldButton, pressed ? styles.saveButtonPressed : null]}
+            style={({ pressed }) => [
+              styles.dateFieldButton,
+              pressed ? styles.saveButtonPressed : null,
+            ]}
           >
             <Text style={styles.dateFieldLabel}>Month</Text>
             <Text style={styles.dateFieldValue}>{formatTwoDigits(dateParts.month)}</Text>
@@ -212,7 +215,10 @@ export function AddStepModal({ visible, onClose, onSave }: AddStepModalProps) {
             accessibilityRole="button"
             accessibilityLabel="Open step target day dropdown"
             onPress={() => setActiveDateField((current) => (current === 'day' ? null : 'day'))}
-            style={({ pressed }) => [styles.dateFieldButton, pressed ? styles.saveButtonPressed : null]}
+            style={({ pressed }) => [
+              styles.dateFieldButton,
+              pressed ? styles.saveButtonPressed : null,
+            ]}
           >
             <Text style={styles.dateFieldLabel}>Day</Text>
             <Text style={styles.dateFieldValue}>{formatTwoDigits(dateParts.day)}</Text>
@@ -222,7 +228,10 @@ export function AddStepModal({ visible, onClose, onSave }: AddStepModalProps) {
             accessibilityRole="button"
             accessibilityLabel="Open step target year dropdown"
             onPress={() => setActiveDateField((current) => (current === 'year' ? null : 'year'))}
-            style={({ pressed }) => [styles.dateFieldButton, pressed ? styles.saveButtonPressed : null]}
+            style={({ pressed }) => [
+              styles.dateFieldButton,
+              pressed ? styles.saveButtonPressed : null,
+            ]}
           >
             <Text style={styles.dateFieldLabel}>Year</Text>
             <Text style={styles.dateFieldValue}>{dateParts.year}</Text>
@@ -232,7 +241,11 @@ export function AddStepModal({ visible, onClose, onSave }: AddStepModalProps) {
         {activeDateField ? (
           <View style={styles.dropdownCard}>
             <Text style={styles.dropdownTitle}>
-              {activeDateField === 'month' ? 'Select month' : activeDateField === 'day' ? 'Select day' : 'Select year'}
+              {activeDateField === 'month'
+                ? 'Select month'
+                : activeDateField === 'day'
+                  ? 'Select day'
+                  : 'Select year'}
             </Text>
             <ScrollView style={styles.dropdownList} nestedScrollEnabled>
               {(activeDateField === 'month'
@@ -246,7 +259,10 @@ export function AddStepModal({ visible, onClose, onSave }: AddStepModalProps) {
                   accessibilityRole="button"
                   accessibilityLabel={`Select step target ${activeDateField} ${option.label}`}
                   onPress={() => updateDateField(activeDateField, option.value)}
-                  style={({ pressed }) => [styles.dropdownOption, pressed ? styles.saveButtonPressed : null]}
+                  style={({ pressed }) => [
+                    styles.dropdownOption,
+                    pressed ? styles.saveButtonPressed : null,
+                  ]}
                 >
                   <Text style={styles.dropdownOptionText}>{option.label}</Text>
                 </Pressable>

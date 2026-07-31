@@ -25,7 +25,11 @@ import {
   UpdateGoalInput,
   UpdateGoalStepInput,
 } from '../../features/goals/goalTypes';
-import { deriveGoalStatus, getFirstIncompleteStep, normalizeGoalSteps } from '../../features/goals/goalHelpers';
+import {
+  deriveGoalStatus,
+  getFirstIncompleteStep,
+  normalizeGoalSteps,
+} from '../../features/goals/goalHelpers';
 import { getFirebaseApp } from './firebaseApp';
 
 let cachedDb: Firestore | null = null;
@@ -122,7 +126,7 @@ async function syncGoalRollup(userId: string, goalId: string): Promise<void> {
   });
 
   batch.update(goalRef, {
-    nextStepId: rolledStatus === 'completed' ? null : nextStep?.id ?? null,
+    nextStepId: rolledStatus === 'completed' ? null : (nextStep?.id ?? null),
     status: rolledStatus,
     updatedAt: Timestamp.now(),
   });
@@ -217,7 +221,11 @@ export async function createGoal(userId: string, input: CreateGoalInput): Promis
   return goalRef.id;
 }
 
-export async function updateGoal(_userId: string, goalId: string, fields: UpdateGoalInput): Promise<void> {
+export async function updateGoal(
+  _userId: string,
+  goalId: string,
+  fields: UpdateGoalInput,
+): Promise<void> {
   const db = getFirebaseFirestore();
   const updates: Record<string, unknown> = { updatedAt: Timestamp.now() };
 
@@ -268,7 +276,9 @@ export async function createGoalStep(
     title: input.title.trim(),
     description: input.description.trim(),
     starter: input.starter.trim(),
-    estimatedFinishDate: input.estimatedFinishDate ? Timestamp.fromDate(input.estimatedFinishDate) : null,
+    estimatedFinishDate: input.estimatedFinishDate
+      ? Timestamp.fromDate(input.estimatedFinishDate)
+      : null,
     order,
     status: 'pending',
     completedAt: null,

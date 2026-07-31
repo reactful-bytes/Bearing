@@ -12,8 +12,18 @@ type EventDetailModalProps = {
 };
 
 const MONTH_NAMES_SHORT = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 function formatTimeRange(startAt: Date, endAt: Date): string {
@@ -84,11 +94,16 @@ export function EventDetailModal({ event, onClose, onDelete }: EventDetailModalP
 
           <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>Status</Text>
-            <Text style={[styles.metaValue, event.status === 'completed'
-                ? { color: colors.brand }
-                : event.status === 'canceled'
-                  ? { color: colors.dangerText }
-                  : { color: colors.textSecondary }]}>
+            <Text
+              style={[
+                styles.metaValue,
+                event.status === 'completed'
+                  ? { color: colors.brand }
+                  : event.status === 'canceled'
+                    ? { color: colors.dangerText }
+                    : { color: colors.textSecondary },
+              ]}
+            >
               {statusLabel(event.status)}
             </Text>
           </View>
@@ -107,7 +122,10 @@ export function EventDetailModal({ event, onClose, onDelete }: EventDetailModalP
               accessibilityRole="button"
               accessibilityLabel="Delete event"
               onPress={() => setConfirmingDelete(true)}
-              style={({ pressed }) => [styles.deleteButton, pressed ? styles.deleteButtonPressed : null]}
+              style={({ pressed }) => [
+                styles.deleteButton,
+                pressed ? styles.deleteButtonPressed : null,
+              ]}
             >
               <Text style={styles.deleteButtonText}>Delete Event</Text>
             </Pressable>
@@ -119,7 +137,10 @@ export function EventDetailModal({ event, onClose, onDelete }: EventDetailModalP
                   accessibilityRole="button"
                   accessibilityLabel="Cancel delete"
                   onPress={() => setConfirmingDelete(false)}
-                  style={({ pressed }) => [styles.cancelButton, pressed ? styles.cancelButtonPressed : null]}
+                  style={({ pressed }) => [
+                    styles.cancelButton,
+                    pressed ? styles.cancelButtonPressed : null,
+                  ]}
                 >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </Pressable>

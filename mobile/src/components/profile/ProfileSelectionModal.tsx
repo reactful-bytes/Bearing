@@ -93,7 +93,9 @@ export function ProfileSelectionModal({
             {filteredOptions.length === 0 ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateTitle}>No results</Text>
-                <Text style={styles.emptyStateBody}>Try a city, region, language, or locale code.</Text>
+                <Text style={styles.emptyStateBody}>
+                  Try a city, region, language, or locale code.
+                </Text>
               </View>
             ) : null}
           </ScrollView>

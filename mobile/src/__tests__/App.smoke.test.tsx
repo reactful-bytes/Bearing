@@ -34,32 +34,34 @@ jest.mock('../services/firebase/firebaseEvents', () => ({
   deleteEvent: jest.fn(),
 }));
 
-jest.mock('../screens/CalendarScreen', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  CalendarScreen: () => require('react').createElement(require('react-native').Text, {}, 'CalendarScreen'),
-}));
+jest.mock('../screens/CalendarScreen', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return { CalendarScreen: () => React.createElement(Text, {}, 'CalendarScreen') };
+});
 
-jest.mock('../screens/GoalsScreen', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  GoalsScreen: () => require('react').createElement(require('react-native').Text, {}, 'GoalsScreen'),
-}));
+jest.mock('../screens/GoalsScreen', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return { GoalsScreen: () => React.createElement(Text, {}, 'GoalsScreen') };
+});
 
-jest.mock('../screens/NotesScreen', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  NotesScreen: () => require('react').createElement(require('react-native').Text, {}, 'NotesScreen'),
-}));
+jest.mock('../screens/NotesScreen', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return { NotesScreen: () => React.createElement(Text, {}, 'NotesScreen') };
+});
 
-jest.mock('../screens/ProfileScreen', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  ProfileScreen: () => require('react').createElement(require('react-native').Text, {}, 'ProfileScreen'),
-}));
+jest.mock('../screens/ProfileScreen', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  return { ProfileScreen: () => React.createElement(Text, {}, 'ProfileScreen') };
+});
 
 jest.mock('../navigation/AppTabs', () => ({
   AppTabs: () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const React = require('react');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { View, Text } = require('react-native');
+    const React = jest.requireActual<typeof import('react')>('react');
+    const { View, Text } = jest.requireActual<typeof import('react-native')>('react-native');
     return React.createElement(View, {}, [
       React.createElement(Text, { key: 'goals' }, 'Goals'),
       React.createElement(Text, { key: 'tasks' }, 'Tasks'),
@@ -92,7 +94,9 @@ describe('App shell', () => {
 
   it('submits email sign-in from the unauthenticated shell', async () => {
     const mockedUseAuthBootstrap = useAuthBootstrap as jest.MockedFunction<typeof useAuthBootstrap>;
-    const mockedSignIn = signInWithEmailPassword as jest.MockedFunction<typeof signInWithEmailPassword>;
+    const mockedSignIn = signInWithEmailPassword as jest.MockedFunction<
+      typeof signInWithEmailPassword
+    >;
 
     mockedUseAuthBootstrap.mockReturnValue({
       status: 'unauthenticated',
@@ -115,7 +119,9 @@ describe('App shell', () => {
 
   it('sends a password reset email from the unauthenticated shell', async () => {
     const mockedUseAuthBootstrap = useAuthBootstrap as jest.MockedFunction<typeof useAuthBootstrap>;
-    const mockedPasswordReset = sendPasswordResetForEmail as jest.MockedFunction<typeof sendPasswordResetForEmail>;
+    const mockedPasswordReset = sendPasswordResetForEmail as jest.MockedFunction<
+      typeof sendPasswordResetForEmail
+    >;
 
     mockedUseAuthBootstrap.mockReturnValue({
       status: 'unauthenticated',

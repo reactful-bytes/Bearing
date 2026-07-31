@@ -68,7 +68,10 @@ export type UpdateGoalInput = Partial<
 >;
 
 export type UpdateGoalStepInput = Partial<
-  Pick<GoalStepRecord, 'title' | 'description' | 'starter' | 'estimatedFinishDate' | 'order' | 'status'>
+  Pick<
+    GoalStepRecord,
+    'title' | 'description' | 'starter' | 'estimatedFinishDate' | 'order' | 'status'
+  >
 >;
 
 export type GoalUiState = 'loading' | 'error' | 'empty' | 'ready';

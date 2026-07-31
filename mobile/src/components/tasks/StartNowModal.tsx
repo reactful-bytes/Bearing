@@ -68,7 +68,9 @@ export function StartNowModal({ visible, task, onClose, onConfirm }: StartNowMod
           placeholder="30"
           placeholderTextColor={colors.textSecondary}
         />
-        <Text style={styles.helperText}>This will create an event starting immediately and open Focus Mode.</Text>
+        <Text style={styles.helperText}>
+          This will create an event starting immediately and open Focus Mode.
+        </Text>
       </View>
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -84,7 +86,9 @@ export function StartNowModal({ visible, task, onClose, onConfirm }: StartNowMod
           saving ? styles.buttonDisabled : null,
         ]}
       >
-        <Text style={styles.primaryButtonText}>{saving ? 'Starting...' : 'Start Focus Session'}</Text>
+        <Text style={styles.primaryButtonText}>
+          {saving ? 'Starting...' : 'Start Focus Session'}
+        </Text>
       </Pressable>
     </AppModal>
   );

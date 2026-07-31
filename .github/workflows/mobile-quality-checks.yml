@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - 'mobile/**'
+      - 'firebase.json'
+      - 'firestore.indexes.json'
+      - 'firestore.rules'
       - '.github/workflows/mobile-quality-checks.yml'
   workflow_dispatch:
 
@@ -30,5 +33,17 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
       - name: Test
-        run: npm run test -- --watch=false
+        run: npm run test -- --runInBand
+
+      - name: Test coverage
+        run: npm run test:coverage -- --runInBand
+
+      - name: Expo Doctor
+        run: npx expo-doctor

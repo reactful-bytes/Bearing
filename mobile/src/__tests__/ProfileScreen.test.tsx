@@ -1,7 +1,10 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-import { UseCalendarConnectionsReturn, useCalendarConnections } from '../features/calendar/useCalendarConnections';
+import {
+  UseCalendarConnectionsReturn,
+  useCalendarConnections,
+} from '../features/calendar/useCalendarConnections';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { useSoundPreview } from '../features/profile/useSoundPreview';
 import { useUserProfile } from '../features/profile/useUserProfile';
@@ -57,10 +60,12 @@ function makeProfile(overrides: Partial<UserProfileRecord> = {}): UserProfileRec
   };
 }
 
-function mockProfileHooks(overrides: {
-  userProfile?: Partial<ReturnType<typeof useUserProfile>>;
-  soundPreview?: Partial<ReturnType<typeof useSoundPreview>>;
-} = {}): {
+function mockProfileHooks(
+  overrides: {
+    userProfile?: Partial<ReturnType<typeof useUserProfile>>;
+    soundPreview?: Partial<ReturnType<typeof useSoundPreview>>;
+  } = {},
+): {
   updateProfile: jest.Mock;
   sendPasswordReset: jest.Mock;
   linkAnonymousAccount: jest.Mock;
@@ -77,14 +82,16 @@ function mockProfileHooks(overrides: {
     jest.fn(async () => undefined);
   const updateConnectionSyncEnabled: UseCalendarConnectionsReturn['updateConnectionSyncEnabled'] =
     jest.fn(async () => undefined);
-  const disconnectConnection: UseCalendarConnectionsReturn['disconnectConnection'] =
-    jest.fn(async () => undefined);
+  const disconnectConnection: UseCalendarConnectionsReturn['disconnectConnection'] = jest.fn(
+    async () => undefined,
+  );
   const previewSound = jest.fn(async () => undefined);
   const stopPreview = jest.fn(() => undefined);
 
   const mockedUseUserProfile = useUserProfile as jest.MockedFunction<typeof useUserProfile>;
-  const mockedUseCalendarConnections =
-    useCalendarConnections as jest.MockedFunction<typeof useCalendarConnections>;
+  const mockedUseCalendarConnections = useCalendarConnections as jest.MockedFunction<
+    typeof useCalendarConnections
+  >;
   const mockedUseSoundPreview = useSoundPreview as jest.MockedFunction<typeof useSoundPreview>;
 
   mockedUseUserProfile.mockReturnValue({
@@ -265,8 +272,9 @@ describe('ProfileScreen', () => {
         profile: makeProfile({ premiumStatus: 'premium', premiumSource: 'ios' }),
       },
     });
-    const mockedUseCalendarConnections =
-      useCalendarConnections as jest.MockedFunction<typeof useCalendarConnections>;
+    const mockedUseCalendarConnections = useCalendarConnections as jest.MockedFunction<
+      typeof useCalendarConnections
+    >;
 
     mockedUseCalendarConnections.mockReturnValue({
       connections: [

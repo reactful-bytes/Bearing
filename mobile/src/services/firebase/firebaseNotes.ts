@@ -52,7 +52,9 @@ function docToNote(snapshot: QueryDocumentSnapshot<DocumentData>): NoteRecord {
   };
 }
 
-function buildNoteTitle(input: Pick<CreateNoteInput, 'title' | 'body'> & { source?: CreateNoteInput['source'] }): string {
+function buildNoteTitle(
+  input: Pick<CreateNoteInput, 'title' | 'body'> & { source?: CreateNoteInput['source'] },
+): string {
   const explicitTitle = input.title?.trim();
   if (explicitTitle) {
     return explicitTitle;
@@ -113,7 +115,11 @@ export async function createNote(userId: string, input: CreateNoteInput): Promis
   return docRef.id;
 }
 
-export async function updateNote(_userId: string, noteId: string, fields: UpdateNoteInput): Promise<void> {
+export async function updateNote(
+  _userId: string,
+  noteId: string,
+  fields: UpdateNoteInput,
+): Promise<void> {
   const db = getFirebaseFirestore();
 
   await updateDoc(doc(db, 'notes', noteId), {

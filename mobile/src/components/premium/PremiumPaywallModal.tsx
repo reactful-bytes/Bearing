@@ -49,23 +49,31 @@ export function PremiumPaywallModal({
           <AppCard style={styles.planCard}>
             <Text style={styles.planName}>Monthly</Text>
             <Text style={styles.planSummary}>Flexible access for short goal-planning sprints.</Text>
-            <Text style={styles.planMeta}>Store pricing loads here after App Store and Google Play billing are connected.</Text>
+            <Text style={styles.planMeta}>
+              Store pricing loads here after App Store and Google Play billing are connected.
+            </Text>
           </AppCard>
 
           <AppCard style={styles.planCard}>
             <Text style={styles.planName}>Annual</Text>
-            <Text style={styles.planSummary}>Best fit for longer goal cycles and ongoing calendar sync.</Text>
-            <Text style={styles.planMeta}>Plan pricing and intro offers will load from the stores in the monetization milestone.</Text>
+            <Text style={styles.planSummary}>
+              Best fit for longer goal cycles and ongoing calendar sync.
+            </Text>
+            <Text style={styles.planMeta}>
+              Plan pricing and intro offers will load from the stores in the monetization milestone.
+            </Text>
           </AppCard>
         </View>
 
         <Text style={styles.footnote}>
-          This is the in-app paywall shell. Store checkout, restore, and live entitlement wiring land in the subscription setup slice.
+          This is the in-app paywall shell. Store checkout, restore, and live entitlement wiring
+          land in the subscription setup slice.
         </Text>
 
         {isAnonymous ? (
           <Text style={styles.accountNote}>
-            Secure this anonymous session before live purchases ship so premium access can attach to a permanent account.
+            Secure this anonymous session before live purchases ship so premium access can attach to
+            a permanent account.
           </Text>
         ) : null}
 

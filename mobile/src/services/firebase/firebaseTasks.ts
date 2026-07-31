@@ -98,7 +98,11 @@ export async function createTask(userId: string, input: CreateTaskInput): Promis
   return docRef.id;
 }
 
-export async function updateTask(_userId: string, taskId: string, fields: UpdateTaskInput): Promise<void> {
+export async function updateTask(
+  _userId: string,
+  taskId: string,
+  fields: UpdateTaskInput,
+): Promise<void> {
   const db = getFirebaseFirestore();
   const updates: Record<string, unknown> = {
     updatedAt: Timestamp.now(),

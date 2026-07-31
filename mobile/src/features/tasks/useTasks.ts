@@ -71,14 +71,17 @@ export function useTasks(): UseTasksReturn {
     await updateFirebaseTask(userId, taskId, fields);
   }, []);
 
-  const completeTask = useCallback(async (taskId: string, input: CompleteTaskInput): Promise<void> => {
-    const userId = getFirebaseAuth().currentUser?.uid;
-    if (!userId) {
-      throw new Error('User is not authenticated.');
-    }
+  const completeTask = useCallback(
+    async (taskId: string, input: CompleteTaskInput): Promise<void> => {
+      const userId = getFirebaseAuth().currentUser?.uid;
+      if (!userId) {
+        throw new Error('User is not authenticated.');
+      }
 
-    await completeFirebaseTask(userId, taskId, input);
-  }, []);
+      await completeFirebaseTask(userId, taskId, input);
+    },
+    [],
+  );
 
   const deleteTask = useCallback(async (taskId: string): Promise<void> => {
     const userId = getFirebaseAuth().currentUser?.uid;

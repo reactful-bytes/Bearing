@@ -18,10 +18,30 @@ const EVENT_PADDING_H = 8;
 const MIN_EVENT_HEIGHT = 24;
 
 const HOUR_LABELS: string[] = [
-  '12 AM', '1 AM', '2 AM', '3 AM', '4 AM', '5 AM', '6 AM', '7 AM',
-  '8 AM', '9 AM', '10 AM', '11 AM',
-  '12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM', '6 PM', '7 PM',
-  '8 PM', '9 PM', '10 PM', '11 PM',
+  '12 AM',
+  '1 AM',
+  '2 AM',
+  '3 AM',
+  '4 AM',
+  '5 AM',
+  '6 AM',
+  '7 AM',
+  '8 AM',
+  '9 AM',
+  '10 AM',
+  '11 AM',
+  '12 PM',
+  '1 PM',
+  '2 PM',
+  '3 PM',
+  '4 PM',
+  '5 PM',
+  '6 PM',
+  '7 PM',
+  '8 PM',
+  '9 PM',
+  '10 PM',
+  '11 PM',
 ];
 
 function getEventTop(startAt: Date): number {
@@ -68,9 +88,7 @@ export function HourlyTimeline({ date, events, onPressEvent, uiState }: HourlyTi
   const currentTimeTop = (now.getHours() + now.getMinutes() / 60) * HOUR_HEIGHT;
 
   useEffect(() => {
-    const scrollTarget = isToday
-      ? Math.max(currentTimeTop - HOUR_HEIGHT * 2, 0)
-      : HOUR_HEIGHT * 7; // default to 7 AM for non-today
+    const scrollTarget = isToday ? Math.max(currentTimeTop - HOUR_HEIGHT * 2, 0) : HOUR_HEIGHT * 7; // default to 7 AM for non-today
 
     const timer = setTimeout(() => {
       scrollViewRef.current?.scrollTo({ y: scrollTarget, animated: false });
@@ -141,9 +159,7 @@ export function HourlyTimeline({ date, events, onPressEvent, uiState }: HourlyTi
                       right: EVENT_PADDING_H,
                       backgroundColor: bgColor,
                     },
-                    event.status === 'canceled'
-                      ? styles.eventBlockCanceled
-                      : null,
+                    event.status === 'canceled' ? styles.eventBlockCanceled : null,
                     pressed ? styles.eventBlockPressed : null,
                   ]}
                 >

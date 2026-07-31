@@ -94,7 +94,10 @@ describe('TasksScreen', () => {
 
     fireEvent.press(screen.getByLabelText('New task'));
     fireEvent.changeText(screen.getByLabelText('Task title'), 'Plan weekly meals');
-    fireEvent.changeText(screen.getByLabelText('Task description'), 'Make a simple shopping list first.');
+    fireEvent.changeText(
+      screen.getByLabelText('Task description'),
+      'Make a simple shopping list first.',
+    );
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Save task'));
@@ -167,7 +170,9 @@ describe('TasksScreen', () => {
 
     mockedCreateEvent.mockResolvedValue('event-456');
     mockedUseTasks.mockReturnValue({
-      tasks: [makeTask({ title: 'Write proposal', description: 'Focus on the executive summary.' })],
+      tasks: [
+        makeTask({ title: 'Write proposal', description: 'Focus on the executive summary.' }),
+      ],
       uiState: 'ready',
       createTask: async () => undefined,
       updateTask: async () => undefined,

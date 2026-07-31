@@ -165,9 +165,14 @@ export function TasksScreen() {
           accessibilityRole="button"
           accessibilityLabel={showCompleted ? 'Hide completed tasks' : 'Show completed tasks'}
           onPress={() => setShowCompleted((current) => !current)}
-          style={({ pressed }) => [styles.filterButton, pressed ? styles.filterButtonPressed : null]}
+          style={({ pressed }) => [
+            styles.filterButton,
+            pressed ? styles.filterButtonPressed : null,
+          ]}
         >
-          <Text style={styles.filterButtonText}>{showCompleted ? 'Hide Completed' : 'Show Completed'}</Text>
+          <Text style={styles.filterButtonText}>
+            {showCompleted ? 'Hide Completed' : 'Show Completed'}
+          </Text>
         </Pressable>
 
         {uiState === 'loading' ? (
@@ -180,21 +185,27 @@ export function TasksScreen() {
         {uiState === 'error' ? (
           <AppCard>
             <Text style={styles.stateTitle}>Unable to load tasks.</Text>
-            <Text style={styles.stateDescription}>Check your connection and try again in a moment.</Text>
+            <Text style={styles.stateDescription}>
+              Check your connection and try again in a moment.
+            </Text>
           </AppCard>
         ) : null}
 
         {uiState === 'empty' ? (
           <AppCard>
             <Text style={styles.stateTitle}>No tasks yet.</Text>
-            <Text style={styles.stateDescription}>Add a task to capture work before it belongs on the calendar.</Text>
+            <Text style={styles.stateDescription}>
+              Add a task to capture work before it belongs on the calendar.
+            </Text>
           </AppCard>
         ) : null}
 
         {uiState === 'ready' && visibleTasks.length === 0 ? (
           <AppCard>
             <Text style={styles.stateTitle}>No active tasks.</Text>
-            <Text style={styles.stateDescription}>Turn on completed tasks to review items you already scheduled or finished.</Text>
+            <Text style={styles.stateDescription}>
+              Turn on completed tasks to review items you already scheduled or finished.
+            </Text>
           </AppCard>
         ) : null}
 
@@ -205,7 +216,10 @@ export function TasksScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`Open task ${task.title}`}
                 onPress={() => setSelectedTaskId(task.id)}
-                style={({ pressed }) => [styles.taskCardPressable, pressed ? styles.taskCardPressed : null]}
+                style={({ pressed }) => [
+                  styles.taskCardPressable,
+                  pressed ? styles.taskCardPressed : null,
+                ]}
               >
                 <AppCard style={styles.taskCard}>
                   <View style={styles.taskMetaRow}>
@@ -230,7 +244,11 @@ export function TasksScreen() {
         />
       </View>
 
-      <AddTaskModal visible={addTaskVisible} onClose={() => setAddTaskVisible(false)} onSave={handleCreateTask} />
+      <AddTaskModal
+        visible={addTaskVisible}
+        onClose={() => setAddTaskVisible(false)}
+        onSave={handleCreateTask}
+      />
 
       <TaskDetailModal
         visible={selectedTask !== null}

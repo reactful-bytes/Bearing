@@ -10,7 +10,13 @@ type ListItemProps = {
   disabled?: boolean;
 };
 
-export function ListItem({ title, description, trailingText, onPress, disabled = false }: ListItemProps) {
+export function ListItem({
+  title,
+  description,
+  trailingText,
+  onPress,
+  disabled = false,
+}: ListItemProps) {
   if (onPress) {
     return (
       <Pressable

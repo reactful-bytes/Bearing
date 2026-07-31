@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Alert,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { AppModal } from '../components/ui/AppModal';
 import { PremiumPaywallModal } from '../components/premium/PremiumPaywallModal';
@@ -41,7 +50,10 @@ import { useSoundPreview } from '../features/profile/useSoundPreview';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { ProfileTip } from '../features/profile/profileTypes';
 import { createMirroredEvent, listUserEvents } from '../services/firebase/firebaseEvents';
-import { getCalendarProviderEnvStatus, getProviderSetupMessage } from '../services/config/calendarProviderEnv';
+import {
+  getCalendarProviderEnvStatus,
+  getProviderSetupMessage,
+} from '../services/config/calendarProviderEnv';
 
 type ProfileScreenProps = {
   onPressSignOut: () => Promise<void> | void;
@@ -49,8 +61,17 @@ type ProfileScreenProps = {
 };
 
 export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScreenProps) {
-  const { authUser, profile, uiState, error, isAnonymous, email, updateProfile, sendPasswordReset, linkAnonymousAccount } =
-    useUserProfile();
+  const {
+    authUser,
+    profile,
+    uiState,
+    error,
+    isAnonymous,
+    email,
+    updateProfile,
+    sendPasswordReset,
+    linkAnonymousAccount,
+  } = useUserProfile();
   const {
     connections,
     uiState: connectionsUiState,
@@ -78,7 +99,8 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   const [soundPending, setSoundPending] = useState(false);
   const [soundError, setSoundError] = useState<string | null>(null);
   const [passwordResetPending, setPasswordResetPending] = useState(false);
-  const [activeConnectionProvider, setActiveConnectionProvider] = useState<CalendarConnectionProvider | null>(null);
+  const [activeConnectionProvider, setActiveConnectionProvider] =
+    useState<CalendarConnectionProvider | null>(null);
   const [connectionPending, setConnectionPending] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [premiumPaywallFeature, setPremiumPaywallFeature] = useState<PremiumFeature | null>(null);
@@ -127,7 +149,9 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
       });
       setAccountFeedback('Account settings saved.');
     } catch (saveError) {
-      setAccountError(saveError instanceof Error ? saveError.message : 'Failed to save account settings.');
+      setAccountError(
+        saveError instanceof Error ? saveError.message : 'Failed to save account settings.',
+      );
     } finally {
       setAccountPending(false);
     }
@@ -150,7 +174,9 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
       await sendPasswordReset();
       Alert.alert('Password reset sent', `Check ${email ?? 'your inbox'} for the reset link.`);
     } catch (resetError) {
-      setAccountError(resetError instanceof Error ? resetError.message : 'Failed to send password reset email.');
+      setAccountError(
+        resetError instanceof Error ? resetError.message : 'Failed to send password reset email.',
+      );
     } finally {
       setPasswordResetPending(false);
     }
@@ -191,7 +217,9 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
       setLinkEmail('');
       Alert.alert('Account secured', 'This session is now linked to your email and password.');
     } catch (secureError) {
-      setLinkError(secureError instanceof Error ? secureError.message : 'Failed to secure the account.');
+      setLinkError(
+        secureError instanceof Error ? secureError.message : 'Failed to secure the account.',
+      );
     } finally {
       setLinkPending(false);
     }
@@ -216,7 +244,9 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
       );
       closeSoundPicker();
     } catch (selectionError) {
-      setSoundError(selectionError instanceof Error ? selectionError.message : 'Failed to save sound setting.');
+      setSoundError(
+        selectionError instanceof Error ? selectionError.message : 'Failed to save sound setting.',
+      );
     } finally {
       setSoundPending(false);
     }
@@ -346,15 +376,15 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
 
     try {
       const nextCalendars = connection.calendars.map((calendar) =>
-        calendar.id === calendarId
-          ? { ...calendar, isSelected: !calendar.isSelected }
-          : calendar,
+        calendar.id === calendarId ? { ...calendar, isSelected: !calendar.isSelected } : calendar,
       );
 
       await updateConnectionCalendars(connection.id, nextCalendars);
     } catch (selectionError) {
       setConnectionError(
-        selectionError instanceof Error ? selectionError.message : 'Failed to update calendar selection.',
+        selectionError instanceof Error
+          ? selectionError.message
+          : 'Failed to update calendar selection.',
       );
     } finally {
       setConnectionPending(false);
@@ -373,7 +403,9 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
     try {
       await updateConnectionSyncEnabled(connection.id, !connection.syncEnabled);
     } catch (syncError) {
-      setConnectionError(syncError instanceof Error ? syncError.message : 'Failed to update sync setting.');
+      setConnectionError(
+        syncError instanceof Error ? syncError.message : 'Failed to update sync setting.',
+      );
     } finally {
       setConnectionPending(false);
     }
@@ -393,7 +425,9 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
       closeConnectionModal();
     } catch (disconnectError) {
       setConnectionError(
-        disconnectError instanceof Error ? disconnectError.message : 'Failed to disconnect calendar.',
+        disconnectError instanceof Error
+          ? disconnectError.message
+          : 'Failed to disconnect calendar.',
       );
     } finally {
       setConnectionPending(false);
@@ -441,7 +475,9 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
 
       setIcsFeedback(`Saved ${filename} to ${fileUri}.`);
     } catch (exportError) {
-      setIcsError(exportError instanceof Error ? exportError.message : 'Failed to export .ics file.');
+      setIcsError(
+        exportError instanceof Error ? exportError.message : 'Failed to export .ics file.',
+      );
     } finally {
       setIcsPending(false);
     }
@@ -505,13 +541,17 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
           : `Imported ${importedCount} events.`,
       );
     } catch (importError) {
-      setIcsError(importError instanceof Error ? importError.message : 'Failed to import .ics file.');
+      setIcsError(
+        importError instanceof Error ? importError.message : 'Failed to import .ics file.',
+      );
     } finally {
       setIcsPending(false);
     }
   }
 
-  const activeConnection = activeConnectionProvider ? getConnection(activeConnectionProvider) : null;
+  const activeConnection = activeConnectionProvider
+    ? getConnection(activeConnectionProvider)
+    : null;
 
   return (
     <View style={styles.screen}>
@@ -525,14 +565,18 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
         {uiState === 'loading' ? (
           <AppCard>
             <Text style={styles.stateTitle}>Loading profile...</Text>
-            <Text style={styles.stateDescription}>Fetching your account settings and sound preferences.</Text>
+            <Text style={styles.stateDescription}>
+              Fetching your account settings and sound preferences.
+            </Text>
           </AppCard>
         ) : null}
 
         {uiState === 'error' ? (
           <AppCard>
             <Text style={styles.stateTitle}>Unable to load profile.</Text>
-            <Text style={styles.stateDescription}>{error?.message ?? 'Try again in a moment.'}</Text>
+            <Text style={styles.stateDescription}>
+              {error?.message ?? 'Try again in a moment.'}
+            </Text>
           </AppCard>
         ) : null}
 
@@ -562,7 +606,10 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                   accessibilityRole="button"
                   accessibilityLabel="Open timezone picker"
                   onPress={() => setSelectionPicker('timezone')}
-                  style={({ pressed }) => [styles.selectionButton, pressed ? styles.buttonPressed : null]}
+                  style={({ pressed }) => [
+                    styles.selectionButton,
+                    pressed ? styles.buttonPressed : null,
+                  ]}
                 >
                   <Text style={styles.selectionLabel}>Timezone</Text>
                   <Text style={styles.selectionValue}>
@@ -582,11 +629,18 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                   accessibilityRole="button"
                   accessibilityLabel="Open locale picker"
                   onPress={() => setSelectionPicker('locale')}
-                  style={({ pressed }) => [styles.selectionButton, pressed ? styles.buttonPressed : null]}
+                  style={({ pressed }) => [
+                    styles.selectionButton,
+                    pressed ? styles.buttonPressed : null,
+                  ]}
                 >
                   <Text style={styles.selectionLabel}>Locale</Text>
                   <Text style={styles.selectionValue}>
-                    {getProfileSelectionLabel(PROFILE_LOCALE_OPTIONS, locale, locale || 'Select a locale')}
+                    {getProfileSelectionLabel(
+                      PROFILE_LOCALE_OPTIONS,
+                      locale,
+                      locale || 'Select a locale',
+                    )}
                   </Text>
                   <Text style={styles.selectionMeta}>{locale || 'Select a locale'}</Text>
                 </Pressable>
@@ -606,14 +660,19 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                   accountPending ? styles.buttonDisabled : null,
                 ]}
               >
-                <Text style={styles.primaryButtonText}>{accountPending ? 'Saving...' : 'Save Account Settings'}</Text>
+                <Text style={styles.primaryButtonText}>
+                  {accountPending ? 'Saving...' : 'Save Account Settings'}
+                </Text>
               </Pressable>
             </AppCard>
 
             {isAnonymous ? (
               <AppCard style={styles.cardSection}>
                 <Text style={styles.sectionTitle}>Secure this anonymous session</Text>
-                <Text style={styles.stateDescription}>Add email and password to keep the same app data while turning this session into a real account.</Text>
+                <Text style={styles.stateDescription}>
+                  Add email and password to keep the same app data while turning this session into a
+                  real account.
+                </Text>
 
                 <View style={styles.fieldGroup}>
                   <Text style={styles.label}>Display name</Text>
@@ -676,7 +735,9 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                     linkPending ? styles.buttonDisabled : null,
                   ]}
                 >
-                  <Text style={styles.primaryButtonText}>{linkPending ? 'Securing...' : 'Secure Account'}</Text>
+                  <Text style={styles.primaryButtonText}>
+                    {linkPending ? 'Securing...' : 'Secure Account'}
+                  </Text>
                 </Pressable>
               </AppCard>
             ) : (
@@ -718,10 +779,16 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
 
             <View style={styles.actionBlock}>
               <ListItem
-                onPress={!hasPremiumAccess ? () => setPremiumPaywallFeature('premium_overview') : undefined}
+                onPress={
+                  !hasPremiumAccess ? () => setPremiumPaywallFeature('premium_overview') : undefined
+                }
                 title="Premium access"
                 description={getPremiumAccessDescription()}
-                trailingText={hasPremiumAccess ? getPremiumEntitlementLabel(profile.premiumStatus) : 'View plans'}
+                trailingText={
+                  hasPremiumAccess
+                    ? getPremiumEntitlementLabel(profile.premiumStatus)
+                    : 'View plans'
+                }
                 disabled={hasPremiumAccess}
               />
               <ListItem
@@ -742,7 +809,9 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                 description="Apple support is limited to .ics import and export in this milestone."
                 trailingText="Open"
               />
-              {connectionsUiState === 'error' ? <Text style={styles.errorText}>Unable to load calendar connection state.</Text> : null}
+              {connectionsUiState === 'error' ? (
+                <Text style={styles.errorText}>Unable to load calendar connection state.</Text>
+              ) : null}
               {connectionError ? <Text style={styles.errorText}>{connectionError}</Text> : null}
             </View>
 
@@ -763,7 +832,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
         visible={soundPicker !== null && profile !== null}
         title={soundPicker === 'alarm' ? 'Choose Timer Sound' : 'Choose Reminder Sound'}
         selectedSoundId={
-          soundPicker === 'alarm' ? profile?.alarmSoundId ?? '' : profile?.reminderSoundId ?? ''
+          soundPicker === 'alarm' ? (profile?.alarmSoundId ?? '') : (profile?.reminderSoundId ?? '')
         }
         playingSoundId={playingSoundId}
         previewError={previewError}
@@ -809,14 +878,22 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
 
       <AppModal
         visible={activeConnection !== null}
-        title={activeConnection ? getCalendarProviderLabel(activeConnection.provider) : 'Calendar Connection'}
+        title={
+          activeConnection
+            ? getCalendarProviderLabel(activeConnection.provider)
+            : 'Calendar Connection'
+        }
         onClose={closeConnectionModal}
       >
         {activeConnection ? (
           <>
             <View style={styles.connectionMetaBlock}>
-              <Text style={styles.sectionTitle}>{activeConnection.accountLabel || 'Connected account'}</Text>
-              <Text style={styles.stateDescription}>{formatSyncTimestamp(activeConnection.lastSyncAt)}</Text>
+              <Text style={styles.sectionTitle}>
+                {activeConnection.accountLabel || 'Connected account'}
+              </Text>
+              <Text style={styles.stateDescription}>
+                {formatSyncTimestamp(activeConnection.lastSyncAt)}
+              </Text>
               <Text style={styles.stateDescription}>
                 {formatCalendarSyncStatus(activeConnection.lastSyncStatus)}
                 {activeConnection.lastErrorMessage ? ` • ${activeConnection.lastErrorMessage}` : ''}
@@ -866,7 +943,9 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                         {calendar.isPrimary ? 'Primary calendar' : 'Additional calendar'}
                       </Text>
                     </View>
-                    <Text style={styles.optionStateText}>{calendar.isSelected ? 'Visible' : 'Hidden'}</Text>
+                    <Text style={styles.optionStateText}>
+                      {calendar.isSelected ? 'Visible' : 'Hidden'}
+                    </Text>
                   </Pressable>
                 ))
               ) : (
@@ -899,7 +978,8 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
 
       <AppModal visible={icsModalVisible} title="Apple Calendar (.ics)" onClose={closeIcsModal}>
         <Text style={styles.stateDescription}>
-          Import and export timed events with Apple Calendar compatible .ics files. This first slice skips recurring events, all-day events, attendees, conference links, and reminders.
+          Import and export timed events with Apple Calendar compatible .ics files. This first slice
+          skips recurring events, all-day events, attendees, conference links, and reminders.
         </Text>
 
         <Pressable
@@ -913,7 +993,9 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
             icsPending ? styles.buttonDisabled : null,
           ]}
         >
-          <Text style={styles.secondaryActionButtonText}>{icsPending ? 'Working...' : 'Import .ics File'}</Text>
+          <Text style={styles.secondaryActionButtonText}>
+            {icsPending ? 'Working...' : 'Import .ics File'}
+          </Text>
         </Pressable>
 
         <Pressable
@@ -927,7 +1009,9 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
             icsPending ? styles.buttonDisabled : null,
           ]}
         >
-          <Text style={styles.secondaryActionButtonText}>{icsPending ? 'Working...' : 'Export .ics File'}</Text>
+          <Text style={styles.secondaryActionButtonText}>
+            {icsPending ? 'Working...' : 'Export .ics File'}
+          </Text>
         </Pressable>
 
         <Pressable
@@ -941,7 +1025,9 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
             icsPending ? styles.buttonDisabled : null,
           ]}
         >
-          <Text style={styles.secondaryActionButtonText}>{icsPending ? 'Working...' : 'Share .ics File'}</Text>
+          <Text style={styles.secondaryActionButtonText}>
+            {icsPending ? 'Working...' : 'Share .ics File'}
+          </Text>
         </Pressable>
 
         {icsError ? <Text style={styles.errorText}>{icsError}</Text> : null}

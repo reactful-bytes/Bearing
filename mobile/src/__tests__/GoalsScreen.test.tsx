@@ -144,7 +144,9 @@ describe('GoalsScreen', () => {
 
   it('renders the empty state', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [],
@@ -167,7 +169,9 @@ describe('GoalsScreen', () => {
 
   it('renders goal cards with target date and next step', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [makeGoal()],
@@ -195,7 +199,9 @@ describe('GoalsScreen', () => {
       savedGoalInput = input;
     });
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [],
@@ -216,9 +222,16 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Continue'));
 
     fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
-    fireEvent.changeText(screen.getByLabelText('Goal description'), 'Train consistently for eight weeks.');
+    fireEvent.changeText(
+      screen.getByLabelText('Goal description'),
+      'Train consistently for eight weeks.',
+    );
     expect(screen.getByText('Simple SMART example')).toBeTruthy();
-    expect(screen.getByText('Good goal: Walk 30 minutes after work, 4 days a week, for the next 6 weeks.')).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Good goal: Walk 30 minutes after work, 4 days a week, for the next 6 weeks.',
+      ),
+    ).toBeTruthy();
     expect(screen.queryByLabelText('SMART Specific')).toBeNull();
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.press(screen.getByLabelText('Open goal target month dropdown'));
@@ -233,7 +246,10 @@ describe('GoalsScreen', () => {
     expect(screen.getByText('View Premium Plans')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Draft step 1 name'), 'Buy running shoes');
-    fireEvent.changeText(screen.getByLabelText('Draft step 1 description'), 'Choose a supportive pair.');
+    fireEvent.changeText(
+      screen.getByLabelText('Draft step 1 description'),
+      'Choose a supportive pair.',
+    );
     fireEvent.changeText(screen.getByLabelText('Draft step 1 starter'), 'Visit two stores');
     expect(screen.queryByLabelText('Draft step 1 estimated finish date')).toBeNull();
     fireEvent.press(screen.getByLabelText('Open draft step 1 month dropdown'));
@@ -266,7 +282,9 @@ describe('GoalsScreen', () => {
 
   it('opens the premium paywall from the AI planning step for free users', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [],
@@ -286,7 +304,10 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByText('New Goal'));
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
-    fireEvent.changeText(screen.getByLabelText('Goal description'), 'Train consistently for eight weeks.');
+    fireEvent.changeText(
+      screen.getByLabelText('Goal description'),
+      'Train consistently for eight weeks.',
+    );
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.press(screen.getByLabelText('View premium plans for AI goal builder'));
@@ -298,7 +319,9 @@ describe('GoalsScreen', () => {
 
   it('shows the premium-ready AI message for premium users', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockUserProfile({
       profile: makeProfile({ premiumStatus: 'premium', premiumSource: 'ios' }),
@@ -322,7 +345,10 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByText('New Goal'));
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
-    fireEvent.changeText(screen.getByLabelText('Goal description'), 'Train consistently for eight weeks.');
+    fireEvent.changeText(
+      screen.getByLabelText('Goal description'),
+      'Train consistently for eight weeks.',
+    );
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.press(screen.getByLabelText('Continue'));
 
@@ -335,7 +361,9 @@ describe('GoalsScreen', () => {
     jest.setSystemTime(new Date(2026, 6, 20, 9, 0, 0));
 
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [],
@@ -355,7 +383,10 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByText('New Goal'));
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
-    fireEvent.changeText(screen.getByLabelText('Goal description'), 'Train consistently for eight weeks.');
+    fireEvent.changeText(
+      screen.getByLabelText('Goal description'),
+      'Train consistently for eight weeks.',
+    );
     fireEvent.press(screen.getByLabelText('Continue'));
 
     expect(screen.getByText('Selected date: 07-21-2026')).toBeTruthy();
@@ -384,7 +415,9 @@ describe('GoalsScreen', () => {
     const deleteStepMock = jest.fn(async () => undefined);
     const createStepMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [makeGoal()],
@@ -409,7 +442,10 @@ describe('GoalsScreen', () => {
     expect(screen.getByText('Selected date: 07-22-2026')).toBeTruthy();
 
     fireEvent.changeText(screen.getByLabelText('Step name'), 'Book a training block');
-    fireEvent.changeText(screen.getByLabelText('Step description'), 'Pick sessions for the next eight weeks.');
+    fireEvent.changeText(
+      screen.getByLabelText('Step description'),
+      'Pick sessions for the next eight weeks.',
+    );
     fireEvent.changeText(screen.getByLabelText('Step starter'), 'Open the calendar');
     fireEvent.press(screen.getByLabelText('Open step target month dropdown'));
     fireEvent.press(screen.getByLabelText('Select step target month 08 - Aug'));
@@ -437,7 +473,9 @@ describe('GoalsScreen', () => {
   it('opens goal details and marks a goal complete from edit mode', async () => {
     const markGoalCompletedMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [makeGoal()],
@@ -469,7 +507,9 @@ describe('GoalsScreen', () => {
   it('edits a goal with the wizard-style date picker', async () => {
     const updateGoalMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [makeGoal()],
@@ -510,7 +550,9 @@ describe('GoalsScreen', () => {
 
   it('opens step scheduling with a prefilled event title and linked ids', async () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [makeGoal()],
@@ -575,7 +617,9 @@ describe('GoalsScreen', () => {
   it('moves a step down with the arrow controls', async () => {
     const reorderStepsMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [makeOrderedGoal()],
@@ -606,7 +650,9 @@ describe('GoalsScreen', () => {
   it('deletes a step from the step edit screen', async () => {
     const deleteStepMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [makeGoal()],
@@ -639,7 +685,9 @@ describe('GoalsScreen', () => {
 
   it('shows no events scheduled when a step has no linked events', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [makeGoal()],
@@ -666,7 +714,9 @@ describe('GoalsScreen', () => {
   it('edits a step with the wizard-style date picker', async () => {
     const updateStepMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [makeGoal()],

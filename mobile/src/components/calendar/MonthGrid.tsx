@@ -14,9 +14,18 @@ type MonthGridProps = {
 const DAY_HEADERS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
 export const MONTH_NAMES = [
-  'January', 'February', 'March', 'April',
-  'May', 'June', 'July', 'August',
-  'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 function buildWeeks(year: number, month: number): (number | null)[][] {
@@ -78,9 +87,7 @@ export function MonthGrid({
               selectedDate.getMonth() === month &&
               selectedDate.getDate() === day;
             const isToday =
-              today.getFullYear() === year &&
-              today.getMonth() === month &&
-              today.getDate() === day;
+              today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
             const hasEvents = eventDays.has(day);
 
             return (
@@ -109,7 +116,11 @@ export function MonthGrid({
                     {day}
                   </Text>
                 </View>
-                {hasEvents ? <View style={styles.eventDot} /> : <View style={styles.eventDotPlaceholder} />}
+                {hasEvents ? (
+                  <View style={styles.eventDot} />
+                ) : (
+                  <View style={styles.eventDotPlaceholder} />
+                )}
               </Pressable>
             );
           })}

@@ -27,7 +27,10 @@ export function TipsWisdomModal({ visible, tip, onClose, onRefresh }: TipsWisdom
               accessibilityRole="button"
               accessibilityLabel="Refresh tip"
               onPress={onRefresh}
-              style={({ pressed }) => [styles.secondaryButton, pressed ? styles.buttonPressed : null]}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                pressed ? styles.buttonPressed : null,
+              ]}
             >
               <Text style={styles.secondaryButtonText}>Refresh</Text>
             </Pressable>

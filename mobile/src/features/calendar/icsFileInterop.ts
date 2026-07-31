@@ -5,8 +5,22 @@ import { Platform } from 'react-native';
 function getWebGlobals(): {
   Blob?: new (parts?: unknown[], options?: { type?: string }) => { readonly size: number };
   URL?: { createObjectURL: (blob: unknown) => string; revokeObjectURL: (url: string) => void };
-  document?: { createElement: (tagName: string) => { click: () => void; href?: string; download?: string; remove?: () => void }; body?: { appendChild: (node: unknown) => void; removeChild: (node: unknown) => void } };
-  FileReader?: new () => { result: string | ArrayBuffer | null; error: Error | null; onload: null | (() => void); onerror: null | (() => void); readAsText: (file: unknown) => void };
+  document?: {
+    createElement: (tagName: string) => {
+      click: () => void;
+      href?: string;
+      download?: string;
+      remove?: () => void;
+    };
+    body?: { appendChild: (node: unknown) => void; removeChild: (node: unknown) => void };
+  };
+  FileReader?: new () => {
+    result: string | ArrayBuffer | null;
+    error: Error | null;
+    onload: null | (() => void);
+    onerror: null | (() => void);
+    readAsText: (file: unknown) => void;
+  };
 } {
   return globalThis as typeof globalThis & ReturnType<typeof getWebGlobals>;
 }
@@ -112,7 +126,9 @@ function pickWebIcsFileContent(): Promise<string | null> {
         input.remove?.();
         resolve(content);
       } catch (error) {
-        reject(error instanceof Error ? error : new Error('Failed to read the selected .ics file.'));
+        reject(
+          error instanceof Error ? error : new Error('Failed to read the selected .ics file.'),
+        );
       }
     };
 
@@ -125,7 +141,9 @@ export async function pickIcsFileContent(): Promise<string | null> {
     return pickWebIcsFileContent();
   }
 
-  const result = await File.pickFileAsync({ mimeTypes: ['text/calendar', 'application/octet-stream'] });
+  const result = await File.pickFileAsync({
+    mimeTypes: ['text/calendar', 'application/octet-stream'],
+  });
   if (result.canceled) {
     return null;
   }

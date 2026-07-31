@@ -76,12 +76,13 @@ export function FocusModeOverlay({
 
   const focusSummary = useMemo(() => {
     const preferredEvent = preferredEventId
-      ? events.find((event) => event.id === preferredEventId && now >= event.startAt && now < event.endAt) ?? null
+      ? (events.find(
+          (event) => event.id === preferredEventId && now >= event.startAt && now < event.endAt,
+        ) ?? null)
       : null;
-    const activeEvent = preferredEvent ?? events.find((event) => now >= event.startAt && now < event.endAt) ?? null;
-    const nextEvent = activeEvent
-      ? null
-      : events.find((event) => event.startAt > now) ?? null;
+    const activeEvent =
+      preferredEvent ?? events.find((event) => now >= event.startAt && now < event.endAt) ?? null;
+    const nextEvent = activeEvent ? null : (events.find((event) => event.startAt > now) ?? null);
 
     if (activeEvent) {
       return {

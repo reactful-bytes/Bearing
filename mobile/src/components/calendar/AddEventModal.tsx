@@ -5,7 +5,9 @@ import { AppModal } from '../ui/AppModal';
 import { colors, spacing, typography } from '../../design/tokens';
 import { CreateEventInput } from '../../features/calendar/calendarTypes';
 
-type AddEventInitialValues = Partial<Pick<CreateEventInput, 'title' | 'description' | 'goalId' | 'stepId'>>;
+type AddEventInitialValues = Partial<
+  Pick<CreateEventInput, 'title' | 'description' | 'goalId' | 'stepId'>
+>;
 
 type AddEventModalProps = {
   visible: boolean;

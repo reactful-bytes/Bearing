@@ -29,7 +29,15 @@ type StepDetailModalProps = {
   linkedEvents: CalendarEvent[];
   linkedEventsState: GoalStepEventsUiState;
   onClose: () => void;
-  onSaveStep: (stepId: string, fields: { title: string; description: string; starter: string; estimatedFinishDate: Date | null }) => Promise<void>;
+  onSaveStep: (
+    stepId: string,
+    fields: {
+      title: string;
+      description: string;
+      starter: string;
+      estimatedFinishDate: Date | null;
+    },
+  ) => Promise<void>;
   onDeleteStep: (step: GoalStepRecord) => Promise<void>;
   onSchedule: (step: GoalStepRecord) => void;
   onToggleComplete: (step: GoalStepRecord) => Promise<void>;
@@ -77,7 +85,10 @@ export function StepDetailModal({
     () => Array.from({ length: YEAR_OPTION_COUNT }, (_, index) => today.getFullYear() + index),
     [today],
   );
-  const dayOptions = useMemo(() => getDayOptions(dateParts.month, dateParts.year), [dateParts.month, dateParts.year]);
+  const dayOptions = useMemo(
+    () => getDayOptions(dateParts.month, dateParts.year),
+    [dateParts.month, dateParts.year],
+  );
 
   useEffect(() => {
     if (!step || !visible) {
@@ -88,7 +99,11 @@ export function StepDetailModal({
     setTitle(step.title);
     setDescription(step.description);
     setStarter(step.starter);
-    setDateParts(step.estimatedFinishDate ? buildGoalDateParts(step.estimatedFinishDate) : buildDefaultGoalDateParts(today));
+    setDateParts(
+      step.estimatedFinishDate
+        ? buildGoalDateParts(step.estimatedFinishDate)
+        : buildDefaultGoalDateParts(today),
+    );
     setActiveDateField(null);
     setSaving(false);
     setError(null);
@@ -188,14 +203,21 @@ export function StepDetailModal({
           <AppCard style={styles.summaryCard}>
             <Text style={styles.goalLabel}>{goalTitle}</Text>
             <Text style={styles.stepTitle}>{step.title}</Text>
-            <Text style={styles.stepStatus}>{step.status === 'completed' ? 'Completed' : 'In Progress'}</Text>
+            <Text style={styles.stepStatus}>
+              {step.status === 'completed' ? 'Completed' : 'In Progress'}
+            </Text>
           </AppCard>
 
           {editMode ? (
             <View style={styles.section}>
               <View style={styles.fieldGroup}>
                 <Text style={styles.label}>Step name</Text>
-                <TextInput accessibilityLabel="Edit step name" value={title} onChangeText={setTitle} style={styles.input} />
+                <TextInput
+                  accessibilityLabel="Edit step name"
+                  value={title}
+                  onChangeText={setTitle}
+                  style={styles.input}
+                />
               </View>
 
               <View style={styles.fieldGroup}>
@@ -211,7 +233,12 @@ export function StepDetailModal({
 
               <View style={styles.fieldGroup}>
                 <Text style={styles.label}>Starter</Text>
-                <TextInput accessibilityLabel="Edit step starter" value={starter} onChangeText={setStarter} style={styles.input} />
+                <TextInput
+                  accessibilityLabel="Edit step starter"
+                  value={starter}
+                  onChangeText={setStarter}
+                  style={styles.input}
+                />
               </View>
 
               <View style={styles.fieldGroup}>
@@ -223,11 +250,16 @@ export function StepDetailModal({
                   dateParts={dateParts}
                   activeField={activeDateField}
                   optionsByField={{
-                    month: MONTH_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
+                    month: MONTH_OPTIONS.map((option) => ({
+                      value: option.value,
+                      label: option.label,
+                    })),
                     day: dayOptions.map((day) => ({ value: day, label: formatTwoDigits(day) })),
                     year: yearOptions.map((year) => ({ value: year, label: String(year) })),
                   }}
-                  onToggleField={(field) => setActiveDateField((current) => (current === field ? null : field))}
+                  onToggleField={(field) =>
+                    setActiveDateField((current) => (current === field ? null : field))
+                  }
                   onSelectField={updateDateField}
                 />
               </View>
@@ -243,7 +275,9 @@ export function StepDetailModal({
                   saving ? styles.buttonDisabled : null,
                 ]}
               >
-                <Text style={styles.primaryButtonText}>{saving ? 'Saving...' : 'Save Changes'}</Text>
+                <Text style={styles.primaryButtonText}>
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Text>
               </Pressable>
 
               <Pressable
@@ -269,7 +303,9 @@ export function StepDetailModal({
                 <Text style={styles.infoValue}>{step.starter || 'No starter added yet.'}</Text>
                 <Text style={styles.infoLabel}>Estimated finish date</Text>
                 <Text style={styles.infoValue}>
-                  {step.estimatedFinishDate ? formatDateString(step.estimatedFinishDate) : 'Not set'}
+                  {step.estimatedFinishDate
+                    ? formatDateString(step.estimatedFinishDate)
+                    : 'Not set'}
                 </Text>
               </AppCard>
 
@@ -278,16 +314,24 @@ export function StepDetailModal({
                   accessibilityRole="button"
                   accessibilityLabel="Schedule event"
                   onPress={() => onSchedule(step)}
-                  style={({ pressed }) => [styles.primaryButton, pressed ? styles.buttonPressed : null]}
+                  style={({ pressed }) => [
+                    styles.primaryButton,
+                    pressed ? styles.buttonPressed : null,
+                  ]}
                 >
                   <Text style={styles.primaryButtonText}>Schedule Event</Text>
                 </Pressable>
 
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={step.status === 'completed' ? 'Mark step pending' : 'Mark step complete'}
+                  accessibilityLabel={
+                    step.status === 'completed' ? 'Mark step pending' : 'Mark step complete'
+                  }
                   onPress={() => void onToggleComplete(step)}
-                  style={({ pressed }) => [styles.secondaryButton, pressed ? styles.buttonPressed : null]}
+                  style={({ pressed }) => [
+                    styles.secondaryButton,
+                    pressed ? styles.buttonPressed : null,
+                  ]}
                 >
                   <Text style={styles.secondaryButtonText}>
                     {step.status === 'completed' ? 'Mark Step Pending' : 'Mark Step Complete'}
@@ -321,10 +365,14 @@ export function StepDetailModal({
             {linkedEventsState === 'ready'
               ? linkedEvents.map((event) => (
                   <AppCard key={event.id} style={styles.summaryCard}>
-                    <Text style={[styles.infoValue, event.endAt < new Date() ? styles.pastEvent : null]}>
+                    <Text
+                      style={[styles.infoValue, event.endAt < new Date() ? styles.pastEvent : null]}
+                    >
                       {event.title}
                     </Text>
-                    <Text style={[styles.infoLabel, event.endAt < new Date() ? styles.pastEvent : null]}>
+                    <Text
+                      style={[styles.infoLabel, event.endAt < new Date() ? styles.pastEvent : null]}
+                    >
                       {formatLinkedEvent(event)}
                     </Text>
                   </AppCard>

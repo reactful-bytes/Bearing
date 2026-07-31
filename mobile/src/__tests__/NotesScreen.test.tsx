@@ -26,7 +26,9 @@ function makeNote(overrides: Partial<NoteRecord> = {}): NoteRecord {
   };
 }
 
-function makeUseNotesReturn(overrides: Partial<ReturnType<typeof useNotes>> = {}): ReturnType<typeof useNotes> {
+function makeUseNotesReturn(
+  overrides: Partial<ReturnType<typeof useNotes>> = {},
+): ReturnType<typeof useNotes> {
   return {
     notes: [],
     uiState: 'empty',
@@ -50,10 +52,15 @@ describe('NotesScreen', () => {
 
   it('renders saved notes with source metadata', () => {
     const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
-    mockedUseNotes.mockReturnValue(makeUseNotesReturn({
-      notes: [makeNote(), makeNote({ id: 'note-2', source: 'manual', title: 'Manual note', sourceEventId: null })],
-      uiState: 'ready',
-    }));
+    mockedUseNotes.mockReturnValue(
+      makeUseNotesReturn({
+        notes: [
+          makeNote(),
+          makeNote({ id: 'note-2', source: 'manual', title: 'Manual note', sourceEventId: null }),
+        ],
+        uiState: 'ready',
+      }),
+    );
 
     render(<NotesScreen />);
 
@@ -102,7 +109,10 @@ describe('NotesScreen', () => {
     fireEvent.press(screen.getByLabelText('Open note Captured thought'));
     fireEvent.press(screen.getByLabelText('Edit note'));
     fireEvent.changeText(screen.getByLabelText('Edit note title'), 'Sharper title');
-    fireEvent.changeText(screen.getByLabelText('Edit note body'), 'Rewritten body for a better saved note.');
+    fireEvent.changeText(
+      screen.getByLabelText('Edit note body'),
+      'Rewritten body for a better saved note.',
+    );
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Save note changes'));

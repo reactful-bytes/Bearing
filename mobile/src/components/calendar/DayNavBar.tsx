@@ -10,8 +10,18 @@ type DayNavBarProps = {
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 export function formatDayLabel(date: Date): string {
@@ -33,7 +43,9 @@ export function DayNavBar({ date, onPrev, onNext }: DayNavBarProps) {
       >
         <Text style={styles.arrowText}>‹</Text>
       </Pressable>
-      <Text style={styles.label} numberOfLines={1}>{formatDayLabel(date)}</Text>
+      <Text style={styles.label} numberOfLines={1}>
+        {formatDayLabel(date)}
+      </Text>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Next day"

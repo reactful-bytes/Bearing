@@ -23,7 +23,11 @@ export type UseUserProfileReturn = {
   email: string | null;
   updateProfile: (fields: UpdateUserProfileInput) => Promise<void>;
   sendPasswordReset: () => Promise<void>;
-  linkAnonymousAccount: (input: { email: string; password: string; displayName: string }) => Promise<void>;
+  linkAnonymousAccount: (input: {
+    email: string;
+    password: string;
+    displayName: string;
+  }) => Promise<void>;
 };
 
 export function useUserProfile(): UseUserProfileReturn {
@@ -65,7 +69,9 @@ export function useUserProfile(): UseUserProfileReturn {
       }
 
       setUiState('error');
-      setError(profileError instanceof Error ? profileError : new Error('Failed to ensure user profile.'));
+      setError(
+        profileError instanceof Error ? profileError : new Error('Failed to ensure user profile.'),
+      );
     });
 
     const unsubscribe = subscribeToUserProfile(
