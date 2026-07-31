@@ -67,6 +67,12 @@ function docToGoal(snapshot: QueryDocumentSnapshot<DocumentData>): GoalRecord {
     status: data.status as GoalStatus,
     isAiAssisted: Boolean(data.isAiAssisted),
     aiPlanVersion: (data.aiPlanVersion as number | null) ?? null,
+    aiMilestones: Array.isArray(data.aiMilestones)
+      ? data.aiMilestones.map((milestone: Record<string, unknown>) => ({
+          title: typeof milestone.title === 'string' ? milestone.title : '',
+          description: typeof milestone.description === 'string' ? milestone.description : '',
+        }))
+      : [],
     createdAt: (data.createdAt as Timestamp).toDate(),
     updatedAt: (data.updatedAt as Timestamp).toDate(),
   };
@@ -194,7 +200,11 @@ export async function createGoal(userId: string, input: CreateGoalInput): Promis
     nextStepId: stepRefs[0]?.id ?? null,
     status: 'active',
     isAiAssisted: input.isAiAssisted,
-    aiPlanVersion: null,
+    aiPlanVersion: input.aiPlanVersion ?? null,
+    aiMilestones: (input.aiMilestones ?? []).map((milestone) => ({
+      title: milestone.title.trim(),
+      description: milestone.description.trim(),
+    })),
     createdAt: now,
     updatedAt: now,
   });

@@ -96,9 +96,9 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 | Task ID | Status      | Description                                           | Exit Criteria                                 |
 | ------- | ----------- | ----------------------------------------------------- | --------------------------------------------- |
-| M8.1    | not-started | Implement premium entitlement model and feature gates | Premium gates enforced client and server side |
-| M8.2    | not-started | Build AI-assisted goal planning service integration   | AI returns editable milestones and steps      |
-| M8.3    | not-started | Add AI safety, fallback, and failure UX               | Users receive clear recovery paths on failure |
+| M8.1    | completed | Implement premium entitlement model and feature gates | Premium gates enforced client and server side |
+| M8.2    | completed | Build AI-assisted goal planning service integration   | AI returns editable milestones and steps      |
+| M8.3    | completed | Add AI safety, fallback, and failure UX               | Users receive clear recovery paths on failure |
 | M8.4    | not-started | Instrument premium funnel from upgrade to activation  | Conversion analytics captured end-to-end      |
 
 ### M9 - Quality, Security, and Compliance

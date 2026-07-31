@@ -60,6 +60,9 @@ Fields:
 - status: enum (active, completed, archived)
 - isAiAssisted: boolean
 - aiPlanVersion: number | null
+- aiMilestones: array of editable accepted milestone objects
+  - title: string
+  - description: string
 - createdAt: timestamp
 - updatedAt: timestamp
 

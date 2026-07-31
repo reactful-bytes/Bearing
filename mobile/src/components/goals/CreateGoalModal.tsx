@@ -19,6 +19,11 @@ import {
   isFutureDate,
 } from './GoalDatePicker';
 import { colors, radii, spacing, typography } from '../../design/tokens';
+import {
+  AiGoalMilestone,
+  AiGoalPlanDraft,
+  AiGoalPlanInput,
+} from '../../features/goals/aiGoalPlanTypes';
 import { CreateGoalInput, CreateGoalStepInput } from '../../features/goals/goalTypes';
 
 type CreateGoalModalProps = {
@@ -28,6 +33,7 @@ type CreateGoalModalProps = {
   hasPremiumAccess: boolean;
   isPremiumStatusResolved: boolean;
   onOpenPremiumPaywall: () => void;
+  onGenerateAiPlan: (input: AiGoalPlanInput) => Promise<AiGoalPlanDraft>;
 };
 
 type DraftGoalStep = CreateGoalStepInput & {
@@ -58,6 +64,25 @@ function makeEmptyDraftStep(index: number, baseDate: Date): DraftGoalStep {
   };
 }
 
+function parseAiDateParts(value: string, fallback: GoalDateParts): GoalDateParts {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) {
+    return fallback;
+  }
+
+  const dateParts = {
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3]),
+  };
+
+  return Number.isNaN(getGoalDateFromParts(dateParts).getTime()) ? fallback : dateParts;
+}
+
+function formatAiTargetDate(dateParts: GoalDateParts): string {
+  return `${dateParts.year}-${formatTwoDigits(dateParts.month)}-${formatTwoDigits(dateParts.day)}`;
+}
+
 export function CreateGoalModal({
   visible,
   onClose,
@@ -65,6 +90,7 @@ export function CreateGoalModal({
   hasPremiumAccess,
   isPremiumStatusResolved,
   onOpenPremiumPaywall,
+  onGenerateAiPlan,
 }: CreateGoalModalProps) {
   const today = useMemo(() => new Date(), []);
   const [wizardIndex, setWizardIndex] = useState(0);
@@ -77,6 +103,10 @@ export function CreateGoalModal({
   const [draftSteps, setDraftSteps] = useState<DraftGoalStep[]>([makeEmptyDraftStep(1, today)]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aiDraft, setAiDraft] = useState<AiGoalPlanDraft | null>(null);
+  const [aiMilestones, setAiMilestones] = useState<AiGoalMilestone[]>([]);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const canGoBack = wizardIndex > 0;
   const wizardLabel = useMemo(
@@ -93,6 +123,10 @@ export function CreateGoalModal({
     setDraftSteps([makeEmptyDraftStep(1, today)]);
     setSaving(false);
     setError(null);
+    setAiDraft(null);
+    setAiMilestones([]);
+    setAiGenerating(false);
+    setAiError(null);
   }
 
   function handleClose(): void {
@@ -110,6 +144,48 @@ export function CreateGoalModal({
         return { ...step, [field]: value };
       }),
     );
+  }
+
+  function updateAiMilestone(index: number, field: keyof AiGoalMilestone, value: string): void {
+    setAiMilestones((current) =>
+      current.map((milestone, milestoneIndex) =>
+        milestoneIndex === index ? { ...milestone, [field]: value } : milestone,
+      ),
+    );
+  }
+
+  async function handleGenerateAiPlan(): Promise<void> {
+    setAiGenerating(true);
+    setAiError(null);
+
+    try {
+      const draft = await onGenerateAiPlan({
+        title: title.trim(),
+        description: description.trim(),
+        targetDate: formatAiTargetDate(goalDateParts),
+      });
+
+      setAiDraft(draft);
+      setAiMilestones(draft.milestones);
+      setDraftSteps(
+        draft.steps.map((step, index) => {
+          const dateParts = parseAiDateParts(step.targetDate, goalDateParts);
+          return {
+            id: `ai-draft-step-${index + 1}`,
+            title: step.title,
+            description: step.description,
+            starter: step.starter,
+            estimatedFinishDate: getGoalDateFromParts(dateParts),
+            dateParts,
+            activeDateField: null,
+          };
+        }),
+      );
+    } catch {
+      setAiError('AI planning is unavailable right now. Try again or continue manually.');
+    } finally {
+      setAiGenerating(false);
+    }
   }
 
   function toggleDraftStepDateField(id: string, field: GoalDateField): void {
@@ -240,7 +316,7 @@ export function CreateGoalModal({
       await onSave({
         title: title.trim(),
         description: description.trim(),
-        smartMeta: {
+        smartMeta: aiDraft?.smartMeta ?? {
           specific: '',
           measurable: '',
           achievable: '',
@@ -248,7 +324,14 @@ export function CreateGoalModal({
           timeBound: '',
         },
         estimatedCompletionDate: parsedDate,
-        isAiAssisted: false,
+        isAiAssisted: aiDraft !== null,
+        aiPlanVersion: aiDraft?.promptVersion ?? null,
+        aiMilestones: aiMilestones
+          .filter((milestone) => milestone.title.trim())
+          .map((milestone) => ({
+            title: milestone.title.trim(),
+            description: milestone.description.trim(),
+          })),
         steps: draftSteps
           .filter((step) => step.title.trim())
           .map((step) => ({
@@ -329,14 +412,51 @@ export function CreateGoalModal({
             </AppCard>
           ) : hasPremiumAccess ? (
             <AppCard style={styles.card}>
-              <Text style={styles.cardTitle}>Premium AI planning slot is ready.</Text>
-              <Text style={styles.cardBody}>
-                Your premium gate is clear. The AI milestone and step generator will plug into this
-                step in M8.2, and manual planning stays available in the meantime.
+              <Text style={styles.cardTitle}>
+                {aiDraft ? 'Review your AI draft.' : 'Build an editable first draft.'}
               </Text>
+              {aiDraft ? (
+                <>
+                  <Text style={styles.cardBody}>{aiDraft.timelineSummary}</Text>
+                  {aiMilestones.map((milestone, index) => (
+                    <View key={`ai-milestone-${index + 1}`} style={styles.milestoneFields}>
+                      <Text style={styles.exampleLabel}>Milestone {index + 1}</Text>
+                      <FormField
+                        label="Milestone name"
+                        accessibilityLabel={`AI milestone ${index + 1} name`}
+                        value={milestone.title}
+                        onChangeText={(value) => updateAiMilestone(index, 'title', value)}
+                      />
+                      <FormField
+                        label="Description"
+                        accessibilityLabel={`AI milestone ${index + 1} description`}
+                        value={milestone.description}
+                        onChangeText={(value) => updateAiMilestone(index, 'description', value)}
+                        multiline
+                      />
+                    </View>
+                  ))}
+                  <Text style={styles.cardBody}>
+                    Continue to review and edit every generated step before saving.
+                  </Text>
+                </>
+              ) : (
+                <Text style={styles.cardBody}>
+                  Generate milestones and ordered steps from your goal details. Nothing is saved
+                  until you review the draft and save the goal.
+                </Text>
+              )}
               <View style={styles.enabledBadge}>
                 <Text style={styles.enabledBadgeText}>Premium Enabled</Text>
               </View>
+              {aiError ? <Text style={styles.errorText}>{aiError}</Text> : null}
+              <AppButton
+                label={aiDraft ? 'Regenerate Draft' : 'Generate Draft'}
+                accessibilityLabel={aiDraft ? 'Regenerate AI goal plan' : 'Generate AI goal plan'}
+                onPress={handleGenerateAiPlan}
+                loading={aiGenerating}
+                loadingLabel="Generating..."
+              />
             </AppCard>
           ) : (
             <AppCard style={styles.card}>
@@ -547,6 +667,10 @@ const styles = StyleSheet.create({
     ...typography.helper,
     color: colors.brand,
     fontWeight: '600',
+  },
+  milestoneFields: {
+    gap: spacing.sm,
+    paddingTop: spacing.sm,
   },
   fieldGroup: {
     gap: spacing.xs,

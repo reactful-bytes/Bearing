@@ -265,6 +265,18 @@ export function GoalDetailsModal({
             </View>
           )}
 
+          {goal.aiMilestones && goal.aiMilestones.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Milestones</Text>
+              {goal.aiMilestones.map((milestone, index) => (
+                <AppCard key={`goal-milestone-${index + 1}`} style={styles.summaryCard}>
+                  <Text style={styles.milestoneTitle}>{milestone.title}</Text>
+                  <Text style={styles.goalDescription}>{milestone.description}</Text>
+                </AppCard>
+              ))}
+            </View>
+          ) : null}
+
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Steps</Text>
@@ -327,6 +339,10 @@ const styles = StyleSheet.create({
   goalTitle: {
     ...typography.button,
     fontSize: 18,
+    color: colors.text,
+  },
+  milestoneTitle: {
+    ...typography.button,
     color: colors.text,
   },
   goalDescription: {

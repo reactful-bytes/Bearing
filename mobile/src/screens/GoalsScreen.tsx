@@ -25,6 +25,7 @@ import { useGoals } from '../features/goals/useGoals';
 import { useGoalStepEvents } from '../features/goals/useGoalStepEvents';
 import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
+import { generateAiGoalPlanDraft } from '../services/firebase/firebaseAiGoalPlans';
 
 type GoalFilter = 'active' | 'completed' | 'all';
 
@@ -314,6 +315,7 @@ export function GoalsScreen() {
         hasPremiumAccess={hasPremiumAccess}
         isPremiumStatusResolved={entitlementUiState === 'ready'}
         onOpenPremiumPaywall={() => setPremiumPaywallFeature('ai_goal_builder')}
+        onGenerateAiPlan={generateAiGoalPlanDraft}
       />
 
       <PremiumPaywallModal

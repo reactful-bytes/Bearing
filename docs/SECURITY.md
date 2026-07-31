@@ -25,6 +25,8 @@ CI runs the same 14-case suite whenever mobile or Firestore configuration change
   secret-storage mechanism.
 - Service-account keys, billing secrets, AI provider keys, webhook secrets, and private API tokens
   must live in managed server/CI secret storage and must never use an `EXPO_PUBLIC_*` name.
+- The AI callable reads `GEMINI_API_KEY` only through Firebase Functions managed secret binding. Do
+  not add this value to mobile configuration, local tracked files, or CI logs.
 - The 2026-07-31 tracked-file scan found no private-key, client-secret, refresh-token, Stripe-key, or
   Firebase-key patterns.
 
@@ -38,11 +40,15 @@ Jest, or Firebase CLI versions with incompatible versions, so they were not forc
 Review these findings during each Expo SDK upgrade. Keep `npx expo install --check` and
 `npx expo-doctor` green, and adopt patched framework releases as they become compatible.
 
-## Remaining Server Controls
+## Server Controls
 
-Firebase Functions must perform premium entitlement, billing, AI, export, and account-deletion
-operations with managed secrets and Admin SDK authorization. Enable and enforce App Check for those
-callable/HTTP endpoints before production rollout.
+Firebase Functions derive premium authorization from `subscriptions/{uid}` after Auth and App Check
+verification. AI generation uses that server gate, managed secret binding, bounded structured
+output, and sanitized provider failures. Billing reconciliation, export, and account deletion must
+use the same Admin SDK authorization boundary.
+
+App Check is enforced by the callable. Native App Check provider registration and deployed-device
+acceptance remain required before production rollout.
 
 Firebase currently supports Node 22 as its newest Functions deployment runtime. The Functions
 package is therefore deployed with `nodejs22` while its local and CI quality gate also runs on the

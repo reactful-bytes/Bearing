@@ -9,6 +9,7 @@ import { useUserProfile } from '../features/profile/useUserProfile';
 import { UserProfileRecord } from '../features/profile/profileTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
+import { generateAiGoalPlanDraft } from '../services/firebase/firebaseAiGoalPlans';
 
 jest.mock('../features/goals/useGoals', () => ({
   useGoals: jest.fn(),
@@ -28,6 +29,10 @@ jest.mock('../features/calendar/useCalendarPublication', () => ({
 
 jest.mock('../features/premium/usePremiumEntitlement', () => ({
   usePremiumEntitlement: jest.fn(),
+}));
+
+jest.mock('../services/firebase/firebaseAiGoalPlans', () => ({
+  generateAiGoalPlanDraft: jest.fn(),
 }));
 
 jest.mock('../services/firebase/firebaseEvents', () => ({
@@ -393,10 +398,14 @@ describe('GoalsScreen', () => {
     expect(screen.getByText('Continue on Free Plan')).toBeTruthy();
   });
 
-  it('shows the premium-ready AI message for premium users', () => {
+  it('generates an editable AI draft before saving for premium users', async () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
     const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
       typeof useGoalStepEvents
+    >;
+    const createGoalMock = jest.fn(async () => undefined);
+    const mockedGenerateAiGoalPlanDraft = generateAiGoalPlanDraft as jest.MockedFunction<
+      typeof generateAiGoalPlanDraft
     >;
 
     (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
@@ -405,6 +414,113 @@ describe('GoalsScreen', () => {
       error: null,
     });
 
+    mockedUseGoals.mockReturnValue({
+      goals: [],
+      uiState: 'empty',
+      createGoal: createGoalMock,
+      updateGoal: async () => undefined,
+      markGoalCompleted: async () => undefined,
+      createStep: async () => undefined,
+      deleteStep: async () => undefined,
+      updateStep: async () => undefined,
+      reorderSteps: async () => undefined,
+    });
+    mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
+    mockedGenerateAiGoalPlanDraft.mockResolvedValue({
+      promptVersion: 1,
+      smartMeta: {
+        specific: 'Finish a 10k race.',
+        measurable: 'Run three times each week.',
+        achievable: 'Build distance gradually.',
+        relevant: 'Improve sustainable fitness.',
+        timeBound: 'Finish by the selected target date.',
+      },
+      milestones: [
+        {
+          title: 'Build a running base',
+          description: 'Establish a consistent weekly rhythm.',
+        },
+      ],
+      steps: [
+        {
+          title: 'Choose weekly run times',
+          description: 'Reserve three repeatable windows.',
+          starter: 'Open the calendar.',
+          targetDate: '2027-01-15',
+        },
+      ],
+      timelineSummary: 'Build consistency before increasing distance.',
+    });
+
+    render(<GoalsScreen />);
+
+    fireEvent.press(screen.getByText('New Goal'));
+    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
+    fireEvent.changeText(
+      screen.getByLabelText('Goal description'),
+      'Train consistently for eight weeks.',
+    );
+    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Continue'));
+
+    expect(screen.getByText('Build an editable first draft.')).toBeTruthy();
+    expect(screen.queryByLabelText('View premium plans for AI goal builder')).toBeNull();
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
+    });
+
+    await waitFor(() => expect(screen.getByText('Review your AI draft.')).toBeTruthy());
+    expect(mockedGenerateAiGoalPlanDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Run a 10k',
+        description: 'Train consistently for eight weeks.',
+      }),
+    );
+    fireEvent.changeText(screen.getByLabelText('AI milestone 1 name'), 'Build consistency');
+    fireEvent.press(screen.getByLabelText('Continue'));
+    expect(screen.getByDisplayValue('Choose weekly run times')).toBeTruthy();
+    fireEvent.changeText(screen.getByLabelText('Draft step 1 name'), 'Schedule weekly runs');
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Save goal'));
+    });
+
+    await waitFor(() =>
+      expect(createGoalMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isAiAssisted: true,
+          aiPlanVersion: 1,
+          aiMilestones: [
+            expect.objectContaining({
+              title: 'Build consistency',
+            }),
+          ],
+          steps: [
+            expect.objectContaining({
+              title: 'Schedule weekly runs',
+            }),
+          ],
+        }),
+      ),
+    );
+  });
+
+  it('keeps manual planning available when AI generation fails', async () => {
+    const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
+
+    (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
+      entitlement: { status: 'in_grace_period' } as never,
+      uiState: 'ready',
+      error: null,
+    });
+    (
+      generateAiGoalPlanDraft as jest.MockedFunction<typeof generateAiGoalPlanDraft>
+    ).mockRejectedValue(new Error('unavailable'));
     mockedUseGoals.mockReturnValue({
       goals: [],
       uiState: 'empty',
@@ -419,19 +535,23 @@ describe('GoalsScreen', () => {
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
     render(<GoalsScreen />);
-
     fireEvent.press(screen.getByText('New Goal'));
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
-    fireEvent.changeText(
-      screen.getByLabelText('Goal description'),
-      'Train consistently for eight weeks.',
-    );
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.press(screen.getByLabelText('Continue'));
 
-    expect(screen.getByText('Premium AI planning slot is ready.')).toBeTruthy();
-    expect(screen.queryByLabelText('View premium plans for AI goal builder')).toBeNull();
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('AI planning is unavailable right now. Try again or continue manually.'),
+      ).toBeTruthy(),
+    );
+    fireEvent.press(screen.getByLabelText('Continue'));
+    expect(screen.getByLabelText('Draft step 1 name')).toBeTruthy();
   });
 
   it('limits year choices to the present or future and rejects a non-future target date', () => {
@@ -556,7 +676,16 @@ describe('GoalsScreen', () => {
     >;
 
     mockedUseGoals.mockReturnValue({
-      goals: [makeGoal()],
+      goals: [
+        makeGoal({
+          aiMilestones: [
+            {
+              title: 'Build a running base',
+              description: 'Establish a consistent weekly rhythm.',
+            },
+          ],
+        }),
+      ],
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
@@ -571,6 +700,8 @@ describe('GoalsScreen', () => {
     render(<GoalsScreen />);
 
     fireEvent.press(screen.getByText('Run a 10k'));
+    expect(screen.getByText('Milestones')).toBeTruthy();
+    expect(screen.getByText('Build a running base')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Edit goal'));
 
     await act(async () => {
