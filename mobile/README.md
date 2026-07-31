@@ -4,8 +4,8 @@ Expo React Native mobile application for Bearing.
 
 ## Prerequisites
 
-- Node.js 20.x
-- npm 10.x
+- Node.js 24.x LTS
+- npm 11.x
 - Android Studio, Android SDK, and a running emulator or USB-debuggable device for Android
 - macOS, Xcode, and an iOS simulator or registered device for iOS
 

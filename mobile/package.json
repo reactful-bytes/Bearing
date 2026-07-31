@@ -53,8 +53,8 @@
     "test:coverage": "jest --coverage"
   },
   "engines": {
-    "node": ">=20 <21",
-    "npm": ">=10 <11"
+    "node": ">=24 <25",
+    "npm": ">=11 <12"
   },
   "private": true
 }

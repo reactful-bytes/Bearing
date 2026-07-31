@@ -6,7 +6,7 @@ from `app.config.ts` and remain gitignored.
 
 ## Shared Setup
 
-1. Use Node.js 20.x and npm 10.x.
+1. Use Node.js 24.x LTS and npm 11.x.
 2. From `mobile/`, run `npm install`.
 3. Copy `.env.example` to `.env` and set the development Firebase values.
 
