@@ -113,6 +113,7 @@ Fields:
 - publicationStatus: enum (unpublished, publishing, published, diverged, delete_pending)
 - publicationLinkKey: string | null
 - publicationBaselineHash: string | null
+- sourceTaskId: string | null
 - goalId: string | null
 - stepId: string | null
 - status: enum (scheduled, completed, canceled)
@@ -230,6 +231,7 @@ Notes:
 - Firestore creation succeeds before native publication is attempted; publication failure never removes the Bearing event.
 - A confirmed external deletion marks a linked Bearing event unpublished rather than deleting it.
 - Tasks converted into events should keep the linked event ID for traceability and stay hidden from the default active list.
+- Task conversion uses deterministic event ID `task-{taskId}` and one Firestore transaction to create the event and complete the task. Retries reuse the same event, while optional system-calendar publication runs only after the transaction commits.
 - Idea Dump notes should preserve source metadata for traceability.
 
 ## Error Handling Requirements
