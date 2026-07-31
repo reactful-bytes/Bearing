@@ -131,12 +131,13 @@ function formatTimeZoneLabel(timeZone: string): string {
 }
 
 function buildTimezoneOptions(): ProfileSelectionOption[] {
-  const supportedValuesOf = (Intl as Intl.DateTimeFormatOptions & {
-    supportedValuesOf?: (key: string) => string[];
-  }).supportedValuesOf;
-  const zones = typeof supportedValuesOf === 'function'
-    ? supportedValuesOf('timeZone')
-    : FALLBACK_TIMEZONES;
+  const supportedValuesOf = (
+    Intl as Intl.DateTimeFormatOptions & {
+      supportedValuesOf?: (key: string) => string[];
+    }
+  ).supportedValuesOf;
+  const zones =
+    typeof supportedValuesOf === 'function' ? supportedValuesOf('timeZone') : FALLBACK_TIMEZONES;
 
   return zones.map((timeZone) => ({
     value: timeZone,

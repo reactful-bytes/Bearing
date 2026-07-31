@@ -18,13 +18,13 @@ import {
 } from 'firebase/firestore';
 
 import { getFirebaseApp } from './firebaseApp';
+import { decodeCalendarEventData } from '../../features/calendar/calendarEventDecoder';
 import {
+  CalendarPublicationMetadata,
   CalendarEvent,
   CreateEventInput,
-  CreateMirroredEventInput,
-  EventSource,
-  EventStatus,
   UpdateEventInput,
+  createUnpublishedMetadata,
 } from '../../features/calendar/calendarTypes';
 
 // ---------------------------------------------------------------------------
@@ -50,38 +50,26 @@ function getFirebaseFirestore(): Firestore {
 // Firestore → domain type conversion
 // ---------------------------------------------------------------------------
 
-function docToCalendarEvent(snapshot: QueryDocumentSnapshot<DocumentData>): CalendarEvent {
-  const d = snapshot.data();
-  return {
-    id: snapshot.id,
-    userId: d.userId as string,
-    title: d.title as string,
-    description: d.description as string,
-    startAt: (d.startAt as Timestamp).toDate(),
-    endAt: (d.endAt as Timestamp).toDate(),
-    timezone: d.timezone as string,
-    source: d.source as EventSource,
-    externalEventId: (d.externalEventId as string | null) ?? null,
-    calendarConnectionId: (d.calendarConnectionId as string | null) ?? null,
-    goalId: (d.goalId as string | null) ?? null,
-    stepId: (d.stepId as string | null) ?? null,
-    status: d.status as EventStatus,
-    createdAt: (d.createdAt as Timestamp).toDate(),
-    updatedAt: (d.updatedAt as Timestamp).toDate(),
-  };
+export function docToCalendarEvent(snapshot: QueryDocumentSnapshot<DocumentData>): CalendarEvent {
+  return decodeCalendarEventData(snapshot.id, snapshot.data());
 }
 
-function buildEventPayload(
+export function buildEventPayload(
   userId: string,
-  input: CreateEventInput | CreateMirroredEventInput,
-  options?: {
-    source?: EventSource;
-    externalEventId?: string | null;
-    calendarConnectionId?: string | null;
-    status?: EventStatus;
-  },
+  input: CreateEventInput,
+  publication: CalendarPublicationMetadata,
+  now: Timestamp = Timestamp.now(),
 ): Record<string, unknown> {
-  const now = Timestamp.now();
+  const recurrenceRule = input.recurrenceRule
+    ? {
+        ...input.recurrenceRule,
+        endAt: input.recurrenceRule.endAt ? Timestamp.fromDate(input.recurrenceRule.endAt) : null,
+      }
+    : null;
+  const alarms = (input.alarms ?? []).map((alarm) => ({
+    absoluteAt: alarm.absoluteAt ? Timestamp.fromDate(alarm.absoluteAt) : null,
+    relativeOffsetMinutes: alarm.relativeOffsetMinutes,
+  }));
 
   return {
     userId,
@@ -90,12 +78,16 @@ function buildEventPayload(
     startAt: Timestamp.fromDate(input.startAt),
     endAt: Timestamp.fromDate(input.endAt),
     timezone: input.timezone,
-    source: options?.source ?? 'local',
-    externalEventId: options?.externalEventId ?? null,
-    calendarConnectionId: options?.calendarConnectionId ?? null,
+    allDay: input.allDay ?? false,
+    location: input.location ?? '',
+    recurrenceRule,
+    alarms,
+    availability: input.availability ?? 'busy',
+    url: input.url ?? null,
     goalId: input.goalId ?? null,
     stepId: input.stepId ?? null,
-    status: options?.status ?? 'scheduled',
+    status: 'scheduled',
+    publication,
     createdAt: now,
     updatedAt: now,
   };
@@ -167,29 +159,33 @@ export function subscribeToEventsByStepId(
  * Create a new local calendar event for the given user.
  * @returns The Firestore document ID of the newly created event.
  */
-export async function createEvent(userId: string, input: CreateEventInput): Promise<string> {
-  const db = getFirebaseFirestore();
-  const docRef = await addDoc(collection(db, 'events'), buildEventPayload(userId, input));
-
-  return docRef.id;
-}
-
-export async function createMirroredEvent(
+export async function createEvent(
   userId: string,
-  input: CreateMirroredEventInput,
+  input: CreateEventInput,
+  publication: CalendarPublicationMetadata = createUnpublishedMetadata(),
 ): Promise<string> {
   const db = getFirebaseFirestore();
   const docRef = await addDoc(
     collection(db, 'events'),
-    buildEventPayload(userId, input, {
-      source: input.source,
-      externalEventId: input.externalEventId ?? null,
-      calendarConnectionId: input.calendarConnectionId ?? null,
-      status: input.status ?? 'scheduled',
-    }),
+    buildEventPayload(userId, input, publication),
   );
 
   return docRef.id;
+}
+
+export async function updateEventPublication(
+  _userId: string,
+  eventId: string,
+  fields: Partial<CalendarPublicationMetadata>,
+): Promise<void> {
+  const db = getFirebaseFirestore();
+  const updates: Record<string, unknown> = { updatedAt: Timestamp.now() };
+
+  for (const [field, value] of Object.entries(fields)) {
+    updates[`publication.${field}`] = value;
+  }
+
+  await updateDoc(doc(db, 'events', eventId), updates);
 }
 
 export async function listUserEvents(userId: string): Promise<CalendarEvent[]> {
@@ -218,6 +214,26 @@ export async function updateEvent(
   if (fields.startAt !== undefined) updates.startAt = Timestamp.fromDate(fields.startAt);
   if (fields.endAt !== undefined) updates.endAt = Timestamp.fromDate(fields.endAt);
   if (fields.timezone !== undefined) updates.timezone = fields.timezone;
+  if (fields.allDay !== undefined) updates.allDay = fields.allDay;
+  if (fields.location !== undefined) updates.location = fields.location;
+  if (fields.recurrenceRule !== undefined) {
+    updates.recurrenceRule = fields.recurrenceRule
+      ? {
+          ...fields.recurrenceRule,
+          endAt: fields.recurrenceRule.endAt
+            ? Timestamp.fromDate(fields.recurrenceRule.endAt)
+            : null,
+        }
+      : null;
+  }
+  if (fields.alarms !== undefined) {
+    updates.alarms = fields.alarms.map((alarm) => ({
+      absoluteAt: alarm.absoluteAt ? Timestamp.fromDate(alarm.absoluteAt) : null,
+      relativeOffsetMinutes: alarm.relativeOffsetMinutes,
+    }));
+  }
+  if (fields.availability !== undefined) updates.availability = fields.availability;
+  if (fields.url !== undefined) updates.url = fields.url;
   if (fields.status !== undefined) updates.status = fields.status;
 
   await updateDoc(doc(db, 'events', eventId), updates);

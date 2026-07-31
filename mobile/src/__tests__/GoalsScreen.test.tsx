@@ -7,7 +7,9 @@ import { useGoals } from '../features/goals/useGoals';
 import { useGoalStepEvents } from '../features/goals/useGoalStepEvents';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { UserProfileRecord } from '../features/profile/profileTypes';
-import { createEvent } from '../services/firebase/firebaseEvents';
+import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
+import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
+import { generateAiGoalPlanDraft } from '../services/firebase/firebaseAiGoalPlans';
 
 jest.mock('../features/goals/useGoals', () => ({
   useGoals: jest.fn(),
@@ -19,6 +21,18 @@ jest.mock('../features/goals/useGoalStepEvents', () => ({
 
 jest.mock('../features/profile/useUserProfile', () => ({
   useUserProfile: jest.fn(),
+}));
+
+jest.mock('../features/calendar/useCalendarPublication', () => ({
+  useCalendarPublication: jest.fn(),
+}));
+
+jest.mock('../features/premium/usePremiumEntitlement', () => ({
+  usePremiumEntitlement: jest.fn(),
+}));
+
+jest.mock('../services/firebase/firebaseAiGoalPlans', () => ({
+  generateAiGoalPlanDraft: jest.fn(),
 }));
 
 jest.mock('../services/firebase/firebaseEvents', () => ({
@@ -64,6 +78,7 @@ function mockUserProfile(overrides: Partial<ReturnType<typeof useUserProfile>> =
     updateProfile: jest.fn(async () => undefined),
     sendPasswordReset: jest.fn(async () => undefined),
     linkAnonymousAccount: jest.fn(async () => undefined),
+    retry: jest.fn(),
     ...overrides,
   });
 }
@@ -140,11 +155,49 @@ describe('GoalsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUserProfile();
+    (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
+      entitlement: null,
+      uiState: 'ready',
+      error: null,
+    });
+    (useCalendarPublication as jest.MockedFunction<typeof useCalendarPublication>).mockReturnValue({
+      publicationCalendarTitle: null,
+      createEvent: jest.fn(async () => 'event-new'),
+      publishEvent: jest.fn(async () => undefined),
+    });
+  });
+
+  it('retries after the goals subscriptions fail', () => {
+    const retry = jest.fn();
+    const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
+    mockedUseGoals.mockReturnValue({
+      goals: [],
+      uiState: 'error',
+      createGoal: async () => undefined,
+      updateGoal: async () => undefined,
+      markGoalCompleted: async () => undefined,
+      createStep: async () => undefined,
+      deleteStep: async () => undefined,
+      updateStep: async () => undefined,
+      reorderSteps: async () => undefined,
+      retry,
+    });
+    mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
+
+    render(<GoalsScreen />);
+    fireEvent.press(screen.getByRole('button', { name: 'Try Again' }));
+
+    expect(retry).toHaveBeenCalledTimes(1);
   });
 
   it('renders the empty state', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [],
@@ -156,18 +209,79 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
     render(<GoalsScreen />);
 
-    expect(screen.getByText('No goals yet.')).toBeTruthy();
+    expect(screen.getByText('No active goals.')).toBeTruthy();
     expect(screen.getByText('New Goal')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Active, 0', selected: true })).toBeTruthy();
   });
 
-  it('renders goal cards with target date and next step', () => {
+  it('filters goals with counts, selected state, and filter-specific empty copy', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
+
+    const activeGoal = makeGoal();
+    const completedGoal = makeGoal({
+      id: 'goal-2',
+      title: 'Read twelve books',
+      status: 'completed',
+      completedStepCount: 1,
+      progressText: '1 of 1 steps completed',
+    });
+
+    mockedUseGoals.mockReturnValue({
+      goals: [activeGoal, completedGoal],
+      uiState: 'ready',
+      createGoal: async () => undefined,
+      updateGoal: async () => undefined,
+      markGoalCompleted: async () => undefined,
+      createStep: async () => undefined,
+      deleteStep: async () => undefined,
+      updateStep: async () => undefined,
+      reorderSteps: async () => undefined,
+      retry: jest.fn(),
+    });
+    mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
+
+    render(<GoalsScreen />);
+
+    expect(screen.getByText('Run a 10k')).toBeTruthy();
+    expect(screen.queryByText('Read twelve books')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Active, 1', selected: true })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Completed, 1', selected: false })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'All, 2', selected: false })).toBeTruthy();
+    expect(screen.getByText('Next: Buy running shoes')).toBeTruthy();
+    expect(screen.getByText('0 of 1 steps completed')).toBeTruthy();
+    expect(screen.getByLabelText('Goal progress Run a 10k').props.accessibilityValue).toEqual({
+      min: 0,
+      max: 100,
+      now: 0,
+      text: '0 of 1 steps completed',
+    });
+
+    fireEvent.press(screen.getByRole('button', { name: 'Completed, 1' }));
+
+    expect(screen.getByText('Read twelve books')).toBeTruthy();
+    expect(screen.queryByText('Run a 10k')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Completed, 1', selected: true })).toBeTruthy();
+
+    fireEvent.press(screen.getByRole('button', { name: 'All, 2' }));
+
+    expect(screen.getByText('Run a 10k')).toBeTruthy();
+    expect(screen.getByText('Read twelve books')).toBeTruthy();
+  });
+
+  it('shows completed-filter empty copy', () => {
+    const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [makeGoal()],
@@ -179,14 +293,15 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
     render(<GoalsScreen />);
+    fireEvent.press(screen.getByRole('button', { name: 'Completed, 0' }));
 
-    expect(screen.getByText('Run a 10k')).toBeTruthy();
-    expect(screen.getByText('Next task: Buy running shoes')).toBeTruthy();
-    expect(screen.getByText('0 of 1 steps completed')).toBeTruthy();
+    expect(screen.getByText('No completed goals.')).toBeTruthy();
+    expect(screen.getByText('Goals you finish will stay available here.')).toBeTruthy();
   });
 
   it('walks the manual goal wizard and saves a goal', async () => {
@@ -195,7 +310,9 @@ describe('GoalsScreen', () => {
       savedGoalInput = input;
     });
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [],
@@ -207,6 +324,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
@@ -216,9 +334,16 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Continue'));
 
     fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
-    fireEvent.changeText(screen.getByLabelText('Goal description'), 'Train consistently for eight weeks.');
+    fireEvent.changeText(
+      screen.getByLabelText('Goal description'),
+      'Train consistently for eight weeks.',
+    );
     expect(screen.getByText('Simple SMART example')).toBeTruthy();
-    expect(screen.getByText('Good goal: Walk 30 minutes after work, 4 days a week, for the next 6 weeks.')).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Good goal: Walk 30 minutes after work, 4 days a week, for the next 6 weeks.',
+      ),
+    ).toBeTruthy();
     expect(screen.queryByLabelText('SMART Specific')).toBeNull();
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.press(screen.getByLabelText('Open goal target month dropdown'));
@@ -233,7 +358,10 @@ describe('GoalsScreen', () => {
     expect(screen.getByText('View Premium Plans')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Draft step 1 name'), 'Buy running shoes');
-    fireEvent.changeText(screen.getByLabelText('Draft step 1 description'), 'Choose a supportive pair.');
+    fireEvent.changeText(
+      screen.getByLabelText('Draft step 1 description'),
+      'Choose a supportive pair.',
+    );
     fireEvent.changeText(screen.getByLabelText('Draft step 1 starter'), 'Visit two stores');
     expect(screen.queryByLabelText('Draft step 1 estimated finish date')).toBeNull();
     fireEvent.press(screen.getByLabelText('Open draft step 1 month dropdown'));
@@ -266,7 +394,9 @@ describe('GoalsScreen', () => {
 
   it('opens the premium paywall from the AI planning step for free users', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [],
@@ -278,6 +408,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
@@ -286,7 +417,10 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByText('New Goal'));
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
-    fireEvent.changeText(screen.getByLabelText('Goal description'), 'Train consistently for eight weeks.');
+    fireEvent.changeText(
+      screen.getByLabelText('Goal description'),
+      'Train consistently for eight weeks.',
+    );
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.press(screen.getByLabelText('View premium plans for AI goal builder'));
@@ -296,14 +430,130 @@ describe('GoalsScreen', () => {
     expect(screen.getByText('Continue on Free Plan')).toBeTruthy();
   });
 
-  it('shows the premium-ready AI message for premium users', () => {
+  it('generates an editable AI draft before saving for premium users', async () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
+    const createGoalMock = jest.fn(async () => undefined);
+    const mockedGenerateAiGoalPlanDraft = generateAiGoalPlanDraft as jest.MockedFunction<
+      typeof generateAiGoalPlanDraft
+    >;
 
-    mockUserProfile({
-      profile: makeProfile({ premiumStatus: 'premium', premiumSource: 'ios' }),
+    (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
+      entitlement: { status: 'active' } as never,
+      uiState: 'ready',
+      error: null,
     });
 
+    mockedUseGoals.mockReturnValue({
+      goals: [],
+      uiState: 'empty',
+      createGoal: createGoalMock,
+      updateGoal: async () => undefined,
+      markGoalCompleted: async () => undefined,
+      createStep: async () => undefined,
+      deleteStep: async () => undefined,
+      updateStep: async () => undefined,
+      reorderSteps: async () => undefined,
+      retry: jest.fn(),
+    });
+    mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
+    mockedGenerateAiGoalPlanDraft.mockResolvedValue({
+      promptVersion: 1,
+      smartMeta: {
+        specific: 'Finish a 10k race.',
+        measurable: 'Run three times each week.',
+        achievable: 'Build distance gradually.',
+        relevant: 'Improve sustainable fitness.',
+        timeBound: 'Finish by the selected target date.',
+      },
+      milestones: [
+        {
+          title: 'Build a running base',
+          description: 'Establish a consistent weekly rhythm.',
+        },
+      ],
+      steps: [
+        {
+          title: 'Choose weekly run times',
+          description: 'Reserve three repeatable windows.',
+          starter: 'Open the calendar.',
+          targetDate: '2027-01-15',
+        },
+      ],
+      timelineSummary: 'Build consistency before increasing distance.',
+    });
+
+    render(<GoalsScreen />);
+
+    fireEvent.press(screen.getByText('New Goal'));
+    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
+    fireEvent.changeText(
+      screen.getByLabelText('Goal description'),
+      'Train consistently for eight weeks.',
+    );
+    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Continue'));
+
+    expect(screen.getByText('Build an editable first draft.')).toBeTruthy();
+    expect(screen.queryByLabelText('View premium plans for AI goal builder')).toBeNull();
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
+    });
+
+    await waitFor(() => expect(screen.getByText('Review your AI draft.')).toBeTruthy());
+    expect(mockedGenerateAiGoalPlanDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Run a 10k',
+        description: 'Train consistently for eight weeks.',
+      }),
+    );
+    fireEvent.changeText(screen.getByLabelText('AI milestone 1 name'), 'Build consistency');
+    fireEvent.press(screen.getByLabelText('Continue'));
+    expect(screen.getByDisplayValue('Choose weekly run times')).toBeTruthy();
+    fireEvent.changeText(screen.getByLabelText('Draft step 1 name'), 'Schedule weekly runs');
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Save goal'));
+    });
+
+    await waitFor(() =>
+      expect(createGoalMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isAiAssisted: true,
+          aiPlanVersion: 1,
+          aiMilestones: [
+            expect.objectContaining({
+              title: 'Build consistency',
+            }),
+          ],
+          steps: [
+            expect.objectContaining({
+              title: 'Schedule weekly runs',
+            }),
+          ],
+        }),
+      ),
+    );
+  });
+
+  it('keeps manual planning available when AI generation fails', async () => {
+    const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
+
+    (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
+      entitlement: { status: 'in_grace_period' } as never,
+      uiState: 'ready',
+      error: null,
+    });
+    (
+      generateAiGoalPlanDraft as jest.MockedFunction<typeof generateAiGoalPlanDraft>
+    ).mockRejectedValue(new Error('unavailable'));
     mockedUseGoals.mockReturnValue({
       goals: [],
       uiState: 'empty',
@@ -314,20 +564,28 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
     render(<GoalsScreen />);
-
     fireEvent.press(screen.getByText('New Goal'));
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
-    fireEvent.changeText(screen.getByLabelText('Goal description'), 'Train consistently for eight weeks.');
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.press(screen.getByLabelText('Continue'));
 
-    expect(screen.getByText('Premium AI planning slot is ready.')).toBeTruthy();
-    expect(screen.queryByLabelText('View premium plans for AI goal builder')).toBeNull();
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('AI planning is unavailable right now. Try again or continue manually.'),
+      ).toBeTruthy(),
+    );
+    fireEvent.press(screen.getByLabelText('Continue'));
+    expect(screen.getByLabelText('Draft step 1 name')).toBeTruthy();
   });
 
   it('limits year choices to the present or future and rejects a non-future target date', () => {
@@ -335,7 +593,9 @@ describe('GoalsScreen', () => {
     jest.setSystemTime(new Date(2026, 6, 20, 9, 0, 0));
 
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [],
@@ -347,6 +607,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
@@ -355,7 +616,10 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByText('New Goal'));
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
-    fireEvent.changeText(screen.getByLabelText('Goal description'), 'Train consistently for eight weeks.');
+    fireEvent.changeText(
+      screen.getByLabelText('Goal description'),
+      'Train consistently for eight weeks.',
+    );
     fireEvent.press(screen.getByLabelText('Continue'));
 
     expect(screen.getByText('Selected date: 07-21-2026')).toBeTruthy();
@@ -384,7 +648,9 @@ describe('GoalsScreen', () => {
     const deleteStepMock = jest.fn(async () => undefined);
     const createStepMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [makeGoal()],
@@ -396,6 +662,7 @@ describe('GoalsScreen', () => {
       deleteStep: deleteStepMock,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
@@ -409,7 +676,10 @@ describe('GoalsScreen', () => {
     expect(screen.getByText('Selected date: 07-22-2026')).toBeTruthy();
 
     fireEvent.changeText(screen.getByLabelText('Step name'), 'Book a training block');
-    fireEvent.changeText(screen.getByLabelText('Step description'), 'Pick sessions for the next eight weeks.');
+    fireEvent.changeText(
+      screen.getByLabelText('Step description'),
+      'Pick sessions for the next eight weeks.',
+    );
     fireEvent.changeText(screen.getByLabelText('Step starter'), 'Open the calendar');
     fireEvent.press(screen.getByLabelText('Open step target month dropdown'));
     fireEvent.press(screen.getByLabelText('Select step target month 08 - Aug'));
@@ -437,10 +707,21 @@ describe('GoalsScreen', () => {
   it('opens goal details and marks a goal complete from edit mode', async () => {
     const markGoalCompletedMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
-      goals: [makeGoal()],
+      goals: [
+        makeGoal({
+          aiMilestones: [
+            {
+              title: 'Build a running base',
+              description: 'Establish a consistent weekly rhythm.',
+            },
+          ],
+        }),
+      ],
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
@@ -449,12 +730,15 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
     render(<GoalsScreen />);
 
     fireEvent.press(screen.getByText('Run a 10k'));
+    expect(screen.getByText('Milestones')).toBeTruthy();
+    expect(screen.getByText('Build a running base')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Edit goal'));
 
     await act(async () => {
@@ -469,7 +753,9 @@ describe('GoalsScreen', () => {
   it('edits a goal with the wizard-style date picker', async () => {
     const updateGoalMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [makeGoal()],
@@ -481,6 +767,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
@@ -510,7 +797,15 @@ describe('GoalsScreen', () => {
 
   it('opens step scheduling with a prefilled event title and linked ids', async () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
+    const createEvent = jest.fn(async () => 'event-new');
+    (useCalendarPublication as jest.MockedFunction<typeof useCalendarPublication>).mockReturnValue({
+      publicationCalendarTitle: 'Work',
+      createEvent,
+      publishEvent: jest.fn(async () => undefined),
+    });
 
     mockedUseGoals.mockReturnValue({
       goals: [makeGoal()],
@@ -522,10 +817,12 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({
       events: [
         {
+          ownership: 'bearing',
           id: 'event-1',
           userId: 'user-1',
           title: 'Treadmill session',
@@ -533,12 +830,23 @@ describe('GoalsScreen', () => {
           startAt: new Date(2026, 6, 27, 9, 0, 0),
           endAt: new Date(2026, 6, 27, 10, 0, 0),
           timezone: 'UTC',
-          source: 'local',
-          externalEventId: null,
-          calendarConnectionId: null,
+          allDay: false,
+          location: '',
+          recurrenceRule: null,
+          alarms: [],
+          availability: 'busy',
+          url: null,
           goalId: 'goal-1',
           stepId: 'step-1',
           status: 'scheduled',
+          publication: {
+            status: 'unpublished',
+            markerId: null,
+            commonHash: null,
+            lastError: null,
+            retryable: false,
+            deletionIntent: false,
+          },
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -562,12 +870,12 @@ describe('GoalsScreen', () => {
 
     await waitFor(() => {
       expect(createEvent).toHaveBeenCalledWith(
-        'test-user',
         expect.objectContaining({
           title: 'Buy running shoes',
           goalId: 'goal-1',
           stepId: 'step-1',
         }),
+        { publishToDevice: false },
       );
     });
   });
@@ -575,7 +883,9 @@ describe('GoalsScreen', () => {
   it('moves a step down with the arrow controls', async () => {
     const reorderStepsMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [makeOrderedGoal()],
@@ -587,6 +897,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: reorderStepsMock,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
@@ -606,7 +917,9 @@ describe('GoalsScreen', () => {
   it('deletes a step from the step edit screen', async () => {
     const deleteStepMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [makeGoal()],
@@ -618,6 +931,7 @@ describe('GoalsScreen', () => {
       deleteStep: deleteStepMock,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
@@ -639,7 +953,9 @@ describe('GoalsScreen', () => {
 
   it('shows no events scheduled when a step has no linked events', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [makeGoal()],
@@ -651,6 +967,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: async () => undefined,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'error' });
 
@@ -666,7 +983,9 @@ describe('GoalsScreen', () => {
   it('edits a step with the wizard-style date picker', async () => {
     const updateStepMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>;
+    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
+      typeof useGoalStepEvents
+    >;
 
     mockedUseGoals.mockReturnValue({
       goals: [makeGoal()],
@@ -678,6 +997,7 @@ describe('GoalsScreen', () => {
       deleteStep: async () => undefined,
       updateStep: updateStepMock,
       reorderSteps: async () => undefined,
+      retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 

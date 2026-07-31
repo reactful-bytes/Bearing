@@ -23,7 +23,12 @@ export type UseUserProfileReturn = {
   email: string | null;
   updateProfile: (fields: UpdateUserProfileInput) => Promise<void>;
   sendPasswordReset: () => Promise<void>;
-  linkAnonymousAccount: (input: { email: string; password: string; displayName: string }) => Promise<void>;
+  linkAnonymousAccount: (input: {
+    email: string;
+    password: string;
+    displayName: string;
+  }) => Promise<void>;
+  retry: () => void;
 };
 
 export function useUserProfile(): UseUserProfileReturn {
@@ -31,6 +36,7 @@ export function useUserProfile(): UseUserProfileReturn {
   const [profile, setProfile] = useState<UserProfileRecord | null>(null);
   const [uiState, setUiState] = useState<UserProfileUiState>('loading');
   const [error, setError] = useState<Error | null>(null);
+  const [revision, setRevision] = useState(0);
 
   useEffect(() => {
     const auth = getFirebaseAuth();
@@ -65,7 +71,9 @@ export function useUserProfile(): UseUserProfileReturn {
       }
 
       setUiState('error');
-      setError(profileError instanceof Error ? profileError : new Error('Failed to ensure user profile.'));
+      setError(
+        profileError instanceof Error ? profileError : new Error('Failed to ensure user profile.'),
+      );
     });
 
     const unsubscribe = subscribeToUserProfile(
@@ -97,7 +105,13 @@ export function useUserProfile(): UseUserProfileReturn {
       cancelled = true;
       unsubscribe();
     };
-  }, [authUser]);
+  }, [authUser, revision]);
+
+  const retry = useCallback(() => {
+    setUiState('loading');
+    setError(null);
+    setRevision((current) => current + 1);
+  }, []);
 
   const updateProfile = useCallback(
     async (fields: UpdateUserProfileInput): Promise<void> => {
@@ -154,5 +168,6 @@ export function useUserProfile(): UseUserProfileReturn {
     updateProfile,
     sendPasswordReset,
     linkAnonymousAccount,
+    retry,
   };
 }

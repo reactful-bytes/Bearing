@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import {
-  composeGoalWithSteps,
-  deriveGoalStatus,
-  normalizeGoalSteps,
-} from './goalHelpers';
+import { composeGoalWithSteps, deriveGoalStatus, normalizeGoalSteps } from './goalHelpers';
 import {
   CreateGoalInput,
   CreateGoalStepInput,
@@ -55,6 +51,7 @@ export type UseGoalsReturn = {
   deleteStep: (stepId: string) => Promise<void>;
   updateStep: (stepId: string, fields: UpdateGoalStepInput) => Promise<void>;
   reorderSteps: (goalId: string, orderedStepIds: string[]) => Promise<void>;
+  retry: () => void;
 };
 
 export function useGoals(): UseGoalsReturn {
@@ -63,6 +60,7 @@ export function useGoals(): UseGoalsReturn {
   const [uiState, setUiState] = useState<GoalUiState>('loading');
   const [goalsLoaded, setGoalsLoaded] = useState(false);
   const [stepsLoaded, setStepsLoaded] = useState(false);
+  const [revision, setRevision] = useState(0);
 
   useEffect(() => {
     const userId = getFirebaseAuth().currentUser?.uid;
@@ -73,6 +71,8 @@ export function useGoals(): UseGoalsReturn {
     }
 
     setUiState('loading');
+    setGoalsLoaded(false);
+    setStepsLoaded(false);
 
     const unsubscribeGoals = subscribeToGoals(
       userId,
@@ -100,6 +100,11 @@ export function useGoals(): UseGoalsReturn {
       unsubscribeGoals();
       unsubscribeSteps();
     };
+  }, [revision]);
+
+  const retry = useCallback(() => {
+    setUiState('loading');
+    setRevision((current) => current + 1);
   }, []);
 
   const goalMap = useMemo(() => {
@@ -175,7 +180,14 @@ export function useGoals(): UseGoalsReturn {
         throw new Error('Goal not found.');
       }
 
-      await createFirebaseGoalStep(userId, goalId, input, goal.steps.length, goal.status, goal.nextStep?.id ?? null);
+      await createFirebaseGoalStep(
+        userId,
+        goalId,
+        input,
+        goal.steps.length,
+        goal.status,
+        goal.nextStep?.id ?? null,
+      );
     },
     [goalMap],
   );
@@ -197,12 +209,15 @@ export function useGoals(): UseGoalsReturn {
         throw new Error('Goal not found.');
       }
 
-      const remainingSteps = normalizeGoalSteps(targetGoal.steps.filter((step) => step.id !== stepId));
+      const remainingSteps = normalizeGoalSteps(
+        targetGoal.steps.filter((step) => step.id !== stepId),
+      );
       const nextGoalStatus = deriveGoalStatus(targetGoal.status, remainingSteps);
-      const nextStep = nextGoalStatus === 'completed' ? null : composeGoalWithSteps(
-        { ...targetGoal, status: nextGoalStatus },
-        remainingSteps,
-      ).nextStep;
+      const nextStep =
+        nextGoalStatus === 'completed'
+          ? null
+          : composeGoalWithSteps({ ...targetGoal, status: nextGoalStatus }, remainingSteps)
+              .nextStep;
 
       await deleteFirebaseGoalStep(
         userId,
@@ -233,14 +248,17 @@ export function useGoals(): UseGoalsReturn {
     [steps],
   );
 
-  const reorderSteps = useCallback(async (goalId: string, orderedStepIds: string[]): Promise<void> => {
-    const userId = getFirebaseAuth().currentUser?.uid;
-    if (!userId) {
-      throw new Error('User is not authenticated.');
-    }
+  const reorderSteps = useCallback(
+    async (goalId: string, orderedStepIds: string[]): Promise<void> => {
+      const userId = getFirebaseAuth().currentUser?.uid;
+      if (!userId) {
+        throw new Error('User is not authenticated.');
+      }
 
-    await reorderFirebaseGoalSteps(userId, goalId, orderedStepIds);
-  }, []);
+      await reorderFirebaseGoalSteps(userId, goalId, orderedStepIds);
+    },
+    [],
+  );
 
   return {
     goals: goalMap,
@@ -252,5 +270,6 @@ export function useGoals(): UseGoalsReturn {
     deleteStep,
     updateStep,
     reorderSteps,
+    retry,
   };
 }

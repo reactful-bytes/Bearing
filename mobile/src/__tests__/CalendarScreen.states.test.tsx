@@ -1,16 +1,30 @@
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { CalendarScreen } from '../screens/CalendarScreen';
-import { CalendarEvent } from '../features/calendar/calendarTypes';
+import { CalendarEvent, createUnpublishedMetadata } from '../features/calendar/calendarTypes';
 
 jest.mock('../features/notes/useNotes', () => ({
-  useNotes: jest.fn(() => ({
-    notes: [],
-    uiState: 'empty',
-    createNote: jest.fn(),
-  })),
+  useCreateNote: jest.fn(() => jest.fn()),
 }));
+
+jest.mock('../features/calendar/useDeviceCalendars', () => {
+  const state = {
+    calendars: [],
+    permission: 'unavailable',
+    selectedCalendarIds: [],
+    defaultCalendarId: null,
+    uiState: 'unavailable',
+    error: null,
+    staleSelectionRecovered: false,
+    requestPermission: jest.fn(),
+    refresh: jest.fn(),
+    toggleCalendar: jest.fn(),
+    setDefaultCalendar: jest.fn(),
+    openSettings: jest.fn(),
+  };
+  return { useDeviceCalendars: jest.fn(() => state) };
+});
 
 // Mock Firebase services
 jest.mock('../services/firebase/firebaseAuth', () => ({
@@ -37,6 +51,7 @@ function makeTestEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
   const startAt = new Date(2026, 6, 17, 10, 0, 0);
   const endAt = new Date(2026, 6, 17, 11, 0, 0);
   return {
+    ownership: 'bearing',
     id: 'test-event-1',
     userId: 'u1',
     title: 'Test event',
@@ -44,15 +59,19 @@ function makeTestEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
     startAt,
     endAt,
     timezone: 'UTC',
-    source: 'local',
-    externalEventId: null,
-    calendarConnectionId: null,
+    allDay: false,
+    location: '',
+    recurrenceRule: null,
+    alarms: [],
+    availability: 'busy',
+    url: null,
     goalId: null,
     stepId: null,
     status: 'scheduled',
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
+    publication: overrides.publication ?? createUnpublishedMetadata(),
   };
 }
 
@@ -82,12 +101,35 @@ describe('CalendarScreen interaction states', () => {
   it('renders event block titles in ready state with override events', () => {
     const events: CalendarEvent[] = [
       makeTestEvent({ id: 'e1', title: 'Morning standup' }),
-      makeTestEvent({ id: 'e2', title: 'Design review', startAt: new Date(2026, 6, 17, 14, 0), endAt: new Date(2026, 6, 17, 15, 0) }),
+      makeTestEvent({
+        id: 'e2',
+        title: 'Design review',
+        startAt: new Date(2026, 6, 17, 14, 0),
+        endAt: new Date(2026, 6, 17, 15, 0),
+      }),
     ];
-    render(<CalendarScreen stateOverride="ready" eventsOverride={events} initialDateOverride={new Date(2026, 6, 17)} />);
+    render(
+      <CalendarScreen
+        stateOverride="ready"
+        eventsOverride={events}
+        initialDateOverride={new Date(2026, 6, 17)}
+      />,
+    );
 
     expect(screen.getByText('Morning standup')).toBeTruthy();
     expect(screen.getByText('Design review')).toBeTruthy();
+  });
+
+  it('bounds offscreen month rendering to the visible neighborhood', () => {
+    render(<CalendarScreen initialViewMode="month" />);
+
+    const carousel = screen.getByTestId('month-carousel');
+    expect(carousel.props.initialNumToRender).toBe(1);
+    expect(carousel.props.maxToRenderPerBatch).toBe(2);
+    expect(carousel.props.windowSize).toBe(3);
+
+    fireEvent.press(screen.getByText('Day'));
+    expect(screen.queryByTestId('month-carousel')).toBeNull();
   });
 
   it('Add Event FAB is disabled in loading state', () => {

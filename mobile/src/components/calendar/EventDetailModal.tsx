@@ -1,19 +1,36 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppModal } from '../ui/AppModal';
 import { colors, radii, spacing, typography } from '../../design/tokens';
-import { CalendarEvent } from '../../features/calendar/calendarTypes';
+import {
+  BearingEvent,
+  CalendarDisplayEvent,
+  CreateEventInput,
+} from '../../features/calendar/calendarTypes';
+import { EventForm } from './EventForm';
 
 type EventDetailModalProps = {
-  event: CalendarEvent | null;
+  event: CalendarDisplayEvent | null;
   onClose: () => void;
-  onDelete: (eventId: string) => Promise<void>;
+  onUpdate: (event: CalendarDisplayEvent, input: CreateEventInput) => Promise<void>;
+  onDelete: (event: CalendarDisplayEvent) => Promise<void>;
+  onRetryPublication?: (event: BearingEvent) => Promise<void>;
 };
 
 const MONTH_NAMES_SHORT = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 function formatTimeRange(startAt: Date, endAt: Date): string {
@@ -35,18 +52,35 @@ function formatFullDate(date: Date): string {
   return `${month} ${day}, ${year}`;
 }
 
-function statusLabel(status: CalendarEvent['status']): string {
+function statusLabel(status: CalendarDisplayEvent['status']): string {
   if (status === 'completed') return 'Completed';
   if (status === 'canceled') return 'Canceled';
   return 'Scheduled';
 }
 
-export function EventDetailModal({ event, onClose, onDelete }: EventDetailModalProps) {
+export function EventDetailModal({
+  event,
+  onClose,
+  onUpdate,
+  onDelete,
+  onRetryPublication,
+}: EventDetailModalProps) {
+  const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [retryingPublication, setRetryingPublication] = useState(false);
+  const [publicationError, setPublicationError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setEditing(false);
+    setConfirmingDelete(false);
+    setDeleteError(null);
+    setPublicationError(null);
+  }, [event]);
 
   function handleClose(): void {
+    setEditing(false);
     setConfirmingDelete(false);
     setDeleteError(null);
     onClose();
@@ -57,7 +91,7 @@ export function EventDetailModal({ event, onClose, onDelete }: EventDetailModalP
     setDeleting(true);
     setDeleteError(null);
     try {
-      await onDelete(event.id);
+      await onDelete(event);
       handleClose();
     } catch {
       setDeleteError('Failed to delete event. Please try again.');
@@ -66,11 +100,92 @@ export function EventDetailModal({ event, onClose, onDelete }: EventDetailModalP
     }
   }
 
+  async function handleUpdate(input: CreateEventInput): Promise<void> {
+    if (!event) return;
+    await onUpdate(event, input);
+    setEditing(false);
+  }
+
+  async function handleRetryPublication(): Promise<void> {
+    if (!event || event.ownership !== 'bearing' || !onRetryPublication) return;
+    setRetryingPublication(true);
+    setPublicationError(null);
+    try {
+      await onRetryPublication(event);
+    } catch {
+      setPublicationError('Device publication failed again. Your Bearing event is unchanged.');
+    } finally {
+      setRetryingPublication(false);
+    }
+  }
+
+  const mutable =
+    event?.ownership === 'bearing' || (event?.ownership === 'device' && event.allowsModifications);
+
   return (
-    <AppModal visible={event !== null} title="Event Details" onClose={handleClose}>
-      {event ? (
+    <AppModal
+      visible={event !== null}
+      title={editing ? 'Edit Event' : 'Event Details'}
+      onClose={handleClose}
+    >
+      {event && editing ? (
+        <EventForm
+          active
+          initialDate={event.startAt}
+          initialValues={event}
+          saveLabel="Update Event"
+          onSave={handleUpdate}
+        />
+      ) : event ? (
         <>
           <Text style={styles.eventTitle}>{event.title}</Text>
+
+          <View style={styles.metaRow}>
+            <Text style={styles.metaLabel}>Calendar</Text>
+            <Text style={styles.metaValue}>
+              {event.ownership === 'bearing'
+                ? 'Bearing'
+                : `${event.calendarTitle} · ${event.sourceLabel}`}
+            </Text>
+          </View>
+
+          {event.ownership === 'bearing' ? (
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Device copy</Text>
+              <Text style={styles.metaValue}>
+                {event.publication.status === 'published'
+                  ? 'Linked'
+                  : event.publication.status === 'publishing'
+                    ? 'Publishing'
+                    : event.publication.status === 'failed'
+                      ? 'Needs attention'
+                      : 'Not linked'}
+              </Text>
+            </View>
+          ) : null}
+
+          {event.ownership === 'bearing' &&
+          event.publication.retryable &&
+          !event.publication.deletionIntent &&
+          onRetryPublication ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Retry device publication"
+              disabled={retryingPublication}
+              onPress={handleRetryPublication}
+              style={({ pressed }) => [
+                styles.retryButton,
+                pressed && !retryingPublication ? styles.actionButtonPressed : null,
+                retryingPublication ? styles.retryButtonDisabled : null,
+              ]}
+            >
+              <Text style={styles.retryButtonText}>
+                {retryingPublication ? 'Retrying...' : 'Retry Device Copy'}
+              </Text>
+            </Pressable>
+          ) : null}
+
+          {publicationError ? <Text style={styles.errorText}>{publicationError}</Text> : null}
 
           <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>Date</Text>
@@ -84,11 +199,16 @@ export function EventDetailModal({ event, onClose, onDelete }: EventDetailModalP
 
           <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>Status</Text>
-            <Text style={[styles.metaValue, event.status === 'completed'
-                ? { color: colors.brand }
-                : event.status === 'canceled'
-                  ? { color: colors.dangerText }
-                  : { color: colors.textSecondary }]}>
+            <Text
+              style={[
+                styles.metaValue,
+                event.status === 'completed'
+                  ? { color: colors.brand }
+                  : event.status === 'canceled'
+                    ? { color: colors.dangerText }
+                    : { color: colors.textSecondary },
+              ]}
+            >
               {statusLabel(event.status)}
             </Text>
           </View>
@@ -100,18 +220,38 @@ export function EventDetailModal({ event, onClose, onDelete }: EventDetailModalP
             </View>
           ) : null}
 
+          {!mutable ? (
+            <Text style={styles.readOnlyText}>This device calendar event is read-only.</Text>
+          ) : null}
+
           {deleteError ? <Text style={styles.errorText}>{deleteError}</Text> : null}
 
-          {!confirmingDelete ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Delete event"
-              onPress={() => setConfirmingDelete(true)}
-              style={({ pressed }) => [styles.deleteButton, pressed ? styles.deleteButtonPressed : null]}
-            >
-              <Text style={styles.deleteButtonText}>Delete Event</Text>
-            </Pressable>
-          ) : (
+          {mutable && !confirmingDelete ? (
+            <View style={styles.actionRow}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Edit event"
+                onPress={() => setEditing(true)}
+                style={({ pressed }) => [
+                  styles.editButton,
+                  pressed ? styles.actionButtonPressed : null,
+                ]}
+              >
+                <Text style={styles.editButtonText}>Edit</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Delete event"
+                onPress={() => setConfirmingDelete(true)}
+                style={({ pressed }) => [
+                  styles.deleteButton,
+                  pressed ? styles.actionButtonPressed : null,
+                ]}
+              >
+                <Text style={styles.deleteButtonText}>Delete</Text>
+              </Pressable>
+            </View>
+          ) : mutable ? (
             <View style={styles.confirmRow}>
               <Text style={styles.confirmText}>Delete this event permanently?</Text>
               <View style={styles.confirmButtons}>
@@ -119,7 +259,10 @@ export function EventDetailModal({ event, onClose, onDelete }: EventDetailModalP
                   accessibilityRole="button"
                   accessibilityLabel="Cancel delete"
                   onPress={() => setConfirmingDelete(false)}
-                  style={({ pressed }) => [styles.cancelButton, pressed ? styles.cancelButtonPressed : null]}
+                  style={({ pressed }) => [
+                    styles.cancelButton,
+                    pressed ? styles.cancelButtonPressed : null,
+                  ]}
                 >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </Pressable>
@@ -139,7 +282,7 @@ export function EventDetailModal({ event, onClose, onDelete }: EventDetailModalP
                 </Pressable>
               </View>
             </View>
-          )}
+          ) : null}
         </>
       ) : null}
     </AppModal>
@@ -167,13 +310,46 @@ const styles = StyleSheet.create({
     ...typography.helper,
     color: colors.dangerText,
   },
+  readOnlyText: {
+    ...typography.helper,
+    color: colors.textSecondary,
+  },
+  retryButton: {
+    borderRadius: radii.sm,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.surfaceBrand,
+    alignItems: 'center',
+  },
+  retryButtonDisabled: {
+    opacity: 0.5,
+  },
+  retryButtonText: {
+    ...typography.button,
+    color: colors.brand,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  editButton: {
+    flex: 1,
+    borderRadius: radii.sm,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.surfaceBrand,
+    alignItems: 'center',
+  },
+  editButtonText: {
+    ...typography.button,
+    color: colors.brand,
+  },
   deleteButton: {
+    flex: 1,
     borderRadius: radii.sm,
     paddingVertical: spacing.md,
     backgroundColor: colors.dangerSurface,
     alignItems: 'center',
   },
-  deleteButtonPressed: {
+  actionButtonPressed: {
     opacity: 0.8,
   },
   deleteButtonText: {

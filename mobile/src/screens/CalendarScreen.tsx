@@ -11,16 +11,19 @@ import { EventDetailModal } from '../components/calendar/EventDetailModal';
 import { FocusModeOverlay } from '../components/calendar/FocusModeOverlay';
 import { colors, layout, spacing, typography } from '../design/tokens';
 import {
+  CalendarDisplayEvent,
   CalendarEvent,
   CalendarUiState,
   CreateEventInput,
+  CreateEventOptions,
   ViewMode,
+  createUnpublishedMetadata,
 } from '../features/calendar/calendarTypes';
 import { useCalendarEvents } from '../features/calendar/useCalendarEvents';
 import { CreateNoteInput as CreateNotePayload } from '../features/notes/noteTypes';
 import { CalendarFocusLaunch } from '../navigation/navigationTypes';
 import { getFirebaseAuth } from '../services/firebase/firebaseAuth';
-import { useNotes } from '../features/notes/useNotes';
+import { useCreateNote } from '../features/notes/useNotes';
 
 // ---------------------------------------------------------------------------
 // Month carousel data
@@ -55,7 +58,7 @@ function isSameCalendarDay(a: Date, b: Date): boolean {
 
 export type CalendarScreenProps = {
   stateOverride?: CalendarUiState;
-  eventsOverride?: CalendarEvent[];
+  eventsOverride?: CalendarDisplayEvent[];
   initialDateOverride?: Date;
   initialViewMode?: ViewMode;
   route?: {
@@ -82,7 +85,7 @@ export function CalendarScreen({
 }: CalendarScreenProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(initialDateOverride ?? new Date());
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
-  const [activeEvent, setActiveEvent] = useState<CalendarEvent | null>(null);
+  const [activeEvent, setActiveEvent] = useState<CalendarDisplayEvent | null>(null);
   const [addEventVisible, setAddEventVisible] = useState(false);
   const [focusModeVisible, setFocusModeVisible] = useState(false);
   const [pendingFocusEvent, setPendingFocusEvent] = useState<CalendarEvent | null>(null);
@@ -92,13 +95,23 @@ export function CalendarScreen({
   const month = selectedDate.getMonth();
 
   // Real data from hook (test overrides only when eventsOverride provided)
-  const { events: realEvents, eventsForDate, uiState: realUiState, createEvent, deleteEvent } =
-    useCalendarEvents(selectedDate);
-  const { createNote } = useNotes();
+  const {
+    events: realEvents,
+    eventsForDate,
+    uiState: realUiState,
+    createEvent,
+    updateEvent,
+    deleteEvent,
+    retryPublication,
+    refresh: refreshEvents,
+    deviceError,
+    publicationCalendarTitle,
+  } = useCalendarEvents(selectedDate);
+  const createNote = useCreateNote();
 
   const uiState: CalendarUiState = stateOverride ?? realUiState;
   const calendarEvents = eventsOverride ?? realEvents;
-  const dayEvents: CalendarEvent[] = eventsOverride
+  const dayEvents: CalendarDisplayEvent[] = eventsOverride
     ? calendarEvents.filter((event) => isSameCalendarDay(event.startAt, selectedDate))
     : eventsForDate(selectedDate);
 
@@ -157,6 +170,7 @@ export function CalendarScreen({
     setViewMode('day');
     setPreferredFocusEventId(focusLaunch.eventId);
     setPendingFocusEvent({
+      ownership: 'bearing',
       id: focusLaunch.eventId,
       userId,
       title: focusLaunch.title,
@@ -164,12 +178,16 @@ export function CalendarScreen({
       startAt: launchStartAt,
       endAt: launchEndAt,
       timezone: focusLaunch.timezone,
-      source: 'local',
-      externalEventId: null,
-      calendarConnectionId: null,
+      allDay: false,
+      location: '',
+      recurrenceRule: null,
+      alarms: [],
+      availability: 'busy',
+      url: null,
       goalId: null,
       stepId: null,
       status: 'scheduled',
+      publication: createUnpublishedMetadata(),
       createdAt: launchStartAt,
       updatedAt: launchStartAt,
     });
@@ -215,9 +233,12 @@ export function CalendarScreen({
     flatListRef.current?.scrollToIndex({ index: newIndex, animated: true });
   }
 
-  async function handleAddEvent(input: CreateEventInput): Promise<void> {
+  async function handleAddEvent(
+    input: CreateEventInput,
+    options: CreateEventOptions,
+  ): Promise<void> {
     try {
-      await createEvent(input);
+      await createEvent(input, options);
       setAddEventVisible(false);
     } catch (error) {
       console.error('Failed to add event:', error);
@@ -225,9 +246,22 @@ export function CalendarScreen({
     }
   }
 
-  async function handleDeleteEvent(eventId: string): Promise<void> {
+  async function handleUpdateEvent(
+    event: CalendarDisplayEvent,
+    input: CreateEventInput,
+  ): Promise<void> {
     try {
-      await deleteEvent(eventId);
+      await updateEvent(event, input);
+      setActiveEvent(null);
+    } catch (error) {
+      console.error('Failed to update event:', error);
+      throw error;
+    }
+  }
+
+  async function handleDeleteEvent(event: CalendarDisplayEvent): Promise<void> {
+    try {
+      await deleteEvent(event);
       setActiveEvent(null);
     } catch (error) {
       console.error('Failed to delete event:', error);
@@ -248,7 +282,7 @@ export function CalendarScreen({
     setPreferredFocusEventId(null);
   }
 
-  function handlePressEvent(event: CalendarEvent): void {
+  function handlePressEvent(event: CalendarDisplayEvent): void {
     setActiveEvent(event);
   }
 
@@ -265,7 +299,20 @@ export function CalendarScreen({
 
   return (
     <View style={styles.screen}>
-      <ViewModeToggle mode={viewMode} onChange={setViewMode} />
+      <View style={styles.calendarToolbar}>
+        <ViewModeToggle mode={viewMode} onChange={setViewMode} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Refresh calendar events"
+          onPress={() => void refreshEvents()}
+          style={({ pressed }) => [styles.refreshButton, pressed ? styles.buttonPressed : null]}
+        >
+          <Text style={styles.refreshButtonText}>Refresh</Text>
+        </Pressable>
+      </View>
+      {deviceError ? (
+        <Text style={styles.deviceErrorText}>Device events could not be refreshed.</Text>
+      ) : null}
 
       {viewMode === 'day' ? (
         <>
@@ -285,7 +332,10 @@ export function CalendarScreen({
               accessibilityRole="button"
               accessibilityLabel="Previous month"
               onPress={handlePrevMonth}
-              style={({ pressed }) => [styles.monthArrow, pressed ? styles.monthArrowPressed : null]}
+              style={({ pressed }) => [
+                styles.monthArrow,
+                pressed ? styles.monthArrowPressed : null,
+              ]}
             >
               <Text style={styles.monthArrowText}>‹</Text>
             </Pressable>
@@ -298,7 +348,10 @@ export function CalendarScreen({
               accessibilityRole="button"
               accessibilityLabel="Next month"
               onPress={handleNextMonth}
-              style={({ pressed }) => [styles.monthArrow, pressed ? styles.monthArrowPressed : null]}
+              style={({ pressed }) => [
+                styles.monthArrow,
+                pressed ? styles.monthArrowPressed : null,
+              ]}
             >
               <Text style={styles.monthArrowText}>›</Text>
             </Pressable>
@@ -307,11 +360,15 @@ export function CalendarScreen({
           {/* Horizontally pageable month grids */}
           <FlatList
             ref={flatListRef}
+            testID="month-carousel"
             data={monthList}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             initialScrollIndex={initialMonthIndex}
+            initialNumToRender={1}
+            maxToRenderPerBatch={2}
+            windowSize={3}
             keyExtractor={({ year, month }) => `${year}-${month}`}
             getItemLayout={(_, index) => ({
               length: screenWidth,
@@ -322,11 +379,8 @@ export function CalendarScreen({
             onViewableItemsChanged={handleViewableItemsChanged}
             renderItem={({ item: { year, month } }) => {
               const eventDays = new Set<number>();
-              realEvents.forEach((event) => {
-                if (
-                  event.startAt.getFullYear() === year &&
-                  event.startAt.getMonth() === month
-                ) {
+              calendarEvents.forEach((event) => {
+                if (event.startAt.getFullYear() === year && event.startAt.getMonth() === month) {
                   eventDays.add(event.startAt.getDate());
                 }
               });
@@ -365,10 +419,17 @@ export function CalendarScreen({
       <AddEventModal
         visible={addEventVisible}
         initialDate={selectedDate}
+        publicationCalendarTitle={publicationCalendarTitle}
         onClose={() => setAddEventVisible(false)}
         onSave={handleAddEvent}
       />
-      <EventDetailModal event={activeEvent} onClose={() => setActiveEvent(null)} onDelete={handleDeleteEvent} />
+      <EventDetailModal
+        event={activeEvent}
+        onClose={() => setActiveEvent(null)}
+        onUpdate={handleUpdateEvent}
+        onDelete={handleDeleteEvent}
+        onRetryPublication={retryPublication}
+      />
       <FocusModeOverlay
         visible={focusModeVisible}
         events={mergedFocusEvents}
@@ -384,6 +445,28 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  calendarToolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingRight: spacing.md,
+  },
+  refreshButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  buttonPressed: {
+    opacity: 0.65,
+  },
+  refreshButtonText: {
+    ...typography.button,
+    color: colors.brand,
+  },
+  deviceErrorText: {
+    ...typography.helper,
+    color: colors.dangerText,
+    paddingHorizontal: spacing.md,
   },
   monthContainer: {
     flex: 1,

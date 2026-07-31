@@ -90,7 +90,10 @@ function createToneSamples(sound: ProfileSoundOption): Int16Array {
   sound.sequence.forEach((segment) => {
     const segmentSampleCount = Math.round((segment.durationMs / 1000) * SAMPLE_RATE);
     const amplitude = (segment.volume ?? 0.7) * MAX_AMPLITUDE;
-    const fadeSampleCount = Math.min(Math.floor(SAMPLE_RATE * 0.008), Math.floor(segmentSampleCount / 2));
+    const fadeSampleCount = Math.min(
+      Math.floor(SAMPLE_RATE * 0.008),
+      Math.floor(segmentSampleCount / 2),
+    );
 
     for (let localIndex = 0; localIndex < segmentSampleCount; localIndex += 1) {
       let envelope = 1;

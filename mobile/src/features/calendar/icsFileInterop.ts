@@ -1,12 +1,18 @@
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { Platform } from 'react-native';
 
 function getWebGlobals(): {
   Blob?: new (parts?: unknown[], options?: { type?: string }) => { readonly size: number };
   URL?: { createObjectURL: (blob: unknown) => string; revokeObjectURL: (url: string) => void };
-  document?: { createElement: (tagName: string) => { click: () => void; href?: string; download?: string; remove?: () => void }; body?: { appendChild: (node: unknown) => void; removeChild: (node: unknown) => void } };
-  FileReader?: new () => { result: string | ArrayBuffer | null; error: Error | null; onload: null | (() => void); onerror: null | (() => void); readAsText: (file: unknown) => void };
+  document?: {
+    createElement: (tagName: string) => {
+      click: () => void;
+      href?: string;
+      download?: string;
+      remove?: () => void;
+    };
+    body?: { appendChild: (node: unknown) => void; removeChild: (node: unknown) => void };
+  };
 } {
   return globalThis as typeof globalThis & ReturnType<typeof getWebGlobals>;
 }
@@ -57,78 +63,11 @@ export async function downloadIcsFileOnWeb(filename: string, content: string): P
   link.href = objectUrl;
   link.download = filename;
   globals.document.body?.appendChild(link);
-  link.click();
-  link.remove?.();
-  globals.document.body?.removeChild(link);
-  globals.URL.revokeObjectURL(objectUrl);
-}
-
-function readWebFileAsText(file: unknown): Promise<string> {
-  const globals = getWebGlobals();
-  if (!globals.FileReader) {
-    throw new Error('Web file reading is unavailable in this environment.');
+  try {
+    link.click();
+  } finally {
+    if (link.remove) link.remove();
+    else globals.document.body?.removeChild(link);
+    globals.URL.revokeObjectURL(objectUrl);
   }
-
-  const FileReaderConstructor = globals.FileReader;
-
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReaderConstructor();
-
-    reader.onload = () => {
-      resolve(typeof reader.result === 'string' ? reader.result : '');
-    };
-
-    reader.onerror = () => {
-      reject(reader.error ?? new Error('Failed to read the selected .ics file.'));
-    };
-
-    reader.readAsText(file);
-  });
-}
-
-function pickWebIcsFileContent(): Promise<string | null> {
-  const globals = getWebGlobals();
-
-  if (!globals.document?.createElement) {
-    throw new Error('Web file selection is unavailable in this environment.');
-  }
-
-  return new Promise<string | null>((resolve, reject) => {
-    const input = globals.document?.createElement('input') as {
-      accept?: string;
-      type?: string;
-      onchange?: (() => void) | null;
-      files?: { length: number; item: (index: number) => unknown } | null;
-      click: () => void;
-      remove?: () => void;
-    };
-
-    input.type = 'file';
-    input.accept = '.ics,text/calendar';
-    input.onchange = async () => {
-      try {
-        const file = input.files?.length ? input.files.item(0) : null;
-        const content = file ? await readWebFileAsText(file) : null;
-        input.remove?.();
-        resolve(content);
-      } catch (error) {
-        reject(error instanceof Error ? error : new Error('Failed to read the selected .ics file.'));
-      }
-    };
-
-    input.click();
-  });
-}
-
-export async function pickIcsFileContent(): Promise<string | null> {
-  if (Platform.OS === 'web') {
-    return pickWebIcsFileContent();
-  }
-
-  const result = await File.pickFileAsync({ mimeTypes: ['text/calendar', 'application/octet-stream'] });
-  if (result.canceled) {
-    return null;
-  }
-
-  return result.result.text();
 }

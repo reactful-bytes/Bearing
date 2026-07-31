@@ -1,23 +1,84 @@
 export type EventStatus = 'scheduled' | 'completed' | 'canceled';
-export type EventSource = 'local' | 'google' | 'microsoft' | 'apple' | 'ics_import';
+export type EventAvailability = 'busy' | 'free' | 'tentative' | 'unavailable' | 'not-supported';
+export type EventRecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
-export type CalendarEvent = {
+export type EventRecurrenceRule = {
+  frequency: EventRecurrenceFrequency;
+  interval: number;
+  endAt: Date | null;
+  occurrenceCount: number | null;
+};
+
+export type EventAlarm = {
+  absoluteAt: Date | null;
+  relativeOffsetMinutes: number | null;
+};
+
+export type CalendarPublicationStatus =
+  'unpublished' | 'publishing' | 'published' | 'failed' | 'deleting';
+
+export type CalendarPublicationMetadata = {
+  status: CalendarPublicationStatus;
+  markerId: string | null;
+  commonHash: string | null;
+  lastError: string | null;
+  retryable: boolean;
+  deletionIntent: boolean;
+};
+
+export type CreateEventOptions = {
+  publishToDevice: boolean;
+};
+
+export function createUnpublishedMetadata(): CalendarPublicationMetadata {
+  return {
+    status: 'unpublished',
+    markerId: null,
+    commonHash: null,
+    lastError: null,
+    retryable: false,
+    deletionIntent: false,
+  };
+}
+
+type CalendarDisplayFields = {
   id: string;
-  userId: string;
   title: string;
   description: string;
   startAt: Date;
   endAt: Date;
   timezone: string;
-  source: EventSource;
-  externalEventId: string | null;
-  calendarConnectionId: string | null;
+  allDay: boolean;
+  location: string;
+  recurrenceRule: EventRecurrenceRule | null;
+  alarms: EventAlarm[];
+  availability: EventAvailability;
+  url: string | null;
+  status: EventStatus;
+};
+
+export type BearingEvent = CalendarDisplayFields & {
+  ownership: 'bearing';
+  userId: string;
   goalId: string | null;
   stepId: string | null;
-  status: EventStatus;
+  publication: CalendarPublicationMetadata;
   createdAt: Date;
   updatedAt: Date;
 };
+
+export type DeviceCalendarEvent = CalendarDisplayFields & {
+  ownership: 'device';
+  nativeEventId: string;
+  calendarId: string;
+  calendarTitle: string;
+  calendarColor: string | null;
+  sourceLabel: string;
+  allowsModifications: boolean;
+};
+
+export type CalendarDisplayEvent = BearingEvent | DeviceCalendarEvent;
+export type CalendarEvent = BearingEvent;
 
 export type CreateEventInput = {
   title: string;
@@ -25,15 +86,14 @@ export type CreateEventInput = {
   startAt: Date;
   endAt: Date;
   timezone: string;
+  allDay?: boolean;
+  location?: string;
+  recurrenceRule?: EventRecurrenceRule | null;
+  alarms?: EventAlarm[];
+  availability?: EventAvailability;
+  url?: string | null;
   goalId?: string | null;
   stepId?: string | null;
-};
-
-export type CreateMirroredEventInput = CreateEventInput & {
-  source: Exclude<EventSource, 'local'>;
-  externalEventId?: string | null;
-  calendarConnectionId?: string | null;
-  status?: EventStatus;
 };
 
 export type UpdateEventInput = Partial<CreateEventInput & { status: EventStatus }>;

@@ -12,11 +12,21 @@ import {
   onSnapshot,
   orderBy,
   query,
+  runTransaction,
   updateDoc,
   where,
 } from 'firebase/firestore';
 
 import { getFirebaseApp } from './firebaseApp';
+import { buildEventPayload } from './firebaseEvents';
+import { decodeCalendarEventData } from '../../features/calendar/calendarEventDecoder';
+import { CreateEventInput, createUnpublishedMetadata } from '../../features/calendar/calendarTypes';
+import {
+  TaskConversionCompletionSource,
+  TaskConversionEvent,
+  TaskConversionResult,
+  convertTaskToEventAtomically,
+} from '../../features/tasks/taskConversionService';
 import {
   CompleteTaskInput,
   CreateTaskInput,
@@ -98,7 +108,11 @@ export async function createTask(userId: string, input: CreateTaskInput): Promis
   return docRef.id;
 }
 
-export async function updateTask(_userId: string, taskId: string, fields: UpdateTaskInput): Promise<void> {
+export async function updateTask(
+  _userId: string,
+  taskId: string,
+  fields: UpdateTaskInput,
+): Promise<void> {
   const db = getFirebaseFirestore();
   const updates: Record<string, unknown> = {
     updatedAt: Timestamp.now(),
@@ -129,6 +143,88 @@ export async function completeTask(
     completedEventId: input.completedEventId ?? null,
     updatedAt: now,
   });
+}
+
+function eventToConversionInput(eventId: string, data: DocumentData): TaskConversionEvent {
+  const event = decodeCalendarEventData(eventId, data);
+  return {
+    userId: event.userId,
+    sourceTaskId: data.sourceTaskId as string,
+    input: {
+      title: event.title,
+      description: event.description,
+      startAt: event.startAt,
+      endAt: event.endAt,
+      timezone: event.timezone,
+      allDay: event.allDay,
+      location: event.location,
+      recurrenceRule: event.recurrenceRule,
+      alarms: event.alarms,
+      availability: event.availability,
+      url: event.url,
+      goalId: event.goalId,
+      stepId: event.stepId,
+    },
+  };
+}
+
+export async function convertTaskToEvent(
+  userId: string,
+  taskId: string,
+  input: CreateEventInput,
+  completionSource: TaskConversionCompletionSource,
+): Promise<TaskConversionResult> {
+  const db = getFirebaseFirestore();
+
+  return convertTaskToEventAtomically(
+    {
+      runTransaction: (operation) =>
+        runTransaction(db, async (firestoreTransaction) =>
+          operation({
+            getTask: async (requestedTaskId) => {
+              const snapshot = await firestoreTransaction.get(doc(db, 'tasks', requestedTaskId));
+              if (!snapshot.exists()) return null;
+              const data = snapshot.data();
+              return {
+                userId: data.userId as string,
+                status: data.status as TaskRecord['status'],
+                completionSource: (data.completionSource as TaskRecord['completionSource']) ?? null,
+                completedEventId: (data.completedEventId as string | null) ?? null,
+              };
+            },
+            getEvent: async (eventId) => {
+              const snapshot = await firestoreTransaction.get(doc(db, 'events', eventId));
+              return snapshot.exists() ? eventToConversionInput(eventId, snapshot.data()) : null;
+            },
+            createEvent: (eventId, eventUserId, sourceTaskId, eventInput, now) => {
+              firestoreTransaction.set(doc(db, 'events', eventId), {
+                ...buildEventPayload(
+                  eventUserId,
+                  eventInput,
+                  createUnpublishedMetadata(),
+                  Timestamp.fromDate(now),
+                ),
+                sourceTaskId,
+              });
+            },
+            completeTask: (requestedTaskId, source, eventId, now) => {
+              const timestamp = Timestamp.fromDate(now);
+              firestoreTransaction.update(doc(db, 'tasks', requestedTaskId), {
+                status: 'completed',
+                completionSource: source,
+                completedAt: timestamp,
+                completedEventId: eventId,
+                updatedAt: timestamp,
+              });
+            },
+          }),
+        ),
+    },
+    userId,
+    taskId,
+    input,
+    completionSource,
+  );
 }
 
 export async function deleteTask(_userId: string, taskId: string): Promise<void> {

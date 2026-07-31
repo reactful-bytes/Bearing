@@ -5,6 +5,7 @@ This guide enables Cloud Firestore for the Bearing mobile app and configures the
 Committed Firebase CLI config now lives at the workspace root in `firebase.json`, `firestore.rules`, and `firestore.indexes.json`.
 
 ## Prerequisites
+
 - Firebase project created and configured (see FIREBASE_SETUP.md for initial setup)
 - Anonymous authentication enabled
 - Bearinig app running locally or in Expo
@@ -29,68 +30,13 @@ Committed Firebase CLI config now lives at the workspace root in `firebase.json`
 
 1. In Firebase Console, go to **Build > Firestore Database**.
 2. Click the **Rules** tab.
-3. Replace the default rules with the following:
-
-```firestore
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Deny all access by default
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Users can manage their own profile
-    match /users/{userId} {
-      allow read, write: if request.auth.uid == userId;
-    }
-
-    // Users can read/write their own events
-    match /events/{eventId} {
-      allow read, write: if request.auth.uid == resource.data.userId;
-      allow create: if request.auth.uid == request.resource.data.userId;
-    }
-
-    // Users can manage their own goals
-    match /goals/{goalId} {
-      allow read, write: if request.auth.uid == resource.data.userId;
-      allow create: if request.auth.uid == request.resource.data.userId;
-    }
-
-    // Users can manage goal steps
-    match /goalSteps/{stepId} {
-      allow read, write: if request.auth.uid == resource.data.userId;
-      allow create: if request.auth.uid == request.resource.data.userId;
-    }
-
-    // Users can manage their own notes
-    match /notes/{noteId} {
-      allow read, write: if request.auth.uid == resource.data.userId;
-      allow create: if request.auth.uid == request.resource.data.userId;
-    }
-
-      // Users can manage their own tasks
-      match /tasks/{taskId} {
-         allow read, write: if request.auth.uid == resource.data.userId;
-         allow create: if request.auth.uid == request.resource.data.userId;
-      }
-
-    // Users can view their calendar connections
-    match /calendarConnections/{connectionId} {
-      allow read, write: if request.auth.uid == resource.data.userId;
-      allow create: if request.auth.uid == request.resource.data.userId;
-    }
-
-    // Users can view their subscriptions
-    match /subscriptions/{subscriptionId} {
-      allow read: if request.auth.uid == resource.data.userId;
-      allow write: if false; // Subscriptions updated by server only
-    }
-  }
-}
-```
-
-4. Click **Publish** to deploy the rules.
+3. Confirm the displayed policy matches the authoritative `firestore.rules` file at the repository
+   root.
+4. Deploy from the repository root with `firebase deploy --only firestore:rules`, or paste that exact
+   committed file and click **Publish**.
+5. From `mobile/`, run `npm run test:rules` with Java 21 before deployment. The suite verifies
+   ownership isolation, immutable owner IDs, server-owned premium fields and subscriptions, default
+   denial, and atomic task conversion.
 
 ## 3) Create Composite Index for Calendar Events
 
@@ -101,7 +47,7 @@ The calendar event query requires a composite index on `userId` + `startAt`:
 3. Click **Create Index**.
 4. Fill in the index details:
    - **Collection ID**: `events`
-   - **Fields**: 
+   - **Fields**:
      - Field 1: `userId` (Ascending)
      - Field 2: `startAt` (Ascending)
    - **Query scope**: Collection
@@ -113,21 +59,22 @@ The calendar event query requires a composite index on `userId` + `startAt`:
 
 For M4+ milestones, consider creating these indexes preemptively:
 
-| Collection | Fields | Purpose |
-| --- | --- | --- |
-| `events` | userId + stepId + startAt | Filter events by goal step |
-| `events` | userId + source + updatedAt | Filter events by calendar source |
-| `goals` | userId + status + estimatedCompletionDate | List active goals by target date |
-| `goals` | userId + updatedAt | Sort goals by recent update |
-| `goalSteps` | goalId + order | List steps within a goal |
-| `goalSteps` | userId + goalId + status | Filter goal steps by status |
-| `notes` | userId + updatedAt | Sort notes by recent update |
-| `notes` | userId + source + createdAt | Filter notes by source (manual/idea_dump) |
-| `tasks` | userId + updatedAt | Sort tasks by recent update |
+| Collection  | Fields                                    | Purpose                                   |
+| ----------- | ----------------------------------------- | ----------------------------------------- |
+| `events`    | userId + stepId + startAt                 | Filter events by goal step                |
+| `events`    | userId + publicationStatus + updatedAt    | Recover pending linked-event operations   |
+| `goals`     | userId + status + estimatedCompletionDate | List active goals by target date          |
+| `goals`     | userId + updatedAt                        | Sort goals by recent update               |
+| `goalSteps` | goalId + order                            | List steps within a goal                  |
+| `goalSteps` | userId + goalId + status                  | Filter goal steps by status               |
+| `notes`     | userId + updatedAt                        | Sort notes by recent update               |
+| `notes`     | userId + source + createdAt               | Filter notes by source (manual/idea_dump) |
+| `tasks`     | userId + updatedAt                        | Sort tasks by recent update               |
 
 ## 4) Test Firestore Connectivity
 
 1. Start the Expo app:
+
    ```bash
    cd mobile
    npm run web
@@ -183,6 +130,7 @@ Once events are created:
 **Cause**: The `userId + startAt` composite index is still building.
 
 **Solution**:
+
 1. Check Firebase Console → **Build > Firestore Database** → **Indexes** tab
 2. Wait for index status to show ✅ **Enabled**
 3. Reload the app
@@ -192,6 +140,7 @@ Once events are created:
 **Cause**: Security rules or user authentication is not configured correctly.
 
 **Solution**:
+
 1. Verify user is signed in:
    - Check ProfileScreen shows "Signed in as [UID]"
    - If not, sign in anonymously first
@@ -207,6 +156,7 @@ Once events are created:
 **Cause**: Events may not be saved to Firestore, or date range query is filtering them out.
 
 **Solution**:
+
 1. Create a test event with today's date/time (Step 4 above)
 2. Check Firestore Console → **Data** tab → `events` collection
 3. Verify the document exists with:
@@ -220,6 +170,7 @@ Once events are created:
 **Cause**: Missing or incomplete composite indexes.
 
 **Solution**:
+
 1. Go to Firebase Console → **Build > Firestore Database** → **Indexes**
 2. Verify the `userId + startAt` index shows ✅ **Enabled**
 3. If grayed out or "Building": Index is still being created; wait 5–10 minutes
@@ -237,7 +188,7 @@ Once events are created:
 1. **Never commit private keys**: Keep service account keys out of mobile app.
 2. **Test mode expiration**: Test mode rules expire after 30 days; set a calendar reminder to enable production rules.
 3. **Sensitive data**: Do not store passwords, tokens, or payment info in Firestore (use Cloud Functions or backend services).
-4. **Rate limiting**: Consider adding rate-limiting rules if app scales (Firebase pricing is based on read/write volume).
+4. **Device calendar privacy**: Device-originated events stay outside Firestore; never persist native calendar IDs as portable cloud identifiers.
 
 ## References
 

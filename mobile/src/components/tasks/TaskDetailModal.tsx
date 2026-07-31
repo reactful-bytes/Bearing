@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppCard } from '../ui/AppCard';
+import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
+import { FormField } from '../ui/FormField';
 import { colors, radii, spacing, typography } from '../../design/tokens';
 import { TaskRecord, UpdateTaskInput } from '../../features/tasks/taskTypes';
 
@@ -149,22 +151,27 @@ export function TaskDetailModal({
   }
 
   const headerAccessory = task ? (
-    <Pressable
-      accessibilityRole="button"
+    <AppButton
+      label={editMode ? 'Cancel' : 'Edit'}
+      variant="secondary"
       accessibilityLabel={editMode ? 'Cancel task editing' : 'Edit task'}
       onPress={() => {
         setError(null);
         setConfirmingDelete(false);
         setEditMode((current) => !current);
       }}
-      style={({ pressed }) => [styles.headerButton, pressed ? styles.buttonPressed : null]}
-    >
-      <Text style={styles.headerButtonText}>{editMode ? 'Cancel' : 'Edit'}</Text>
-    </Pressable>
+      style={styles.headerButton}
+      textStyle={styles.headerButtonText}
+    />
   ) : null;
 
   return (
-    <AppModal visible={visible} title="Task Details" onClose={handleClose} headerAccessory={headerAccessory}>
+    <AppModal
+      visible={visible}
+      title="Task Details"
+      onClose={handleClose}
+      headerAccessory={headerAccessory}
+    >
       {task ? (
         <ScrollView contentContainerStyle={styles.content}>
           <AppCard style={styles.summaryCard}>
@@ -178,29 +185,23 @@ export function TaskDetailModal({
 
           {editMode ? (
             <View style={styles.section}>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Title</Text>
-                <TextInput
-                  accessibilityLabel="Edit task title"
-                  value={title}
-                  onChangeText={setTitle}
-                  placeholder="Task title"
-                  style={styles.input}
-                />
-              </View>
+              <FormField
+                label="Title"
+                accessibilityLabel="Edit task title"
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Task title"
+                error={error}
+              />
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Description</Text>
-                <TextInput
-                  accessibilityLabel="Edit task description"
-                  value={description}
-                  onChangeText={setDescription}
-                  multiline
-                  textAlignVertical="top"
-                  placeholder="Optional details"
-                  style={[styles.input, styles.textArea]}
-                />
-              </View>
+              <FormField
+                label="Description"
+                accessibilityLabel="Edit task description"
+                value={description}
+                onChangeText={setDescription}
+                multiline
+                placeholder="Optional details"
+              />
             </View>
           ) : (
             <AppCard style={styles.readOnlyCard}>
@@ -211,90 +212,69 @@ export function TaskDetailModal({
             </AppCard>
           )}
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {!editMode && error ? <Text style={styles.errorText}>{error}</Text> : null}
 
           {editMode ? (
-            <Pressable
-              accessibilityRole="button"
+            <AppButton
+              label="Save Changes"
               accessibilityLabel="Save task changes"
               onPress={handleSave}
-              disabled={saving}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                pressed && !saving ? styles.buttonPressed : null,
-                saving ? styles.buttonDisabled : null,
-              ]}
-            >
-              <Text style={styles.primaryButtonText}>{saving ? 'Saving...' : 'Save Changes'}</Text>
-            </Pressable>
+              loading={saving}
+              loadingLabel="Saving..."
+            />
           ) : task.status === 'active' ? (
             <View style={styles.actionStack}>
-              <Pressable
-                accessibilityRole="button"
+              <AppButton
+                label="Schedule"
                 accessibilityLabel="Schedule task"
                 onPress={() => onSchedule(task)}
-                style={({ pressed }) => [styles.primaryButton, pressed ? styles.buttonPressed : null]}
-              >
-                <Text style={styles.primaryButtonText}>Schedule</Text>
-              </Pressable>
+              />
 
-              <Pressable
-                accessibilityRole="button"
+              <AppButton
+                label="Start Now"
+                variant="secondary"
                 accessibilityLabel="Start task now"
                 onPress={() => onStartNow(task)}
-                style={({ pressed }) => [styles.secondaryButton, pressed ? styles.buttonPressed : null]}
-              >
-                <Text style={styles.secondaryButtonText}>Start Now</Text>
-              </Pressable>
+              />
 
-              <Pressable
-                accessibilityRole="button"
+              <AppButton
+                label="Mark Complete"
+                variant="secondary"
                 accessibilityLabel="Mark task complete"
-                onPress={saving ? undefined : handleMarkComplete}
-                style={({ pressed }) => [
-                  styles.tertiaryButton,
-                  saving ? styles.buttonDisabled : null,
-                  pressed && !saving ? styles.buttonPressed : null,
-                ]}
-              >
-                <Text style={styles.tertiaryButtonText}>{saving ? 'Working...' : 'Mark Complete'}</Text>
-              </Pressable>
+                onPress={handleMarkComplete}
+                loading={saving}
+                loadingLabel="Working..."
+              />
             </View>
           ) : null}
 
           {!confirmingDelete ? (
-            <Pressable
-              accessibilityRole="button"
+            <AppButton
+              label="Delete Task"
+              variant="danger"
               accessibilityLabel="Delete task"
               onPress={() => setConfirmingDelete(true)}
-              style={({ pressed }) => [styles.dangerButton, pressed ? styles.buttonPressed : null]}
-            >
-              <Text style={styles.dangerButtonText}>Delete Task</Text>
-            </Pressable>
+            />
           ) : (
             <View style={styles.confirmBlock}>
               <Text style={styles.confirmText}>Delete this task permanently?</Text>
               <View style={styles.confirmActions}>
-                <Pressable
-                  accessibilityRole="button"
+                <AppButton
+                  label="Cancel"
+                  variant="secondary"
                   accessibilityLabel="Cancel task delete"
                   onPress={() => setConfirmingDelete(false)}
-                  style={({ pressed }) => [styles.secondaryButton, pressed ? styles.buttonPressed : null]}
-                >
-                  <Text style={styles.secondaryButtonText}>Cancel</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
+                  style={styles.flexButton}
+                />
+                <AppButton
+                  label="Yes, Delete"
+                  variant="danger"
                   accessibilityLabel="Confirm task delete"
-                  onPress={saving ? undefined : handleDelete}
-                  style={({ pressed }) => [
-                    styles.confirmDeleteButton,
-                    saving ? styles.buttonDisabled : null,
-                    pressed && !saving ? styles.buttonPressed : null,
-                  ]}
-                >
-                  <Text style={styles.confirmDeleteButtonText}>{saving ? 'Deleting...' : 'Yes, Delete'}</Text>
-                </Pressable>
+                  onPress={handleDelete}
+                  loading={saving}
+                  loadingLabel="Deleting..."
+                  style={styles.flexButton}
+                />
               </View>
             </View>
           )}
@@ -363,10 +343,7 @@ const styles = StyleSheet.create({
     color: colors.dangerText,
   },
   headerButton: {
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.surfaceMuted,
+    minHeight: 44,
   },
   headerButtonText: {
     ...typography.helper,
@@ -432,6 +409,9 @@ const styles = StyleSheet.create({
   confirmActions: {
     flexDirection: 'row',
     gap: spacing.md,
+  },
+  flexButton: {
+    flex: 1,
   },
   confirmDeleteButton: {
     flex: 1,

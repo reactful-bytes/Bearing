@@ -147,7 +147,11 @@ export function GoalDatePicker({
       {activeField ? (
         <AppCard style={styles.dropdownCard}>
           <Text style={styles.dropdownTitle}>
-            {activeField === 'month' ? 'Select month' : activeField === 'day' ? 'Select day' : 'Select year'}
+            {activeField === 'month'
+              ? 'Select month'
+              : activeField === 'day'
+                ? 'Select day'
+                : 'Select year'}
           </Text>
           <ScrollView style={styles.dropdownList} nestedScrollEnabled>
             {activeOptions.map((option) => (
@@ -156,7 +160,10 @@ export function GoalDatePicker({
                 accessibilityRole="button"
                 accessibilityLabel={`Select ${accessibilityPrefix} ${activeField} ${option.label}`}
                 onPress={() => onSelectField(activeField, option.value)}
-                style={({ pressed }) => [styles.dropdownOption, pressed ? styles.buttonPressed : null]}
+                style={({ pressed }) => [
+                  styles.dropdownOption,
+                  pressed ? styles.buttonPressed : null,
+                ]}
               >
                 <Text style={styles.dropdownOptionText}>{option.label}</Text>
               </Pressable>
@@ -185,6 +192,7 @@ const styles = StyleSheet.create({
   },
   dateFieldButton: {
     flex: 1,
+    minHeight: 44,
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -222,6 +230,7 @@ const styles = StyleSheet.create({
     maxHeight: 176,
   },
   dropdownOption: {
+    minHeight: 44,
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,

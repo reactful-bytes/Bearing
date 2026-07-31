@@ -1,22 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
 import { getFirebaseAuth } from '../../services/firebase/firebaseAuth';
 
 export type AuthBootstrapStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'error';
 
-export type AuthBootstrapState = {
+type AuthBootstrapSnapshot = {
   status: AuthBootstrapStatus;
   user: User | null;
   error: Error | null;
 };
 
+export type AuthBootstrapState = AuthBootstrapSnapshot & {
+  retry: () => void;
+};
+
 export function useAuthBootstrap(): AuthBootstrapState {
-  const [state, setState] = useState<AuthBootstrapState>({
+  const [state, setState] = useState<AuthBootstrapSnapshot>({
     status: 'loading',
     user: null,
     error: null,
   });
+  const [revision, setRevision] = useState(0);
 
   useEffect(() => {
     try {
@@ -50,7 +55,12 @@ export function useAuthBootstrap(): AuthBootstrapState {
 
       return () => {};
     }
+  }, [revision]);
+
+  const retry = useCallback(() => {
+    setState({ status: 'loading', user: null, error: null });
+    setRevision((current) => current + 1);
   }, []);
 
-  return state;
+  return { ...state, retry };
 }

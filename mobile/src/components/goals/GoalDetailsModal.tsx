@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppCard } from '../ui/AppCard';
+import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
+import { FormField } from '../ui/FormField';
 import {
   GoalDateField,
   GoalDateParts,
@@ -25,7 +27,10 @@ type GoalDetailsModalProps = {
   goal: GoalWithSteps | null;
   visible: boolean;
   onClose: () => void;
-  onSaveGoal: (goalId: string, fields: { title: string; description: string; estimatedCompletionDate: Date }) => Promise<void>;
+  onSaveGoal: (
+    goalId: string,
+    fields: { title: string; description: string; estimatedCompletionDate: Date },
+  ) => Promise<void>;
   onMarkGoalCompleted: (goalId: string) => Promise<void>;
   onAddStep: () => void;
   onOpenStep: (step: GoalStepRecord) => void;
@@ -64,7 +69,10 @@ export function GoalDetailsModal({
     () => Array.from({ length: YEAR_OPTION_COUNT }, (_, index) => today.getFullYear() + index),
     [today],
   );
-  const dayOptions = useMemo(() => getDayOptions(dateParts.month, dateParts.year), [dateParts.month, dateParts.year]);
+  const dayOptions = useMemo(
+    () => getDayOptions(dateParts.month, dateParts.year),
+    [dateParts.month, dateParts.year],
+  );
 
   useEffect(() => {
     if (!goal || !visible) {
@@ -156,45 +164,44 @@ export function GoalDetailsModal({
   }
 
   const headerAccessory = goal ? (
-    <Pressable
-      accessibilityRole="button"
+    <AppButton
+      label={editMode ? 'Cancel' : 'Edit'}
+      variant="secondary"
       accessibilityLabel={editMode ? 'Cancel goal editing' : 'Edit goal'}
       onPress={() => {
         setError(null);
         setEditMode((current) => !current);
       }}
-      style={({ pressed }) => [styles.headerButton, pressed ? styles.buttonPressed : null]}
-    >
-      <Text style={styles.headerButtonText}>{editMode ? 'Cancel' : 'Edit'}</Text>
-    </Pressable>
+      style={styles.headerButton}
+      textStyle={styles.headerButtonText}
+    />
   ) : null;
 
   return (
-    <AppModal visible={visible} title="Goal Details" onClose={handleClose} headerAccessory={headerAccessory}>
+    <AppModal
+      visible={visible}
+      title="Goal Details"
+      onClose={handleClose}
+      headerAccessory={headerAccessory}
+    >
       {goal ? (
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
           {editMode ? (
             <View style={styles.section}>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Goal name</Text>
-                <TextInput
-                  accessibilityLabel="Edit goal name"
-                  value={title}
-                  onChangeText={setTitle}
-                  style={styles.input}
-                />
-              </View>
+              <FormField
+                label="Goal name"
+                accessibilityLabel="Edit goal name"
+                value={title}
+                onChangeText={setTitle}
+              />
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Description</Text>
-                <TextInput
-                  accessibilityLabel="Edit goal description"
-                  value={description}
-                  onChangeText={setDescription}
-                  style={[styles.input, styles.textArea]}
-                  multiline
-                />
-              </View>
+              <FormField
+                label="Description"
+                accessibilityLabel="Edit goal description"
+                value={description}
+                onChangeText={setDescription}
+                multiline
+              />
 
               <View style={styles.fieldGroup}>
                 <GoalDatePicker
@@ -205,44 +212,38 @@ export function GoalDetailsModal({
                   dateParts={dateParts}
                   activeField={activeDateField}
                   optionsByField={{
-                    month: MONTH_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
+                    month: MONTH_OPTIONS.map((option) => ({
+                      value: option.value,
+                      label: option.label,
+                    })),
                     day: dayOptions.map((day) => ({ value: day, label: formatTwoDigits(day) })),
                     year: yearOptions.map((year) => ({ value: year, label: String(year) })),
                   }}
-                  onToggleField={(field) => setActiveDateField((current) => (current === field ? null : field))}
+                  onToggleField={(field) =>
+                    setActiveDateField((current) => (current === field ? null : field))
+                  }
                   onSelectField={updateDateField}
                 />
               </View>
 
               <View style={styles.actionColumn}>
-                <Pressable
-                  accessibilityRole="button"
+                <AppButton
+                  label="Save Changes"
                   accessibilityLabel="Save goal changes"
                   onPress={handleSave}
-                  disabled={saving}
-                  style={({ pressed }) => [
-                    styles.primaryButton,
-                    pressed && !saving ? styles.buttonPressed : null,
-                    saving ? styles.buttonDisabled : null,
-                  ]}
-                >
-                  <Text style={styles.primaryButtonText}>{saving ? 'Saving...' : 'Save Changes'}</Text>
-                </Pressable>
+                  loading={saving}
+                  loadingLabel="Saving..."
+                />
 
                 {goal.status !== 'completed' ? (
-                  <Pressable
-                    accessibilityRole="button"
+                  <AppButton
+                    label="Mark Goal Complete"
+                    variant="secondary"
                     accessibilityLabel="Mark goal complete"
                     onPress={handleMarkComplete}
-                    disabled={saving}
-                    style={({ pressed }) => [
-                      styles.secondaryButton,
-                      pressed && !saving ? styles.buttonPressed : null,
-                      saving ? styles.buttonDisabled : null,
-                    ]}
-                  >
-                    <Text style={styles.secondaryButtonText}>Mark Goal Complete</Text>
-                  </Pressable>
+                    loading={saving}
+                    loadingLabel="Working..."
+                  />
                 ) : null}
               </View>
             </View>
@@ -250,30 +251,50 @@ export function GoalDetailsModal({
             <View style={styles.section}>
               <AppCard style={styles.summaryCard}>
                 <Text style={styles.goalTitle}>{goal.title}</Text>
-                <Text style={styles.goalDescription}>{goal.description || 'No description yet.'}</Text>
-                <Text style={styles.metaText}>Target date: {formatDateString(goal.estimatedCompletionDate)}</Text>
-                <Text style={styles.metaText}>Status: {goal.status === 'completed' ? 'Completed' : 'Active'}</Text>
+                <Text style={styles.goalDescription}>
+                  {goal.description || 'No description yet.'}
+                </Text>
+                <Text style={styles.metaText}>
+                  Target date: {formatDateString(goal.estimatedCompletionDate)}
+                </Text>
+                <Text style={styles.metaText}>
+                  Status: {goal.status === 'completed' ? 'Completed' : 'Active'}
+                </Text>
                 <Text style={styles.metaText}>{goal.progressText}</Text>
               </AppCard>
             </View>
           )}
 
+          {goal.aiMilestones && goal.aiMilestones.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Milestones</Text>
+              {goal.aiMilestones.map((milestone, index) => (
+                <AppCard key={`goal-milestone-${index + 1}`} style={styles.summaryCard}>
+                  <Text style={styles.milestoneTitle}>{milestone.title}</Text>
+                  <Text style={styles.goalDescription}>{milestone.description}</Text>
+                </AppCard>
+              ))}
+            </View>
+          ) : null}
+
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Steps</Text>
-              <Pressable
-                accessibilityRole="button"
+              <AppButton
+                label="Add Step"
+                variant="secondary"
                 accessibilityLabel="Add step"
                 onPress={onAddStep}
-                style={({ pressed }) => [styles.headerButton, pressed ? styles.buttonPressed : null]}
-              >
-                <Text style={styles.headerButtonText}>Add Step</Text>
-              </Pressable>
+                style={styles.headerButton}
+                textStyle={styles.headerButtonText}
+              />
             </View>
 
             {goal.steps.length === 0 ? (
               <AppCard style={styles.summaryCard}>
-                <Text style={styles.goalDescription}>No steps yet. Add the first action for this goal.</Text>
+                <Text style={styles.goalDescription}>
+                  No steps yet. Add the first action for this goal.
+                </Text>
               </AppCard>
             ) : (
               <DraggableStepList
@@ -320,6 +341,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: colors.text,
   },
+  milestoneTitle: {
+    ...typography.button,
+    color: colors.text,
+  },
   goalDescription: {
     ...typography.body,
     color: colors.textPrimary,
@@ -329,12 +354,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   headerButton: {
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    minHeight: 44,
   },
   headerButtonText: {
     ...typography.helper,

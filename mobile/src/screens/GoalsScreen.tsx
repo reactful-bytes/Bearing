@@ -10,6 +10,8 @@ import { PremiumPaywallModal } from '../components/premium/PremiumPaywallModal';
 import { AppCard } from '../components/ui/AppCard';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
+import { SegmentedControl } from '../components/ui/SegmentedControl';
+import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { colors, layout, radii, spacing, typography } from '../design/tokens';
 import {
   CreateGoalInput,
@@ -18,12 +20,15 @@ import {
   GoalWithSteps,
 } from '../features/goals/goalTypes';
 import { PremiumFeature, hasActivePremiumStatus } from '../features/premium/premiumAccess';
+import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { useGoals } from '../features/goals/useGoals';
 import { useGoalStepEvents } from '../features/goals/useGoalStepEvents';
-import { createEvent as createFirebaseEvent } from '../services/firebase/firebaseEvents';
-import { getFirebaseAuth } from '../services/firebase/firebaseAuth';
-import { CreateEventInput } from '../features/calendar/calendarTypes';
+import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
+import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
+import { generateAiGoalPlanDraft } from '../services/firebase/firebaseAiGoalPlans';
+
+type GoalFilter = 'active' | 'completed' | 'all';
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString(undefined, {
@@ -33,17 +38,63 @@ function formatDate(date: Date): string {
   });
 }
 
+function getGoalProgressPercent(goal: GoalWithSteps): number {
+  if (goal.status === 'completed') {
+    return 100;
+  }
+
+  if (goal.totalStepCount === 0) {
+    return 0;
+  }
+
+  return Math.round((goal.completedStepCount / goal.totalStepCount) * 100);
+}
+
 export function GoalsScreen() {
-  const { profile, uiState: profileUiState, isAnonymous } = useUserProfile();
-  const { goals, uiState, createGoal, updateGoal, markGoalCompleted, createStep, deleteStep, updateStep, reorderSteps } =
-    useGoals();
+  const { createEvent, publicationCalendarTitle } = useCalendarPublication();
+  const { authUser, isAnonymous } = useUserProfile();
+  const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
+  const {
+    goals,
+    uiState,
+    createGoal,
+    updateGoal,
+    markGoalCompleted,
+    createStep,
+    deleteStep,
+    updateStep,
+    reorderSteps,
+    retry,
+  } = useGoals();
   const [createGoalVisible, setCreateGoalVisible] = useState(false);
   const [addStepVisible, setAddStepVisible] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [scheduleStepId, setScheduleStepId] = useState<string | null>(null);
   const [premiumPaywallFeature, setPremiumPaywallFeature] = useState<PremiumFeature | null>(null);
-  const hasPremiumAccess = hasActivePremiumStatus(profile?.premiumStatus);
+  const [goalFilter, setGoalFilter] = useState<GoalFilter>('active');
+  const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
+
+  const activeGoalCount = useMemo(
+    () => goals.filter((goal) => goal.status === 'active').length,
+    [goals],
+  );
+  const completedGoalCount = goals.length - activeGoalCount;
+  const goalFilterOptions = useMemo(
+    () => [
+      { value: 'active' as const, label: 'Active', count: activeGoalCount },
+      { value: 'completed' as const, label: 'Completed', count: completedGoalCount },
+      { value: 'all' as const, label: 'All', count: goals.length },
+    ],
+    [activeGoalCount, completedGoalCount, goals.length],
+  );
+  const visibleGoals = useMemo(() => {
+    if (goalFilter === 'all') {
+      return goals;
+    }
+
+    return goals.filter((goal) => goal.status === goalFilter);
+  }, [goalFilter, goals]);
 
   const selectedGoal = useMemo(
     () => goals.find((goal) => goal.id === selectedGoalId) ?? null,
@@ -72,7 +123,9 @@ export function GoalsScreen() {
 
     return goals.find((goal) => goal.steps.some((step) => step.id === scheduleStepId)) ?? null;
   }, [goals, scheduleStepId]);
-  const { events: linkedEvents, uiState: linkedEventsState } = useGoalStepEvents(selectedStep?.id ?? null);
+  const { events: linkedEvents, uiState: linkedEventsState } = useGoalStepEvents(
+    selectedStep?.id ?? null,
+  );
 
   async function handleCreateGoal(input: CreateGoalInput): Promise<void> {
     await createGoal(input);
@@ -101,7 +154,12 @@ export function GoalsScreen() {
 
   async function handleSaveStep(
     stepId: string,
-    fields: { title: string; description: string; starter: string; estimatedFinishDate: Date | null },
+    fields: {
+      title: string;
+      description: string;
+      starter: string;
+      estimatedFinishDate: Date | null;
+    },
   ): Promise<void> {
     await updateStep(stepId, fields);
   }
@@ -112,13 +170,11 @@ export function GoalsScreen() {
     });
   }
 
-  async function handleScheduleStepEvent(input: CreateEventInput): Promise<void> {
-    const userId = getFirebaseAuth().currentUser?.uid;
-    if (!userId) {
-      throw new Error('User is not authenticated.');
-    }
-
-    await createFirebaseEvent(userId, input);
+  async function handleScheduleStepEvent(
+    input: CreateEventInput,
+    options: CreateEventOptions,
+  ): Promise<void> {
+    await createEvent(input, options);
     setScheduleStepId(null);
   }
 
@@ -145,54 +201,112 @@ export function GoalsScreen() {
           description="Break long-term goals into ordered steps, then schedule the next move into your calendar."
         />
 
+        <SegmentedControl
+          accessibilityLabel="Goal filter"
+          options={goalFilterOptions}
+          value={goalFilter}
+          onChange={setGoalFilter}
+        />
+
         {uiState === 'loading' ? (
           <AppCard>
             <Text style={styles.stateTitle}>Loading goals...</Text>
-            <Text style={styles.stateDescription}>Pulling in your current goals and step order.</Text>
+            <Text style={styles.stateDescription}>
+              Pulling in your current goals and step order.
+            </Text>
           </AppCard>
         ) : null}
 
         {uiState === 'error' ? (
+          <RecoveryCard
+            title="Unable to load goals."
+            description="Check your connection, then retry."
+            onRetry={retry}
+          />
+        ) : null}
+
+        {(uiState === 'empty' || uiState === 'ready') && visibleGoals.length === 0 ? (
           <AppCard>
-            <Text style={styles.stateTitle}>Unable to load goals.</Text>
-            <Text style={styles.stateDescription}>Check your connection and try again in a moment.</Text>
+            <Text style={styles.stateTitle}>
+              {goalFilter === 'active'
+                ? 'No active goals.'
+                : goalFilter === 'completed'
+                  ? 'No completed goals.'
+                  : 'No goals yet.'}
+            </Text>
+            <Text style={styles.stateDescription}>
+              {goalFilter === 'active'
+                ? 'Create a goal to start building a step-by-step plan.'
+                : goalFilter === 'completed'
+                  ? 'Goals you finish will stay available here.'
+                  : 'Create your first goal to start building a step-by-step plan.'}
+            </Text>
           </AppCard>
         ) : null}
 
-        {uiState === 'empty' ? (
-          <AppCard>
-            <Text style={styles.stateTitle}>No goals yet.</Text>
-            <Text style={styles.stateDescription}>Create your first goal to start building a step-by-step plan.</Text>
-          </AppCard>
-        ) : null}
+        {uiState === 'ready' || uiState === 'empty'
+          ? visibleGoals.map((goal) => {
+              const progressPercent = getGoalProgressPercent(goal);
 
-        {uiState === 'ready'
-          ? goals.map((goal) => (
-              <Pressable
-                key={goal.id}
-                accessibilityRole="button"
-                accessibilityLabel={`Open goal ${goal.title}`}
-                onPress={() => openGoal(goal)}
-                style={({ pressed }) => [styles.goalCardPressable, pressed ? styles.goalCardPressed : null]}
-              >
-                <AppCard style={styles.goalCard}>
-                  <View style={styles.goalHeaderRow}>
-                    <Text style={styles.goalTitle}>{goal.title}</Text>
-                    <Text style={styles.goalStatus}>{goal.status === 'completed' ? 'Completed' : 'Active'}</Text>
-                  </View>
-                  <Text style={styles.goalDate}>Target: {formatDate(goal.estimatedCompletionDate)}</Text>
-                  <Text style={styles.goalNextStep}>
-                    Next task: {goal.nextStep ? goal.nextStep.title : goal.status === 'completed' ? 'Completed' : 'Add a step'}
-                  </Text>
-                  <Text style={styles.goalProgress}>{goal.progressText}</Text>
-                </AppCard>
-              </Pressable>
-            ))
+              return (
+                <Pressable
+                  key={goal.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open goal ${goal.title}`}
+                  onPress={() => openGoal(goal)}
+                  style={({ pressed }) => [
+                    styles.goalCardPressable,
+                    pressed ? styles.goalCardPressed : null,
+                  ]}
+                >
+                  <AppCard style={styles.goalCard}>
+                    <View style={styles.goalHeaderRow}>
+                      <Text style={styles.goalTitle}>{goal.title}</Text>
+                      <Text style={styles.goalStatus}>
+                        {goal.status === 'completed' ? 'Completed' : 'Active'}
+                      </Text>
+                    </View>
+                    <Text style={styles.goalDate}>
+                      Target: {formatDate(goal.estimatedCompletionDate)}
+                    </Text>
+                    <Text style={styles.goalNextStep}>
+                      Next:{' '}
+                      {goal.nextStep
+                        ? goal.nextStep.title
+                        : goal.status === 'completed'
+                          ? 'Completed'
+                          : 'Add a step'}
+                    </Text>
+                    <View style={styles.progressCopyRow}>
+                      <Text style={styles.goalProgress}>{goal.progressText}</Text>
+                      <Text style={styles.goalProgressPercent}>{progressPercent}%</Text>
+                    </View>
+                    <View
+                      accessibilityRole="progressbar"
+                      accessibilityLabel={`Goal progress ${goal.title}`}
+                      accessibilityValue={{
+                        min: 0,
+                        max: 100,
+                        now: progressPercent,
+                        text: goal.progressText,
+                      }}
+                      style={styles.progressTrack}
+                    >
+                      <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
+                    </View>
+                  </AppCard>
+                </Pressable>
+              );
+            })
           : null}
       </ScrollView>
 
       <View style={styles.fabContainer}>
-        <FloatingActionButton label="New Goal" onPress={() => setCreateGoalVisible(true)} style={styles.smallFab} />
+        <FloatingActionButton
+          label="New Goal"
+          onPress={() => setCreateGoalVisible(true)}
+          style={styles.smallFab}
+        />
       </View>
 
       <CreateGoalModal
@@ -200,8 +314,9 @@ export function GoalsScreen() {
         onClose={() => setCreateGoalVisible(false)}
         onSave={handleCreateGoal}
         hasPremiumAccess={hasPremiumAccess}
-        isPremiumStatusResolved={profileUiState === 'ready'}
+        isPremiumStatusResolved={entitlementUiState === 'ready'}
         onOpenPremiumPaywall={() => setPremiumPaywallFeature('ai_goal_builder')}
+        onGenerateAiPlan={generateAiGoalPlanDraft}
       />
 
       <PremiumPaywallModal
@@ -223,7 +338,11 @@ export function GoalsScreen() {
         onReorderSteps={reorderSteps}
       />
 
-      <AddStepModal visible={addStepVisible} onClose={() => setAddStepVisible(false)} onSave={handleCreateStep} />
+      <AddStepModal
+        visible={addStepVisible}
+        onClose={() => setAddStepVisible(false)}
+        onSave={handleCreateStep}
+      />
 
       <StepDetailModal
         goalTitle={selectedGoal?.title ?? scheduleGoal?.title ?? 'Goal'}
@@ -241,7 +360,9 @@ export function GoalsScreen() {
       <AddEventModal
         visible={scheduleStep !== null}
         modalTitle="Schedule Step Event"
-        initialDate={scheduleStep?.estimatedFinishDate ?? scheduleGoal?.estimatedCompletionDate ?? new Date()}
+        initialDate={
+          scheduleStep?.estimatedFinishDate ?? scheduleGoal?.estimatedCompletionDate ?? new Date()
+        }
         initialValues={
           scheduleStep
             ? {
@@ -252,6 +373,7 @@ export function GoalsScreen() {
               }
             : undefined
         }
+        publicationCalendarTitle={publicationCalendarTitle}
         onClose={() => setScheduleStepId(null)}
         onSave={handleScheduleStepEvent}
       />
@@ -311,12 +433,35 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   goalNextStep: {
-    ...typography.body,
+    ...typography.helper,
     color: colors.textPrimary,
+  },
+  progressCopyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
   },
   goalProgress: {
     ...typography.helper,
     color: colors.textSecondary,
+    flex: 1,
+  },
+  goalProgressPercent: {
+    ...typography.helper,
+    color: colors.brand,
+    fontWeight: '700',
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.surface,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
+    backgroundColor: colors.brand,
   },
   fabContainer: {
     position: 'absolute',

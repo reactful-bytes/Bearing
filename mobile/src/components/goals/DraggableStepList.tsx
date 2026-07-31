@@ -17,7 +17,10 @@ export function DraggableStepList({
   onToggleStepStatus,
   onReorder,
 }: DraggableStepListProps) {
-  const sortedSteps = useMemo(() => [...steps].sort((left, right) => left.order - right.order), [steps]);
+  const sortedSteps = useMemo(
+    () => [...steps].sort((left, right) => left.order - right.order),
+    [steps],
+  );
   function moveStep(stepId: string, direction: -1 | 1): void {
     const currentIndex = sortedSteps.findIndex((step) => step.id === stepId);
     const targetIndex = currentIndex + direction;
@@ -48,7 +51,9 @@ export function DraggableStepList({
                 onPress={() => onOpenStep(step)}
                 style={({ pressed }) => [styles.rowMain, pressed ? styles.rowMainPressed : null]}
               >
-                <Text style={[styles.rowTitle, completed ? styles.completedText : null]}>{step.title}</Text>
+                <Text style={[styles.rowTitle, completed ? styles.completedText : null]}>
+                  {step.title}
+                </Text>
                 <Text style={[styles.rowDescription, completed ? styles.completedText : null]}>
                   {step.description || step.starter || 'No extra details yet.'}
                 </Text>
@@ -57,7 +62,9 @@ export function DraggableStepList({
               <View style={styles.statusColumn}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={completed ? `Mark ${step.title} pending` : `Mark ${step.title} complete`}
+                  accessibilityLabel={
+                    completed ? `Mark ${step.title} pending` : `Mark ${step.title} complete`
+                  }
                   onPress={() => onToggleStepStatus(step)}
                   style={({ pressed }) => [
                     styles.statusButton,
@@ -88,7 +95,14 @@ export function DraggableStepList({
                     !canMoveUp ? styles.moveButtonDisabled : null,
                   ]}
                 >
-                  <Text style={[styles.moveButtonText, !canMoveUp ? styles.moveButtonTextDisabled : null]}>↑</Text>
+                  <Text
+                    style={[
+                      styles.moveButtonText,
+                      !canMoveUp ? styles.moveButtonTextDisabled : null,
+                    ]}
+                  >
+                    ↑
+                  </Text>
                 </Pressable>
 
                 <Pressable
@@ -102,7 +116,14 @@ export function DraggableStepList({
                     !canMoveDown ? styles.moveButtonDisabled : null,
                   ]}
                 >
-                  <Text style={[styles.moveButtonText, !canMoveDown ? styles.moveButtonTextDisabled : null]}>↓</Text>
+                  <Text
+                    style={[
+                      styles.moveButtonText,
+                      !canMoveDown ? styles.moveButtonTextDisabled : null,
+                    ]}
+                  >
+                    ↓
+                  </Text>
                 </Pressable>
               </View>
             </View>
@@ -134,6 +155,8 @@ const styles = StyleSheet.create({
   },
   rowMain: {
     flex: 1,
+    minHeight: 44,
+    justifyContent: 'center',
     gap: spacing.xs,
   },
   rowMainPressed: {
@@ -155,12 +178,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   moveColumn: {
-    width: 40,
+    width: 44,
     alignItems: 'stretch',
     justifyContent: 'center',
     gap: spacing.xs,
   },
   statusButton: {
+    minHeight: 44,
     borderRadius: radii.md,
     backgroundColor: colors.surfaceBrand,
     paddingHorizontal: spacing.md,
@@ -181,7 +205,8 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   moveButton: {
-    height: 36,
+    minWidth: 44,
+    height: 44,
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,

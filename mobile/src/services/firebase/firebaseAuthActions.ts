@@ -2,6 +2,7 @@ import {
   EmailAuthProvider,
   createUserWithEmailAndPassword,
   linkWithCredential,
+  reauthenticateWithCredential,
   sendPasswordResetEmail,
   signInAnonymously,
   signInWithEmailAndPassword,
@@ -97,6 +98,21 @@ export async function sendPasswordResetForEmail(email: string): Promise<void> {
     throw new Error('Failed to send password reset email.', {
       cause: error,
     });
+  }
+}
+
+export async function reauthenticateCurrentUser(password: string): Promise<void> {
+  try {
+    const currentUser = getFirebaseAuth().currentUser;
+    const email = currentUser?.email;
+
+    if (!currentUser || !email) {
+      throw new Error('An email account is required for password reauthentication.');
+    }
+
+    await reauthenticateWithCredential(currentUser, EmailAuthProvider.credential(email, password));
+  } catch (error) {
+    throw new Error('Failed to verify the current password.', { cause: error });
   }
 }
 

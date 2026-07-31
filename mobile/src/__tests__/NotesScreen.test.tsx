@@ -26,18 +26,32 @@ function makeNote(overrides: Partial<NoteRecord> = {}): NoteRecord {
   };
 }
 
-function makeUseNotesReturn(overrides: Partial<ReturnType<typeof useNotes>> = {}): ReturnType<typeof useNotes> {
+function makeUseNotesReturn(
+  overrides: Partial<ReturnType<typeof useNotes>> = {},
+): ReturnType<typeof useNotes> {
   return {
     notes: [],
     uiState: 'empty',
     createNote: async () => undefined,
     updateNote: async () => undefined,
     deleteNote: async () => undefined,
+    retry: jest.fn(),
     ...overrides,
   };
 }
 
 describe('NotesScreen', () => {
+  it('retries after the notes subscription fails', () => {
+    const retry = jest.fn();
+    const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
+    mockedUseNotes.mockReturnValue(makeUseNotesReturn({ uiState: 'error', retry }));
+
+    render(<NotesScreen />);
+    fireEvent.press(screen.getByRole('button', { name: 'Try Again' }));
+
+    expect(retry).toHaveBeenCalledTimes(1);
+  });
+
   it('renders the empty state', () => {
     const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
     mockedUseNotes.mockReturnValue(makeUseNotesReturn());
@@ -50,10 +64,15 @@ describe('NotesScreen', () => {
 
   it('renders saved notes with source metadata', () => {
     const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
-    mockedUseNotes.mockReturnValue(makeUseNotesReturn({
-      notes: [makeNote(), makeNote({ id: 'note-2', source: 'manual', title: 'Manual note', sourceEventId: null })],
-      uiState: 'ready',
-    }));
+    mockedUseNotes.mockReturnValue(
+      makeUseNotesReturn({
+        notes: [
+          makeNote(),
+          makeNote({ id: 'note-2', source: 'manual', title: 'Manual note', sourceEventId: null }),
+        ],
+        uiState: 'ready',
+      }),
+    );
 
     render(<NotesScreen />);
 
@@ -102,7 +121,10 @@ describe('NotesScreen', () => {
     fireEvent.press(screen.getByLabelText('Open note Captured thought'));
     fireEvent.press(screen.getByLabelText('Edit note'));
     fireEvent.changeText(screen.getByLabelText('Edit note title'), 'Sharper title');
-    fireEvent.changeText(screen.getByLabelText('Edit note body'), 'Rewritten body for a better saved note.');
+    fireEvent.changeText(
+      screen.getByLabelText('Edit note body'),
+      'Rewritten body for a better saved note.',
+    );
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Save note changes'));

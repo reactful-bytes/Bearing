@@ -5,12 +5,26 @@ import { CalendarScreen } from '../screens/CalendarScreen';
 import { formatDayLabel } from '../components/calendar/DayNavBar';
 
 jest.mock('../features/notes/useNotes', () => ({
-  useNotes: jest.fn(() => ({
-    notes: [],
-    uiState: 'empty',
-    createNote: async () => undefined,
-  })),
+  useCreateNote: jest.fn(() => async () => undefined),
 }));
+
+jest.mock('../features/calendar/useDeviceCalendars', () => {
+  const state = {
+    calendars: [],
+    permission: 'unavailable',
+    selectedCalendarIds: [],
+    defaultCalendarId: null,
+    uiState: 'unavailable',
+    error: null,
+    staleSelectionRecovered: false,
+    requestPermission: jest.fn(),
+    refresh: jest.fn(),
+    toggleCalendar: jest.fn(),
+    setDefaultCalendar: jest.fn(),
+    openSettings: jest.fn(),
+  };
+  return { useDeviceCalendars: jest.fn(() => state) };
+});
 
 // Mock Firebase services
 jest.mock('../services/firebase/firebaseAuth', () => ({

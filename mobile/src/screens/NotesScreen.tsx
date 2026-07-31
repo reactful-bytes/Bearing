@@ -6,6 +6,7 @@ import { NoteDetailModal } from '../components/notes/NoteDetailModal';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { AppCard } from '../components/ui/AppCard';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
+import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { colors, layout, radii, spacing, typography } from '../design/tokens';
 import { useNotes } from '../features/notes/useNotes';
 import { CreateNoteInput, NoteRecord, UpdateNoteInput } from '../features/notes/noteTypes';
@@ -24,11 +25,13 @@ function noteSourceLabel(note: NoteRecord): string {
 }
 
 export function NotesScreen() {
-  const { notes, uiState, createNote, updateNote, deleteNote } = useNotes();
+  const { notes, uiState, createNote, updateNote, deleteNote, retry } = useNotes();
   const [addNoteVisible, setAddNoteVisible] = useState(false);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
 
-  const selectedNote = selectedNoteId ? notes.find((note) => note.id === selectedNoteId) ?? null : null;
+  const selectedNote = selectedNoteId
+    ? (notes.find((note) => note.id === selectedNoteId) ?? null)
+    : null;
 
   async function handleCreateNote(input: CreateNoteInput): Promise<void> {
     await createNote(input);
@@ -60,10 +63,11 @@ export function NotesScreen() {
         ) : null}
 
         {uiState === 'error' ? (
-          <AppCard>
-            <Text style={styles.stateTitle}>Unable to load notes.</Text>
-            <Text style={styles.stateDescription}>Check your connection and try again in a moment.</Text>
-          </AppCard>
+          <RecoveryCard
+            title="Unable to load notes."
+            description="Check your connection, then retry."
+            onRetry={retry}
+          />
         ) : null}
 
         {uiState === 'empty' ? (

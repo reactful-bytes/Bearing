@@ -9,6 +9,11 @@ export type GoalSmartMeta = {
   timeBound: string;
 };
 
+export type GoalMilestone = {
+  title: string;
+  description: string;
+};
+
 export type GoalRecord = {
   id: string;
   userId: string;
@@ -20,6 +25,7 @@ export type GoalRecord = {
   status: GoalStatus;
   isAiAssisted: boolean;
   aiPlanVersion: number | null;
+  aiMilestones?: GoalMilestone[];
   createdAt: Date;
   updatedAt: Date;
 };
@@ -60,6 +66,8 @@ export type CreateGoalInput = {
   smartMeta: GoalSmartMeta;
   estimatedCompletionDate: Date;
   isAiAssisted: boolean;
+  aiPlanVersion?: number | null;
+  aiMilestones?: GoalMilestone[];
   steps: CreateGoalStepInput[];
 };
 
@@ -68,7 +76,10 @@ export type UpdateGoalInput = Partial<
 >;
 
 export type UpdateGoalStepInput = Partial<
-  Pick<GoalStepRecord, 'title' | 'description' | 'starter' | 'estimatedFinishDate' | 'order' | 'status'>
+  Pick<
+    GoalStepRecord,
+    'title' | 'description' | 'starter' | 'estimatedFinishDate' | 'order' | 'status'
+  >
 >;
 
 export type GoalUiState = 'loading' | 'error' | 'empty' | 'ready';

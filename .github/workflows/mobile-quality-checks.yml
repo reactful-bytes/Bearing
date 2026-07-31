@@ -3,8 +3,12 @@ name: Mobile Quality Checks
 on:
   pull_request:
     paths:
-      - 'mobile/**'
-      - '.github/workflows/mobile-quality-checks.yml'
+      - "mobile/**"
+      - "functions/**"
+      - "firebase.json"
+      - "firestore.indexes.json"
+      - "firestore.rules"
+      - ".github/workflows/mobile-quality-checks.yml"
   workflow_dispatch:
 
 jobs:
@@ -20,9 +24,15 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: mobile/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
 
       - name: Install dependencies
         run: npm ci
@@ -30,5 +40,45 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
       - name: Test
-        run: npm run test -- --watch=false
+        run: npm run test -- --runInBand
+
+      - name: Test Firestore rules
+        run: npm run test:rules
+
+      - name: Test coverage
+        run: npm run test:coverage -- --runInBand
+
+      - name: Expo Doctor
+        run: npx expo-doctor
+
+  functions-quality:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22, 24]
+    defaults:
+      run:
+        working-directory: functions
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Quality gate
+        run: npm run quality
