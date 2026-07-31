@@ -94,12 +94,12 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M8 - Premium and AI Goal Assistant
 
-| Task ID | Status      | Description                                           | Exit Criteria                                 |
-| ------- | ----------- | ----------------------------------------------------- | --------------------------------------------- |
-| M8.1    | completed | Implement premium entitlement model and feature gates | Premium gates enforced client and server side |
-| M8.2    | completed | Build AI-assisted goal planning service integration   | AI returns editable milestones and steps      |
-| M8.3    | completed | Add AI safety, fallback, and failure UX               | Users receive clear recovery paths on failure |
-| M8.4    | not-started | Instrument premium funnel from upgrade to activation  | Conversion analytics captured end-to-end      |
+| Task ID | Status      | Description                                           | Exit Criteria                                                                                        |
+| ------- | ----------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| M8.1    | completed   | Implement premium entitlement model and feature gates | Premium gates enforced client and server side                                                        |
+| M8.2    | completed   | Build AI-assisted goal planning service integration   | AI returns editable milestones and steps                                                             |
+| M8.3    | completed   | Add AI safety, fallback, and failure UX               | Users receive clear recovery paths on failure                                                        |
+| M8.4    | in-progress | Instrument premium funnel from upgrade to activation  | Paywall and AI outcomes are available; M11 must add store purchase and entitlement activation events |
 
 ### M9 - Quality, Security, and Compliance
 
@@ -107,25 +107,25 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | ------- | -------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | M9.1    | in-progress    | Expand automated tests for critical user journeys        | Critical app, privacy, AI, and recovery paths are stable; coverage thresholds and native E2E remain                  |
 | M9.2    | completed      | Perform security hardening and secret management audit   | No secrets exposed and auth flows validated                                                                          |
-| M9.3    | not-started    | Add analytics dashboards and operational alerts          | Product and reliability telemetry available                                                                          |
+| M9.3    | manual-handoff | Add analytics dashboards and operational alerts          | Consent-aware events, queries, and alert thresholds are repository-ready; owner activates cloud resources            |
 | M9.4    | not-started    | Finalize legal copy (privacy policy, terms, disclosures) | Store-compliant legal docs available                                                                                 |
 | M9.5    | completed      | Add general export and account deletion                  | JSON/ICS export and reauthenticated cleanup pass automated validation; staging/native acceptance is an owner handoff |
 | M9.6    | manual-handoff | Establish backup, migration, and recovery readiness      | Workflow/runbook are ready; owner configures cloud retention and records the staging restore drill                   |
 
 ### M10 - Final UI Fixes and Operability Fixes
 
-| Task ID | Status         | Description                                        | Exit Criteria                                                                    |
-| ------- | -------------- | -------------------------------------------------- | -------------------------------------------------------------------------------- |
-| M10.0   | completed      | Review and unify the complete mobile UI            | Shared sizing, typography, forms, cards, filters, and states pass focused tests  |
-| M10.0a  | completed      | Add shared control and layout foundations          | Reusable controls replace major one-off visual patterns                          |
-| M10.0b  | completed      | Modernize and categorize Profile                   | Profile is grouped into scannable functional sections                            |
-| M10.0c  | completed      | Improve Goals presentation and filtering           | Goal cards, progress, counts, and Active/Completed/All filtering are clear       |
-| M10.0d  | completed      | Improve Tasks presentation and filtering           | Task cards, counts, and Active/Completed/All filtering are clear                 |
-| M10.0e  | completed      | Normalize forms, modals, sizing, and accessibility | Screens avoid clipping and expose consistent control semantics                   |
-| M10.1   | manual-handoff | Polish UI interactions and accessibility           | Automated accessibility checks pass; native assistive-tech review remains manual |
-| M10.2   | in-progress    | Fix operability edge cases and error recovery      | Core startup and Firestore failures now expose executable retry                  |
+| Task ID | Status         | Description                                        | Exit Criteria                                                                     |
+| ------- | -------------- | -------------------------------------------------- | --------------------------------------------------------------------------------- |
+| M10.0   | completed      | Review and unify the complete mobile UI            | Shared sizing, typography, forms, cards, filters, and states pass focused tests   |
+| M10.0a  | completed      | Add shared control and layout foundations          | Reusable controls replace major one-off visual patterns                           |
+| M10.0b  | completed      | Modernize and categorize Profile                   | Profile is grouped into scannable functional sections                             |
+| M10.0c  | completed      | Improve Goals presentation and filtering           | Goal cards, progress, counts, and Active/Completed/All filtering are clear        |
+| M10.0d  | completed      | Improve Tasks presentation and filtering           | Task cards, counts, and Active/Completed/All filtering are clear                  |
+| M10.0e  | completed      | Normalize forms, modals, sizing, and accessibility | Screens avoid clipping and expose consistent control semantics                    |
+| M10.1   | manual-handoff | Polish UI interactions and accessibility           | Automated accessibility checks pass; native assistive-tech review remains manual  |
+| M10.2   | in-progress    | Fix operability edge cases and error recovery      | Core startup and Firestore failures now expose executable retry                   |
 | M10.3   | manual-handoff | Optimize app performance and startup time          | Repository controls pass; release-device launch, FPS, and memory evidence remains |
-| M10.4   | manual-handoff | Run end-to-end user acceptance testing             | Owner completes native UAT signoff                                               |
+| M10.4   | manual-handoff | Run end-to-end user acceptance testing             | Owner completes native UAT signoff                                                |
 
 ### M11 - Monetization Readiness
 

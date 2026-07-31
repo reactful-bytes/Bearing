@@ -8,6 +8,7 @@ import {
 } from '../features/calendar/useDeviceCalendars';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { useSoundPreview } from '../features/profile/useSoundPreview';
+import { useTelemetryConsent } from '../features/profile/useTelemetryConsent';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { UserProfileRecord } from '../features/profile/profileTypes';
 import {
@@ -35,6 +36,10 @@ jest.setTimeout(10000);
 
 jest.mock('../features/profile/useUserProfile', () => ({
   useUserProfile: jest.fn(),
+}));
+
+jest.mock('../features/profile/useTelemetryConsent', () => ({
+  useTelemetryConsent: jest.fn(),
 }));
 
 jest.mock('../services/firebase/firebasePrivacy', () => ({
@@ -147,6 +152,7 @@ function mockProfileHooks(
   openSettings: jest.Mock;
   previewSound: jest.Mock;
   stopPreview: jest.Mock;
+  updateTelemetryConsent: jest.Mock;
 } {
   const updateProfile = jest.fn(async () => undefined);
   const sendPasswordReset = jest.fn(async () => undefined);
@@ -159,6 +165,7 @@ function mockProfileHooks(
   const openSettings = jest.fn(async () => undefined);
   const previewSound = jest.fn(async () => undefined);
   const stopPreview = jest.fn(() => undefined);
+  const updateTelemetryConsent = jest.fn(async () => undefined);
 
   const mockedUseUserProfile = useUserProfile as jest.MockedFunction<typeof useUserProfile>;
   const mockedUseDeviceCalendars = useDeviceCalendars as jest.MockedFunction<
@@ -167,6 +174,9 @@ function mockProfileHooks(
   const mockedUseSoundPreview = useSoundPreview as jest.MockedFunction<typeof useSoundPreview>;
   const mockedUsePremiumEntitlement = usePremiumEntitlement as jest.MockedFunction<
     typeof usePremiumEntitlement
+  >;
+  const mockedUseTelemetryConsent = useTelemetryConsent as jest.MockedFunction<
+    typeof useTelemetryConsent
   >;
 
   mockedUseUserProfile.mockReturnValue({
@@ -225,6 +235,13 @@ function mockProfileHooks(
     error: null,
   });
 
+  mockedUseTelemetryConsent.mockReturnValue({
+    enabled: false,
+    pending: false,
+    error: null,
+    updateConsent: updateTelemetryConsent,
+  });
+
   return {
     updateProfile,
     sendPasswordReset,
@@ -236,6 +253,7 @@ function mockProfileHooks(
     openSettings,
     previewSound,
     stopPreview,
+    updateTelemetryConsent,
   };
 }
 
@@ -281,6 +299,7 @@ describe('ProfileScreen', () => {
     expect(screen.getByRole('header', { name: 'Preferences' })).toBeTruthy();
     expect(screen.getByRole('header', { name: 'Calendars & Data' })).toBeTruthy();
     expect(screen.getByRole('header', { name: 'Plan' })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Privacy' })).toBeTruthy();
     expect(screen.getByRole('header', { name: 'Session' })).toBeTruthy();
     expect(screen.getByText('Preston')).toBeTruthy();
     expect(screen.getAllByText('preston@example.com').length).toBeGreaterThan(0);
@@ -310,6 +329,15 @@ describe('ProfileScreen', () => {
     await waitFor(() => {
       expect(sendPasswordReset).toHaveBeenCalled();
     });
+  });
+
+  it('lets the user opt into product diagnostics', () => {
+    const { updateTelemetryConsent } = mockProfileHooks();
+
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    fireEvent(screen.getByLabelText('Share product diagnostics'), 'valueChange', true);
+
+    expect(updateTelemetryConsent).toHaveBeenCalledWith(true);
   });
 
   it('preserves the session sign-out action', () => {

@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase-admin/app";
 import { defineSecret } from "firebase-functions/params";
+import { logger } from "firebase-functions/logger";
 import { onCall } from "firebase-functions/v2/https";
 import { setGlobalOptions } from "firebase-functions/v2/options";
 
@@ -11,6 +12,7 @@ import {
   exportUserData as exportUserDataHandler,
 } from "./privacy";
 import { deleteUserDataAdmin, readUserDataAdmin } from "./privacyAdmin";
+import { recordTelemetryEvent as recordTelemetryEventHandler } from "./telemetry";
 
 initializeApp();
 
@@ -27,6 +29,17 @@ export const backendStatus = onCall(
     timeoutSeconds: 15,
   },
   getBackendStatus,
+);
+
+export const recordTelemetryEvent = onCall(
+  {
+    enforceAppCheck: true,
+    timeoutSeconds: 10,
+  },
+  (request) =>
+    recordTelemetryEventHandler(request, (event) => {
+      logger.info("telemetry_event", event);
+    }),
 );
 
 export const generateGoalPlanDraft = onCall(
@@ -55,5 +68,17 @@ export const deleteUserAccount = onCall(
     enforceAppCheck: true,
     timeoutSeconds: 120,
   },
-  (request) => deleteUserAccountHandler(request, deleteUserDataAdmin),
+  async (request) => {
+    try {
+      const result = await deleteUserAccountHandler(
+        request,
+        deleteUserDataAdmin,
+      );
+      logger.info("account_deletion_result", { outcome: "success" });
+      return result;
+    } catch (error) {
+      logger.error("account_deletion_result", { outcome: "failure" });
+      throw error;
+    }
+  },
 );

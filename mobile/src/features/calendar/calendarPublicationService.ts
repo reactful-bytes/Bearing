@@ -412,15 +412,17 @@ export function createCalendarPublicationService(
       userId: string,
       event: BearingEvent,
       fields: UpdateEventInput,
-    ): Promise<void> {
+    ): Promise<'published' | 'failed' | 'not-applicable'> {
       await dependencies.updateBearingEvent(userId, event.id, fields);
-      if (event.publication.status !== 'published' || !event.publication.markerId) return;
+      if (event.publication.status !== 'published' || !event.publication.markerId) {
+        return 'not-applicable';
+      }
 
       const settings = await dependencies.loadSettings(userId);
       const link = settings?.linkCache[event.id];
       if (!link) {
         await markFailure(userId, event.id, false, dependencies);
-        return;
+        return 'failed';
       }
 
       const updatedEvent = { ...event, ...fields };
@@ -435,8 +437,10 @@ export function createCalendarPublicationService(
           lastError: null,
           retryable: false,
         });
+        return 'published';
       } catch {
         await markFailure(userId, event.id, false, dependencies);
+        return 'failed';
       }
     },
 

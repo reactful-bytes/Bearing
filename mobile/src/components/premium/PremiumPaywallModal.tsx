@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppCard } from '../ui/AppCard';
@@ -5,6 +6,7 @@ import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { colors, radii, spacing, typography } from '../../design/tokens';
 import { PremiumFeature, getPremiumPaywallCopy } from '../../features/premium/premiumAccess';
+import { recordTelemetryEvent } from '../../services/telemetry/telemetry';
 
 type PremiumPaywallModalProps = {
   visible: boolean;
@@ -19,6 +21,12 @@ export function PremiumPaywallModal({
   isAnonymous,
   onClose,
 }: PremiumPaywallModalProps) {
+  useEffect(() => {
+    if (visible && feature) {
+      void recordTelemetryEvent('premium_paywall_viewed', { feature });
+    }
+  }, [feature, visible]);
+
   if (!visible || !feature) {
     return null;
   }

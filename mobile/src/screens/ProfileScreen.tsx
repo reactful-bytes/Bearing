@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from 'react-native';
 
 import { AppButton } from '../components/ui/AppButton';
 import { AppModal } from '../components/ui/AppModal';
@@ -44,6 +53,7 @@ import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement
 import { getProfileSoundOption } from '../features/profile/profileSounds';
 import { getDifferentRandomProfileTip } from '../features/profile/profileTips';
 import { useSoundPreview } from '../features/profile/useSoundPreview';
+import { useTelemetryConsent } from '../features/profile/useTelemetryConsent';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { ProfileTip } from '../features/profile/profileTypes';
 import { listUserEvents } from '../services/firebase/firebaseEvents';
@@ -52,6 +62,7 @@ import {
   deleteCurrentUserAccount,
   exportCurrentUserData,
 } from '../services/firebase/firebasePrivacy';
+import { recordTelemetryEvent } from '../services/telemetry/telemetry';
 
 type ProfileScreenProps = {
   onPressSignOut: () => Promise<void> | void;
@@ -74,6 +85,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   const { entitlement } = usePremiumEntitlement(authUser?.uid ?? null);
   const deviceCalendars = useDeviceCalendars(authUser?.uid ?? null);
   const { previewSound, stopPreview, previewError, playingSoundId } = useSoundPreview();
+  const telemetryConsent = useTelemetryConsent(authUser?.uid ?? null);
   const [displayName, setDisplayName] = useState('');
   const [timezone, setTimezone] = useState('');
   const [locale, setLocale] = useState('');
@@ -174,8 +186,16 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
 
     try {
       await sendPasswordReset();
+      void recordTelemetryEvent('auth_result', {
+        operation: 'password_reset',
+        outcome: 'success',
+      });
       Alert.alert('Password reset sent', `Check ${email ?? 'your inbox'} for the reset link.`);
     } catch (resetError) {
+      void recordTelemetryEvent('auth_result', {
+        operation: 'password_reset',
+        outcome: 'failure',
+      });
       setAccountError(
         resetError instanceof Error ? resetError.message : 'Failed to send password reset email.',
       );
@@ -214,11 +234,19 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
         password: linkPassword,
         displayName: linkDisplayName,
       });
+      void recordTelemetryEvent('auth_result', {
+        operation: 'account_link',
+        outcome: 'success',
+      });
       setLinkPassword('');
       setLinkPasswordConfirm('');
       setLinkEmail('');
       Alert.alert('Account secured', 'This session is now linked to your email and password.');
     } catch (secureError) {
+      void recordTelemetryEvent('auth_result', {
+        operation: 'account_link',
+        outcome: 'failure',
+      });
       setLinkError(
         secureError instanceof Error ? secureError.message : 'Failed to secure the account.',
       );
@@ -340,6 +368,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
     setIcsError(null);
     setIcsFeedback(null);
 
+    let outcome: 'success' | 'failure' = 'failure';
     try {
       const events = await listUserEvents(authUser.uid);
       const exportableEvents = events.filter((event) => event.status !== 'canceled');
@@ -353,6 +382,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
 
       if (Platform.OS === 'web') {
         await downloadIcsFileOnWeb(filename, icsContent);
+        outcome = 'success';
         setIcsFeedback(
           shareAfterExport
             ? 'Web downloaded the .ics file because direct local-file sharing is not available there.'
@@ -365,16 +395,23 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
 
       if (shareAfterExport) {
         const shared = await shareIcsExportFile(fileUri);
+        outcome = 'success';
         setIcsFeedback(shared ? 'Shared the .ics export.' : `Saved ${filename} to ${fileUri}.`);
         return;
       }
 
+      outcome = 'success';
       setIcsFeedback(`Saved ${filename} to ${fileUri}.`);
     } catch (exportError) {
       setIcsError(
         exportError instanceof Error ? exportError.message : 'Failed to export .ics file.',
       );
     } finally {
+      void recordTelemetryEvent('calendar_export_result', {
+        action: Platform.OS === 'web' ? 'download' : shareAfterExport ? 'share' : 'save',
+        format: 'ics',
+        outcome,
+      });
       setIcsPending(false);
     }
   }
@@ -384,11 +421,13 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
     setDataExportError(null);
     setDataExportFeedback(null);
 
+    let outcome: 'success' | 'failure' = 'failure';
     try {
       const content = serializeDataExport(await exportCurrentUserData());
       const filename = buildDataExportFilename();
       if (Platform.OS === 'web') {
         await downloadDataExportOnWeb(filename, content);
+        outcome = 'success';
         setDataExportFeedback(`Downloaded ${filename}.`);
         return;
       }
@@ -396,8 +435,10 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
       const uri = await writeDataExportFile(filename, content);
       if (shareAfterExport) {
         const shared = await shareDataExportFile(uri);
+        outcome = 'success';
         setDataExportFeedback(shared ? 'Shared the JSON export.' : `Saved ${filename} to ${uri}.`);
       } else {
+        outcome = 'success';
         setDataExportFeedback(`Saved ${filename} to ${uri}.`);
       }
     } catch (exportError) {
@@ -405,6 +446,11 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
         exportError instanceof Error ? exportError.message : 'Failed to export account data.',
       );
     } finally {
+      void recordTelemetryEvent('calendar_export_result', {
+        action: Platform.OS === 'web' ? 'download' : shareAfterExport ? 'share' : 'save',
+        format: 'json',
+        outcome,
+      });
       setDataExportPending(false);
     }
   }
@@ -702,6 +748,28 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                 }
                 disabled={hasPremiumAccess}
               />
+            </View>
+
+            <View style={styles.section}>
+              <SectionHeading title="Privacy" description="Control optional product diagnostics." />
+              <View style={styles.telemetryPreferenceRow}>
+                <View style={styles.telemetryPreferenceCopy}>
+                  <Text style={styles.sectionTitle}>Share product diagnostics</Text>
+                  <Text style={styles.selectionMeta}>
+                    Sends fixed outcome events only. Bearing excludes account IDs, content, calendar
+                    details, locations, and raw errors.
+                  </Text>
+                </View>
+                <Switch
+                  accessibilityLabel="Share product diagnostics"
+                  value={telemetryConsent.enabled}
+                  disabled={telemetryConsent.pending}
+                  onValueChange={(enabled) => void telemetryConsent.updateConsent(enabled)}
+                />
+              </View>
+              {telemetryConsent.error ? (
+                <Text style={styles.errorText}>{telemetryConsent.error}</Text>
+              ) : null}
             </View>
 
             <View style={styles.section}>
@@ -1215,6 +1283,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceBrand,
   },
   calendarSelectionCopy: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  telemetryPreferenceRow: {
+    minHeight: 56,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  telemetryPreferenceCopy: {
     flex: 1,
     gap: spacing.xs,
   },

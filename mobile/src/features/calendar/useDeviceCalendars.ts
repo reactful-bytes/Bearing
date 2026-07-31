@@ -14,6 +14,7 @@ import {
   saveDeviceCalendarSettings,
   validateDeviceCalendarSettings,
 } from '../../services/calendar/deviceCalendarSettings';
+import { recordTelemetryEvent } from '../../services/telemetry/telemetry';
 
 export type DeviceCalendarsUiState =
   'loading' | 'permission-required' | 'ready' | 'unavailable' | 'error';
@@ -135,9 +136,17 @@ export function useDeviceCalendars(
   }, [refresh]);
 
   const requestPermission = useCallback(async (): Promise<void> => {
-    const nextPermission = await adapter.requestPermission();
-    setPermission(nextPermission);
-    await refresh();
+    try {
+      const nextPermission = await adapter.requestPermission();
+      setPermission(nextPermission);
+      void recordTelemetryEvent('calendar_permission_result', {
+        outcome: nextPermission,
+      });
+      await refresh();
+    } catch (permissionError) {
+      void recordTelemetryEvent('calendar_permission_result', { outcome: 'failure' });
+      throw permissionError;
+    }
   }, [adapter, refresh]);
 
   const persistSettings = useCallback(

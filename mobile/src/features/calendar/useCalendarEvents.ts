@@ -11,6 +11,7 @@ import {
   subscribeDeviceCalendarSettings,
 } from '../../services/calendar/deviceCalendarSettings';
 import { subscribeToEventsByDateRange } from '../../services/firebase/firebaseEvents';
+import { recordTelemetryEvent } from '../../services/telemetry/telemetry';
 import {
   BearingEvent,
   CalendarDisplayEvent,
@@ -240,9 +241,25 @@ export function useCalendarEvents(
     ): Promise<string> => {
       const userId = getFirebaseAuth().currentUser?.uid;
       if (!userId) throw new Error('User is not authenticated.');
-      const result = await publicationService.createEvent(userId, input, options);
-      await refreshDeviceEvents();
-      return result.eventId;
+      try {
+        const result = await publicationService.createEvent(userId, input, options);
+        await refreshDeviceEvents();
+        if (options.publishToDevice) {
+          void recordTelemetryEvent('calendar_publication_result', {
+            operation: 'create',
+            outcome: result.status === 'published' ? 'success' : 'failure',
+          });
+        }
+        return result.eventId;
+      } catch (createError) {
+        if (options.publishToDevice) {
+          void recordTelemetryEvent('calendar_publication_result', {
+            operation: 'create',
+            outcome: 'failure',
+          });
+        }
+        throw createError;
+      }
     },
     [publicationService, refreshDeviceEvents],
   );
@@ -252,15 +269,34 @@ export function useCalendarEvents(
       const userId = getFirebaseAuth().currentUser?.uid;
       if (!userId) throw new Error('User is not authenticated.');
 
-      if (event.ownership === 'bearing') {
-        await publicationService.updateEvent(userId, event, fields);
-      } else {
-        if (!event.allowsModifications) {
-          throw new Error('This device calendar event is read-only.');
+      const tracksPublication =
+        event.ownership === 'bearing' && event.publication.status === 'published';
+      try {
+        let publicationOutcome: 'published' | 'failed' | 'not-applicable' = 'not-applicable';
+        if (event.ownership === 'bearing') {
+          publicationOutcome = await publicationService.updateEvent(userId, event, fields);
+        } else {
+          if (!event.allowsModifications) {
+            throw new Error('This device calendar event is read-only.');
+          }
+          await adapter.updateEvent(event.nativeEventId, fields);
         }
-        await adapter.updateEvent(event.nativeEventId, fields);
+        await refreshDeviceEvents();
+        if (tracksPublication) {
+          void recordTelemetryEvent('calendar_publication_result', {
+            operation: 'update',
+            outcome: publicationOutcome === 'published' ? 'success' : 'failure',
+          });
+        }
+      } catch (updateError) {
+        if (tracksPublication) {
+          void recordTelemetryEvent('calendar_publication_result', {
+            operation: 'update',
+            outcome: 'failure',
+          });
+        }
+        throw updateError;
       }
-      await refreshDeviceEvents();
     },
     [adapter, publicationService, refreshDeviceEvents],
   );
@@ -270,15 +306,33 @@ export function useCalendarEvents(
       const userId = getFirebaseAuth().currentUser?.uid;
       if (!userId) throw new Error('User is not authenticated.');
 
-      if (event.ownership === 'bearing') {
-        await publicationService.deleteEvent(userId, event);
-      } else {
-        if (!event.allowsModifications) {
-          throw new Error('This device calendar event is read-only.');
+      const tracksPublication =
+        event.ownership === 'bearing' && event.publication.status !== 'unpublished';
+      try {
+        if (event.ownership === 'bearing') {
+          await publicationService.deleteEvent(userId, event);
+        } else {
+          if (!event.allowsModifications) {
+            throw new Error('This device calendar event is read-only.');
+          }
+          await adapter.deleteEvent(event.nativeEventId);
         }
-        await adapter.deleteEvent(event.nativeEventId);
+        await refreshDeviceEvents();
+        if (tracksPublication) {
+          void recordTelemetryEvent('calendar_publication_result', {
+            operation: 'delete',
+            outcome: 'success',
+          });
+        }
+      } catch (deleteError) {
+        if (tracksPublication) {
+          void recordTelemetryEvent('calendar_publication_result', {
+            operation: 'delete',
+            outcome: 'failure',
+          });
+        }
+        throw deleteError;
       }
-      await refreshDeviceEvents();
     },
     [adapter, publicationService, refreshDeviceEvents],
   );
@@ -287,8 +341,12 @@ export function useCalendarEvents(
     async (event: BearingEvent): Promise<void> => {
       const userId = getFirebaseAuth().currentUser?.uid;
       if (!userId) throw new Error('User is not authenticated.');
-      await publicationService.retryPublication(userId, event);
+      const result = await publicationService.retryPublication(userId, event);
       await refreshDeviceEvents();
+      void recordTelemetryEvent('calendar_publication_result', {
+        operation: 'retry',
+        outcome: result.status === 'published' ? 'success' : 'failure',
+      });
     },
     [publicationService, refreshDeviceEvents],
   );
