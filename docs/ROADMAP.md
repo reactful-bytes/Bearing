@@ -29,7 +29,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M1.2    | completed   | Configure Firebase project, auth, env management | Firebase init/auth bootstrap and env strategy validated in development                                                                        |
 | M1.3    | completed   | Add lint, formatter, tests, and CI baseline      | CI validates lint and tests on PR                                                                                                             |
 | M1.4    | completed   | Set up navigation shell with bottom tabs         | Calendar, Goals, Notes, Profile tabs routable                                                                                                 |
-| M1.5    | not-started | Restore reproducible engineering baseline        | Fresh install and every required quality command pass locally and in CI                                                                       |
+| M1.5    | in-progress | Restore reproducible engineering baseline        | Node 24/npm 11 fresh install and every required quality command pass locally and in CI                                                        |
 | M1.6    | not-started | Add shared Firebase Functions foundation         | Secure staging callable validates backend conventions without calendar-provider code                                                          |
 
 ### M2 - Design System and UX Foundation
@@ -70,17 +70,17 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M6 - Native Device Calendar Integration
 
-| Task ID   | Status      | Description                                          | Exit Criteria                                                                                  |
-| --------- | ----------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| M6.1-M6.5 | superseded  | Provider connection, mirror, and ICS-import approach | Historical implementation retained; no active provider dependency remains                      |
-| M6.6      | completed   | Remove provider integration and migrate legacy data  | Provider UI/services/gates and ICS import are gone without losing imported Bearing events      |
-| M6.7      | in-progress | Add `expo-calendar`, permissions, and adapter        | Android APK host build passes; current iOS/Android install and permission verification remain  |
-| M6.8      | completed   | Add per-device calendar settings                     | Users select visible calendars and one writable default independently on each device           |
-| M6.9      | completed   | Aggregate live device and Firestore events           | Selected system events display without Firestore mirrors or duplicate linked copies            |
-| M6.10     | completed   | Build complete Bearing event editor                  | Supported ordinary and recurring event fields can be created and edited with capability checks |
-| M6.11     | completed   | Publish and reconcile linked Bearing events          | Optional copies rediscover across devices and recover honestly from partial writes/deletions   |
-| M6.12     | completed   | Retain general Bearing ICS export                    | Timed, all-day, timezone, location, recurrence, alarm, and text fixtures pass                  |
-| M6.13     | not-started | Complete native and cross-device validation          | Current iOS/Android and two-device acceptance matrices pass                                    |
+| Task ID   | Status         | Description                                          | Exit Criteria                                                                                  |
+| --------- | -------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| M6.1-M6.5 | superseded     | Provider connection, mirror, and ICS-import approach | Historical implementation retained; no active provider dependency remains                      |
+| M6.6      | completed      | Remove provider integration and migrate legacy data  | Provider UI/services/gates and ICS import are gone without losing imported Bearing events      |
+| M6.7      | completed      | Add `expo-calendar`, permissions, and adapter        | Adapter, permissions, dev client, clean Android generation, and debug APK build pass           |
+| M6.8      | completed      | Add per-device calendar settings                     | Users select visible calendars and one writable default independently on each device           |
+| M6.9      | completed      | Aggregate live device and Firestore events           | Selected system events display without Firestore mirrors or duplicate linked copies            |
+| M6.10     | completed      | Build complete Bearing event editor                  | Supported ordinary and recurring event fields can be created and edited with capability checks |
+| M6.11     | completed      | Publish and reconcile linked Bearing events          | Optional copies rediscover across devices and recover honestly from partial writes/deletions   |
+| M6.12     | completed      | Retain general Bearing ICS export                    | Timed, all-day, timezone, location, recurrence, alarm, and text fixtures pass                  |
+| M6.13     | manual-handoff | Complete native and cross-device validation          | Owner runs current-device and two-device acceptance checklists                                 |
 
 ### M7 - To-Do List and Task Conversion
 
@@ -114,12 +114,18 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M10 - Final UI Fixes and Operability Fixes
 
-| Task ID | Status      | Description                                   | Exit Criteria                                       |
-| ------- | ----------- | --------------------------------------------- | --------------------------------------------------- |
-| M10.1   | not-started | Polish UI interactions and accessibility      | All screens pass WCAG AA accessibility audit        |
-| M10.2   | not-started | Fix operability edge cases and error recovery | Edge cases in critical flows handled gracefully     |
-| M10.3   | not-started | Optimize app performance and startup time     | App launch and transitions meet performance targets |
-| M10.4   | not-started | Run end-to-end user acceptance testing        | UAT signoff from stakeholders                       |
+| Task ID | Status         | Description                                        | Exit Criteria                                                                    |
+| ------- | -------------- | -------------------------------------------------- | -------------------------------------------------------------------------------- |
+| M10.0   | not-started    | Review and unify the complete mobile UI            | Shared sizing, typography, forms, cards, filters, and states pass focused tests  |
+| M10.0a  | not-started    | Add shared control and layout foundations          | Reusable controls replace major one-off visual patterns                          |
+| M10.0b  | not-started    | Modernize and categorize Profile                   | Profile is grouped into scannable functional sections                            |
+| M10.0c  | not-started    | Improve Goals presentation and filtering           | Goal cards, progress, counts, and Active/Completed/All filtering are clear       |
+| M10.0d  | not-started    | Improve Tasks presentation and filtering           | Task cards, counts, and Active/Completed/All filtering are clear                 |
+| M10.0e  | not-started    | Normalize forms, modals, sizing, and accessibility | Screens avoid clipping and expose consistent control semantics                   |
+| M10.1   | not-started    | Polish UI interactions and accessibility           | Automated accessibility checks pass; native assistive-tech review remains manual |
+| M10.2   | not-started    | Fix operability edge cases and error recovery      | Edge cases in critical flows handled gracefully                                  |
+| M10.3   | not-started    | Optimize app performance and startup time          | App launch and transitions meet performance targets                              |
+| M10.4   | manual-handoff | Run end-to-end user acceptance testing             | Owner completes native UAT signoff                                               |
 
 ### M11 - Monetization Readiness
 
@@ -131,13 +137,13 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M12 - Release and Store Deployment
 
-| Task ID | Status      | Description                                           | Exit Criteria                       |
-| ------- | ----------- | ----------------------------------------------------- | ----------------------------------- |
-| M12.1   | not-started | Prepare release build pipelines and signing setup     | Signed release candidates generated |
-| M12.2   | not-started | Complete App Store listing assets and metadata        | Apple submission package ready      |
-| M12.3   | not-started | Complete Google Play listing assets and metadata      | Play submission package ready       |
-| M12.4   | not-started | Run beta testing cycles (TestFlight/Internal Testing) | Critical launch blockers resolved   |
-| M12.5   | not-started | Submit and publish to both stores                     | App live in both stores             |
+| Task ID | Status         | Description                                           | Exit Criteria                                        |
+| ------- | -------------- | ----------------------------------------------------- | ---------------------------------------------------- |
+| M12.1   | not-started    | Prepare release build pipelines and signing setup     | Signed release candidates generated                  |
+| M12.2   | not-started    | Complete App Store listing assets and metadata        | Apple submission package ready                       |
+| M12.3   | not-started    | Complete Google Play listing assets and metadata      | Play submission package ready                        |
+| M12.4   | not-started    | Run beta testing cycles (TestFlight/Internal Testing) | Critical launch blockers resolved                    |
+| M12.5   | manual-handoff | Submit and publish to both stores                     | Owner completes store-console submission and release |
 
 ### M13 - Launch Operations
 
@@ -172,6 +178,6 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ## Immediate Next Steps
 
-1. Install the development builds and validate the M6.7 permission prompt on current iOS and Android devices.
-2. Complete M6.13 current-device calendar acceptance on iOS and Android.
-3. Complete M6.13 two-device publication and reconciliation acceptance.
+1. Complete and validate the Node 24/npm 11 engineering baseline.
+2. Implement M7.5 atomic and idempotent task conversion with failure/concurrency coverage.
+3. Implement M10.0 shared UI foundations, Profile categories, and Goals/Tasks filtering.

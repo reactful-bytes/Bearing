@@ -9,6 +9,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 - not-started
 - in-progress
 - blocked
+- manual-handoff
 - completed
 - superseded
 
@@ -33,7 +34,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M1.2    | completed   | Configure Firebase project and environment wiring             | Firebase init/auth/env setup complete with manual signed-in/signed-out verification in web dev runtime   |
 | M1.3    | completed   | Set up linting, test runner, and baseline CI checks           | ESLint + Prettier config + Jest smoke test + PR CI workflow added                                        |
 | M1.4    | completed   | Implement bottom tab navigation shell and screen placeholders | Authenticated tab shell implemented; manual iOS/Android tap-through validation confirmed                 |
-| M1.5    | in-progress | Restore a reproducible engineering baseline                   | Local gates pass; awaiting the first expanded Node 20 CI run                                             |
+| M1.5    | in-progress | Restore a reproducible engineering baseline                   | Move local and CI support to latest LTS Node 24/npm 11, then prove a clean expanded gate                 |
 | M1.6    | not-started | Add shared Firebase Functions foundation                      | Authenticated/App-Check-protected Functions conventions validated without calendar-provider code         |
 
 ### M2 - Design System and UX Foundation
@@ -74,56 +75,56 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 ### M6 - Native Device Calendar Integration
 
-| Task ID   | Status      | Description                                                              | Notes                                                                                                  |
-| --------- | ----------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| M6.1-M6.5 | superseded  | Provider connection, mirror, ICS import, and sync-diagnostics foundation | Historical client work is retained in the validation log; M6.6-M6.13 replace this scope                |
-| M6.6      | completed   | Remove obsolete provider integration and migrate legacy event data       | Provider UI/services/gates, ICS import, mirrored writes, and obsolete Firestore access are removed     |
-| M6.6a     | completed   | Remove provider connection code and tests                                | Google/Microsoft connection types, hooks, services, environment checks, and Profile controls deleted   |
-| M6.6b     | completed   | Remove ICS import and mirrored-event creation                            | General ICS export retained; parser, picker, mirror writes, and provider-only event fields removed     |
-| M6.6c     | completed   | Migrate legacy calendar records                                          | Legacy imported records decode as Bearing events while provider-only fields are ignored                |
-| M6.6d     | completed   | Remove calendar premium gates and copy                                   | Device calendar access is free core functionality                                                      |
-| M6.7      | in-progress | Add native calendar module, permissions, and adapter                     | Expo SDK 57 object API works in iOS/Android development builds                                         |
-| M6.7a     | completed   | Install and configure native dependencies                                | `expo-calendar`, AsyncStorage, iOS full-access copy, and Android read/write permissions configured     |
-| M6.7b     | completed   | Implement SDK 57 object API adapter                                      | Object API adapter covers discovery, range queries, create, update, and delete                         |
-| M6.7c     | completed   | Add platform guard and injectable test double                            | Web, Jest, and unsupported environments fail gracefully                                                |
-| M6.7d     | completed   | Implement calendar permission lifecycle                                  | Unavailable, undetermined, granted, denied, blocked, and settings recovery states covered              |
-| M6.7e     | in-progress | Establish development-build workflow                                     | Dev-client scripts/docs and Android APK compile pass; device install/prompt and iOS validation remain  |
-| M6.8      | completed   | Add per-device calendar settings                                         | Each signed-in account selects visible calendars and one writable destination per device               |
-| M6.8a     | completed   | Discover and normalize system calendars                                  | Title, color, source, visibility, primary status, access, and modification capability preserved        |
-| M6.8b     | completed   | Persist per-account device preferences                                   | Selected IDs, default ID, and link cache are namespaced by Firebase UID in AsyncStorage                |
-| M6.8c     | completed   | Build Profile calendar settings UI                                       | Permission, visible choices, writable default, refresh, and settings recovery are available            |
-| M6.8d     | completed   | Recover from stale calendar choices                                      | Invalid choices fall back to Bearing-only creation and surface replacement guidance                    |
-| M6.8e     | completed   | Isolate settings across account lifecycle                                | UID changes reset in-memory state and load only the next account namespace                             |
-| M6.9      | completed   | Aggregate Firestore and live device events                               | Device-originated events remain ephemeral and are never mirrored to Firestore                          |
-| M6.9a     | completed   | Define discriminated event models                                        | Bearing and device ownership control display capabilities without provider source strings              |
-| M6.9b     | completed   | Expand Bearing event fields                                              | Safe legacy defaults and Firestore writes cover advanced cross-platform event fields                   |
-| M6.9c     | completed   | Query selected calendars by visible range                                | Native records normalize timed/all-day, recurrence, status, capability, color, and source data         |
-| M6.9d     | completed   | Merge, sort, color, and deduplicate events                               | Exact linked system copies are suppressed while unrelated matching events remain                       |
-| M6.9e     | completed   | Refresh live events at deterministic triggers                            | Range, foreground, preference, successful mutation, and manual triggers ignore stale responses         |
-| M6.9f     | completed   | Support device events in Focus Mode                                      | Device events work in Focus Mode without Firestore mirrors or Bearing step metadata                    |
-| M6.10     | completed   | Build complete Bearing event editor                                      | Supported cross-platform modifiable fields share one validated create/edit UI                          |
-| M6.10a    | completed   | Add reusable create/edit controls                                        | Title, notes, dates, all-day, timezone, location, recurrence, alarms, availability, and URL supported  |
-| M6.10b    | completed   | Validate full event semantics                                            | All-day, DST, recurrence, alarm, timezone, range, and URL validation pass                              |
-| M6.10c    | completed   | Mutate writable device events directly                                   | Ownership and modification capability route updates/deletes with destructive confirmation              |
-| M6.10d    | completed   | Add recurring-event scope controls                                       | Adapter reports no proven SDK 57 scopes, so unsupported occurrence/future/series controls stay omitted |
-| M6.10e    | completed   | Enforce v1 advanced-event exclusions                                     | Invitations, attendees, RSVP, organizer actions, conferences, and reminders remain out of scope        |
-| M6.11     | completed   | Publish and reconcile linked Bearing events                              | Firestore remains canonical and native writes remain retryable/best effort                             |
-| M6.11a    | completed   | Add optional publication to every creation path                          | A default-off switch targets the configured writable calendar                                          |
-| M6.11b    | completed   | Sequence Firestore creation before native publication                    | Failed publication keeps an editable Bearing event and exposes retry                                   |
-| M6.11c    | completed   | Add stable marker and reconciliation baseline                            | Opaque link metadata is embedded in notes while preserving user content                                |
-| M6.11d    | completed   | Rediscover links across devices                                          | Visible OS-synced markers rebuild local ID caches and suppress duplicate display                       |
-| M6.11e    | completed   | Reconcile one-sided and simultaneous edits                               | One-sided edits propagate and system-calendar data wins simultaneous changes                           |
-| M6.11f    | completed   | Handle confirmed external deletion                                       | Confirmed lookup absence keeps the Bearing event and marks it unpublished                              |
-| M6.11g    | completed   | Coordinate linked deletion                                               | Unreachable system copies retain retryable deletion intent without deleting Firestore data             |
-| M6.11h    | completed   | Make linked operations idempotent                                        | Marker rediscovery covers interrupted writes, retries, stale IDs, moved events, and removed markers    |
-| M6.12     | completed   | Retain general ICS export                                                | Export Bearing-owned events only with full supported field coverage                                    |
-| M6.12a    | completed   | Exclude device events and linked duplicates                              | Runtime ownership filtering prevents live system-calendar copies from entering portable exports        |
-| M6.12b    | completed   | Expand ICS serializer and fixtures                                       | Timed/all-day, timezone/DST, location, recurrence, alarms, and escaped/folded text are covered         |
-| M6.12c    | completed   | Validate native sharing and development web download                     | Native cache/share and browser download branches pass deterministic tests; production web stays out    |
-| M6.13     | not-started | Complete native calendar validation                                      | Unit, native-device, and two-device acceptance matrices pass                                           |
-| M6.13a    | completed   | Add deterministic adapter and reconciliation tests                       | Adapter, publication, conflict, deletion, and interruption cases run without real calendar permission  |
-| M6.13b    | not-started | Validate current iOS and Android devices                                 | Cover permission, discovery, CRUD, recurrence, refresh, Focus Mode, and fallback                       |
-| M6.13c    | not-started | Validate cross-device account behavior                                   | Firestore remains account-wide while system-copy access is reported honestly                           |
+| Task ID   | Status         | Description                                                              | Notes                                                                                                    |
+| --------- | -------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| M6.1-M6.5 | superseded     | Provider connection, mirror, ICS import, and sync-diagnostics foundation | Historical client work is retained in the validation log; M6.6-M6.13 replace this scope                  |
+| M6.6      | completed      | Remove obsolete provider integration and migrate legacy event data       | Provider UI/services/gates, ICS import, mirrored writes, and obsolete Firestore access are removed       |
+| M6.6a     | completed      | Remove provider connection code and tests                                | Google/Microsoft connection types, hooks, services, environment checks, and Profile controls deleted     |
+| M6.6b     | completed      | Remove ICS import and mirrored-event creation                            | General ICS export retained; parser, picker, mirror writes, and provider-only event fields removed       |
+| M6.6c     | completed      | Migrate legacy calendar records                                          | Legacy imported records decode as Bearing events while provider-only fields are ignored                  |
+| M6.6d     | completed      | Remove calendar premium gates and copy                                   | Device calendar access is free core functionality                                                        |
+| M6.7      | completed      | Add native calendar module, permissions, and adapter                     | SDK 57 adapter, permissions, dev client, clean Android prebuild, and debug APK compile pass              |
+| M6.7a     | completed      | Install and configure native dependencies                                | `expo-calendar`, AsyncStorage, iOS full-access copy, and Android read/write permissions configured       |
+| M6.7b     | completed      | Implement SDK 57 object API adapter                                      | Object API adapter covers discovery, range queries, create, update, and delete                           |
+| M6.7c     | completed      | Add platform guard and injectable test double                            | Web, Jest, and unsupported environments fail gracefully                                                  |
+| M6.7d     | completed      | Implement calendar permission lifecycle                                  | Unavailable, undetermined, granted, denied, blocked, and settings recovery states covered                |
+| M6.7e     | completed      | Establish development-build workflow                                     | Dev-client scripts/docs and Android APK compile pass; device install/prompt is a manual handoff          |
+| M6.8      | completed      | Add per-device calendar settings                                         | Each signed-in account selects visible calendars and one writable destination per device                 |
+| M6.8a     | completed      | Discover and normalize system calendars                                  | Title, color, source, visibility, primary status, access, and modification capability preserved          |
+| M6.8b     | completed      | Persist per-account device preferences                                   | Selected IDs, default ID, and link cache are namespaced by Firebase UID in AsyncStorage                  |
+| M6.8c     | completed      | Build Profile calendar settings UI                                       | Permission, visible choices, writable default, refresh, and settings recovery are available              |
+| M6.8d     | completed      | Recover from stale calendar choices                                      | Invalid choices fall back to Bearing-only creation and surface replacement guidance                      |
+| M6.8e     | completed      | Isolate settings across account lifecycle                                | UID changes reset in-memory state and load only the next account namespace                               |
+| M6.9      | completed      | Aggregate Firestore and live device events                               | Device-originated events remain ephemeral and are never mirrored to Firestore                            |
+| M6.9a     | completed      | Define discriminated event models                                        | Bearing and device ownership control display capabilities without provider source strings                |
+| M6.9b     | completed      | Expand Bearing event fields                                              | Safe legacy defaults and Firestore writes cover advanced cross-platform event fields                     |
+| M6.9c     | completed      | Query selected calendars by visible range                                | Native records normalize timed/all-day, recurrence, status, capability, color, and source data           |
+| M6.9d     | completed      | Merge, sort, color, and deduplicate events                               | Exact linked system copies are suppressed while unrelated matching events remain                         |
+| M6.9e     | completed      | Refresh live events at deterministic triggers                            | Range, foreground, preference, successful mutation, and manual triggers ignore stale responses           |
+| M6.9f     | completed      | Support device events in Focus Mode                                      | Device events work in Focus Mode without Firestore mirrors or Bearing step metadata                      |
+| M6.10     | completed      | Build complete Bearing event editor                                      | Supported cross-platform modifiable fields share one validated create/edit UI                            |
+| M6.10a    | completed      | Add reusable create/edit controls                                        | Title, notes, dates, all-day, timezone, location, recurrence, alarms, availability, and URL supported    |
+| M6.10b    | completed      | Validate full event semantics                                            | All-day, DST, recurrence, alarm, timezone, range, and URL validation pass                                |
+| M6.10c    | completed      | Mutate writable device events directly                                   | Ownership and modification capability route updates/deletes with destructive confirmation                |
+| M6.10d    | completed      | Add recurring-event scope controls                                       | Adapter reports no proven SDK 57 scopes, so unsupported occurrence/future/series controls stay omitted   |
+| M6.10e    | completed      | Enforce v1 advanced-event exclusions                                     | Invitations, attendees, RSVP, organizer actions, conferences, and reminders remain out of scope          |
+| M6.11     | completed      | Publish and reconcile linked Bearing events                              | Firestore remains canonical and native writes remain retryable/best effort                               |
+| M6.11a    | completed      | Add optional publication to every creation path                          | A default-off switch targets the configured writable calendar                                            |
+| M6.11b    | completed      | Sequence Firestore creation before native publication                    | Failed publication keeps an editable Bearing event and exposes retry                                     |
+| M6.11c    | completed      | Add stable marker and reconciliation baseline                            | Opaque link metadata is embedded in notes while preserving user content                                  |
+| M6.11d    | completed      | Rediscover links across devices                                          | Visible OS-synced markers rebuild local ID caches and suppress duplicate display                         |
+| M6.11e    | completed      | Reconcile one-sided and simultaneous edits                               | One-sided edits propagate and system-calendar data wins simultaneous changes                             |
+| M6.11f    | completed      | Handle confirmed external deletion                                       | Confirmed lookup absence keeps the Bearing event and marks it unpublished                                |
+| M6.11g    | completed      | Coordinate linked deletion                                               | Unreachable system copies retain retryable deletion intent without deleting Firestore data               |
+| M6.11h    | completed      | Make linked operations idempotent                                        | Marker rediscovery covers interrupted writes, retries, stale IDs, moved events, and removed markers      |
+| M6.12     | completed      | Retain general ICS export                                                | Export Bearing-owned events only with full supported field coverage                                      |
+| M6.12a    | completed      | Exclude device events and linked duplicates                              | Runtime ownership filtering prevents live system-calendar copies from entering portable exports          |
+| M6.12b    | completed      | Expand ICS serializer and fixtures                                       | Timed/all-day, timezone/DST, location, recurrence, alarms, and escaped/folded text are covered           |
+| M6.12c    | completed      | Validate native sharing and development web download                     | Native cache/share and browser download branches pass deterministic tests; production web stays out      |
+| M6.13     | manual-handoff | Complete native calendar validation                                      | Automated matrix passes; native-device and two-device acceptance are outside this implementation session |
+| M6.13a    | completed      | Add deterministic adapter and reconciliation tests                       | Adapter, publication, conflict, deletion, and interruption cases run without real calendar permission    |
+| M6.13b    | manual-handoff | Validate current iOS and Android devices                                 | Owner-run checklist covers permission, discovery, CRUD, recurrence, refresh, Focus Mode, and fallback    |
+| M6.13c    | manual-handoff | Validate cross-device account behavior                                   | Owner-run checklist verifies account-wide Firestore behavior and honest system-copy status               |
 
 ### M7 - To-Do List and Task Conversion
 
@@ -157,12 +158,18 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 ### M10 - Final UI Fixes and Operability Fixes
 
-| Task ID | Status      | Description                                   | Notes                                               |
-| ------- | ----------- | --------------------------------------------- | --------------------------------------------------- |
-| M10.1   | not-started | Polish UI interactions and accessibility      | All screens pass WCAG AA accessibility audit        |
-| M10.2   | not-started | Fix operability edge cases and error recovery | Edge cases in critical flows handled gracefully     |
-| M10.3   | not-started | Optimize app performance and startup time     | App launch and transitions meet performance targets |
-| M10.4   | not-started | Run end-to-end user acceptance testing        | UAT signoff from stakeholders                       |
+| Task ID | Status         | Description                                        | Notes                                                                                   |
+| ------- | -------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| M10.0   | not-started    | Review and unify the complete mobile UI            | Screens, forms, cards, filters, typography, spacing, and states share one visual system |
+| M10.0a  | not-started    | Add shared control and layout foundations          | Buttons, fields, segmented filters, section headers, cards, and touch targets align     |
+| M10.0b  | not-started    | Modernize and categorize Profile                   | Account, Security, Preferences, Calendars & Data, Plan, and Session scan cleanly        |
+| M10.0c  | not-started    | Improve Goals presentation and filtering           | Active, completed, and all goals have counts, progress, and concise cards               |
+| M10.0d  | not-started    | Improve Tasks presentation and filtering           | Active, completed, and all tasks have counts, selected state, and concise cards         |
+| M10.0e  | not-started    | Normalize forms, modals, sizing, and accessibility | Existing screens use consistent controls without clipping or undersized interactions    |
+| M10.1   | not-started    | Polish UI interactions and accessibility           | Automated semantics pass; physical screen-reader review is a manual handoff             |
+| M10.2   | not-started    | Fix operability edge cases and error recovery      | Edge cases in critical flows handled gracefully                                         |
+| M10.3   | not-started    | Optimize app performance and startup time          | App launch and transitions meet performance targets                                     |
+| M10.4   | manual-handoff | Run end-to-end user acceptance testing             | Owner completes final native UAT and signoff                                            |
 
 ### M11 - Monetization Readiness
 
@@ -174,13 +181,13 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 ### M12 - Release and Store Deployment
 
-| Task ID | Status      | Description                                           | Notes                               |
-| ------- | ----------- | ----------------------------------------------------- | ----------------------------------- |
-| M12.1   | not-started | Prepare release build pipelines and signing setup     | Signed release candidates generated |
-| M12.2   | not-started | Complete App Store listing assets and metadata        | Apple submission package ready      |
-| M12.3   | not-started | Complete Google Play listing assets and metadata      | Play submission package ready       |
-| M12.4   | not-started | Run beta testing cycles (TestFlight/Internal Testing) | Critical launch blockers resolved   |
-| M12.5   | not-started | Submit and publish to both stores                     | App live in both stores             |
+| Task ID | Status         | Description                                           | Notes                                                            |
+| ------- | -------------- | ----------------------------------------------------- | ---------------------------------------------------------------- |
+| M12.1   | not-started    | Prepare release build pipelines and signing setup     | Signed release candidates generated                              |
+| M12.2   | not-started    | Complete App Store listing assets and metadata        | Apple submission package ready                                   |
+| M12.3   | not-started    | Complete Google Play listing assets and metadata      | Play submission package ready                                    |
+| M12.4   | not-started    | Run beta testing cycles (TestFlight/Internal Testing) | Critical launch blockers resolved                                |
+| M12.5   | manual-handoff | Submit and publish to both stores                     | Owner performs console submission, review responses, and release |
 
 ### M13 - Launch Operations
 
@@ -247,10 +254,11 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | 2026-07-28 | M7.1-M7.4 | Tasks milestone accepted and complete                                         | completed   | User confirmed live Firestore-backed task creation, scheduling, Start Now, and completed-task behavior are working                                                                                                                                                                                                                                                      |
 | 2026-07-30 | M8.1      | Premium gate implementation started                                           | in-progress | Scope approved: app identifiers, internal premium paywall shell, and client-side gating for AI goal builder assistant plus Google/Microsoft calendar integrations                                                                                                                                                                                                       |
 | 2026-07-31 | M0.7      | Calendar and launch scope reconciliation started                              | in-progress | Direct provider integrations and ICS import superseded by free native `expo-calendar` access, optional linked publication, general JSON/ICS export, and native-only launch                                                                                                                                                                                              |
-| 2026-07-31 | M1.5      | Engineering baseline recovery local validation                                | in-progress | `npm ci`, zero-warning lint, format check, typecheck, 60 tests, coverage, and Expo Doctor 20/20 passed; production audit exceptions documented; Node 20 CI confirmation remains                                                                                                                                                                                         |
+| 2026-07-31 | M1.5      | Engineering baseline recovery local validation                                | in-progress | Previous Node 20 gate passed, but Node 20 is EOL; support target moved to latest LTS Node 24/npm 11 and requires a fresh clean-install validation                                                                                                                                                                                                                       |
 | 2026-07-31 | M6.6-M6.8 | Native calendar foundation automated validation                               | completed   | Provider integration and ICS import removed; SDK 57 object adapter, UID-scoped settings, Profile controls, and legacy decoding added; 67 tests, lint, format, typecheck, and Expo Doctor 20/20 passed; current-device development-build validation remains under M6.7e                                                                                                  |
 | 2026-07-31 | M6.9      | Live device and Firestore event aggregation validation                        | completed   | Discriminated event models, expanded fields, native normalization, exact link deduplication, deterministic refresh triggers, and device Focus Mode support added; 74 tests, warning-free lint, format, typecheck, and Expo Doctor 20/20 passed                                                                                                                          |
 | 2026-07-31 | M6.10     | Complete event editor and ownership-aware mutation validation                 | completed   | Shared Bearing/device editor, advanced field validation, writable native update/delete routing, read-only handling, and SDK capability declaration added; 86 tests, warning-free lint, format, typecheck, and Expo Doctor 20/20 passed; native-device acceptance remains under M6.13                                                                                    |
 | 2026-07-31 | M6.11     | Linked Bearing event publication and reconciliation validation                | completed   | Default-off publication covers Calendar, Goal, Task, and Start Now paths; Firestore-first retry, opaque marker rediscovery, device-wins conflicts, confirmed external deletion, and coordinated linked deletion added; 114 tests, warning-free lint, format, typecheck, and Expo Doctor 20/20 passed; native-device acceptance remains under M6.13                      |
 | 2026-07-31 | M6.12     | General Bearing ICS export expansion and automated validation                 | completed   | Bearing-only export now covers local timezone/DST values, all-day dates, recurrence, location, alarms, availability, URLs, escaped text, UTF-8 line folding, native cache/share, and development-web download; 126 tests, warning-free lint, format, typecheck, and Expo Doctor 20/20 passed; physical sharing acceptance remains under M6.13                           |
 | 2026-07-31 | M6.7e     | Local development-client workflow and Android host build validation           | in-progress | SDK 57 dev-client scripts, CNG guidance, and calendar permission smoke test added; clean Android prebuild and debug APK compile passed with expected native modules and permissions; Android install/prompt and iOS build require attached hardware and macOS, then complete under M6.13                                                                                |
+| 2026-07-31 | M0.7      | Session scope update for manual acceptance and UI consistency                 | in-progress | Physical-device calendar acceptance, native UAT, and store publication moved to explicit manual handoff; Node 24 LTS baseline and M10.0 cross-screen UI review added to repository-owned implementation scope                                                                                                                                                           |
