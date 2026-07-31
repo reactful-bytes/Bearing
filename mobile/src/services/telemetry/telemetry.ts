@@ -147,6 +147,13 @@ export async function saveTelemetryConsent(
   await storage.setItem(getConsentStorageKey(userId), enabled ? 'enabled' : 'disabled');
 }
 
+export async function purgeTelemetryConsent(
+  userId: string,
+  storage: Pick<typeof AsyncStorage, 'removeItem'> = AsyncStorage,
+): Promise<void> {
+  await storage.removeItem(getConsentStorageKey(userId));
+}
+
 async function sendTelemetryPayload(payload: TelemetryPayload): Promise<void> {
   const [{ httpsCallable }, { getFirebaseFunctions }] = await Promise.all([
     import('firebase/functions'),

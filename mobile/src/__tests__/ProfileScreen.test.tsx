@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { Platform } from 'react-native';
+import { Alert, Linking, Platform } from 'react-native';
 
 import {
   UseDeviceCalendarsReturn,
@@ -25,7 +25,10 @@ import {
   shareDataExportFile,
   writeDataExportFile,
 } from '../features/profile/dataExportFileInterop';
-import { cleanupLinkedCalendarCopies } from '../features/profile/accountDeletionService';
+import {
+  cleanupLinkedCalendarCopies,
+  purgeLocalAccountData,
+} from '../features/profile/accountDeletionService';
 import { reauthenticateCurrentUser } from '../services/firebase/firebaseAuthActions';
 import {
   deleteCurrentUserAccount,
@@ -53,6 +56,7 @@ jest.mock('../services/firebase/firebaseAuthActions', () => ({
 
 jest.mock('../features/profile/accountDeletionService', () => ({
   cleanupLinkedCalendarCopies: jest.fn(),
+  purgeLocalAccountData: jest.fn(),
 }));
 
 jest.mock('../features/profile/dataExportFileInterop', () => ({
@@ -264,6 +268,9 @@ describe('ProfileScreen', () => {
     (
       cleanupLinkedCalendarCopies as jest.MockedFunction<typeof cleanupLinkedCalendarCopies>
     ).mockResolvedValue({ removedCount: 0, failedCount: 0 });
+    (purgeLocalAccountData as jest.MockedFunction<typeof purgeLocalAccountData>).mockResolvedValue({
+      failedCount: 0,
+    });
     (
       reauthenticateCurrentUser as jest.MockedFunction<typeof reauthenticateCurrentUser>
     ).mockResolvedValue();
@@ -299,7 +306,7 @@ describe('ProfileScreen', () => {
     expect(screen.getByRole('header', { name: 'Preferences' })).toBeTruthy();
     expect(screen.getByRole('header', { name: 'Calendars & Data' })).toBeTruthy();
     expect(screen.getByRole('header', { name: 'Plan' })).toBeTruthy();
-    expect(screen.getByRole('header', { name: 'Privacy' })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Privacy & Legal' })).toBeTruthy();
     expect(screen.getByRole('header', { name: 'Session' })).toBeTruthy();
     expect(screen.getByText('Preston')).toBeTruthy();
     expect(screen.getAllByText('preston@example.com').length).toBeGreaterThan(0);
@@ -338,6 +345,55 @@ describe('ProfileScreen', () => {
     fireEvent(screen.getByLabelText('Share product diagnostics'), 'valueChange', true);
 
     expect(updateTelemetryConsent).toHaveBeenCalledWith(true);
+  });
+
+  it('opens in-app legal documents and reports an unconfigured support contact', () => {
+    mockProfileHooks();
+
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+
+    fireEvent.press(screen.getByLabelText('Privacy policy'));
+    expect(screen.getByRole('header', { name: 'How information is used' })).toBeTruthy();
+    expect(
+      screen.getByText('Draft for owner and legal review. Not approved for publication.'),
+    ).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Close Privacy Policy'));
+
+    fireEvent.press(screen.getByLabelText('Terms of service'));
+    expect(screen.getByText('AI-assisted features')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Close Terms of Service'));
+
+    fireEvent.press(screen.getByLabelText('Support'));
+    expect(screen.getByText('Support contact is not configured in this build.')).toBeTruthy();
+  });
+
+  it('opens configured support email and reports email-app failures', async () => {
+    const previousSupportEmail = process.env.EXPO_PUBLIC_SUPPORT_EMAIL;
+    process.env.EXPO_PUBLIC_SUPPORT_EMAIL = 'help@example.com';
+    const openUrl = jest.spyOn(Linking, 'openURL').mockResolvedValueOnce(undefined);
+    mockProfileHooks();
+
+    const view = render(
+      <ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />,
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Support'));
+    });
+
+    expect(openUrl).toHaveBeenCalledWith(
+      'mailto:help@example.com?subject=Bearing%20support%20request',
+    );
+
+    openUrl.mockRejectedValueOnce(new Error('No email app'));
+    view.rerender(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Support'));
+    });
+
+    expect(screen.getByText('Unable to open email. Contact help@example.com.')).toBeTruthy();
+    openUrl.mockRestore();
+    if (previousSupportEmail === undefined) delete process.env.EXPO_PUBLIC_SUPPORT_EMAIL;
+    else process.env.EXPO_PUBLIC_SUPPORT_EMAIL = previousSupportEmail;
   });
 
   it('preserves the session sign-out action', () => {
@@ -590,6 +646,33 @@ describe('ProfileScreen', () => {
     expect(reauthenticateCurrentUser).toHaveBeenCalledWith('hunter2!');
     expect(cleanupLinkedCalendarCopies).toHaveBeenCalledWith('user-1');
     expect(deleteCurrentUserAccount).toHaveBeenCalled();
+    expect(purgeLocalAccountData).toHaveBeenCalledWith('user-1');
+  });
+
+  it('directs the user to clear app data when local cleanup is incomplete', async () => {
+    (purgeLocalAccountData as jest.MockedFunction<typeof purgeLocalAccountData>).mockResolvedValue({
+      failedCount: 1,
+    });
+    const alert = jest.spyOn(Alert, 'alert');
+    mockProfileHooks({
+      userProfile: {
+        authUser: { uid: 'user-1', isAnonymous: false, email: 'preston@example.com' } as never,
+      },
+    });
+
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    fireEvent.press(screen.getByLabelText('Delete account'));
+    fireEvent.changeText(screen.getByLabelText('Account deletion current password'), 'hunter2!');
+    fireEvent.changeText(screen.getByLabelText('Account deletion confirmation'), 'DELETE');
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Permanently Delete Account'));
+    });
+
+    expect(alert).toHaveBeenCalledWith(
+      'Account deleted',
+      expect.stringContaining('Clear this app’s local data in device settings'),
+    );
+    alert.mockRestore();
   });
 
   it('blocks backend deletion when linked-copy cleanup needs retry', async () => {

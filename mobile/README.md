@@ -61,6 +61,10 @@ Required variables:
 - EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
 - EXPO_PUBLIC_FIREBASE_APP_ID
 
+Optional release variable:
+
+- EXPO_PUBLIC_SUPPORT_EMAIL (monitored support and privacy-request address)
+
 Environment strategy:
 
 - Development: local `.env`

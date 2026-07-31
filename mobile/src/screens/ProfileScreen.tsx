@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   Alert,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -15,6 +16,7 @@ import { AppModal } from '../components/ui/AppModal';
 import { FormField } from '../components/ui/FormField';
 import { PremiumPaywallModal } from '../components/premium/PremiumPaywallModal';
 import { ProfileSelectionModal } from '../components/profile/ProfileSelectionModal';
+import { LegalDocumentModal } from '../components/profile/LegalDocumentModal';
 import { SoundPickerModal } from '../components/profile/SoundPickerModal';
 import { TipsWisdomModal } from '../components/profile/TipsWisdomModal';
 import { AppCard } from '../components/ui/AppCard';
@@ -31,7 +33,15 @@ import {
 } from '../features/calendar/icsFileInterop';
 import { serializeEventsToIcs } from '../features/calendar/icsInterop';
 import { useDeviceCalendars } from '../features/calendar/useDeviceCalendars';
-import { cleanupLinkedCalendarCopies } from '../features/profile/accountDeletionService';
+import {
+  cleanupLinkedCalendarCopies,
+  purgeLocalAccountData,
+} from '../features/profile/accountDeletionService';
+import {
+  LEGAL_DOCUMENTS,
+  LegalDocumentId,
+  getConfiguredSupportEmail,
+} from '../features/profile/legalDocuments';
 import {
   buildDataExportFilename,
   downloadDataExportOnWeb,
@@ -123,6 +133,8 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   const [deleteLinkedCopies, setDeleteLinkedCopies] = useState(true);
   const [deletePending, setDeletePending] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [legalDocumentId, setLegalDocumentId] = useState<LegalDocumentId | null>(null);
+  const [legalError, setLegalError] = useState<string | null>(null);
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
 
   useEffect(() => {
@@ -294,6 +306,23 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
 
   function closePremiumPaywall(): void {
     setPremiumPaywallFeature(null);
+  }
+
+  async function handleOpenSupport(): Promise<void> {
+    const supportEmail = getConfiguredSupportEmail();
+    if (!supportEmail) {
+      setLegalError('Support contact is not configured in this build.');
+      return;
+    }
+
+    setLegalError(null);
+    try {
+      await Linking.openURL(
+        `mailto:${supportEmail}?subject=${encodeURIComponent('Bearing support request')}`,
+      );
+    } catch {
+      setLegalError(`Unable to open email. Contact ${supportEmail}.`);
+    }
   }
 
   function getPremiumAccessDescription(): string {
@@ -490,8 +519,14 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
         }
       }
       await deleteCurrentUserAccount();
+      const localCleanup = await purgeLocalAccountData(authUser.uid);
       setDeleteAccountVisible(false);
-      Alert.alert('Account deleted', 'Bearing account data was permanently deleted.');
+      Alert.alert(
+        'Account deleted',
+        localCleanup.failedCount === 0
+          ? 'Bearing account data and local account settings were permanently deleted.'
+          : 'Bearing account data was deleted. Clear this app’s local data in device settings to remove remaining local preferences.',
+      );
     } catch (deletionError) {
       setDeleteError(
         deletionError instanceof Error
@@ -751,7 +786,29 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
             </View>
 
             <View style={styles.section}>
-              <SectionHeading title="Privacy" description="Control optional product diagnostics." />
+              <SectionHeading
+                title="Privacy & Legal"
+                description="Review policies, contact support, and control diagnostics."
+              />
+              <ListItem
+                onPress={() => setLegalDocumentId('privacy')}
+                title="Privacy policy"
+                description="How Bearing handles account, planning, calendar, AI, and diagnostic data."
+                trailingText="Read"
+              />
+              <ListItem
+                onPress={() => setLegalDocumentId('terms')}
+                title="Terms of service"
+                description="Rules for accounts, content, AI, calendars, and future subscriptions."
+                trailingText="Read"
+              />
+              <ListItem
+                onPress={() => void handleOpenSupport()}
+                title="Support"
+                description="Get help or make a privacy request."
+                trailingText="Email"
+              />
+              {legalError ? <Text style={styles.errorText}>{legalError}</Text> : null}
               <View style={styles.telemetryPreferenceRow}>
                 <View style={styles.telemetryPreferenceCopy}>
                   <Text style={styles.sectionTitle}>Share product diagnostics</Text>
@@ -838,6 +895,11 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
         feature={premiumPaywallFeature}
         isAnonymous={isAnonymous}
         onClose={closePremiumPaywall}
+      />
+
+      <LegalDocumentModal
+        document={legalDocumentId ? LEGAL_DOCUMENTS[legalDocumentId] : null}
+        onClose={() => setLegalDocumentId(null)}
       />
 
       <AppModal

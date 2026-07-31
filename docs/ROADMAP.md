@@ -108,7 +108,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M9.1    | in-progress    | Expand automated tests for critical user journeys        | Critical app, privacy, AI, and recovery paths are stable; coverage thresholds and native E2E remain                  |
 | M9.2    | completed      | Perform security hardening and secret management audit   | No secrets exposed and auth flows validated                                                                          |
 | M9.3    | manual-handoff | Add analytics dashboards and operational alerts          | Consent-aware events, queries, and alert thresholds are repository-ready; owner activates cloud resources            |
-| M9.4    | not-started    | Finalize legal copy (privacy policy, terms, disclosures) | Store-compliant legal docs available                                                                                 |
+| M9.4    | manual-handoff | Finalize legal copy (privacy policy, terms, disclosures) | Draft copy, in-app access, and release checklist are ready; owner/legal approval and public hosting remain           |
 | M9.5    | completed      | Add general export and account deletion                  | JSON/ICS export and reauthenticated cleanup pass automated validation; staging/native acceptance is an owner handoff |
 | M9.6    | manual-handoff | Establish backup, migration, and recovery readiness      | Workflow/runbook are ready; owner configures cloud retention and records the staging restore drill                   |
 
@@ -180,4 +180,4 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 1. Complete M9.1 coverage/E2E and the remaining M10.2 operability matrix.
 2. Measure and optimize release performance under M10.3.
-3. Complete observability, legal, monetization, release, and operations repository handoffs under M8.4, M9.3-M9.4, and M11-M13.
+3. Complete monetization, release, and operations repository work under M8.4 and M11-M13, then execute the M9.3-M9.4 owner handoffs.

@@ -1,12 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-import { cleanupLinkedCalendarCopies } from '../features/profile/accountDeletionService';
+import {
+  cleanupLinkedCalendarCopies,
+  purgeLocalAccountData,
+} from '../features/profile/accountDeletionService';
 import { DeviceCalendarAdapter } from '../services/calendar/deviceCalendarAdapter';
 import {
   loadDeviceCalendarSettings,
   saveDeviceCalendarSettings,
 } from '../services/calendar/deviceCalendarSettings';
+import { loadTelemetryConsent, saveTelemetryConsent } from '../services/telemetry/telemetry';
 
 function makeAdapter(): jest.Mocked<DeviceCalendarAdapter> {
   return {
@@ -67,5 +71,28 @@ describe('cleanupLinkedCalendarCopies', () => {
       failedCount: 1,
     });
     expect((await loadDeviceCalendarSettings('user-1'))?.linkCache['event-1']).toBeTruthy();
+  });
+
+  it('purges all account-scoped local data after account deletion', async () => {
+    await saveDeviceCalendarSettings('user-1', {
+      selectedCalendarIds: ['calendar-1'],
+      defaultCalendarId: 'calendar-1',
+      linkCache: {},
+    });
+    await saveTelemetryConsent('user-1', true);
+
+    await expect(purgeLocalAccountData('user-1')).resolves.toEqual({ failedCount: 0 });
+    await expect(loadDeviceCalendarSettings('user-1')).resolves.toBeNull();
+    await expect(loadTelemetryConsent('user-1')).resolves.toBe(false);
+  });
+
+  it('reports local stores that could not be purged', async () => {
+    const removeItem = jest
+      .spyOn(AsyncStorage, 'removeItem')
+      .mockRejectedValueOnce(new Error('disk'));
+
+    await expect(purgeLocalAccountData('user-1')).resolves.toEqual({ failedCount: 1 });
+
+    removeItem.mockRestore();
   });
 });

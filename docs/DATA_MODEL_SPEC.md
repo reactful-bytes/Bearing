@@ -256,7 +256,13 @@ Notes:
 - Use additive migrations first; avoid destructive field replacement.
 - Keep one migration note section in docs for each release.
 
+## AI Draft Retention
+
+- Goal-plan requests and rejected/failed drafts are transient and are not stored in a dedicated
+  Firestore collection.
+- Approved generated fields are stored only as editable goal, milestone, and step records.
+- Provider request handling and retention must be verified in the release processor review.
+
 ## Open Questions
 
 - Final definition and downstream behavior of starter field on goal steps.
-- Retention policy for AI plan generations and rejected drafts.

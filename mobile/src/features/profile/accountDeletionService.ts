@@ -7,11 +7,20 @@ import {
   DeviceCalendarAdapter,
   deviceCalendarAdapter,
 } from '../../services/calendar/deviceCalendarAdapter';
+import { purgeTelemetryConsent } from '../../services/telemetry/telemetry';
 
 export type LinkedCalendarCleanupResult = {
   removedCount: number;
   failedCount: number;
 };
+
+export async function purgeLocalAccountData(userId: string): Promise<{ failedCount: number }> {
+  const results = await Promise.allSettled([
+    purgeDeviceCalendarSettings(userId),
+    purgeTelemetryConsent(userId),
+  ]);
+  return { failedCount: results.filter((result) => result.status === 'rejected').length };
+}
 
 export async function cleanupLinkedCalendarCopies(
   userId: string,
