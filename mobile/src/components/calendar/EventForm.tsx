@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { AppButton } from '../ui/AppButton';
+import { FormField } from '../ui/FormField';
 import { colors, radii, spacing, typography } from '../../design/tokens';
 import {
   CreateEventInput,
@@ -114,32 +116,26 @@ export function EventForm({
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={styles.fieldGroup}>
-        <Text style={styles.fieldLabel}>Title</Text>
-        <TextInput
-          style={styles.input}
-          value={values.title}
-          onChangeText={(value) => updateValue('title', value)}
-          placeholder="Event title"
-          placeholderTextColor={colors.textSecondary}
-          autoCapitalize="sentences"
-          returnKeyType="next"
-          accessibilityLabel="Event title"
-        />
-      </View>
+      <FormField
+        label="Title"
+        value={values.title}
+        onChangeText={(value) => updateValue('title', value)}
+        placeholder="Event title"
+        placeholderTextColor={colors.textSecondary}
+        autoCapitalize="sentences"
+        returnKeyType="next"
+        accessibilityLabel="Event title"
+      />
 
-      <View style={styles.fieldGroup}>
-        <Text style={styles.fieldLabel}>Description (optional)</Text>
-        <TextInput
-          style={[styles.input, styles.inputMultiline]}
-          value={values.description}
-          onChangeText={(value) => updateValue('description', value)}
-          placeholder="Add notes"
-          placeholderTextColor={colors.textSecondary}
-          multiline
-          accessibilityLabel="Event description"
-        />
-      </View>
+      <FormField
+        label="Description (optional)"
+        value={values.description}
+        onChangeText={(value) => updateValue('description', value)}
+        placeholder="Add notes"
+        placeholderTextColor={colors.textSecondary}
+        multiline
+        accessibilityLabel="Event description"
+      />
 
       <View style={styles.switchRow}>
         <Text style={styles.fieldLabel}>All day</Text>
@@ -153,58 +149,50 @@ export function EventForm({
       </View>
 
       <View style={styles.dateRow}>
-        <View style={[styles.fieldGroup, styles.flexField]}>
-          <Text style={styles.fieldLabel}>Start date</Text>
-          <TextInput
-            style={styles.input}
-            value={values.startDate}
-            onChangeText={(value) => updateValue('startDate', value)}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={colors.textSecondary}
-            keyboardType="numbers-and-punctuation"
-            accessibilityLabel="Start date"
-          />
-        </View>
-        <View style={[styles.fieldGroup, styles.flexField]}>
-          <Text style={styles.fieldLabel}>End date</Text>
-          <TextInput
-            style={styles.input}
-            value={values.endDate}
-            onChangeText={(value) => updateValue('endDate', value)}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={colors.textSecondary}
-            keyboardType="numbers-and-punctuation"
-            accessibilityLabel="End date"
-          />
-        </View>
+        <FormField
+          label="Start date"
+          containerStyle={styles.flexField}
+          value={values.startDate}
+          onChangeText={(value) => updateValue('startDate', value)}
+          placeholder="YYYY-MM-DD"
+          placeholderTextColor={colors.textSecondary}
+          keyboardType="numbers-and-punctuation"
+          accessibilityLabel="Start date"
+        />
+        <FormField
+          label="End date"
+          containerStyle={styles.flexField}
+          value={values.endDate}
+          onChangeText={(value) => updateValue('endDate', value)}
+          placeholder="YYYY-MM-DD"
+          placeholderTextColor={colors.textSecondary}
+          keyboardType="numbers-and-punctuation"
+          accessibilityLabel="End date"
+        />
       </View>
 
       {!values.allDay ? (
         <View style={styles.dateRow}>
-          <View style={[styles.fieldGroup, styles.flexField]}>
-            <Text style={styles.fieldLabel}>Start time</Text>
-            <TextInput
-              style={styles.input}
-              value={values.startTime}
-              onChangeText={(value) => updateValue('startTime', value)}
-              placeholder="HH:MM"
-              placeholderTextColor={colors.textSecondary}
-              keyboardType="numbers-and-punctuation"
-              accessibilityLabel="Start time"
-            />
-          </View>
-          <View style={[styles.fieldGroup, styles.flexField]}>
-            <Text style={styles.fieldLabel}>End time</Text>
-            <TextInput
-              style={styles.input}
-              value={values.endTime}
-              onChangeText={(value) => updateValue('endTime', value)}
-              placeholder="HH:MM"
-              placeholderTextColor={colors.textSecondary}
-              keyboardType="numbers-and-punctuation"
-              accessibilityLabel="End time"
-            />
-          </View>
+          <FormField
+            label="Start time"
+            containerStyle={styles.flexField}
+            value={values.startTime}
+            onChangeText={(value) => updateValue('startTime', value)}
+            placeholder="HH:MM"
+            placeholderTextColor={colors.textSecondary}
+            keyboardType="numbers-and-punctuation"
+            accessibilityLabel="Start time"
+          />
+          <FormField
+            label="End time"
+            containerStyle={styles.flexField}
+            value={values.endTime}
+            onChangeText={(value) => updateValue('endTime', value)}
+            placeholder="HH:MM"
+            placeholderTextColor={colors.textSecondary}
+            keyboardType="numbers-and-punctuation"
+            accessibilityLabel="End time"
+          />
         </View>
       ) : null}
 
@@ -224,46 +212,37 @@ export function EventForm({
         </View>
       ) : null}
 
-      <Pressable
-        accessibilityRole="button"
+      <AppButton
+        label={advancedVisible ? 'Hide Advanced' : 'Advanced'}
+        variant="secondary"
         accessibilityLabel={
           advancedVisible ? 'Hide advanced event fields' : 'Show advanced event fields'
         }
         onPress={() => setAdvancedVisible((current) => !current)}
-        style={({ pressed }) => [styles.advancedButton, pressed ? styles.pressed : null]}
-      >
-        <Text style={styles.advancedButtonText}>
-          {advancedVisible ? 'Hide Advanced' : 'Advanced'}
-        </Text>
-      </Pressable>
+        style={styles.advancedButton}
+      />
 
       {advancedVisible ? (
         <View style={styles.advancedFields}>
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Timezone</Text>
-            <TextInput
-              style={styles.input}
-              value={values.timezone}
-              onChangeText={(value) => updateValue('timezone', value)}
-              placeholder="America/New_York"
-              placeholderTextColor={colors.textSecondary}
-              autoCapitalize="none"
-              autoCorrect={false}
-              accessibilityLabel="Event timezone"
-            />
-          </View>
+          <FormField
+            label="Timezone"
+            value={values.timezone}
+            onChangeText={(value) => updateValue('timezone', value)}
+            placeholder="America/New_York"
+            placeholderTextColor={colors.textSecondary}
+            autoCapitalize="none"
+            autoCorrect={false}
+            accessibilityLabel="Event timezone"
+          />
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Location</Text>
-            <TextInput
-              style={styles.input}
-              value={values.location}
-              onChangeText={(value) => updateValue('location', value)}
-              placeholder="Add a location"
-              placeholderTextColor={colors.textSecondary}
-              accessibilityLabel="Event location"
-            />
-          </View>
+          <FormField
+            label="Location"
+            value={values.location}
+            onChangeText={(value) => updateValue('location', value)}
+            placeholder="Add a location"
+            placeholderTextColor={colors.textSecondary}
+            accessibilityLabel="Event location"
+          />
 
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Repeats</Text>
@@ -296,55 +275,45 @@ export function EventForm({
 
           {values.recurrenceFrequency !== 'none' ? (
             <>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Repeat interval</Text>
-                <TextInput
-                  style={styles.input}
-                  value={values.recurrenceInterval}
-                  onChangeText={(value) => updateValue('recurrenceInterval', value)}
-                  keyboardType="number-pad"
-                  accessibilityLabel="Recurrence interval"
-                />
-              </View>
+              <FormField
+                label="Repeat interval"
+                value={values.recurrenceInterval}
+                onChangeText={(value) => updateValue('recurrenceInterval', value)}
+                keyboardType="number-pad"
+                accessibilityLabel="Recurrence interval"
+              />
               <View style={styles.dateRow}>
-                <View style={[styles.fieldGroup, styles.flexField]}>
-                  <Text style={styles.fieldLabel}>End date (optional)</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={values.recurrenceEndDate}
-                    onChangeText={(value) => updateValue('recurrenceEndDate', value)}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor={colors.textSecondary}
-                    keyboardType="numbers-and-punctuation"
-                    accessibilityLabel="Recurrence end date"
-                  />
-                </View>
-                <View style={[styles.fieldGroup, styles.flexField]}>
-                  <Text style={styles.fieldLabel}>Occurrences (optional)</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={values.recurrenceOccurrenceCount}
-                    onChangeText={(value) => updateValue('recurrenceOccurrenceCount', value)}
-                    keyboardType="number-pad"
-                    accessibilityLabel="Recurrence occurrences"
-                  />
-                </View>
+                <FormField
+                  label="End date (optional)"
+                  containerStyle={styles.flexField}
+                  value={values.recurrenceEndDate}
+                  onChangeText={(value) => updateValue('recurrenceEndDate', value)}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="numbers-and-punctuation"
+                  accessibilityLabel="Recurrence end date"
+                />
+                <FormField
+                  label="Occurrences (optional)"
+                  containerStyle={styles.flexField}
+                  value={values.recurrenceOccurrenceCount}
+                  onChangeText={(value) => updateValue('recurrenceOccurrenceCount', value)}
+                  keyboardType="number-pad"
+                  accessibilityLabel="Recurrence occurrences"
+                />
               </View>
             </>
           ) : null}
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Alarm offsets (minutes)</Text>
-            <TextInput
-              style={styles.input}
-              value={values.alarmOffsets}
-              onChangeText={(value) => updateValue('alarmOffsets', value)}
-              placeholder="-30, -10"
-              placeholderTextColor={colors.textSecondary}
-              keyboardType="numbers-and-punctuation"
-              accessibilityLabel="Alarm offsets"
-            />
-          </View>
+          <FormField
+            label="Alarm offsets (minutes)"
+            value={values.alarmOffsets}
+            onChangeText={(value) => updateValue('alarmOffsets', value)}
+            placeholder="-30, -10"
+            placeholderTextColor={colors.textSecondary}
+            keyboardType="numbers-and-punctuation"
+            accessibilityLabel="Alarm offsets"
+          />
 
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Availability</Text>
@@ -373,34 +342,29 @@ export function EventForm({
             </View>
           </View>
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>URL</Text>
-            <TextInput
-              style={styles.input}
-              value={values.url}
-              onChangeText={(value) => updateValue('url', value)}
-              placeholder="https://"
-              placeholderTextColor={colors.textSecondary}
-              keyboardType="url"
-              autoCapitalize="none"
-              autoCorrect={false}
-              accessibilityLabel="Event URL"
-            />
-          </View>
+          <FormField
+            label="URL"
+            value={values.url}
+            onChangeText={(value) => updateValue('url', value)}
+            placeholder="https://"
+            placeholderTextColor={colors.textSecondary}
+            keyboardType="url"
+            autoCapitalize="none"
+            autoCorrect={false}
+            accessibilityLabel="Event URL"
+          />
         </View>
       ) : null}
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-      <Pressable
-        accessibilityRole="button"
+      <AppButton
+        label={saveLabel}
         accessibilityLabel="Save event"
-        accessibilityState={{ disabled: saving }}
-        onPress={saving ? undefined : handleSave}
-        style={[styles.saveButton, saving ? styles.saveButtonDisabled : null]}
-      >
-        <Text style={styles.saveButtonText}>{saving ? 'Saving...' : saveLabel}</Text>
-      </Pressable>
+        onPress={handleSave}
+        loading={saving}
+        loadingLabel="Saving..."
+      />
     </ScrollView>
   );
 }

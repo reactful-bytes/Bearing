@@ -192,6 +192,7 @@ const styles = StyleSheet.create({
   },
   dateFieldButton: {
     flex: 1,
+    minHeight: 44,
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -229,6 +230,7 @@ const styles = StyleSheet.create({
     maxHeight: 176,
   },
   dropdownOption: {
+    minHeight: 44,
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,

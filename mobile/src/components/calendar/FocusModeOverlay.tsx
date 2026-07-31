@@ -1,6 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppButton } from '../ui/AppButton';
+import { FormField } from '../ui/FormField';
 import { radii, spacing, typography } from '../../design/tokens';
 import { CalendarDisplayEvent } from '../../features/calendar/calendarTypes';
 import { CreateNoteInput } from '../../features/notes/noteTypes';
@@ -180,72 +191,79 @@ export function FocusModeOverlay({
 
   return (
     <Modal visible={visible} animationType="fade" onRequestClose={() => {}}>
-      <View style={styles.screen}>
-        <View style={styles.heroBlock}>
-          <Text style={styles.eyebrow}>Focus Mode</Text>
-          <Text style={styles.eventTitle}>{focusSummary.title}</Text>
-          <Text style={styles.eventSubtitle}>{focusSummary.subtitle}</Text>
-        </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+      >
+        <SafeAreaView style={styles.screen}>
+          <View style={styles.heroBlock}>
+            <Text style={styles.eyebrow}>Focus Mode</Text>
+            <Text style={styles.eventTitle}>{focusSummary.title}</Text>
+            <Text style={styles.eventSubtitle}>{focusSummary.subtitle}</Text>
+          </View>
 
-        <View style={styles.timerCard}>
-          <Text style={styles.timerLabel}>{focusSummary.timerLabel}</Text>
-          <Text style={styles.timerValue}>{focusSummary.timerValue}</Text>
-        </View>
+          <View style={styles.timerCard}>
+            <Text style={styles.timerLabel}>{focusSummary.timerLabel}</Text>
+            <Text style={styles.timerValue}>{focusSummary.timerValue}</Text>
+          </View>
 
-        <View style={styles.ideaBlock}>
-          <Text style={styles.ideaTitle}>Idea Dump</Text>
-          <Text style={styles.ideaDescription}>
-            Capture the thought now. It will be stored in Notes for later processing.
-          </Text>
-          <TextInput
-            accessibilityLabel="Idea dump input"
-            placeholder="Write the thought you do not want to lose..."
-            placeholderTextColor="#7E9AAA"
-            value={ideaBody}
-            onChangeText={setIdeaBody}
-            multiline
-            textAlignVertical="top"
-            style={styles.ideaInput}
-          />
-          {saveError ? <Text style={styles.errorText}>{saveError}</Text> : null}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Save idea dump"
-            onPress={handleSaveIdeaDump}
-            disabled={saving}
-            style={({ pressed }) => [
-              styles.saveButton,
-              pressed && !saving ? styles.saveButtonPressed : null,
-              saving ? styles.saveButtonDisabled : null,
-            ]}
-          >
-            <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save to Notes'}</Text>
-          </Pressable>
-        </View>
+          <View style={styles.ideaBlock}>
+            <FormField
+              label="Idea Dump"
+              helperText="Capture the thought now. It will be stored in Notes for later processing."
+              error={saveError}
+              accessibilityLabel="Idea dump input"
+              placeholder="Write the thought you do not want to lose..."
+              placeholderTextColor="#7E9AAA"
+              value={ideaBody}
+              onChangeText={setIdeaBody}
+              multiline
+              containerStyle={styles.ideaField}
+              labelStyle={styles.ideaTitle}
+              inputStyle={styles.ideaInput}
+              helperStyle={styles.ideaDescription}
+              errorStyle={styles.errorText}
+            />
+            <AppButton
+              accessibilityLabel="Save idea dump"
+              onPress={handleSaveIdeaDump}
+              label="Save to Notes"
+              loading={saving}
+              loadingLabel="Saving..."
+            />
+          </View>
 
-        <View style={styles.exitBlock}>
-          <Text style={styles.exitLabel}>Return to Calendar</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Hold to return to calendar"
-            onPressIn={handlePressInExit}
-            onPressOut={handlePressOutExit}
-            style={({ pressed }) => [styles.exitButton, pressed ? styles.exitButtonPressed : null]}
-          >
-            <View style={styles.exitProgressTrack}>
-              <View style={[styles.exitProgressFill, { width: `${holdProgress * 100}%` }]} />
-            </View>
-            <Text style={styles.exitButtonText}>
-              {holdProgress > 0 ? `Keep holding ${holdSecondsRemaining}s` : 'Hold for 3 seconds'}
-            </Text>
-          </Pressable>
-        </View>
-      </View>
+          <View style={styles.exitBlock}>
+            <Text style={styles.exitLabel}>Return to Calendar</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Hold to return to calendar"
+              onPressIn={handlePressInExit}
+              onPressOut={handlePressOutExit}
+              style={({ pressed }) => [
+                styles.exitButton,
+                pressed ? styles.exitButtonPressed : null,
+              ]}
+            >
+              <View style={styles.exitProgressTrack}>
+                <View style={[styles.exitProgressFill, { width: `${holdProgress * 100}%` }]} />
+              </View>
+              <Text style={styles.exitButtonText}>
+                {holdProgress > 0 ? `Keep holding ${holdSecondsRemaining}s` : 'Hold for 3 seconds'}
+              </Text>
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardView: {
+    flex: 1,
+    backgroundColor: '#07161F',
+  },
   screen: {
     flex: 1,
     backgroundColor: '#07161F',
@@ -293,6 +311,9 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.md,
   },
+  ideaField: {
+    flex: 1,
+  },
   ideaTitle: {
     ...typography.screenTitle,
     color: '#F4F8FA',
@@ -315,23 +336,6 @@ const styles = StyleSheet.create({
   errorText: {
     ...typography.helper,
     color: '#FFB3B3',
-  },
-  saveButton: {
-    borderRadius: radii.md,
-    backgroundColor: '#0E5E85',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  saveButtonPressed: {
-    opacity: 0.88,
-  },
-  saveButtonDisabled: {
-    opacity: 0.6,
-  },
-  saveButtonText: {
-    ...typography.button,
-    color: '#F4F8FA',
   },
   exitBlock: {
     gap: spacing.sm,

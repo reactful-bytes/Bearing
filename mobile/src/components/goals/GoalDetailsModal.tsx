@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppCard } from '../ui/AppCard';
+import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
+import { FormField } from '../ui/FormField';
 import {
   GoalDateField,
   GoalDateParts,
@@ -162,17 +164,17 @@ export function GoalDetailsModal({
   }
 
   const headerAccessory = goal ? (
-    <Pressable
-      accessibilityRole="button"
+    <AppButton
+      label={editMode ? 'Cancel' : 'Edit'}
+      variant="secondary"
       accessibilityLabel={editMode ? 'Cancel goal editing' : 'Edit goal'}
       onPress={() => {
         setError(null);
         setEditMode((current) => !current);
       }}
-      style={({ pressed }) => [styles.headerButton, pressed ? styles.buttonPressed : null]}
-    >
-      <Text style={styles.headerButtonText}>{editMode ? 'Cancel' : 'Edit'}</Text>
-    </Pressable>
+      style={styles.headerButton}
+      textStyle={styles.headerButtonText}
+    />
   ) : null;
 
   return (
@@ -186,26 +188,20 @@ export function GoalDetailsModal({
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
           {editMode ? (
             <View style={styles.section}>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Goal name</Text>
-                <TextInput
-                  accessibilityLabel="Edit goal name"
-                  value={title}
-                  onChangeText={setTitle}
-                  style={styles.input}
-                />
-              </View>
+              <FormField
+                label="Goal name"
+                accessibilityLabel="Edit goal name"
+                value={title}
+                onChangeText={setTitle}
+              />
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Description</Text>
-                <TextInput
-                  accessibilityLabel="Edit goal description"
-                  value={description}
-                  onChangeText={setDescription}
-                  style={[styles.input, styles.textArea]}
-                  multiline
-                />
-              </View>
+              <FormField
+                label="Description"
+                accessibilityLabel="Edit goal description"
+                value={description}
+                onChangeText={setDescription}
+                multiline
+              />
 
               <View style={styles.fieldGroup}>
                 <GoalDatePicker
@@ -231,36 +227,23 @@ export function GoalDetailsModal({
               </View>
 
               <View style={styles.actionColumn}>
-                <Pressable
-                  accessibilityRole="button"
+                <AppButton
+                  label="Save Changes"
                   accessibilityLabel="Save goal changes"
                   onPress={handleSave}
-                  disabled={saving}
-                  style={({ pressed }) => [
-                    styles.primaryButton,
-                    pressed && !saving ? styles.buttonPressed : null,
-                    saving ? styles.buttonDisabled : null,
-                  ]}
-                >
-                  <Text style={styles.primaryButtonText}>
-                    {saving ? 'Saving...' : 'Save Changes'}
-                  </Text>
-                </Pressable>
+                  loading={saving}
+                  loadingLabel="Saving..."
+                />
 
                 {goal.status !== 'completed' ? (
-                  <Pressable
-                    accessibilityRole="button"
+                  <AppButton
+                    label="Mark Goal Complete"
+                    variant="secondary"
                     accessibilityLabel="Mark goal complete"
                     onPress={handleMarkComplete}
-                    disabled={saving}
-                    style={({ pressed }) => [
-                      styles.secondaryButton,
-                      pressed && !saving ? styles.buttonPressed : null,
-                      saving ? styles.buttonDisabled : null,
-                    ]}
-                  >
-                    <Text style={styles.secondaryButtonText}>Mark Goal Complete</Text>
-                  </Pressable>
+                    loading={saving}
+                    loadingLabel="Working..."
+                  />
                 ) : null}
               </View>
             </View>
@@ -285,17 +268,14 @@ export function GoalDetailsModal({
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Steps</Text>
-              <Pressable
-                accessibilityRole="button"
+              <AppButton
+                label="Add Step"
+                variant="secondary"
                 accessibilityLabel="Add step"
                 onPress={onAddStep}
-                style={({ pressed }) => [
-                  styles.headerButton,
-                  pressed ? styles.buttonPressed : null,
-                ]}
-              >
-                <Text style={styles.headerButtonText}>Add Step</Text>
-              </Pressable>
+                style={styles.headerButton}
+                textStyle={styles.headerButtonText}
+              />
             </View>
 
             {goal.steps.length === 0 ? (
@@ -358,12 +338,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   headerButton: {
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    minHeight: 44,
   },
   headerButtonText: {
     ...typography.helper,

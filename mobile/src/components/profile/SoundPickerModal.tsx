@@ -1,6 +1,7 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppCard } from '../ui/AppCard';
+import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { colors, radii, spacing, typography } from '../../design/tokens';
 import { PROFILE_SOUND_OPTIONS } from '../../features/profile/profileSounds';
@@ -52,35 +53,25 @@ export function SoundPickerModal({
               </View>
 
               <View style={styles.actionsRow}>
-                <Pressable
-                  accessibilityRole="button"
+                <AppButton
+                  label={isPlaying ? 'Playing...' : 'Preview'}
+                  variant="secondary"
                   accessibilityLabel={`Preview sound ${sound.label}`}
                   onPress={() => void onPreview(sound.id)}
-                  style={({ pressed }) => [
-                    styles.secondaryButton,
-                    pressed ? styles.buttonPressed : null,
-                  ]}
-                >
-                  <Text style={styles.secondaryButtonText}>
-                    {isPlaying ? 'Playing...' : 'Preview'}
-                  </Text>
-                </Pressable>
+                  style={styles.actionButton}
+                />
 
-                <Pressable
-                  accessibilityRole="button"
+                <AppButton
+                  label={isSelected ? 'Selected' : 'Select'}
+                  variant={isSelected ? 'secondary' : 'primary'}
                   accessibilityLabel={`Select sound ${sound.label}`}
                   onPress={() => void onSelect(sound.id)}
                   disabled={savePending}
-                  style={({ pressed }) => [
-                    isSelected ? styles.selectedButton : styles.primaryButton,
-                    pressed && !savePending ? styles.buttonPressed : null,
-                    savePending ? styles.buttonDisabled : null,
-                  ]}
-                >
-                  <Text style={isSelected ? styles.selectedButtonText : styles.primaryButtonText}>
-                    {isSelected ? 'Selected' : savePending ? 'Saving...' : 'Select'}
-                  </Text>
-                </Pressable>
+                  loading={savePending && !isSelected}
+                  loadingLabel="Saving..."
+                  style={[styles.actionButton, isSelected ? styles.selectedButton : null]}
+                  textStyle={isSelected ? styles.selectedButtonText : undefined}
+                />
               </View>
             </AppCard>
           );
@@ -123,6 +114,9 @@ const styles = StyleSheet.create({
   actionsRow: {
     flexDirection: 'row',
     gap: spacing.md,
+  },
+  actionButton: {
+    flex: 1,
   },
   primaryButton: {
     flex: 1,

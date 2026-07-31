@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppCard } from '../ui/AppCard';
+import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
+import { FormField } from '../ui/FormField';
 import {
   GoalDateField,
   GoalDateParts,
@@ -177,17 +179,17 @@ export function StepDetailModal({
   }
 
   const headerAccessory = step ? (
-    <Pressable
-      accessibilityRole="button"
+    <AppButton
+      label={editMode ? 'Cancel' : 'Edit'}
+      variant="secondary"
       accessibilityLabel={editMode ? 'Cancel step editing' : 'Edit step'}
       onPress={() => {
         setError(null);
         setEditMode((current) => !current);
       }}
-      style={({ pressed }) => [styles.headerButton, pressed ? styles.buttonPressed : null]}
-    >
-      <Text style={styles.headerButtonText}>{editMode ? 'Cancel' : 'Edit'}</Text>
-    </Pressable>
+      style={styles.headerButton}
+      textStyle={styles.headerButtonText}
+    />
   ) : null;
 
   return (
@@ -210,36 +212,27 @@ export function StepDetailModal({
 
           {editMode ? (
             <View style={styles.section}>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Step name</Text>
-                <TextInput
-                  accessibilityLabel="Edit step name"
-                  value={title}
-                  onChangeText={setTitle}
-                  style={styles.input}
-                />
-              </View>
+              <FormField
+                label="Step name"
+                accessibilityLabel="Edit step name"
+                value={title}
+                onChangeText={setTitle}
+              />
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Description</Text>
-                <TextInput
-                  accessibilityLabel="Edit step description"
-                  value={description}
-                  onChangeText={setDescription}
-                  style={[styles.input, styles.textArea]}
-                  multiline
-                />
-              </View>
+              <FormField
+                label="Description"
+                accessibilityLabel="Edit step description"
+                value={description}
+                onChangeText={setDescription}
+                multiline
+              />
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Starter</Text>
-                <TextInput
-                  accessibilityLabel="Edit step starter"
-                  value={starter}
-                  onChangeText={setStarter}
-                  style={styles.input}
-                />
-              </View>
+              <FormField
+                label="Starter"
+                accessibilityLabel="Edit step starter"
+                value={starter}
+                onChangeText={setStarter}
+              />
 
               <View style={styles.fieldGroup}>
                 <GoalDatePicker
@@ -264,35 +257,22 @@ export function StepDetailModal({
                 />
               </View>
 
-              <Pressable
-                accessibilityRole="button"
+              <AppButton
+                label="Save Changes"
                 accessibilityLabel="Save step changes"
                 onPress={handleSave}
-                disabled={saving}
-                style={({ pressed }) => [
-                  styles.primaryButton,
-                  pressed && !saving ? styles.buttonPressed : null,
-                  saving ? styles.buttonDisabled : null,
-                ]}
-              >
-                <Text style={styles.primaryButtonText}>
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </Text>
-              </Pressable>
+                loading={saving}
+                loadingLabel="Saving..."
+              />
 
-              <Pressable
-                accessibilityRole="button"
+              <AppButton
+                label="Delete Step"
+                variant="danger"
                 accessibilityLabel="Delete step"
                 onPress={handleDelete}
-                disabled={saving}
-                style={({ pressed }) => [
-                  styles.dangerButton,
-                  pressed && !saving ? styles.buttonPressed : null,
-                  saving ? styles.buttonDisabled : null,
-                ]}
-              >
-                <Text style={styles.dangerButtonText}>Delete Step</Text>
-              </Pressable>
+                loading={saving}
+                loadingLabel="Deleting..."
+              />
             </View>
           ) : (
             <View style={styles.section}>
@@ -310,33 +290,20 @@ export function StepDetailModal({
               </AppCard>
 
               <View style={styles.actionColumn}>
-                <Pressable
-                  accessibilityRole="button"
+                <AppButton
+                  label="Schedule Event"
                   accessibilityLabel="Schedule event"
                   onPress={() => onSchedule(step)}
-                  style={({ pressed }) => [
-                    styles.primaryButton,
-                    pressed ? styles.buttonPressed : null,
-                  ]}
-                >
-                  <Text style={styles.primaryButtonText}>Schedule Event</Text>
-                </Pressable>
+                />
 
-                <Pressable
-                  accessibilityRole="button"
+                <AppButton
+                  label={step.status === 'completed' ? 'Mark Step Pending' : 'Mark Step Complete'}
+                  variant="secondary"
                   accessibilityLabel={
                     step.status === 'completed' ? 'Mark step pending' : 'Mark step complete'
                   }
                   onPress={() => void onToggleComplete(step)}
-                  style={({ pressed }) => [
-                    styles.secondaryButton,
-                    pressed ? styles.buttonPressed : null,
-                  ]}
-                >
-                  <Text style={styles.secondaryButtonText}>
-                    {step.status === 'completed' ? 'Mark Step Pending' : 'Mark Step Complete'}
-                  </Text>
-                </Pressable>
+                />
               </View>
             </View>
           )}
@@ -445,12 +412,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   headerButton: {
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    minHeight: 44,
   },
   headerButtonText: {
     ...typography.helper,

@@ -155,6 +155,8 @@ const styles = StyleSheet.create({
   },
   rowMain: {
     flex: 1,
+    minHeight: 44,
+    justifyContent: 'center',
     gap: spacing.xs,
   },
   rowMainPressed: {
@@ -176,12 +178,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   moveColumn: {
-    width: 40,
+    width: 44,
     alignItems: 'stretch',
     justifyContent: 'center',
     gap: spacing.xs,
   },
   statusButton: {
+    minHeight: 44,
     borderRadius: radii.md,
     backgroundColor: colors.surfaceBrand,
     paddingHorizontal: spacing.md,
@@ -202,7 +205,8 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   moveButton: {
-    height: 36,
+    minWidth: 44,
+    height: 44,
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,

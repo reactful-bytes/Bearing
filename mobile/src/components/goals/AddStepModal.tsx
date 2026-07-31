@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
+import { FormField } from '../ui/FormField';
 import { colors, radii, spacing, typography } from '../../design/tokens';
 import { CreateGoalStepInput } from '../../features/goals/goalTypes';
 
@@ -153,42 +155,33 @@ export function AddStepModal({ visible, onClose, onSave }: AddStepModalProps) {
 
   return (
     <AppModal visible={visible} title="Add Step" onClose={handleClose}>
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Step name</Text>
-        <TextInput
-          accessibilityLabel="Step name"
-          value={title}
-          onChangeText={setTitle}
-          style={styles.input}
-          placeholder="Add the next action"
-          placeholderTextColor={colors.textSecondary}
-        />
-      </View>
+      <FormField
+        label="Step name"
+        accessibilityLabel="Step name"
+        value={title}
+        onChangeText={setTitle}
+        placeholder="Add the next action"
+        placeholderTextColor={colors.textSecondary}
+      />
 
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Description</Text>
-        <TextInput
-          accessibilityLabel="Step description"
-          value={description}
-          onChangeText={setDescription}
-          style={[styles.input, styles.textArea]}
-          multiline
-          placeholder="Optional details"
-          placeholderTextColor={colors.textSecondary}
-        />
-      </View>
+      <FormField
+        label="Description"
+        accessibilityLabel="Step description"
+        value={description}
+        onChangeText={setDescription}
+        multiline
+        placeholder="Optional details"
+        placeholderTextColor={colors.textSecondary}
+      />
 
-      <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Starter</Text>
-        <TextInput
-          accessibilityLabel="Step starter"
-          value={starter}
-          onChangeText={setStarter}
-          style={styles.input}
-          placeholder="Optional starter cue"
-          placeholderTextColor={colors.textSecondary}
-        />
-      </View>
+      <FormField
+        label="Starter"
+        accessibilityLabel="Step starter"
+        value={starter}
+        onChangeText={setStarter}
+        placeholder="Optional starter cue"
+        placeholderTextColor={colors.textSecondary}
+      />
 
       <View style={styles.section}>
         <View style={styles.fieldGroup}>
@@ -274,19 +267,13 @@ export function AddStepModal({ visible, onClose, onSave }: AddStepModalProps) {
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-      <Pressable
-        accessibilityRole="button"
+      <AppButton
+        label="Save Step"
         accessibilityLabel="Save step"
         onPress={handleSave}
-        disabled={saving}
-        style={({ pressed }) => [
-          styles.saveButton,
-          pressed && !saving ? styles.saveButtonPressed : null,
-          saving ? styles.saveButtonDisabled : null,
-        ]}
-      >
-        <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save Step'}</Text>
-      </Pressable>
+        loading={saving}
+        loadingLabel="Saving..."
+      />
     </AppModal>
   );
 }
@@ -322,6 +309,7 @@ const styles = StyleSheet.create({
   },
   dateFieldButton: {
     flex: 1,
+    minHeight: 44,
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -364,6 +352,7 @@ const styles = StyleSheet.create({
     maxHeight: 176,
   },
   dropdownOption: {
+    minHeight: 44,
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,

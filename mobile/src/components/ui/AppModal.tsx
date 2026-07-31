@@ -1,5 +1,14 @@
 import { ReactNode } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors, componentTokens, radii, spacing, typography } from '../../design/tokens';
 
@@ -21,22 +30,44 @@ export function AppModal({
   children,
 }: AppModalProps) {
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <Pressable accessibilityRole="button" style={styles.backdropPressArea} onPress={onClose} />
-        <View style={styles.sheet}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      accessibilityLabel={`${title} modal`}
+    >
+      <KeyboardAvoidingView
+        accessibilityViewIsModal
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.backdrop}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Dismiss ${title}`}
+          style={styles.backdropPressArea}
+          onPress={onClose}
+        />
+        <SafeAreaView edges={['top', 'right', 'bottom', 'left']} style={styles.sheet}>
           <View style={styles.header}>
-            <Text style={styles.title}>{title}</Text>
+            <Text accessibilityRole="header" accessibilityLabel={title} style={styles.title}>
+              {title}
+            </Text>
             <View style={styles.headerActions}>
               {headerAccessory}
-              <Pressable accessibilityRole="button" onPress={onClose} style={styles.closeButton}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${closeLabel} ${title}`}
+                onPress={onClose}
+                style={styles.closeButton}
+              >
                 <Text style={styles.closeButtonText}>{closeLabel}</Text>
               </Pressable>
             </View>
           </View>
           <View style={styles.body}>{children}</View>
-        </View>
-      </View>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -77,10 +108,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   closeButton: {
+    minWidth: 44,
+    minHeight: 44,
     borderRadius: componentTokens.button.borderRadius,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
     backgroundColor: colors.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   closeButtonText: {
     ...typography.helper,

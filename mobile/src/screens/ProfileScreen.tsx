@@ -1,16 +1,9 @@
 import { useEffect, useState } from 'react';
-import {
-  Alert,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { AppButton } from '../components/ui/AppButton';
 import { AppModal } from '../components/ui/AppModal';
+import { FormField } from '../components/ui/FormField';
 import { PremiumPaywallModal } from '../components/premium/PremiumPaywallModal';
 import { ProfileSelectionModal } from '../components/profile/ProfileSelectionModal';
 import { SoundPickerModal } from '../components/profile/SoundPickerModal';
@@ -405,16 +398,13 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                   </Text>
                 </View>
               </View>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Display name</Text>
-                <TextInput
-                  accessibilityLabel="Profile display name"
-                  value={displayName}
-                  onChangeText={setDisplayName}
-                  placeholder="Your name"
-                  style={styles.input}
-                />
-              </View>
+              <FormField
+                label="Display name"
+                accessibilityLabel="Profile display name"
+                value={displayName}
+                onChangeText={setDisplayName}
+                placeholder="Your name"
+              />
             </View>
 
             <View style={styles.section}>
@@ -427,71 +417,51 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                     a real account.
                   </Text>
 
-                  <View style={styles.fieldGroup}>
-                    <Text style={styles.label}>Display name</Text>
-                    <TextInput
-                      accessibilityLabel="Secure account display name"
-                      value={linkDisplayName}
-                      onChangeText={setLinkDisplayName}
-                      placeholder="Your name"
-                      style={styles.input}
-                    />
-                  </View>
+                  <FormField
+                    label="Display name"
+                    accessibilityLabel="Secure account display name"
+                    value={linkDisplayName}
+                    onChangeText={setLinkDisplayName}
+                    placeholder="Your name"
+                  />
 
-                  <View style={styles.fieldGroup}>
-                    <Text style={styles.label}>Email</Text>
-                    <TextInput
-                      accessibilityLabel="Secure account email"
-                      value={linkEmail}
-                      onChangeText={setLinkEmail}
-                      placeholder="you@example.com"
-                      autoCapitalize="none"
-                      keyboardType="email-address"
-                      style={styles.input}
-                    />
-                  </View>
+                  <FormField
+                    label="Email"
+                    accessibilityLabel="Secure account email"
+                    value={linkEmail}
+                    onChangeText={setLinkEmail}
+                    placeholder="you@example.com"
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                  />
 
-                  <View style={styles.fieldGroup}>
-                    <Text style={styles.label}>Password</Text>
-                    <TextInput
-                      accessibilityLabel="Secure account password"
-                      value={linkPassword}
-                      onChangeText={setLinkPassword}
-                      secureTextEntry
-                      placeholder="At least 6 characters"
-                      style={styles.input}
-                    />
-                  </View>
+                  <FormField
+                    label="Password"
+                    accessibilityLabel="Secure account password"
+                    value={linkPassword}
+                    onChangeText={setLinkPassword}
+                    secureTextEntry
+                    placeholder="At least 6 characters"
+                  />
 
-                  <View style={styles.fieldGroup}>
-                    <Text style={styles.label}>Confirm password</Text>
-                    <TextInput
-                      accessibilityLabel="Secure account confirm password"
-                      value={linkPasswordConfirm}
-                      onChangeText={setLinkPasswordConfirm}
-                      secureTextEntry
-                      placeholder="Re-enter password"
-                      style={styles.input}
-                    />
-                  </View>
+                  <FormField
+                    label="Confirm password"
+                    accessibilityLabel="Secure account confirm password"
+                    value={linkPasswordConfirm}
+                    onChangeText={setLinkPasswordConfirm}
+                    secureTextEntry
+                    placeholder="Re-enter password"
+                  />
 
                   {linkError ? <Text style={styles.errorText}>{linkError}</Text> : null}
 
-                  <Pressable
-                    accessibilityRole="button"
+                  <AppButton
+                    label="Secure Account"
                     accessibilityLabel="Secure anonymous account"
                     onPress={() => void handleLinkAnonymousAccount()}
-                    disabled={linkPending}
-                    style={({ pressed }) => [
-                      styles.primaryButton,
-                      pressed && !linkPending ? styles.buttonPressed : null,
-                      linkPending ? styles.buttonDisabled : null,
-                    ]}
-                  >
-                    <Text style={styles.primaryButtonText}>
-                      {linkPending ? 'Securing...' : 'Secure Account'}
-                    </Text>
-                  </Pressable>
+                    loading={linkPending}
+                    loadingLabel="Securing..."
+                  />
                 </View>
               ) : (
                 <ListItem
@@ -555,14 +525,14 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                 </Pressable>
               </View>
 
-              <Pressable
-                accessibilityRole="button"
+              <AppButton
+                label="Tips & Wisdom"
+                variant="secondary"
                 accessibilityLabel="Tips and wisdom"
                 onPress={handleOpenTipModal}
-                style={({ pressed }) => [styles.tipsButton, pressed ? styles.buttonPressed : null]}
-              >
-                <Text style={styles.tipsButtonText}>Tips & Wisdom</Text>
-              </Pressable>
+                style={styles.tipsButton}
+                textStyle={styles.tipsButtonText}
+              />
 
               <ListItem
                 onPress={() => setSoundPicker('alarm')}
@@ -581,21 +551,13 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
               {accountError ? <Text style={styles.errorText}>{accountError}</Text> : null}
               {accountFeedback ? <Text style={styles.successText}>{accountFeedback}</Text> : null}
 
-              <Pressable
-                accessibilityRole="button"
+              <AppButton
+                label="Save Preferences"
                 accessibilityLabel="Save account settings"
                 onPress={() => void handleSaveAccountSettings()}
-                disabled={accountPending}
-                style={({ pressed }) => [
-                  styles.primaryButton,
-                  pressed && !accountPending ? styles.buttonPressed : null,
-                  accountPending ? styles.buttonDisabled : null,
-                ]}
-              >
-                <Text style={styles.primaryButtonText}>
-                  {accountPending ? 'Saving...' : 'Save Preferences'}
-                </Text>
-              </Pressable>
+                loading={accountPending}
+                loadingLabel="Saving..."
+              />
             </View>
 
             <View style={styles.section}>
@@ -710,56 +672,37 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
           {deviceCalendars.permission !== 'granted' &&
           deviceCalendars.permission !== 'unavailable' &&
           deviceCalendars.permission !== 'blocked' ? (
-            <Pressable
-              accessibilityRole="button"
+            <AppButton
+              label="Allow Calendar Access"
+              variant="secondary"
               accessibilityLabel="Allow device calendar access"
               onPress={() => void runDeviceCalendarAction(deviceCalendars.requestPermission)}
-              disabled={deviceCalendarPending}
-              style={({ pressed }) => [
-                styles.secondaryActionButton,
-                pressed && !deviceCalendarPending ? styles.buttonPressed : null,
-                deviceCalendarPending ? styles.buttonDisabled : null,
-              ]}
-            >
-              <Text style={styles.secondaryActionButtonText}>
-                {deviceCalendarPending ? 'Working...' : 'Allow Calendar Access'}
-              </Text>
-            </Pressable>
+              loading={deviceCalendarPending}
+              loadingLabel="Working..."
+            />
           ) : null}
 
           {deviceCalendars.permission === 'blocked' ? (
-            <Pressable
-              accessibilityRole="button"
+            <AppButton
+              label="Open Settings"
+              variant="secondary"
               accessibilityLabel="Open device settings"
               onPress={() => void runDeviceCalendarAction(deviceCalendars.openSettings)}
-              disabled={deviceCalendarPending}
-              style={({ pressed }) => [
-                styles.secondaryActionButton,
-                pressed && !deviceCalendarPending ? styles.buttonPressed : null,
-                deviceCalendarPending ? styles.buttonDisabled : null,
-              ]}
-            >
-              <Text style={styles.secondaryActionButtonText}>Open Settings</Text>
-            </Pressable>
+              loading={deviceCalendarPending}
+              loadingLabel="Working..."
+            />
           ) : null}
 
           {deviceCalendars.permission === 'granted' ? (
             <>
-              <Pressable
-                accessibilityRole="button"
+              <AppButton
+                label="Refresh Calendars"
+                variant="secondary"
                 accessibilityLabel="Refresh device calendars"
                 onPress={() => void runDeviceCalendarAction(deviceCalendars.refresh)}
-                disabled={deviceCalendarPending}
-                style={({ pressed }) => [
-                  styles.secondaryActionButton,
-                  pressed && !deviceCalendarPending ? styles.buttonPressed : null,
-                  deviceCalendarPending ? styles.buttonDisabled : null,
-                ]}
-              >
-                <Text style={styles.secondaryActionButtonText}>
-                  {deviceCalendarPending ? 'Refreshing...' : 'Refresh Calendars'}
-                </Text>
-              </Pressable>
+                loading={deviceCalendarPending}
+                loadingLabel="Refreshing..."
+              />
 
               <View style={styles.connectionCalendarBlock}>
                 <Text style={styles.sectionTitle}>Visible calendars</Text>
@@ -879,37 +822,23 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
           location, alarm, and link details.
         </Text>
 
-        <Pressable
-          accessibilityRole="button"
+        <AppButton
+          label="Export .ics File"
+          variant="secondary"
           accessibilityLabel="Export ics file"
           onPress={() => void handleExportIcs(false)}
-          disabled={icsPending}
-          style={({ pressed }) => [
-            styles.secondaryActionButton,
-            pressed && !icsPending ? styles.buttonPressed : null,
-            icsPending ? styles.buttonDisabled : null,
-          ]}
-        >
-          <Text style={styles.secondaryActionButtonText}>
-            {icsPending ? 'Working...' : 'Export .ics File'}
-          </Text>
-        </Pressable>
+          loading={icsPending}
+          loadingLabel="Working..."
+        />
 
-        <Pressable
-          accessibilityRole="button"
+        <AppButton
+          label="Share .ics File"
+          variant="secondary"
           accessibilityLabel="Share ics file"
           onPress={() => void handleExportIcs(true)}
-          disabled={icsPending}
-          style={({ pressed }) => [
-            styles.secondaryActionButton,
-            pressed && !icsPending ? styles.buttonPressed : null,
-            icsPending ? styles.buttonDisabled : null,
-          ]}
-        >
-          <Text style={styles.secondaryActionButtonText}>
-            {icsPending ? 'Working...' : 'Share .ics File'}
-          </Text>
-        </Pressable>
+          loading={icsPending}
+          loadingLabel="Working..."
+        />
 
         {icsError ? <Text style={styles.errorText}>{icsError}</Text> : null}
         {icsFeedback ? <Text style={styles.successText}>{icsFeedback}</Text> : null}
@@ -1075,6 +1004,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   calendarSelectionRow: {
+    minHeight: 44,
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,

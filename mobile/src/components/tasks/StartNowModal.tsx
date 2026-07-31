@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Switch, Text, View } from 'react-native';
 
+import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
+import { FormField } from '../ui/FormField';
 import { colors, radii, spacing, typography } from '../../design/tokens';
 import { TaskRecord } from '../../features/tasks/taskTypes';
 import { CreateEventOptions } from '../../features/calendar/calendarTypes';
@@ -83,39 +85,25 @@ export function StartNowModal({
         </View>
       ) : null}
 
-      <View style={styles.formField}>
-        <Text style={styles.label}>Minutes</Text>
-        <TextInput
-          accessibilityLabel="Start now minutes"
-          value={minutes}
-          onChangeText={setMinutes}
-          keyboardType="number-pad"
-          style={styles.input}
-          placeholder="30"
-          placeholderTextColor={colors.textSecondary}
-        />
-        <Text style={styles.helperText}>
-          This will create an event starting immediately and open Focus Mode.
-        </Text>
-      </View>
+      <FormField
+        label="Minutes"
+        accessibilityLabel="Start now minutes"
+        value={minutes}
+        onChangeText={setMinutes}
+        keyboardType="number-pad"
+        placeholder="30"
+        placeholderTextColor={colors.textSecondary}
+        helperText="This will create an event starting immediately and open Focus Mode."
+        error={error}
+      />
 
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-      <Pressable
-        accessibilityRole="button"
+      <AppButton
+        label="Start Focus Session"
         accessibilityLabel="Confirm start now"
         onPress={handleConfirm}
-        disabled={saving}
-        style={({ pressed }) => [
-          styles.primaryButton,
-          pressed && !saving ? styles.buttonPressed : null,
-          saving ? styles.buttonDisabled : null,
-        ]}
-      >
-        <Text style={styles.primaryButtonText}>
-          {saving ? 'Starting...' : 'Start Focus Session'}
-        </Text>
-      </Pressable>
+        loading={saving}
+        loadingLabel="Starting..."
+      />
     </AppModal>
   );
 }
@@ -135,9 +123,6 @@ const styles = StyleSheet.create({
     ...typography.button,
     color: colors.text,
   },
-  formField: {
-    gap: spacing.sm,
-  },
   switchRow: {
     minHeight: 44,
     flexDirection: 'row',
@@ -153,38 +138,8 @@ const styles = StyleSheet.create({
     ...typography.label,
     color: colors.textSecondary,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
   helperText: {
     ...typography.helper,
     color: colors.textSecondary,
-  },
-  errorText: {
-    ...typography.helper,
-    color: colors.dangerText,
-  },
-  primaryButton: {
-    borderRadius: radii.md,
-    backgroundColor: colors.brand,
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  primaryButtonText: {
-    ...typography.button,
-    color: colors.surface,
-  },
-  buttonPressed: {
-    opacity: 0.88,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
   },
 });

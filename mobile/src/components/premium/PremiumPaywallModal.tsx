@@ -1,6 +1,7 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppCard } from '../ui/AppCard';
+import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { colors, radii, spacing, typography } from '../../design/tokens';
 import { PremiumFeature, getPremiumPaywallCopy } from '../../features/premium/premiumAccess';
@@ -77,14 +78,11 @@ export function PremiumPaywallModal({
           </Text>
         ) : null}
 
-        <Pressable
-          accessibilityRole="button"
+        <AppButton
+          label="Continue on Free Plan"
           accessibilityLabel="Close premium paywall"
           onPress={onClose}
-          style={({ pressed }) => [styles.primaryButton, pressed ? styles.buttonPressed : null]}
-        >
-          <Text style={styles.primaryButtonText}>Continue on Free Plan</Text>
-        </Pressable>
+        />
       </ScrollView>
     </AppModal>
   );

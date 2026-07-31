@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppCard } from '../ui/AppCard';
 import { AppModal } from '../ui/AppModal';
+import { FormField } from '../ui/FormField';
 import { colors, radii, spacing, typography } from '../../design/tokens';
 import { ProfileSelectionOption } from '../../features/profile/profileOptions';
 
@@ -53,13 +54,13 @@ export function ProfileSelectionModal({
   return (
     <AppModal visible={visible} title={title} onClose={handleClose}>
       <View style={styles.content}>
-        <TextInput
+        <FormField
+          label="Search"
           accessibilityLabel={`${title} search`}
           value={query}
           onChangeText={setQuery}
           placeholder={searchPlaceholder}
           autoCapitalize="none"
-          style={styles.searchInput}
         />
 
         <AppCard style={styles.resultsCard}>
@@ -131,6 +132,7 @@ const styles = StyleSheet.create({
     maxHeight: 320,
   },
   optionRow: {
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

@@ -1,7 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppButton } from './src/components/ui/AppButton';
+import { FormField } from './src/components/ui/FormField';
 import { AppTabs } from './src/navigation/AppTabs';
 import { useAuthBootstrap } from './src/features/auth/useAuthBootstrap';
 import {
@@ -10,9 +13,9 @@ import {
   signInWithEmailPassword,
   signOutCurrentUser,
 } from './src/services/firebase/firebaseAuthActions';
-import { colors, componentTokens, layout, radii, spacing, typography } from './src/design/tokens';
+import { colors, layout, spacing, typography } from './src/design/tokens';
 
-export default function App() {
+function AppContent() {
   const { status, user, error } = useAuthBootstrap();
   const [authActionError, setAuthActionError] = useState<string | null>(null);
   const [authActionMessage, setAuthActionMessage] = useState<string | null>(null);
@@ -145,143 +148,137 @@ export default function App() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Bearing</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView
+          contentContainerStyle={styles.contentContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.title}>Bearing</Text>
 
-      {showLoading ? <Text style={styles.body}>Checking session...</Text> : null}
-      {showSignedOut ? (
-        <View style={styles.block}>
-          <Text style={styles.body}>
-            Sign in with email and password to access your schedule, goals, notes, and profile
-            settings.
-          </Text>
+          {showLoading ? <Text style={styles.body}>Checking session...</Text> : null}
+          {showSignedOut ? (
+            <View style={styles.block}>
+              <Text style={styles.body}>
+                Sign in with email and password to access your schedule, goals, notes, and profile
+                settings.
+              </Text>
 
-          <View style={styles.formField}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              accessibilityLabel="Email address"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              placeholder="you@example.com"
-              style={styles.input}
-            />
-          </View>
-
-          {authMode === 'create-account' ? (
-            <View style={styles.formField}>
-              <Text style={styles.label}>Display name</Text>
-              <TextInput
-                accessibilityLabel="Display name"
-                value={displayName}
-                onChangeText={setDisplayName}
-                placeholder="Your name"
-                style={styles.input}
+              <FormField
+                label="Email"
+                accessibilityLabel="Email address"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                placeholder="you@example.com"
               />
-            </View>
-          ) : null}
 
-          <View style={styles.formField}>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              accessibilityLabel="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              placeholder="Password"
-              style={styles.input}
-            />
-          </View>
+              {authMode === 'create-account' ? (
+                <FormField
+                  label="Display name"
+                  accessibilityLabel="Display name"
+                  value={displayName}
+                  onChangeText={setDisplayName}
+                  placeholder="Your name"
+                />
+              ) : null}
 
-          {authMode === 'create-account' ? (
-            <View style={styles.formField}>
-              <Text style={styles.label}>Confirm password</Text>
-              <TextInput
-                accessibilityLabel="Confirm password"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
+              <FormField
+                label="Password"
+                accessibilityLabel="Password"
+                value={password}
+                onChangeText={setPassword}
                 secureTextEntry
-                placeholder="Re-enter password"
-                style={styles.input}
+                placeholder="Password"
               />
+
+              {authMode === 'create-account' ? (
+                <FormField
+                  label="Confirm password"
+                  accessibilityLabel="Confirm password"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry
+                  placeholder="Re-enter password"
+                />
+              ) : null}
+
+              <AppButton
+                accessibilityLabel={authMode === 'sign-in' ? 'Sign in' : 'Create account'}
+                label={authMode === 'sign-in' ? 'Sign In' : 'Create Account'}
+                loading={isAuthActionPending}
+                loadingLabel="Working..."
+                onPress={onPressAuthAction}
+              />
+
+              <AppButton
+                variant="secondary"
+                accessibilityLabel={
+                  authMode === 'sign-in' ? 'Switch to create account' : 'Switch to sign in'
+                }
+                label={
+                  authMode === 'sign-in'
+                    ? 'Need an account? Create one'
+                    : 'Already have an account? Sign in'
+                }
+                onPress={() => {
+                  resetAuthFeedback();
+                  setAuthMode((current) => (current === 'sign-in' ? 'create-account' : 'sign-in'));
+                  resetAuthForm();
+                }}
+              />
+
+              <AppButton
+                variant="secondary"
+                accessibilityLabel="Send password reset email"
+                label="Send Password Reset Email"
+                onPress={onPressPasswordReset}
+              />
+
+              <Text style={styles.helper}>
+                If you are still on an older anonymous session, keep that session signed in and
+                secure it later from the Profile tab so its data stays attached to the same account.
+              </Text>
             </View>
           ) : null}
 
-          <Pressable
-            onPress={onPressAuthAction}
-            style={[styles.button, isAuthActionPending ? styles.buttonDisabled : null]}
-            disabled={isAuthActionPending}
-            accessibilityRole="button"
-            accessibilityLabel={authMode === 'sign-in' ? 'Sign in' : 'Create account'}
-          >
-            <Text style={styles.buttonText}>
-              {isAuthActionPending
-                ? 'Working...'
-                : authMode === 'sign-in'
-                  ? 'Sign In'
-                  : 'Create Account'}
-            </Text>
-          </Pressable>
+          {authActionMessage ? (
+            <View style={styles.block}>
+              <Text style={styles.successTitle}>Auth update</Text>
+              <Text style={styles.successText}>{authActionMessage}</Text>
+            </View>
+          ) : null}
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={
-              authMode === 'sign-in' ? 'Switch to create account' : 'Switch to sign in'
-            }
-            onPress={() => {
-              resetAuthFeedback();
-              setAuthMode((current) => (current === 'sign-in' ? 'create-account' : 'sign-in'));
-              resetAuthForm();
-            }}
-            style={({ pressed }) => [styles.secondaryButton, pressed ? styles.buttonPressed : null]}
-          >
-            <Text style={styles.secondaryButtonText}>
-              {authMode === 'sign-in'
-                ? 'Need an account? Create one'
-                : 'Already have an account? Sign in'}
-            </Text>
-          </Pressable>
+          {authActionError ? (
+            <View style={styles.block}>
+              <Text style={styles.errorTitle}>Auth action error</Text>
+              <Text style={styles.errorText}>{authActionError}</Text>
+            </View>
+          ) : null}
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Send password reset email"
-            onPress={onPressPasswordReset}
-            style={({ pressed }) => [styles.linkButton, pressed ? styles.buttonPressed : null]}
-          >
-            <Text style={styles.linkButtonText}>Send Password Reset Email</Text>
-          </Pressable>
-
-          <Text style={styles.helper}>
-            If you are still on an older anonymous session, keep that session signed in and secure
-            it later from the Profile tab so its data stays attached to the same account.
-          </Text>
-        </View>
-      ) : null}
-
-      {authActionMessage ? (
-        <View style={styles.block}>
-          <Text style={styles.successTitle}>Auth update</Text>
-          <Text style={styles.successText}>{authActionMessage}</Text>
-        </View>
-      ) : null}
-
-      {authActionError ? (
-        <View style={styles.block}>
-          <Text style={styles.errorTitle}>Auth action error</Text>
-          <Text style={styles.errorText}>{authActionError}</Text>
-        </View>
-      ) : null}
-
-      {showError ? (
-        <View style={styles.block}>
-          <Text style={styles.errorTitle}>Startup error</Text>
-          <Text style={styles.errorText}>{error?.message ?? 'Unknown startup error.'}</Text>
-        </View>
-      ) : null}
+          {showError ? (
+            <View style={styles.block}>
+              <Text style={styles.errorTitle}>Startup error</Text>
+              <Text style={styles.errorText}>{error?.message ?? 'Unknown startup error.'}</Text>
+            </View>
+          ) : null}
+        </ScrollView>
+      </SafeAreaView>
 
       <StatusBar style="auto" />
-    </View>
+    </KeyboardAvoidingView>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <AppContent />
+    </SafeAreaProvider>
   );
 }
 
@@ -303,9 +300,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    alignItems: 'flex-start',
+  },
+  safeArea: {
+    flex: 1,
+  },
+  contentContainer: {
+    flexGrow: 1,
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
     justifyContent: 'center',
     paddingHorizontal: layout.pagePaddingHorizontal,
+    paddingVertical: layout.pagePaddingVertical,
     gap: spacing.md,
   },
   title: {
@@ -323,61 +329,6 @@ const styles = StyleSheet.create({
   helper: {
     ...typography.helper,
     color: colors.textSecondary,
-  },
-  label: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  formField: {
-    width: '100%',
-    gap: spacing.sm,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    width: '100%',
-  },
-  button: {
-    alignSelf: 'flex-start',
-    borderRadius: componentTokens.button.borderRadius,
-    paddingHorizontal: componentTokens.button.paddingHorizontal,
-    paddingVertical: componentTokens.button.paddingVertical,
-    backgroundColor: componentTokens.button.backgroundColor,
-  },
-  buttonText: {
-    color: componentTokens.button.textColor,
-    ...typography.button,
-  },
-  secondaryButton: {
-    alignSelf: 'flex-start',
-    borderRadius: componentTokens.button.borderRadius,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.surfaceMuted,
-  },
-  secondaryButtonText: {
-    ...typography.button,
-    color: colors.textPrimary,
-  },
-  linkButton: {
-    alignSelf: 'flex-start',
-    paddingVertical: spacing.xs,
-  },
-  linkButtonText: {
-    ...typography.helper,
-    color: colors.brand,
-    fontWeight: '600',
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonPressed: {
-    opacity: 0.88,
   },
   errorTitle: {
     fontSize: 16,

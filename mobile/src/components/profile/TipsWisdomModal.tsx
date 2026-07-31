@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { AppCard } from '../ui/AppCard';
+import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { colors, radii, spacing, typography } from '../../design/tokens';
 import { ProfileTip } from '../../features/profile/profileTypes';
@@ -23,26 +24,20 @@ export function TipsWisdomModal({ visible, tip, onClose, onRefresh }: TipsWisdom
           </AppCard>
 
           <View style={styles.actionsRow}>
-            <Pressable
-              accessibilityRole="button"
+            <AppButton
+              label="Refresh"
+              variant="secondary"
               accessibilityLabel="Refresh tip"
               onPress={onRefresh}
-              style={({ pressed }) => [
-                styles.secondaryButton,
-                pressed ? styles.buttonPressed : null,
-              ]}
-            >
-              <Text style={styles.secondaryButtonText}>Refresh</Text>
-            </Pressable>
+              style={styles.actionButton}
+            />
 
-            <Pressable
-              accessibilityRole="button"
+            <AppButton
+              label="Close"
               accessibilityLabel="Close tip modal"
               onPress={onClose}
-              style={({ pressed }) => [styles.primaryButton, pressed ? styles.buttonPressed : null]}
-            >
-              <Text style={styles.primaryButtonText}>Close</Text>
-            </Pressable>
+              style={styles.actionButton}
+            />
           </View>
         </View>
       ) : null}
@@ -68,6 +63,9 @@ const styles = StyleSheet.create({
   actionsRow: {
     flexDirection: 'row',
     gap: spacing.md,
+  },
+  actionButton: {
+    flex: 1,
   },
   primaryButton: {
     flex: 1,

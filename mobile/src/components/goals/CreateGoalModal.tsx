@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppCard } from '../ui/AppCard';
+import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
+import { FormField } from '../ui/FormField';
 import {
   GoalDateField,
   GoalDateParts,
@@ -289,30 +291,24 @@ export function CreateGoalModal({
 
         {wizardIndex === 1 ? (
           <View style={styles.section}>
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Goal name</Text>
-              <TextInput
-                accessibilityLabel="Goal name"
-                value={title}
-                onChangeText={setTitle}
-                style={styles.input}
-                placeholder="Run my first 10k"
-                placeholderTextColor={colors.textSecondary}
-              />
-            </View>
+            <FormField
+              label="Goal name"
+              accessibilityLabel="Goal name"
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Run my first 10k"
+              placeholderTextColor={colors.textSecondary}
+            />
 
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Description</Text>
-              <TextInput
-                accessibilityLabel="Goal description"
-                value={description}
-                onChangeText={setDescription}
-                style={[styles.input, styles.textArea]}
-                multiline
-                placeholder="Why this goal matters"
-                placeholderTextColor={colors.textSecondary}
-              />
-            </View>
+            <FormField
+              label="Description"
+              accessibilityLabel="Goal description"
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              placeholder="Why this goal matters"
+              placeholderTextColor={colors.textSecondary}
+            />
 
             <AppCard style={styles.exampleCard}>
               <Text style={styles.exampleLabel}>Simple SMART example</Text>
@@ -352,17 +348,11 @@ export function CreateGoalModal({
               <View style={styles.disabledBadge}>
                 <Text style={styles.disabledBadgeText}>Premium Required</Text>
               </View>
-              <Pressable
-                accessibilityRole="button"
+              <AppButton
+                label="View Premium Plans"
                 accessibilityLabel="View premium plans for AI goal builder"
                 onPress={onOpenPremiumPaywall}
-                style={({ pressed }) => [
-                  styles.primaryButton,
-                  pressed ? styles.buttonPressed : null,
-                ]}
-              >
-                <Text style={styles.primaryButtonText}>View Premium Plans</Text>
-              </Pressable>
+              />
             </AppCard>
           )
         ) : null}
@@ -393,42 +383,33 @@ export function CreateGoalModal({
               <AppCard key={step.id} style={styles.card}>
                 <Text style={styles.cardTitle}>Step {index + 1}</Text>
 
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Step name</Text>
-                  <TextInput
-                    accessibilityLabel={`Draft step ${index + 1} name`}
-                    value={step.title}
-                    onChangeText={(value) => updateDraftStep(step.id, 'title', value)}
-                    style={styles.input}
-                    placeholder="Add the next action"
-                    placeholderTextColor={colors.textSecondary}
-                  />
-                </View>
+                <FormField
+                  label="Step name"
+                  accessibilityLabel={`Draft step ${index + 1} name`}
+                  value={step.title}
+                  onChangeText={(value) => updateDraftStep(step.id, 'title', value)}
+                  placeholder="Add the next action"
+                  placeholderTextColor={colors.textSecondary}
+                />
 
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Description</Text>
-                  <TextInput
-                    accessibilityLabel={`Draft step ${index + 1} description`}
-                    value={step.description}
-                    onChangeText={(value) => updateDraftStep(step.id, 'description', value)}
-                    style={[styles.input, styles.textArea]}
-                    multiline
-                    placeholder="Optional details"
-                    placeholderTextColor={colors.textSecondary}
-                  />
-                </View>
+                <FormField
+                  label="Description"
+                  accessibilityLabel={`Draft step ${index + 1} description`}
+                  value={step.description}
+                  onChangeText={(value) => updateDraftStep(step.id, 'description', value)}
+                  multiline
+                  placeholder="Optional details"
+                  placeholderTextColor={colors.textSecondary}
+                />
 
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Starter</Text>
-                  <TextInput
-                    accessibilityLabel={`Draft step ${index + 1} starter`}
-                    value={step.starter}
-                    onChangeText={(value) => updateDraftStep(step.id, 'starter', value)}
-                    style={styles.input}
-                    placeholder="Optional starter cue"
-                    placeholderTextColor={colors.textSecondary}
-                  />
-                </View>
+                <FormField
+                  label="Starter"
+                  accessibilityLabel={`Draft step ${index + 1} starter`}
+                  value={step.starter}
+                  onChangeText={(value) => updateDraftStep(step.id, 'starter', value)}
+                  placeholder="Optional starter cue"
+                  placeholderTextColor={colors.textSecondary}
+                />
 
                 <GoalDatePicker
                   title="Estimated finish date"
@@ -454,8 +435,9 @@ export function CreateGoalModal({
               </AppCard>
             ))}
 
-            <Pressable
-              accessibilityRole="button"
+            <AppButton
+              label="Add Another Step"
+              variant="secondary"
               accessibilityLabel="Add another draft step"
               onPress={() =>
                 setDraftSteps((current) => [
@@ -463,13 +445,7 @@ export function CreateGoalModal({
                   makeEmptyDraftStep(current.length + 1, today),
                 ])
               }
-              style={({ pressed }) => [
-                styles.secondaryButton,
-                pressed ? styles.buttonPressed : null,
-              ]}
-            >
-              <Text style={styles.secondaryButtonText}>Add Another Step</Text>
-            </Pressable>
+            />
           </View>
         ) : null}
 
@@ -477,42 +453,31 @@ export function CreateGoalModal({
 
         <View style={styles.actionRow}>
           {canGoBack ? (
-            <Pressable
-              accessibilityRole="button"
+            <AppButton
+              label="Back"
+              variant="secondary"
               accessibilityLabel="Back"
               onPress={() => setWizardIndex((current) => Math.max(0, current - 1))}
-              style={({ pressed }) => [
-                styles.secondaryButton,
-                pressed ? styles.buttonPressed : null,
-              ]}
-            >
-              <Text style={styles.secondaryButtonText}>Back</Text>
-            </Pressable>
+              style={styles.actionButton}
+            />
           ) : null}
 
           {wizardIndex < WIZARD_TITLES.length - 1 ? (
-            <Pressable
-              accessibilityRole="button"
+            <AppButton
+              label="Continue"
               accessibilityLabel="Continue"
               onPress={handleNext}
-              style={({ pressed }) => [styles.primaryButton, pressed ? styles.buttonPressed : null]}
-            >
-              <Text style={styles.primaryButtonText}>Continue</Text>
-            </Pressable>
+              style={styles.actionButton}
+            />
           ) : (
-            <Pressable
-              accessibilityRole="button"
+            <AppButton
+              label="Save Goal"
               accessibilityLabel="Save goal"
               onPress={handleSave}
-              disabled={saving}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                pressed && !saving ? styles.buttonPressed : null,
-                saving ? styles.buttonDisabled : null,
-              ]}
-            >
-              <Text style={styles.primaryButtonText}>{saving ? 'Saving...' : 'Save Goal'}</Text>
-            </Pressable>
+              loading={saving}
+              loadingLabel="Saving..."
+              style={styles.actionButton}
+            />
           )}
         </View>
       </ScrollView>
@@ -663,6 +628,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
     justifyContent: 'flex-end',
+  },
+  actionButton: {
+    flex: 1,
   },
   primaryButton: {
     flex: 1,
