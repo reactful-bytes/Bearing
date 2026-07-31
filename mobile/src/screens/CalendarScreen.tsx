@@ -23,7 +23,7 @@ import { useCalendarEvents } from '../features/calendar/useCalendarEvents';
 import { CreateNoteInput as CreateNotePayload } from '../features/notes/noteTypes';
 import { CalendarFocusLaunch } from '../navigation/navigationTypes';
 import { getFirebaseAuth } from '../services/firebase/firebaseAuth';
-import { useNotes } from '../features/notes/useNotes';
+import { useCreateNote } from '../features/notes/useNotes';
 
 // ---------------------------------------------------------------------------
 // Month carousel data
@@ -107,7 +107,7 @@ export function CalendarScreen({
     deviceError,
     publicationCalendarTitle,
   } = useCalendarEvents(selectedDate);
-  const { createNote } = useNotes();
+  const createNote = useCreateNote();
 
   const uiState: CalendarUiState = stateOverride ?? realUiState;
   const calendarEvents = eventsOverride ?? realEvents;
@@ -360,11 +360,15 @@ export function CalendarScreen({
           {/* Horizontally pageable month grids */}
           <FlatList
             ref={flatListRef}
+            testID="month-carousel"
             data={monthList}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             initialScrollIndex={initialMonthIndex}
+            initialNumToRender={1}
+            maxToRenderPerBatch={2}
+            windowSize={3}
             keyExtractor={({ year, month }) => `${year}-${month}`}
             getItemLayout={(_, index) => ({
               length: screenWidth,

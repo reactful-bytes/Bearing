@@ -1,15 +1,11 @@
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { CalendarScreen } from '../screens/CalendarScreen';
 import { CalendarEvent, createUnpublishedMetadata } from '../features/calendar/calendarTypes';
 
 jest.mock('../features/notes/useNotes', () => ({
-  useNotes: jest.fn(() => ({
-    notes: [],
-    uiState: 'empty',
-    createNote: jest.fn(),
-  })),
+  useCreateNote: jest.fn(() => jest.fn()),
 }));
 
 jest.mock('../features/calendar/useDeviceCalendars', () => {
@@ -122,6 +118,18 @@ describe('CalendarScreen interaction states', () => {
 
     expect(screen.getByText('Morning standup')).toBeTruthy();
     expect(screen.getByText('Design review')).toBeTruthy();
+  });
+
+  it('bounds offscreen month rendering to the visible neighborhood', () => {
+    render(<CalendarScreen initialViewMode="month" />);
+
+    const carousel = screen.getByTestId('month-carousel');
+    expect(carousel.props.initialNumToRender).toBe(1);
+    expect(carousel.props.maxToRenderPerBatch).toBe(2);
+    expect(carousel.props.windowSize).toBe(3);
+
+    fireEvent.press(screen.getByText('Day'));
+    expect(screen.queryByTestId('month-carousel')).toBeNull();
   });
 
   it('Add Event FAB is disabled in loading state', () => {

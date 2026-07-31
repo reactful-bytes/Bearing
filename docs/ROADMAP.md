@@ -124,7 +124,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M10.0e  | completed      | Normalize forms, modals, sizing, and accessibility | Screens avoid clipping and expose consistent control semantics                   |
 | M10.1   | manual-handoff | Polish UI interactions and accessibility           | Automated accessibility checks pass; native assistive-tech review remains manual |
 | M10.2   | in-progress    | Fix operability edge cases and error recovery      | Core startup and Firestore failures now expose executable retry                  |
-| M10.3   | not-started    | Optimize app performance and startup time          | App launch and transitions meet performance targets                              |
+| M10.3   | manual-handoff | Optimize app performance and startup time          | Repository controls pass; release-device launch, FPS, and memory evidence remains |
 | M10.4   | manual-handoff | Run end-to-end user acceptance testing             | Owner completes native UAT signoff                                               |
 
 ### M11 - Monetization Readiness

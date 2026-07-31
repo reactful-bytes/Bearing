@@ -5,11 +5,7 @@ import { CalendarScreen } from '../screens/CalendarScreen';
 import { formatDayLabel } from '../components/calendar/DayNavBar';
 
 jest.mock('../features/notes/useNotes', () => ({
-  useNotes: jest.fn(() => ({
-    notes: [],
-    uiState: 'empty',
-    createNote: async () => undefined,
-  })),
+  useCreateNote: jest.fn(() => async () => undefined),
 }));
 
 jest.mock('../features/calendar/useDeviceCalendars', () => {

@@ -18,6 +18,17 @@ export type UseNotesReturn = {
   retry: () => void;
 };
 
+export function useCreateNote(): (input: CreateNoteInput) => Promise<void> {
+  return useCallback(async (input: CreateNoteInput): Promise<void> => {
+    const userId = getFirebaseAuth().currentUser?.uid;
+    if (!userId) {
+      throw new Error('User is not authenticated.');
+    }
+
+    await createFirebaseNote(userId, input);
+  }, []);
+}
+
 export function useNotes(): UseNotesReturn {
   const [notes, setNotes] = useState<NoteRecord[]>([]);
   const [uiState, setUiState] = useState<NoteUiState>('loading');
@@ -52,14 +63,7 @@ export function useNotes(): UseNotesReturn {
     setRevision((current) => current + 1);
   }, []);
 
-  const createNote = useCallback(async (input: CreateNoteInput): Promise<void> => {
-    const userId = getFirebaseAuth().currentUser?.uid;
-    if (!userId) {
-      throw new Error('User is not authenticated.');
-    }
-
-    await createFirebaseNote(userId, input);
-  }, []);
+  const createNote = useCreateNote();
 
   const updateNote = useCallback(async (noteId: string, fields: UpdateNoteInput): Promise<void> => {
     const userId = getFirebaseAuth().currentUser?.uid;
