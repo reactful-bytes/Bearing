@@ -97,8 +97,23 @@ describe('deviceCalendarAdapter', () => {
     const adapter = createDeviceCalendarAdapter(async () => module, 'android');
     const input = {
       title: 'Planning',
+      description: 'Weekly planning',
       startDate: new Date(2026, 6, 31, 9),
       endDate: new Date(2026, 6, 31, 10),
+      startAt: new Date(2026, 6, 31, 9),
+      endAt: new Date(2026, 6, 31, 10),
+      timezone: 'America/New_York',
+      allDay: false,
+      location: 'Office',
+      recurrenceRule: {
+        frequency: 'weekly' as const,
+        interval: 2,
+        endAt: null,
+        occurrenceCount: 4,
+      },
+      alarms: [{ absoluteAt: null, relativeOffsetMinutes: -15 }],
+      availability: 'tentative' as const,
+      url: 'https://example.com/plan',
     };
 
     await expect(adapter.createEvent('calendar-1', input)).resolves.toMatchObject({
@@ -109,5 +124,24 @@ describe('deviceCalendarAdapter', () => {
 
     expect(module.ExpoCalendar.get).toHaveBeenCalledWith('calendar-1');
     expect(module.ExpoCalendarEvent.get).toHaveBeenCalledTimes(2);
+    const calendar = await module.ExpoCalendar.get('calendar-1');
+    expect(calendar.createEvent).toHaveBeenCalledWith({
+      title: 'Planning',
+      notes: 'Weekly planning',
+      startDate: input.startAt,
+      endDate: input.endAt,
+      allDay: false,
+      timeZone: 'America/New_York',
+      location: 'Office',
+      recurrenceRule: {
+        frequency: 'weekly',
+        interval: 2,
+        occurrence: 4,
+      },
+      alarms: [{ relativeOffset: -15 }],
+      availability: 'tentative',
+      url: 'https://example.com/plan',
+    });
+    expect(adapter.capabilities.recurringEventMutationScopes).toEqual([]);
   });
 });

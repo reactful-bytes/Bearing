@@ -1,10 +1,12 @@
 import { Linking, Platform } from 'react-native';
 
 import {
+  CreateEventInput,
   EventAlarm,
   EventAvailability,
   EventRecurrenceRule,
   EventStatus,
+  UpdateEventInput,
 } from '../../features/calendar/calendarTypes';
 import {
   DeviceCalendar,
@@ -68,6 +70,9 @@ export type DeviceCalendarModule = {
 };
 
 export type DeviceCalendarAdapter = {
+  capabilities: {
+    recurringEventMutationScopes: readonly [];
+  };
   getPermissionState(): Promise<DeviceCalendarPermissionState>;
   requestPermission(): Promise<DeviceCalendarPermissionState>;
   getCalendars(): Promise<DeviceCalendar[]>;
@@ -76,11 +81,8 @@ export type DeviceCalendarAdapter = {
     startDate: Date,
     endDate: Date,
   ): Promise<DeviceCalendarEventRecord[]>;
-  createEvent(
-    calendarId: string,
-    input: DeviceCalendarEventInput,
-  ): Promise<DeviceCalendarEventRecord>;
-  updateEvent(eventId: string, fields: DeviceCalendarEventUpdate): Promise<void>;
+  createEvent(calendarId: string, input: CreateEventInput): Promise<DeviceCalendarEventRecord>;
+  updateEvent(eventId: string, fields: UpdateEventInput): Promise<void>;
   deleteEvent(eventId: string): Promise<void>;
   openSettings(): Promise<void>;
 };
@@ -162,6 +164,52 @@ function normalizeEvent(event: NativeCalendarEvent): DeviceCalendarEventRecord {
   };
 }
 
+function mapRecurrenceRule(
+  recurrenceRule: EventRecurrenceRule | null,
+): DeviceCalendarEventInput['recurrenceRule'] {
+  if (!recurrenceRule) return null;
+
+  return {
+    frequency: recurrenceRule.frequency,
+    interval: recurrenceRule.interval,
+    ...(recurrenceRule.endAt ? { endDate: recurrenceRule.endAt } : {}),
+    ...(recurrenceRule.occurrenceCount ? { occurrence: recurrenceRule.occurrenceCount } : {}),
+  };
+}
+
+function mapAlarms(alarms: EventAlarm[]): NonNullable<DeviceCalendarEventInput['alarms']> {
+  return alarms.map((alarm) => ({
+    ...(alarm.absoluteAt ? { absoluteDate: alarm.absoluteAt.toISOString() } : {}),
+    ...(alarm.relativeOffsetMinutes !== null
+      ? { relativeOffset: alarm.relativeOffsetMinutes }
+      : {}),
+  }));
+}
+
+function mapAvailability(availability: EventAvailability): string {
+  return availability === 'not-supported' ? 'notSupported' : availability;
+}
+
+function mapEventFields(fields: CreateEventInput | UpdateEventInput): DeviceCalendarEventUpdate {
+  const details: DeviceCalendarEventUpdate = {};
+  if (fields.title !== undefined) details.title = fields.title;
+  if (fields.description !== undefined) details.notes = fields.description || null;
+  if (fields.startAt !== undefined) details.startDate = fields.startAt;
+  if (fields.endAt !== undefined) details.endDate = fields.endAt;
+  if (fields.allDay !== undefined) details.allDay = fields.allDay;
+  if (fields.timezone !== undefined) details.timeZone = fields.timezone || null;
+  if (fields.location !== undefined) details.location = fields.location || null;
+  if (fields.recurrenceRule !== undefined) {
+    details.recurrenceRule = mapRecurrenceRule(fields.recurrenceRule);
+  }
+  if (fields.alarms !== undefined) details.alarms = mapAlarms(fields.alarms);
+  if (fields.availability !== undefined) {
+    details.availability = mapAvailability(fields.availability);
+  }
+  if (fields.url !== undefined) details.url = fields.url;
+  return details;
+}
+
 async function loadExpoCalendarModule(): Promise<DeviceCalendarModule> {
   return (await import('expo-calendar')) as unknown as DeviceCalendarModule;
 }
@@ -187,6 +235,9 @@ export function createDeviceCalendarAdapter(
   }
 
   return {
+    capabilities: {
+      recurringEventMutationScopes: [],
+    },
     async getPermissionState() {
       if (!isSupportedPlatform) {
         return 'unavailable';
@@ -226,12 +277,12 @@ export function createDeviceCalendarAdapter(
     createEvent: (calendarId, input) =>
       withModule(async (module) => {
         const calendar = await module.ExpoCalendar.get(calendarId);
-        return normalizeEvent(await calendar.createEvent(input));
+        return normalizeEvent(await calendar.createEvent(mapEventFields(input)));
       }),
     updateEvent: (eventId, fields) =>
       withModule(async (module) => {
         const event = await module.ExpoCalendarEvent.get(eventId);
-        await event.update(fields);
+        await event.update(mapEventFields(fields));
       }),
     deleteEvent: (eventId) =>
       withModule(async (module) => {

@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppModal } from '../ui/AppModal';
 import { colors, radii, spacing, typography } from '../../design/tokens';
-import { CalendarDisplayEvent } from '../../features/calendar/calendarTypes';
+import { CalendarDisplayEvent, CreateEventInput } from '../../features/calendar/calendarTypes';
+import { EventForm } from './EventForm';
 
 type EventDetailModalProps = {
   event: CalendarDisplayEvent | null;
   onClose: () => void;
-  onDelete: (eventId: string) => Promise<void>;
+  onUpdate: (event: CalendarDisplayEvent, input: CreateEventInput) => Promise<void>;
+  onDelete: (event: CalendarDisplayEvent) => Promise<void>;
 };
 
 const MONTH_NAMES_SHORT = [
@@ -51,12 +53,20 @@ function statusLabel(status: CalendarDisplayEvent['status']): string {
   return 'Scheduled';
 }
 
-export function EventDetailModal({ event, onClose, onDelete }: EventDetailModalProps) {
+export function EventDetailModal({ event, onClose, onUpdate, onDelete }: EventDetailModalProps) {
+  const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  useEffect(() => {
+    setEditing(false);
+    setConfirmingDelete(false);
+    setDeleteError(null);
+  }, [event]);
+
   function handleClose(): void {
+    setEditing(false);
     setConfirmingDelete(false);
     setDeleteError(null);
     onClose();
@@ -67,7 +77,7 @@ export function EventDetailModal({ event, onClose, onDelete }: EventDetailModalP
     setDeleting(true);
     setDeleteError(null);
     try {
-      await onDelete(event.id);
+      await onDelete(event);
       handleClose();
     } catch {
       setDeleteError('Failed to delete event. Please try again.');
@@ -76,9 +86,30 @@ export function EventDetailModal({ event, onClose, onDelete }: EventDetailModalP
     }
   }
 
+  async function handleUpdate(input: CreateEventInput): Promise<void> {
+    if (!event) return;
+    await onUpdate(event, input);
+    setEditing(false);
+  }
+
+  const mutable =
+    event?.ownership === 'bearing' || (event?.ownership === 'device' && event.allowsModifications);
+
   return (
-    <AppModal visible={event !== null} title="Event Details" onClose={handleClose}>
-      {event ? (
+    <AppModal
+      visible={event !== null}
+      title={editing ? 'Edit Event' : 'Event Details'}
+      onClose={handleClose}
+    >
+      {event && editing ? (
+        <EventForm
+          active
+          initialDate={event.startAt}
+          initialValues={event}
+          saveLabel="Update Event"
+          onSave={handleUpdate}
+        />
+      ) : event ? (
         <>
           <Text style={styles.eventTitle}>{event.title}</Text>
 
@@ -124,21 +155,38 @@ export function EventDetailModal({ event, onClose, onDelete }: EventDetailModalP
             </View>
           ) : null}
 
+          {!mutable ? (
+            <Text style={styles.readOnlyText}>This device calendar event is read-only.</Text>
+          ) : null}
+
           {deleteError ? <Text style={styles.errorText}>{deleteError}</Text> : null}
 
-          {event.ownership === 'bearing' && !confirmingDelete ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Delete event"
-              onPress={() => setConfirmingDelete(true)}
-              style={({ pressed }) => [
-                styles.deleteButton,
-                pressed ? styles.deleteButtonPressed : null,
-              ]}
-            >
-              <Text style={styles.deleteButtonText}>Delete Event</Text>
-            </Pressable>
-          ) : event.ownership === 'bearing' ? (
+          {mutable && !confirmingDelete ? (
+            <View style={styles.actionRow}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Edit event"
+                onPress={() => setEditing(true)}
+                style={({ pressed }) => [
+                  styles.editButton,
+                  pressed ? styles.actionButtonPressed : null,
+                ]}
+              >
+                <Text style={styles.editButtonText}>Edit</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Delete event"
+                onPress={() => setConfirmingDelete(true)}
+                style={({ pressed }) => [
+                  styles.deleteButton,
+                  pressed ? styles.actionButtonPressed : null,
+                ]}
+              >
+                <Text style={styles.deleteButtonText}>Delete</Text>
+              </Pressable>
+            </View>
+          ) : mutable ? (
             <View style={styles.confirmRow}>
               <Text style={styles.confirmText}>Delete this event permanently?</Text>
               <View style={styles.confirmButtons}>
@@ -197,13 +245,33 @@ const styles = StyleSheet.create({
     ...typography.helper,
     color: colors.dangerText,
   },
+  readOnlyText: {
+    ...typography.helper,
+    color: colors.textSecondary,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  editButton: {
+    flex: 1,
+    borderRadius: radii.sm,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.surfaceBrand,
+    alignItems: 'center',
+  },
+  editButtonText: {
+    ...typography.button,
+    color: colors.brand,
+  },
   deleteButton: {
+    flex: 1,
     borderRadius: radii.sm,
     paddingVertical: spacing.md,
     backgroundColor: colors.dangerSurface,
     alignItems: 'center',
   },
-  deleteButtonPressed: {
+  actionButtonPressed: {
     opacity: 0.8,
   },
   deleteButtonText: {

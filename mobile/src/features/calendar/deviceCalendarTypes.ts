@@ -38,12 +38,22 @@ export type DeviceCalendarEventRecord = {
 };
 
 export type DeviceCalendarEventInput = {
-  title: string;
-  notes?: string;
-  startDate: Date;
-  endDate: Date;
+  title?: string;
+  notes?: string | null;
+  startDate?: Date;
+  endDate?: Date;
   allDay?: boolean;
-  timeZone?: string;
+  timeZone?: string | null;
+  location?: string | null;
+  recurrenceRule?: {
+    frequency: string;
+    interval: number;
+    endDate?: Date;
+    occurrence?: number;
+  } | null;
+  alarms?: { absoluteDate?: string; relativeOffset?: number }[];
+  availability?: string;
+  url?: string | null;
 };
 
 export type DeviceCalendarEventUpdate = Partial<DeviceCalendarEventInput>;

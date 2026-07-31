@@ -61,8 +61,8 @@ export type UseCalendarEventsReturn = {
   deviceError: Error | null;
   refresh: () => Promise<void>;
   createEvent: (input: CreateEventInput) => Promise<void>;
-  updateEvent: (eventId: string, fields: UpdateEventInput) => Promise<void>;
-  deleteEvent: (eventId: string) => Promise<void>;
+  updateEvent: (event: CalendarDisplayEvent, fields: UpdateEventInput) => Promise<void>;
+  deleteEvent: (event: CalendarDisplayEvent) => Promise<void>;
 };
 
 /**
@@ -202,23 +202,39 @@ export function useCalendarEvents(
   );
 
   const updateEvent = useCallback(
-    async (eventId: string, fields: UpdateEventInput): Promise<void> => {
+    async (event: CalendarDisplayEvent, fields: UpdateEventInput): Promise<void> => {
       const userId = getFirebaseAuth().currentUser?.uid;
       if (!userId) throw new Error('User is not authenticated.');
-      await updateFirebaseEvent(userId, eventId, fields);
+
+      if (event.ownership === 'bearing') {
+        await updateFirebaseEvent(userId, event.id, fields);
+      } else {
+        if (!event.allowsModifications) {
+          throw new Error('This device calendar event is read-only.');
+        }
+        await adapter.updateEvent(event.nativeEventId, fields);
+      }
       await refreshDeviceEvents();
     },
-    [refreshDeviceEvents],
+    [adapter, refreshDeviceEvents],
   );
 
   const deleteEvent = useCallback(
-    async (eventId: string): Promise<void> => {
+    async (event: CalendarDisplayEvent): Promise<void> => {
       const userId = getFirebaseAuth().currentUser?.uid;
       if (!userId) throw new Error('User is not authenticated.');
-      await deleteFirebaseEvent(userId, eventId);
+
+      if (event.ownership === 'bearing') {
+        await deleteFirebaseEvent(userId, event.id);
+      } else {
+        if (!event.allowsModifications) {
+          throw new Error('This device calendar event is read-only.');
+        }
+        await adapter.deleteEvent(event.nativeEventId);
+      }
       await refreshDeviceEvents();
     },
-    [refreshDeviceEvents],
+    [adapter, refreshDeviceEvents],
   );
 
   return {

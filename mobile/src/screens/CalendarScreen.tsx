@@ -98,6 +98,7 @@ export function CalendarScreen({
     eventsForDate,
     uiState: realUiState,
     createEvent,
+    updateEvent,
     deleteEvent,
     refresh: refreshEvents,
     deviceError,
@@ -237,9 +238,22 @@ export function CalendarScreen({
     }
   }
 
-  async function handleDeleteEvent(eventId: string): Promise<void> {
+  async function handleUpdateEvent(
+    event: CalendarDisplayEvent,
+    input: CreateEventInput,
+  ): Promise<void> {
     try {
-      await deleteEvent(eventId);
+      await updateEvent(event, input);
+      setActiveEvent(null);
+    } catch (error) {
+      console.error('Failed to update event:', error);
+      throw error;
+    }
+  }
+
+  async function handleDeleteEvent(event: CalendarDisplayEvent): Promise<void> {
+    try {
+      await deleteEvent(event);
       setActiveEvent(null);
     } catch (error) {
       console.error('Failed to delete event:', error);
@@ -399,6 +413,7 @@ export function CalendarScreen({
       <EventDetailModal
         event={activeEvent}
         onClose={() => setActiveEvent(null)}
+        onUpdate={handleUpdateEvent}
         onDelete={handleDeleteEvent}
       />
       <FocusModeOverlay

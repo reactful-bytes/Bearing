@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-import { BearingEvent } from '../features/calendar/calendarTypes';
+import { BearingEvent, DeviceCalendarEvent } from '../features/calendar/calendarTypes';
 import { useCalendarEvents } from '../features/calendar/useCalendarEvents';
 import { useDeviceCalendars } from '../features/calendar/useDeviceCalendars';
 import { DeviceCalendarAdapter } from '../services/calendar/deviceCalendarAdapter';
@@ -9,7 +9,11 @@ import {
   loadDeviceCalendarSettings,
   subscribeDeviceCalendarSettings,
 } from '../services/calendar/deviceCalendarSettings';
-import { subscribeToEventsByDateRange } from '../services/firebase/firebaseEvents';
+import {
+  deleteEvent as deleteFirebaseEvent,
+  subscribeToEventsByDateRange,
+  updateEvent as updateFirebaseEvent,
+} from '../services/firebase/firebaseEvents';
 
 jest.mock('../services/firebase/firebaseAuth', () => ({
   getFirebaseAuth: jest.fn(() => ({ currentUser: { uid: 'user-1' } })),
@@ -64,6 +68,7 @@ function makeBearingEvent(): BearingEvent {
 
 function makeAdapter(listEvents: DeviceCalendarAdapter['listEvents']): DeviceCalendarAdapter {
   return {
+    capabilities: { recurringEventMutationScopes: [] },
     getPermissionState: jest.fn(async (): Promise<'granted'> => 'granted'),
     requestPermission: jest.fn(async (): Promise<'granted'> => 'granted'),
     getCalendars: jest.fn(async () => []),
@@ -207,5 +212,55 @@ describe('useCalendarEvents', () => {
 
     act(() => listener());
     expect(refreshCalendars).toHaveBeenCalledTimes(1);
+  });
+
+  it('routes mutations by ownership and always uses nativeEventId for device events', async () => {
+    const adapter = makeAdapter(jest.fn(async () => [nativeRecord('Device planning')]));
+    const { result } = renderHook(() => useCalendarEvents(new Date(2026, 6, 31), adapter));
+
+    await waitFor(() => expect(result.current.events).toHaveLength(2));
+    const bearingEvent = result.current.events.find((event) => event.ownership === 'bearing');
+    const deviceEvent = result.current.events.find(
+      (event): event is DeviceCalendarEvent => event.ownership === 'device',
+    );
+    expect(bearingEvent).toBeDefined();
+    expect(deviceEvent).toBeDefined();
+
+    await act(async () => {
+      await result.current.updateEvent(bearingEvent!, { title: 'Bearing updated' });
+      await result.current.updateEvent(deviceEvent!, { title: 'Device updated' });
+      await result.current.deleteEvent(bearingEvent!);
+      await result.current.deleteEvent(deviceEvent!);
+    });
+
+    expect(updateFirebaseEvent).toHaveBeenCalledWith('user-1', 'bearing-1', {
+      title: 'Bearing updated',
+    });
+    expect(deleteFirebaseEvent).toHaveBeenCalledWith('user-1', 'bearing-1');
+    expect(adapter.updateEvent).toHaveBeenCalledWith('device-planning', {
+      title: 'Device updated',
+    });
+    expect(adapter.deleteEvent).toHaveBeenCalledWith('device-planning');
+    expect(adapter.updateEvent).not.toHaveBeenCalledWith(deviceEvent!.id, expect.anything());
+  });
+
+  it('rejects read-only device mutations before calling the adapter', async () => {
+    const adapter = makeAdapter(jest.fn(async () => [nativeRecord('Read only')]));
+    const { result } = renderHook(() => useCalendarEvents(new Date(2026, 6, 31), adapter));
+
+    await waitFor(() => expect(result.current.events).toHaveLength(2));
+    const deviceEvent = result.current.events.find(
+      (event): event is DeviceCalendarEvent => event.ownership === 'device',
+    );
+    const readOnlyEvent = { ...deviceEvent!, allowsModifications: false };
+
+    await expect(result.current.updateEvent(readOnlyEvent, { title: 'Blocked' })).rejects.toThrow(
+      'This device calendar event is read-only.',
+    );
+    await expect(result.current.deleteEvent(readOnlyEvent)).rejects.toThrow(
+      'This device calendar event is read-only.',
+    );
+    expect(adapter.updateEvent).not.toHaveBeenCalled();
+    expect(adapter.deleteEvent).not.toHaveBeenCalled();
   });
 });

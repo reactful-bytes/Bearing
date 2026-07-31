@@ -34,6 +34,7 @@ const calendars = [
 
 function makeAdapter(): DeviceCalendarAdapter {
   return {
+    capabilities: { recurringEventMutationScopes: [] },
     getPermissionState: jest.fn(async (): Promise<'granted'> => 'granted'),
     requestPermission: jest.fn(async (): Promise<'granted'> => 'granted'),
     getCalendars: jest.fn(async () => calendars),
