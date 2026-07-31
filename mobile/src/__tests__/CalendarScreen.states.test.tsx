@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { CalendarScreen } from '../screens/CalendarScreen';
-import { CalendarEvent } from '../features/calendar/calendarTypes';
+import { CalendarEvent, createUnpublishedMetadata } from '../features/calendar/calendarTypes';
 
 jest.mock('../features/notes/useNotes', () => ({
   useNotes: jest.fn(() => ({
@@ -75,6 +75,7 @@ function makeTestEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
+    publication: overrides.publication ?? createUnpublishedMetadata(),
   };
 }
 

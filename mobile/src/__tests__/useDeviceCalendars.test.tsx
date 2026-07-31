@@ -55,6 +55,7 @@ function makeAdapter(): DeviceCalendarAdapter {
       availability: 'busy' as const,
       status: 'scheduled' as const,
     })),
+    lookupEvent: jest.fn(async () => ({ status: 'missing' as const })),
     updateEvent: jest.fn(async () => undefined),
     deleteEvent: jest.fn(async () => undefined),
     openSettings: jest.fn(async () => undefined),

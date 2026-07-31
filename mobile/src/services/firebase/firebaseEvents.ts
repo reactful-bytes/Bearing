@@ -20,9 +20,11 @@ import {
 import { getFirebaseApp } from './firebaseApp';
 import { decodeCalendarEventData } from '../../features/calendar/calendarEventDecoder';
 import {
+  CalendarPublicationMetadata,
   CalendarEvent,
   CreateEventInput,
   UpdateEventInput,
+  createUnpublishedMetadata,
 } from '../../features/calendar/calendarTypes';
 
 // ---------------------------------------------------------------------------
@@ -52,7 +54,11 @@ export function docToCalendarEvent(snapshot: QueryDocumentSnapshot<DocumentData>
   return decodeCalendarEventData(snapshot.id, snapshot.data());
 }
 
-function buildEventPayload(userId: string, input: CreateEventInput): Record<string, unknown> {
+function buildEventPayload(
+  userId: string,
+  input: CreateEventInput,
+  publication: CalendarPublicationMetadata,
+): Record<string, unknown> {
   const now = Timestamp.now();
   const recurrenceRule = input.recurrenceRule
     ? {
@@ -81,6 +87,7 @@ function buildEventPayload(userId: string, input: CreateEventInput): Record<stri
     goalId: input.goalId ?? null,
     stepId: input.stepId ?? null,
     status: 'scheduled',
+    publication,
     createdAt: now,
     updatedAt: now,
   };
@@ -152,11 +159,33 @@ export function subscribeToEventsByStepId(
  * Create a new local calendar event for the given user.
  * @returns The Firestore document ID of the newly created event.
  */
-export async function createEvent(userId: string, input: CreateEventInput): Promise<string> {
+export async function createEvent(
+  userId: string,
+  input: CreateEventInput,
+  publication: CalendarPublicationMetadata = createUnpublishedMetadata(),
+): Promise<string> {
   const db = getFirebaseFirestore();
-  const docRef = await addDoc(collection(db, 'events'), buildEventPayload(userId, input));
+  const docRef = await addDoc(
+    collection(db, 'events'),
+    buildEventPayload(userId, input, publication),
+  );
 
   return docRef.id;
+}
+
+export async function updateEventPublication(
+  _userId: string,
+  eventId: string,
+  fields: Partial<CalendarPublicationMetadata>,
+): Promise<void> {
+  const db = getFirebaseFirestore();
+  const updates: Record<string, unknown> = { updatedAt: Timestamp.now() };
+
+  for (const [field, value] of Object.entries(fields)) {
+    updates[`publication.${field}`] = value;
+  }
+
+  await updateDoc(doc(db, 'events', eventId), updates);
 }
 
 export async function listUserEvents(userId: string): Promise<CalendarEvent[]> {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { CalendarEvent } from '../features/calendar/calendarTypes';
+import { CalendarEvent, createUnpublishedMetadata } from '../features/calendar/calendarTypes';
 import { serializeEventsToIcs } from '../features/calendar/icsInterop';
 
 function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
@@ -25,6 +25,7 @@ function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
     createdAt: new Date(Date.UTC(2026, 6, 20, 10, 0, 0)),
     updatedAt: new Date(Date.UTC(2026, 6, 20, 10, 0, 0)),
     ...overrides,
+    publication: overrides.publication ?? createUnpublishedMetadata(),
   };
 }
 

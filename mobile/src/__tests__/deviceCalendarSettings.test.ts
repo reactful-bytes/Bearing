@@ -4,6 +4,8 @@ import {
   CalendarSettingsStorage,
   loadDeviceCalendarSettings,
   purgeDeviceCalendarSettings,
+  removeDeviceCalendarLink,
+  saveDeviceCalendarLink,
   saveDeviceCalendarSettings,
   subscribeDeviceCalendarSettings,
   validateDeviceCalendarSettings,
@@ -60,6 +62,25 @@ describe('deviceCalendarSettings', () => {
     unsubscribe();
     await purgeDeviceCalendarSettings('user/one', storage);
     expect(userOneListener).toHaveBeenCalledTimes(1);
+  });
+
+  it('rebuilds and removes only the requested UID-scoped link mapping', async () => {
+    const storage = makeStorage();
+    await saveDeviceCalendarSettings('user/one', settings, storage);
+    await saveDeviceCalendarSettings('user/two', settings, storage);
+
+    const rediscovered = {
+      calendarId: 'shared',
+      eventId: 'native-2',
+      updatedAt: '2026-07-31T12:00:00.000Z',
+    };
+    await saveDeviceCalendarLink('user/one', 'bearing-2', rediscovered, storage);
+    await removeDeviceCalendarLink('user/one', 'bearing-1', storage);
+
+    await expect(loadDeviceCalendarSettings('user/one', storage)).resolves.toMatchObject({
+      linkCache: { 'bearing-2': rediscovered },
+    });
+    await expect(loadDeviceCalendarSettings('user/two', storage)).resolves.toEqual(settings);
   });
 
   it('removes stale selections and a read-only default while preserving link cache', () => {

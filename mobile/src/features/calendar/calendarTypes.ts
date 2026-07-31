@@ -14,6 +14,33 @@ export type EventAlarm = {
   relativeOffsetMinutes: number | null;
 };
 
+export type CalendarPublicationStatus =
+  'unpublished' | 'publishing' | 'published' | 'failed' | 'deleting';
+
+export type CalendarPublicationMetadata = {
+  status: CalendarPublicationStatus;
+  markerId: string | null;
+  commonHash: string | null;
+  lastError: string | null;
+  retryable: boolean;
+  deletionIntent: boolean;
+};
+
+export type CreateEventOptions = {
+  publishToDevice: boolean;
+};
+
+export function createUnpublishedMetadata(): CalendarPublicationMetadata {
+  return {
+    status: 'unpublished',
+    markerId: null,
+    commonHash: null,
+    lastError: null,
+    retryable: false,
+    deletionIntent: false,
+  };
+}
+
 type CalendarDisplayFields = {
   id: string;
   title: string;
@@ -35,6 +62,7 @@ export type BearingEvent = CalendarDisplayFields & {
   userId: string;
   goalId: string | null;
   stepId: string | null;
+  publication: CalendarPublicationMetadata;
   createdAt: Date;
   updatedAt: Date;
 };

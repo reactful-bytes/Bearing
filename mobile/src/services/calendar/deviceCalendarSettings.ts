@@ -15,6 +15,12 @@ export type CalendarSettingsStorage = Pick<
 const STORAGE_PREFIX = '@bearing/device-calendar/v1/';
 const settingsListeners = new Map<string, Set<() => void>>();
 
+const EMPTY_SETTINGS: DeviceCalendarSettings = {
+  selectedCalendarIds: [],
+  defaultCalendarId: null,
+  linkCache: {},
+};
+
 function notifySettingsChanged(userId: string): void {
   settingsListeners.get(userId)?.forEach((listener) => listener());
 }
@@ -99,6 +105,36 @@ export async function purgeDeviceCalendarSettings(
 ): Promise<void> {
   await storage.removeItem(getStorageKey(userId));
   notifySettingsChanged(userId);
+}
+
+export async function saveDeviceCalendarLink(
+  userId: string,
+  bearingEventId: string,
+  link: DeviceCalendarLink,
+  storage: CalendarSettingsStorage = AsyncStorage,
+): Promise<void> {
+  const settings = (await loadDeviceCalendarSettings(userId, storage)) ?? EMPTY_SETTINGS;
+  await saveDeviceCalendarSettings(
+    userId,
+    {
+      ...settings,
+      linkCache: { ...settings.linkCache, [bearingEventId]: link },
+    },
+    storage,
+  );
+}
+
+export async function removeDeviceCalendarLink(
+  userId: string,
+  bearingEventId: string,
+  storage: CalendarSettingsStorage = AsyncStorage,
+): Promise<void> {
+  const settings = await loadDeviceCalendarSettings(userId, storage);
+  if (!settings?.linkCache[bearingEventId]) return;
+
+  const linkCache = { ...settings.linkCache };
+  delete linkCache[bearingEventId];
+  await saveDeviceCalendarSettings(userId, { ...settings, linkCache }, storage);
 }
 
 export function validateDeviceCalendarSettings(

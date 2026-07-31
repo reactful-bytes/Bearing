@@ -1,9 +1,12 @@
 import {
+  CalendarPublicationMetadata,
+  CalendarPublicationStatus,
   CalendarEvent,
   EventAlarm,
   EventAvailability,
   EventRecurrenceRule,
   EventStatus,
+  createUnpublishedMetadata,
 } from './calendarTypes';
 
 type TimestampLike = { toDate: () => Date };
@@ -53,6 +56,27 @@ function decodeAvailability(value: unknown): EventAvailability {
     : 'busy';
 }
 
+function decodePublication(value: unknown): CalendarPublicationMetadata {
+  const fallback = createUnpublishedMetadata();
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return fallback;
+
+  const publication = value as Record<string, unknown>;
+  const status = ['unpublished', 'publishing', 'published', 'failed', 'deleting'].includes(
+    String(publication.status),
+  )
+    ? (publication.status as CalendarPublicationStatus)
+    : fallback.status;
+
+  return {
+    status,
+    markerId: typeof publication.markerId === 'string' ? publication.markerId : null,
+    commonHash: typeof publication.commonHash === 'string' ? publication.commonHash : null,
+    lastError: typeof publication.lastError === 'string' ? publication.lastError : null,
+    retryable: publication.retryable === true,
+    deletionIntent: publication.deletionIntent === true,
+  };
+}
+
 export function decodeCalendarEventData(id: string, data: Record<string, unknown>): CalendarEvent {
   return {
     ownership: 'bearing',
@@ -72,6 +96,7 @@ export function decodeCalendarEventData(id: string, data: Record<string, unknown
     goalId: (data.goalId as string | null) ?? null,
     stepId: (data.stepId as string | null) ?? null,
     status: data.status as EventStatus,
+    publication: decodePublication(data.publication),
     createdAt: (data.createdAt as TimestampLike).toDate(),
     updatedAt: (data.updatedAt as TimestampLike).toDate(),
   };

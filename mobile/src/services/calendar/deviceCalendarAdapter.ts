@@ -82,10 +82,16 @@ export type DeviceCalendarAdapter = {
     endDate: Date,
   ): Promise<DeviceCalendarEventRecord[]>;
   createEvent(calendarId: string, input: CreateEventInput): Promise<DeviceCalendarEventRecord>;
+  lookupEvent(eventId: string): Promise<DeviceCalendarEventLookupResult>;
   updateEvent(eventId: string, fields: UpdateEventInput): Promise<void>;
   deleteEvent(eventId: string): Promise<void>;
   openSettings(): Promise<void>;
 };
+
+export type DeviceCalendarEventLookupResult =
+  | { status: 'found'; event: DeviceCalendarEventRecord }
+  | { status: 'missing' }
+  | { status: 'unavailable'; error: Error };
 
 type ModuleLoader = () => Promise<DeviceCalendarModule>;
 
@@ -162,6 +168,15 @@ function normalizeEvent(event: NativeCalendarEvent): DeviceCalendarEventRecord {
     availability: normalizeAvailability(event.availability),
     status: normalizeStatus(event.status),
   };
+}
+
+function asError(error: unknown): Error {
+  return error instanceof Error ? error : new Error('Device calendar lookup failed.');
+}
+
+function isConfirmedMissingError(error: unknown): boolean {
+  const message = asError(error).message.toLowerCase();
+  return message.includes('not found') || message.includes('does not exist');
 }
 
 function mapRecurrenceRule(
@@ -279,6 +294,25 @@ export function createDeviceCalendarAdapter(
         const calendar = await module.ExpoCalendar.get(calendarId);
         return normalizeEvent(await calendar.createEvent(mapEventFields(input)));
       }),
+    async lookupEvent(eventId) {
+      if (!isSupportedPlatform) {
+        return {
+          status: 'unavailable',
+          error: new Error('Device calendars are unavailable on this platform.'),
+        };
+      }
+
+      try {
+        const module = await loadModule();
+        return {
+          status: 'found',
+          event: normalizeEvent(await module.ExpoCalendarEvent.get(eventId)),
+        };
+      } catch (error) {
+        if (isConfirmedMissingError(error)) return { status: 'missing' };
+        return { status: 'unavailable', error: asError(error) };
+      }
+    },
     updateEvent: (eventId, fields) =>
       withModule(async (module) => {
         const event = await module.ExpoCalendarEvent.get(eventId);

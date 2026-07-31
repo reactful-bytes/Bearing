@@ -4,7 +4,11 @@ import {
   mergeCalendarEvents,
   normalizeDeviceCalendarEvents,
 } from '../features/calendar/calendarEventAggregation';
-import { BearingEvent, DeviceCalendarEvent } from '../features/calendar/calendarTypes';
+import {
+  BearingEvent,
+  DeviceCalendarEvent,
+  createUnpublishedMetadata,
+} from '../features/calendar/calendarTypes';
 
 const startAt = new Date('2026-07-31T13:00:00.000Z');
 const endAt = new Date('2026-07-31T14:00:00.000Z');
@@ -31,6 +35,7 @@ function makeBearingEvent(overrides: Partial<BearingEvent> = {}): BearingEvent {
     createdAt: startAt,
     updatedAt: startAt,
     ...overrides,
+    publication: overrides.publication ?? createUnpublishedMetadata(),
   };
 }
 

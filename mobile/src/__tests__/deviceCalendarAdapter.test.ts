@@ -144,4 +144,34 @@ describe('deviceCalendarAdapter', () => {
     });
     expect(adapter.capabilities.recurringEventMutationScopes).toEqual([]);
   });
+
+  it('distinguishes found, confirmed missing, and unavailable event lookups', async () => {
+    const foundModule = makeModule();
+    const foundAdapter = createDeviceCalendarAdapter(async () => foundModule, 'ios');
+    await expect(foundAdapter.lookupEvent('event-1')).resolves.toMatchObject({
+      status: 'found',
+      event: { id: 'event-1' },
+    });
+
+    const missingAdapter = createDeviceCalendarAdapter(
+      async () =>
+        makeModule({
+          ExpoCalendarEvent: {
+            get: jest.fn(async () => {
+              throw new Error('Event does not exist');
+            }),
+          },
+        }),
+      'android',
+    );
+    await expect(missingAdapter.lookupEvent('removed')).resolves.toEqual({ status: 'missing' });
+
+    const unavailableAdapter = createDeviceCalendarAdapter(async () => {
+      throw new Error('Permission revoked');
+    }, 'android');
+    await expect(unavailableAdapter.lookupEvent('event-1')).resolves.toMatchObject({
+      status: 'unavailable',
+      error: expect.objectContaining({ message: 'Permission revoked' }),
+    });
+  });
 });

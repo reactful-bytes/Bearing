@@ -1,7 +1,11 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-import { BearingEvent, DeviceCalendarEvent } from '../features/calendar/calendarTypes';
+import {
+  BearingEvent,
+  DeviceCalendarEvent,
+  createUnpublishedMetadata,
+} from '../features/calendar/calendarTypes';
 import { useCalendarEvents } from '../features/calendar/useCalendarEvents';
 import { useDeviceCalendars } from '../features/calendar/useDeviceCalendars';
 import { DeviceCalendarAdapter } from '../services/calendar/deviceCalendarAdapter';
@@ -61,6 +65,7 @@ function makeBearingEvent(): BearingEvent {
     goalId: null,
     stepId: null,
     status: 'scheduled',
+    publication: createUnpublishedMetadata(),
     createdAt: startAt,
     updatedAt: startAt,
   };
@@ -74,6 +79,7 @@ function makeAdapter(listEvents: DeviceCalendarAdapter['listEvents']): DeviceCal
     getCalendars: jest.fn(async () => []),
     listEvents,
     createEvent: jest.fn(async () => nativeRecord('Created event')),
+    lookupEvent: jest.fn(async () => ({ status: 'missing' as const })),
     updateEvent: jest.fn(async () => undefined),
     deleteEvent: jest.fn(async () => undefined),
     openSettings: jest.fn(async () => undefined),

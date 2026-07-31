@@ -2,7 +2,11 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { EventDetailModal } from '../components/calendar/EventDetailModal';
-import { BearingEvent, DeviceCalendarEvent } from '../features/calendar/calendarTypes';
+import {
+  BearingEvent,
+  DeviceCalendarEvent,
+  createUnpublishedMetadata,
+} from '../features/calendar/calendarTypes';
 
 const startAt = new Date('2026-07-31T09:00:00.000Z');
 const endAt = new Date('2026-07-31T10:00:00.000Z');
@@ -26,6 +30,7 @@ function makeBearingEvent(): BearingEvent {
     goalId: null,
     stepId: null,
     status: 'scheduled',
+    publication: createUnpublishedMetadata(),
     createdAt: startAt,
     updatedAt: startAt,
   };
