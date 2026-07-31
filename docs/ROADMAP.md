@@ -116,13 +116,13 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 | Task ID | Status         | Description                                        | Exit Criteria                                                                    |
 | ------- | -------------- | -------------------------------------------------- | -------------------------------------------------------------------------------- |
-| M10.0   | not-started    | Review and unify the complete mobile UI            | Shared sizing, typography, forms, cards, filters, and states pass focused tests  |
-| M10.0a  | not-started    | Add shared control and layout foundations          | Reusable controls replace major one-off visual patterns                          |
-| M10.0b  | not-started    | Modernize and categorize Profile                   | Profile is grouped into scannable functional sections                            |
-| M10.0c  | not-started    | Improve Goals presentation and filtering           | Goal cards, progress, counts, and Active/Completed/All filtering are clear       |
-| M10.0d  | not-started    | Improve Tasks presentation and filtering           | Task cards, counts, and Active/Completed/All filtering are clear                 |
-| M10.0e  | not-started    | Normalize forms, modals, sizing, and accessibility | Screens avoid clipping and expose consistent control semantics                   |
-| M10.1   | not-started    | Polish UI interactions and accessibility           | Automated accessibility checks pass; native assistive-tech review remains manual |
+| M10.0   | completed      | Review and unify the complete mobile UI            | Shared sizing, typography, forms, cards, filters, and states pass focused tests  |
+| M10.0a  | completed      | Add shared control and layout foundations          | Reusable controls replace major one-off visual patterns                          |
+| M10.0b  | completed      | Modernize and categorize Profile                   | Profile is grouped into scannable functional sections                            |
+| M10.0c  | completed      | Improve Goals presentation and filtering           | Goal cards, progress, counts, and Active/Completed/All filtering are clear       |
+| M10.0d  | completed      | Improve Tasks presentation and filtering           | Task cards, counts, and Active/Completed/All filtering are clear                 |
+| M10.0e  | completed      | Normalize forms, modals, sizing, and accessibility | Screens avoid clipping and expose consistent control semantics                   |
+| M10.1   | manual-handoff | Polish UI interactions and accessibility           | Automated accessibility checks pass; native assistive-tech review remains manual |
 | M10.2   | not-started    | Fix operability edge cases and error recovery      | Edge cases in critical flows handled gracefully                                  |
 | M10.3   | not-started    | Optimize app performance and startup time          | App launch and transitions meet performance targets                              |
 | M10.4   | manual-handoff | Run end-to-end user acceptance testing             | Owner completes native UAT signoff                                               |
@@ -178,6 +178,6 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ## Immediate Next Steps
 
-1. Complete and validate the Node 24/npm 11 engineering baseline.
-2. Implement M7.5 atomic and idempotent task conversion with failure/concurrency coverage.
-3. Implement M10.0 shared UI foundations, Profile categories, and Goals/Tasks filtering.
+1. Harden Firestore ownership rules and add emulator-backed authorization tests under M9.2.
+2. Establish the Firebase Functions foundation under M1.6.
+3. Build authoritative entitlement and premium AI foundations under M11 and M8.
