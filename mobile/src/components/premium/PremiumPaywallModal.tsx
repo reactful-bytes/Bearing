@@ -57,7 +57,7 @@ export function PremiumPaywallModal({
           <AppCard style={styles.planCard}>
             <Text style={styles.planName}>Annual</Text>
             <Text style={styles.planSummary}>
-              Best fit for longer goal cycles and ongoing calendar sync.
+              Best fit for longer goal cycles and ongoing AI-assisted planning.
             </Text>
             <Text style={styles.planMeta}>
               Plan pricing and intro offers will load from the stores in the monetization milestone.

@@ -2,9 +2,9 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import {
-  UseCalendarConnectionsReturn,
-  useCalendarConnections,
-} from '../features/calendar/useCalendarConnections';
+  UseDeviceCalendarsReturn,
+  useDeviceCalendars,
+} from '../features/calendar/useDeviceCalendars';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { useSoundPreview } from '../features/profile/useSoundPreview';
 import { useUserProfile } from '../features/profile/useUserProfile';
@@ -19,22 +19,19 @@ jest.mock('../features/profile/useUserProfile', () => ({
 jest.mock('../features/calendar/icsFileInterop', () => ({
   buildIcsFilename: jest.fn(() => 'bearing-export-20260726.ics'),
   downloadIcsFileOnWeb: jest.fn(async () => undefined),
-  pickIcsFileContent: jest.fn(async () => null),
   shareIcsExportFile: jest.fn(async () => true),
   writeIcsExportFile: jest.fn(async () => 'file:///bearing-export-20260726.ics'),
 }));
 
 jest.mock('../features/calendar/icsInterop', () => ({
-  parseIcsCalendar: jest.fn(() => ({ events: [], skippedEntries: 0 })),
   serializeEventsToIcs: jest.fn(() => 'BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n'),
 }));
 
-jest.mock('../features/calendar/useCalendarConnections', () => ({
-  useCalendarConnections: jest.fn(),
+jest.mock('../features/calendar/useDeviceCalendars', () => ({
+  useDeviceCalendars: jest.fn(),
 }));
 
 jest.mock('../services/firebase/firebaseEvents', () => ({
-  createMirroredEvent: jest.fn(async () => 'ics-import-1'),
   listUserEvents: jest.fn(async () => []),
 }));
 
@@ -64,33 +61,34 @@ function mockProfileHooks(
   overrides: {
     userProfile?: Partial<ReturnType<typeof useUserProfile>>;
     soundPreview?: Partial<ReturnType<typeof useSoundPreview>>;
+    deviceCalendars?: Partial<UseDeviceCalendarsReturn>;
   } = {},
 ): {
   updateProfile: jest.Mock;
   sendPasswordReset: jest.Mock;
   linkAnonymousAccount: jest.Mock;
-  updateConnectionCalendars: UseCalendarConnectionsReturn['updateConnectionCalendars'];
-  updateConnectionSyncEnabled: UseCalendarConnectionsReturn['updateConnectionSyncEnabled'];
-  disconnectConnection: UseCalendarConnectionsReturn['disconnectConnection'];
+  requestPermission: jest.Mock;
+  refreshCalendars: jest.Mock;
+  toggleCalendar: jest.Mock;
+  setDefaultCalendar: jest.Mock;
+  openSettings: jest.Mock;
   previewSound: jest.Mock;
   stopPreview: jest.Mock;
 } {
   const updateProfile = jest.fn(async () => undefined);
   const sendPasswordReset = jest.fn(async () => undefined);
   const linkAnonymousAccount = jest.fn(async () => undefined);
-  const updateConnectionCalendars: UseCalendarConnectionsReturn['updateConnectionCalendars'] =
-    jest.fn(async () => undefined);
-  const updateConnectionSyncEnabled: UseCalendarConnectionsReturn['updateConnectionSyncEnabled'] =
-    jest.fn(async () => undefined);
-  const disconnectConnection: UseCalendarConnectionsReturn['disconnectConnection'] = jest.fn(
-    async () => undefined,
-  );
+  const requestPermission = jest.fn(async () => undefined);
+  const refreshCalendars = jest.fn(async () => undefined);
+  const toggleCalendar = jest.fn(async () => undefined);
+  const setDefaultCalendar = jest.fn(async () => undefined);
+  const openSettings = jest.fn(async () => undefined);
   const previewSound = jest.fn(async () => undefined);
   const stopPreview = jest.fn(() => undefined);
 
   const mockedUseUserProfile = useUserProfile as jest.MockedFunction<typeof useUserProfile>;
-  const mockedUseCalendarConnections = useCalendarConnections as jest.MockedFunction<
-    typeof useCalendarConnections
+  const mockedUseDeviceCalendars = useDeviceCalendars as jest.MockedFunction<
+    typeof useDeviceCalendars
   >;
   const mockedUseSoundPreview = useSoundPreview as jest.MockedFunction<typeof useSoundPreview>;
 
@@ -107,12 +105,32 @@ function mockProfileHooks(
     ...overrides.userProfile,
   });
 
-  mockedUseCalendarConnections.mockReturnValue({
-    connections: [],
-    uiState: 'empty',
-    updateConnectionCalendars,
-    updateConnectionSyncEnabled,
-    disconnectConnection,
+  mockedUseDeviceCalendars.mockReturnValue({
+    calendars: [
+      {
+        id: 'work',
+        title: 'Work',
+        color: '#4477aa',
+        sourceLabel: 'Device account',
+        isVisible: true,
+        isPrimary: true,
+        isSynced: true,
+        accessLevel: 'owner',
+        allowsModifications: true,
+      },
+    ],
+    permission: 'granted',
+    selectedCalendarIds: ['work'],
+    defaultCalendarId: null,
+    uiState: 'ready',
+    error: null,
+    staleSelectionRecovered: false,
+    requestPermission,
+    refresh: refreshCalendars,
+    toggleCalendar,
+    setDefaultCalendar,
+    openSettings,
+    ...overrides.deviceCalendars,
   });
 
   mockedUseSoundPreview.mockReturnValue({
@@ -127,9 +145,11 @@ function mockProfileHooks(
     updateProfile,
     sendPasswordReset,
     linkAnonymousAccount,
-    updateConnectionCalendars,
-    updateConnectionSyncEnabled,
-    disconnectConnection,
+    requestPermission,
+    refreshCalendars,
+    toggleCalendar,
+    setDefaultCalendar,
+    openSettings,
     previewSound,
     stopPreview,
   };
@@ -236,111 +256,48 @@ describe('ProfileScreen', () => {
     });
   });
 
-  it('shows secured-account messaging for external calendar connections', () => {
-    mockProfileHooks({
+  it('offers free device calendar permission to anonymous accounts', async () => {
+    const { requestPermission } = mockProfileHooks({
+      deviceCalendars: {
+        calendars: [],
+        permission: 'undetermined',
+        selectedCalendarIds: [],
+        uiState: 'permission-required',
+      },
       userProfile: {
         authUser: { isAnonymous: true, email: null } as never,
-        profile: makeProfile({ email: '', premiumStatus: 'premium', premiumSource: 'ios' }),
+        profile: makeProfile({ email: '' }),
         isAnonymous: true,
         email: null,
       },
     });
 
     render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    fireEvent.press(screen.getByLabelText('Device calendars'));
 
-    expect(screen.getAllByText('Secure account first').length).toBeGreaterThan(0);
-    expect(
-      screen.getAllByText('Secure your account before connecting external calendars.').length,
-    ).toBeGreaterThan(0);
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Allow device calendar access'));
+    });
+    expect(requestPermission).toHaveBeenCalled();
+    expect(screen.queryByText('Bearing Premium')).toBeNull();
   });
 
-  it('opens the premium paywall for free external calendar access', () => {
-    mockProfileHooks();
+  it('updates visible and writable default device calendars', async () => {
+    const { toggleCalendar, setDefaultCalendar, refreshCalendars } = mockProfileHooks();
 
     render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
-
-    fireEvent.press(screen.getByLabelText('Google Calendar'));
-
-    expect(screen.getByText('Bearing Premium')).toBeTruthy();
-    expect(screen.getByText('Unlock external calendar integrations.')).toBeTruthy();
-    expect(screen.getByText('Continue on Free Plan')).toBeTruthy();
-  });
-
-  it('opens a connected calendar modal and updates selected calendars', async () => {
-    const { updateConnectionCalendars } = mockProfileHooks({
-      userProfile: {
-        profile: makeProfile({ premiumStatus: 'premium', premiumSource: 'ios' }),
-      },
-    });
-    const mockedUseCalendarConnections = useCalendarConnections as jest.MockedFunction<
-      typeof useCalendarConnections
-    >;
-
-    mockedUseCalendarConnections.mockReturnValue({
-      connections: [
-        {
-          id: 'google-1',
-          userId: 'user-1',
-          provider: 'google',
-          status: 'connected',
-          accountLabel: 'preston@example.com',
-          syncEnabled: true,
-          lastSyncAt: new Date(2026, 6, 26, 9, 30, 0),
-          lastSyncStatus: 'ok',
-          lastErrorMessage: null,
-          createdAt: new Date(2026, 6, 26, 8, 0, 0),
-          updatedAt: new Date(2026, 6, 26, 9, 30, 0),
-          calendars: [
-            {
-              id: 'work',
-              label: 'Work',
-              color: null,
-              isPrimary: true,
-              isSelected: true,
-            },
-            {
-              id: 'personal',
-              label: 'Personal',
-              color: null,
-              isPrimary: false,
-              isSelected: false,
-            },
-          ],
-        },
-      ],
-      uiState: 'ready',
-      updateConnectionCalendars,
-      updateConnectionSyncEnabled: jest.fn(async () => undefined),
-      disconnectConnection: jest.fn(async () => undefined),
-    });
-
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
-
-    fireEvent.press(screen.getByLabelText('Google Calendar'));
+    fireEvent.press(screen.getByLabelText('Device calendars'));
 
     expect(screen.getByText('Visible calendars')).toBeTruthy();
 
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('Select calendar Personal'));
+      fireEvent.press(screen.getByLabelText('Toggle visible calendar Work'));
+      fireEvent.press(screen.getByLabelText('Use default calendar Work'));
+      fireEvent.press(screen.getByLabelText('Refresh device calendars'));
     });
 
-    await waitFor(() => {
-      expect(updateConnectionCalendars).toHaveBeenCalledWith('google-1', [
-        {
-          id: 'work',
-          label: 'Work',
-          color: null,
-          isPrimary: true,
-          isSelected: true,
-        },
-        {
-          id: 'personal',
-          label: 'Personal',
-          color: null,
-          isPrimary: false,
-          isSelected: true,
-        },
-      ]);
-    });
+    expect(toggleCalendar).toHaveBeenCalledWith('work');
+    expect(setDefaultCalendar).toHaveBeenCalledWith('work');
+    expect(refreshCalendars).toHaveBeenCalled();
   });
 });

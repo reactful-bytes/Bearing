@@ -20,20 +20,13 @@ import { ListItem } from '../components/ui/ListItem';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { colors, layout, radii, spacing, typography } from '../design/tokens';
 import {
-  CalendarConnectionProvider,
-  CalendarConnectionRecord,
-  formatCalendarSyncStatus,
-  getCalendarProviderLabel,
-} from '../features/calendar/calendarConnectionTypes';
-import {
   buildIcsFilename,
   downloadIcsFileOnWeb,
-  pickIcsFileContent,
   shareIcsExportFile,
   writeIcsExportFile,
 } from '../features/calendar/icsFileInterop';
-import { parseIcsCalendar, serializeEventsToIcs } from '../features/calendar/icsInterop';
-import { useCalendarConnections } from '../features/calendar/useCalendarConnections';
+import { serializeEventsToIcs } from '../features/calendar/icsInterop';
+import { useDeviceCalendars } from '../features/calendar/useDeviceCalendars';
 import {
   getProfileSelectionLabel,
   PROFILE_LOCALE_OPTIONS,
@@ -49,11 +42,7 @@ import { getDifferentRandomProfileTip } from '../features/profile/profileTips';
 import { useSoundPreview } from '../features/profile/useSoundPreview';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { ProfileTip } from '../features/profile/profileTypes';
-import { createMirroredEvent, listUserEvents } from '../services/firebase/firebaseEvents';
-import {
-  getCalendarProviderEnvStatus,
-  getProviderSetupMessage,
-} from '../services/config/calendarProviderEnv';
+import { listUserEvents } from '../services/firebase/firebaseEvents';
 
 type ProfileScreenProps = {
   onPressSignOut: () => Promise<void> | void;
@@ -72,13 +61,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
     sendPasswordReset,
     linkAnonymousAccount,
   } = useUserProfile();
-  const {
-    connections,
-    uiState: connectionsUiState,
-    updateConnectionCalendars,
-    updateConnectionSyncEnabled,
-    disconnectConnection,
-  } = useCalendarConnections();
+  const deviceCalendars = useDeviceCalendars(authUser?.uid ?? null);
   const { previewSound, stopPreview, previewError, playingSoundId } = useSoundPreview();
   const [displayName, setDisplayName] = useState('');
   const [timezone, setTimezone] = useState('');
@@ -99,16 +82,14 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   const [soundPending, setSoundPending] = useState(false);
   const [soundError, setSoundError] = useState<string | null>(null);
   const [passwordResetPending, setPasswordResetPending] = useState(false);
-  const [activeConnectionProvider, setActiveConnectionProvider] =
-    useState<CalendarConnectionProvider | null>(null);
-  const [connectionPending, setConnectionPending] = useState(false);
-  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [deviceCalendarsModalVisible, setDeviceCalendarsModalVisible] = useState(false);
+  const [deviceCalendarPending, setDeviceCalendarPending] = useState(false);
+  const [deviceCalendarError, setDeviceCalendarError] = useState<string | null>(null);
   const [premiumPaywallFeature, setPremiumPaywallFeature] = useState<PremiumFeature | null>(null);
   const [icsModalVisible, setIcsModalVisible] = useState(false);
   const [icsPending, setIcsPending] = useState(false);
   const [icsError, setIcsError] = useState<string | null>(null);
   const [icsFeedback, setIcsFeedback] = useState<string | null>(null);
-  const providerEnvStatus = getCalendarProviderEnvStatus();
   const hasPremiumAccess = hasActivePremiumStatus(profile?.premiumStatus);
 
   useEffect(() => {
@@ -262,101 +243,20 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
     setSelectionPicker(null);
   }
 
-  function getConnection(provider: CalendarConnectionProvider): CalendarConnectionRecord | null {
-    return connections.find((connection) => connection.provider === provider) ?? null;
-  }
-
-  function formatSyncTimestamp(value: Date | null): string {
-    if (!value) {
-      return 'No successful sync yet.';
-    }
-
-    return `Last sync ${value.toLocaleString()}`;
-  }
-
-  function getConnectionDescription(provider: CalendarConnectionProvider): string {
-    if (!hasPremiumAccess) {
-      return isAnonymous
-        ? `${getCalendarProviderLabel(provider)} sync is part of Bearing Premium. Secure your account before live purchases and provider connections are enabled.`
-        : `${getCalendarProviderLabel(provider)} sync is part of Bearing Premium. Unlock direct sync, calendar selection, and diagnostics from this screen.`;
-    }
-
-    if (isAnonymous) {
-      return 'Secure your account before connecting external calendars.';
-    }
-
-    const connection = getConnection(provider);
-    if (!connection) {
-      return `No ${getCalendarProviderLabel(provider)} connection has been established yet. ${getProviderSetupMessage(provider)}`;
-    }
-
-    const selectedCount = connection.calendars.filter((calendar) => calendar.isSelected).length;
-    const statusLabel = formatCalendarSyncStatus(connection.lastSyncStatus);
-    const accountLabel = connection.accountLabel || 'Connected account';
-
-    return `${accountLabel}. ${selectedCount} calendars selected. ${statusLabel}. ${formatSyncTimestamp(connection.lastSyncAt)}`;
-  }
-
-  function getConnectionTrailingText(provider: CalendarConnectionProvider): string {
-    if (!hasPremiumAccess) {
-      return 'Upgrade';
-    }
-
-    if (isAnonymous) {
-      return 'Secure account first';
-    }
-
-    const connection = getConnection(provider);
-    if (connection) {
-      return 'Manage';
-    }
-
-    return providerEnvStatus[provider].isConfigured ? 'Ready to connect' : 'Setup incomplete';
-  }
-
-  function handleOpenConnection(provider: CalendarConnectionProvider): void {
-    setConnectionError(null);
-
-    if (!hasPremiumAccess) {
-      setPremiumPaywallFeature('external_calendar_integrations');
-      return;
-    }
-
-    if (isAnonymous) {
-      setConnectionError('Secure your account before connecting external calendars.');
-      return;
-    }
-
-    const connection = getConnection(provider);
-    if (!connection) {
-      setConnectionError(
-        `${getCalendarProviderLabel(provider)} is approved for M6, but the first connection still depends on provider credentials and backend setup. ${getProviderSetupMessage(provider)}`,
-      );
-      return;
-    }
-
-    setActiveConnectionProvider(provider);
-  }
-
-  function closeConnectionModal(): void {
-    setActiveConnectionProvider(null);
-    setConnectionError(null);
-  }
-
   function closePremiumPaywall(): void {
     setPremiumPaywallFeature(null);
   }
 
   function getPremiumAccessDescription(): string {
     if (hasPremiumAccess) {
-      return 'Premium is active for AI goal builder access and Google/Microsoft calendar integrations. Store purchase and restore wiring still land in the monetization milestone.';
+      return 'Premium is active for AI goal builder access. Store purchase and restore wiring still land in the monetization milestone.';
     }
 
     if (profile?.premiumStatus === 'canceled') {
-      return 'Premium access is not active. Rejoin to unlock AI goal builder access and Google/Microsoft calendar integrations when live billing ships.';
+      return 'Premium access is not active. Rejoin to unlock AI goal builder access when live billing ships.';
     }
 
-    return 'AI goal builder access plus Google and Microsoft calendar integrations are reserved for Bearing Premium. This in-app paywall is ready before live store checkout is connected.';
+    return 'AI goal builder access is reserved for Bearing Premium. Device calendar access remains free. This in-app paywall is ready before live store checkout is connected.';
   }
 
   function closeIcsModal(): void {
@@ -365,72 +265,47 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
     setIcsFeedback(null);
   }
 
-  async function handleToggleCalendar(calendarId: string): Promise<void> {
-    const connection = activeConnectionProvider ? getConnection(activeConnectionProvider) : null;
-    if (!connection) {
-      return;
-    }
-
-    setConnectionPending(true);
-    setConnectionError(null);
+  async function runDeviceCalendarAction(action: () => Promise<void>): Promise<void> {
+    setDeviceCalendarPending(true);
+    setDeviceCalendarError(null);
 
     try {
-      const nextCalendars = connection.calendars.map((calendar) =>
-        calendar.id === calendarId ? { ...calendar, isSelected: !calendar.isSelected } : calendar,
-      );
-
-      await updateConnectionCalendars(connection.id, nextCalendars);
-    } catch (selectionError) {
-      setConnectionError(
-        selectionError instanceof Error
-          ? selectionError.message
-          : 'Failed to update calendar selection.',
+      await action();
+    } catch (calendarError) {
+      setDeviceCalendarError(
+        calendarError instanceof Error
+          ? calendarError.message
+          : 'Failed to update device calendar settings.',
       );
     } finally {
-      setConnectionPending(false);
+      setDeviceCalendarPending(false);
     }
   }
 
-  async function handleToggleConnectionSync(): Promise<void> {
-    const connection = activeConnectionProvider ? getConnection(activeConnectionProvider) : null;
-    if (!connection) {
-      return;
+  function getDeviceCalendarDescription(): string {
+    if (deviceCalendars.uiState === 'unavailable') {
+      return 'Available in iOS and Android development builds.';
+    }
+    if (deviceCalendars.permission !== 'granted') {
+      return 'Grant free device calendar access to choose visible and writable calendars.';
     }
 
-    setConnectionPending(true);
-    setConnectionError(null);
-
-    try {
-      await updateConnectionSyncEnabled(connection.id, !connection.syncEnabled);
-    } catch (syncError) {
-      setConnectionError(
-        syncError instanceof Error ? syncError.message : 'Failed to update sync setting.',
-      );
-    } finally {
-      setConnectionPending(false);
-    }
+    const defaultCalendar = deviceCalendars.calendars.find(
+      (calendar) => calendar.id === deviceCalendars.defaultCalendarId,
+    );
+    return `${deviceCalendars.selectedCalendarIds.length} visible. Default: ${defaultCalendar?.title ?? 'Bearing only'}.`;
   }
 
-  async function handleDisconnectActiveConnection(): Promise<void> {
-    const connection = activeConnectionProvider ? getConnection(activeConnectionProvider) : null;
-    if (!connection) {
-      return;
-    }
-
-    setConnectionPending(true);
-    setConnectionError(null);
-
-    try {
-      await disconnectConnection(connection.id);
-      closeConnectionModal();
-    } catch (disconnectError) {
-      setConnectionError(
-        disconnectError instanceof Error
-          ? disconnectError.message
-          : 'Failed to disconnect calendar.',
-      );
-    } finally {
-      setConnectionPending(false);
+  function getDeviceCalendarTrailingText(): string {
+    switch (deviceCalendars.permission) {
+      case 'granted':
+        return 'Manage';
+      case 'blocked':
+        return 'Settings';
+      case 'unavailable':
+        return 'Unavailable';
+      default:
+        return 'Allow access';
     }
   }
 
@@ -482,76 +357,6 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
       setIcsPending(false);
     }
   }
-
-  async function handleImportIcs(): Promise<void> {
-    if (!authUser) {
-      setIcsError('User is not authenticated.');
-      return;
-    }
-
-    setIcsPending(true);
-    setIcsError(null);
-    setIcsFeedback(null);
-
-    try {
-      const content = await pickIcsFileContent();
-      if (!content) {
-        setIcsFeedback('Import canceled.');
-        return;
-      }
-
-      const parsed = parseIcsCalendar(content);
-      const existingEvents = await listUserEvents(authUser.uid);
-      const existingImportedExternalIds = new Set(
-        existingEvents
-          .filter((event) => event.source === 'ics_import' && event.externalEventId)
-          .map((event) => event.externalEventId as string),
-      );
-
-      let importedCount = 0;
-      let skippedCount = parsed.skippedEntries;
-
-      for (const parsedEvent of parsed.events) {
-        if (existingImportedExternalIds.has(parsedEvent.uid)) {
-          skippedCount += 1;
-          continue;
-        }
-
-        await createMirroredEvent(authUser.uid, {
-          title: parsedEvent.title,
-          description: parsedEvent.description,
-          startAt: parsedEvent.startAt,
-          endAt: parsedEvent.endAt,
-          timezone: parsedEvent.timezone,
-          source: 'ics_import',
-          externalEventId: parsedEvent.uid,
-        });
-
-        existingImportedExternalIds.add(parsedEvent.uid);
-        importedCount += 1;
-      }
-
-      if (importedCount === 0) {
-        throw new Error('No supported timed events were imported from the selected .ics file.');
-      }
-
-      setIcsFeedback(
-        skippedCount > 0
-          ? `Imported ${importedCount} events and skipped ${skippedCount} duplicate or unsupported entries.`
-          : `Imported ${importedCount} events.`,
-      );
-    } catch (importError) {
-      setIcsError(
-        importError instanceof Error ? importError.message : 'Failed to import .ics file.',
-      );
-    } finally {
-      setIcsPending(false);
-    }
-  }
-
-  const activeConnection = activeConnectionProvider
-    ? getConnection(activeConnectionProvider)
-    : null;
 
   return (
     <View style={styles.screen}>
@@ -792,27 +597,17 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                 disabled={hasPremiumAccess}
               />
               <ListItem
-                onPress={() => handleOpenConnection('google')}
-                title="Google Calendar"
-                description={getConnectionDescription('google')}
-                trailingText={getConnectionTrailingText('google')}
-              />
-              <ListItem
-                onPress={() => handleOpenConnection('microsoft')}
-                title="Microsoft Calendar"
-                description={getConnectionDescription('microsoft')}
-                trailingText={getConnectionTrailingText('microsoft')}
+                onPress={() => setDeviceCalendarsModalVisible(true)}
+                title="Device calendars"
+                description={getDeviceCalendarDescription()}
+                trailingText={getDeviceCalendarTrailingText()}
               />
               <ListItem
                 onPress={() => setIcsModalVisible(true)}
-                title="Apple Calendar"
-                description="Apple support is limited to .ics import and export in this milestone."
-                trailingText="Open"
+                title="Export calendar"
+                description="Export Bearing events to a general .ics file."
+                trailingText="Export"
               />
-              {connectionsUiState === 'error' ? (
-                <Text style={styles.errorText}>Unable to load calendar connection state.</Text>
-              ) : null}
-              {connectionError ? <Text style={styles.errorText}>{connectionError}</Text> : null}
             </View>
 
             <View style={styles.actionBlock}>
@@ -877,126 +672,187 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
       />
 
       <AppModal
-        visible={activeConnection !== null}
-        title={
-          activeConnection
-            ? getCalendarProviderLabel(activeConnection.provider)
-            : 'Calendar Connection'
-        }
-        onClose={closeConnectionModal}
+        visible={deviceCalendarsModalVisible}
+        title="Device Calendars"
+        onClose={() => {
+          setDeviceCalendarsModalVisible(false);
+          setDeviceCalendarError(null);
+        }}
       >
-        {activeConnection ? (
-          <>
-            <View style={styles.connectionMetaBlock}>
-              <Text style={styles.sectionTitle}>
-                {activeConnection.accountLabel || 'Connected account'}
-              </Text>
-              <Text style={styles.stateDescription}>
-                {formatSyncTimestamp(activeConnection.lastSyncAt)}
-              </Text>
-              <Text style={styles.stateDescription}>
-                {formatCalendarSyncStatus(activeConnection.lastSyncStatus)}
-                {activeConnection.lastErrorMessage ? ` • ${activeConnection.lastErrorMessage}` : ''}
-              </Text>
-            </View>
+        <>
+          <Text style={styles.stateDescription}>{getDeviceCalendarDescription()}</Text>
 
+          {deviceCalendars.permission !== 'granted' &&
+          deviceCalendars.permission !== 'unavailable' &&
+          deviceCalendars.permission !== 'blocked' ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Toggle automatic sync"
-              onPress={() => void handleToggleConnectionSync()}
-              disabled={connectionPending}
+              accessibilityLabel="Allow device calendar access"
+              onPress={() => void runDeviceCalendarAction(deviceCalendars.requestPermission)}
+              disabled={deviceCalendarPending}
               style={({ pressed }) => [
                 styles.secondaryActionButton,
-                pressed && !connectionPending ? styles.buttonPressed : null,
-                connectionPending ? styles.buttonDisabled : null,
+                pressed && !deviceCalendarPending ? styles.buttonPressed : null,
+                deviceCalendarPending ? styles.buttonDisabled : null,
               ]}
             >
               <Text style={styles.secondaryActionButtonText}>
-                {connectionPending
-                  ? 'Working...'
-                  : activeConnection.syncEnabled
-                    ? 'Pause Automatic Sync'
-                    : 'Enable Automatic Sync'}
+                {deviceCalendarPending ? 'Working...' : 'Allow Calendar Access'}
               </Text>
             </Pressable>
+          ) : null}
 
-            <View style={styles.connectionCalendarBlock}>
-              <Text style={styles.sectionTitle}>Visible calendars</Text>
-              {activeConnection.calendars.length > 0 ? (
-                activeConnection.calendars.map((calendar) => (
-                  <Pressable
-                    key={calendar.id}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Select calendar ${calendar.label}`}
-                    onPress={() => void handleToggleCalendar(calendar.id)}
-                    disabled={connectionPending}
-                    style={({ pressed }) => [
-                      styles.calendarSelectionRow,
-                      calendar.isSelected ? styles.calendarSelectionRowSelected : null,
-                      pressed && !connectionPending ? styles.buttonPressed : null,
-                      connectionPending ? styles.buttonDisabled : null,
-                    ]}
-                  >
-                    <View style={styles.calendarSelectionCopy}>
-                      <Text style={styles.selectionValue}>{calendar.label}</Text>
-                      <Text style={styles.selectionMeta}>
-                        {calendar.isPrimary ? 'Primary calendar' : 'Additional calendar'}
-                      </Text>
-                    </View>
-                    <Text style={styles.optionStateText}>
-                      {calendar.isSelected ? 'Visible' : 'Hidden'}
-                    </Text>
-                  </Pressable>
-                ))
-              ) : (
-                <Text style={styles.stateDescription}>
-                  This connection has not published selectable calendars yet.
-                </Text>
-              )}
-            </View>
-
-            {connectionError ? <Text style={styles.errorText}>{connectionError}</Text> : null}
-
+          {deviceCalendars.permission === 'blocked' ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Disconnect calendar"
-              onPress={() => void handleDisconnectActiveConnection()}
-              disabled={connectionPending}
+              accessibilityLabel="Open device settings"
+              onPress={() => void runDeviceCalendarAction(deviceCalendars.openSettings)}
+              disabled={deviceCalendarPending}
               style={({ pressed }) => [
-                styles.disconnectButton,
-                pressed && !connectionPending ? styles.buttonPressed : null,
-                connectionPending ? styles.buttonDisabled : null,
+                styles.secondaryActionButton,
+                pressed && !deviceCalendarPending ? styles.buttonPressed : null,
+                deviceCalendarPending ? styles.buttonDisabled : null,
               ]}
             >
-              <Text style={styles.disconnectButtonText}>
-                {connectionPending ? 'Disconnecting...' : 'Disconnect Calendar'}
-              </Text>
+              <Text style={styles.secondaryActionButtonText}>Open Settings</Text>
             </Pressable>
-          </>
-        ) : null}
+          ) : null}
+
+          {deviceCalendars.permission === 'granted' ? (
+            <>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Refresh device calendars"
+                onPress={() => void runDeviceCalendarAction(deviceCalendars.refresh)}
+                disabled={deviceCalendarPending}
+                style={({ pressed }) => [
+                  styles.secondaryActionButton,
+                  pressed && !deviceCalendarPending ? styles.buttonPressed : null,
+                  deviceCalendarPending ? styles.buttonDisabled : null,
+                ]}
+              >
+                <Text style={styles.secondaryActionButtonText}>
+                  {deviceCalendarPending ? 'Refreshing...' : 'Refresh Calendars'}
+                </Text>
+              </Pressable>
+
+              <View style={styles.connectionCalendarBlock}>
+                <Text style={styles.sectionTitle}>Visible calendars</Text>
+                {deviceCalendars.calendars.length > 0 ? (
+                  deviceCalendars.calendars.map((calendar) => (
+                    <Pressable
+                      key={calendar.id}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Toggle visible calendar ${calendar.title}`}
+                      onPress={() =>
+                        void runDeviceCalendarAction(() =>
+                          deviceCalendars.toggleCalendar(calendar.id),
+                        )
+                      }
+                      disabled={deviceCalendarPending}
+                      style={({ pressed }) => [
+                        styles.calendarSelectionRow,
+                        deviceCalendars.selectedCalendarIds.includes(calendar.id)
+                          ? styles.calendarSelectionRowSelected
+                          : null,
+                        pressed && !deviceCalendarPending ? styles.buttonPressed : null,
+                        deviceCalendarPending ? styles.buttonDisabled : null,
+                      ]}
+                    >
+                      <View style={styles.calendarSelectionCopy}>
+                        <Text style={styles.selectionValue}>{calendar.title}</Text>
+                        <Text style={styles.selectionMeta}>
+                          {calendar.sourceLabel}
+                          {calendar.isPrimary ? ' • Primary' : ''}
+                          {!calendar.allowsModifications ? ' • Read only' : ''}
+                        </Text>
+                      </View>
+                      <Text style={styles.optionStateText}>
+                        {deviceCalendars.selectedCalendarIds.includes(calendar.id)
+                          ? 'Visible'
+                          : 'Hidden'}
+                      </Text>
+                    </Pressable>
+                  ))
+                ) : (
+                  <Text style={styles.stateDescription}>No system calendars were found.</Text>
+                )}
+              </View>
+
+              <View style={styles.connectionCalendarBlock}>
+                <Text style={styles.sectionTitle}>Writable default</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Use Bearing only for event creation"
+                  onPress={() =>
+                    void runDeviceCalendarAction(() => deviceCalendars.setDefaultCalendar(null))
+                  }
+                  disabled={deviceCalendarPending}
+                  style={({ pressed }) => [
+                    styles.calendarSelectionRow,
+                    deviceCalendars.defaultCalendarId === null
+                      ? styles.calendarSelectionRowSelected
+                      : null,
+                    pressed && !deviceCalendarPending ? styles.buttonPressed : null,
+                  ]}
+                >
+                  <Text style={styles.selectionValue}>Bearing only</Text>
+                  <Text style={styles.optionStateText}>
+                    {deviceCalendars.defaultCalendarId === null ? 'Default' : 'Choose'}
+                  </Text>
+                </Pressable>
+                {deviceCalendars.calendars
+                  .filter((calendar) => calendar.allowsModifications)
+                  .map((calendar) => (
+                    <Pressable
+                      key={calendar.id}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Use default calendar ${calendar.title}`}
+                      onPress={() =>
+                        void runDeviceCalendarAction(() =>
+                          deviceCalendars.setDefaultCalendar(calendar.id),
+                        )
+                      }
+                      disabled={deviceCalendarPending}
+                      style={({ pressed }) => [
+                        styles.calendarSelectionRow,
+                        deviceCalendars.defaultCalendarId === calendar.id
+                          ? styles.calendarSelectionRowSelected
+                          : null,
+                        pressed && !deviceCalendarPending ? styles.buttonPressed : null,
+                      ]}
+                    >
+                      <View style={styles.calendarSelectionCopy}>
+                        <Text style={styles.selectionValue}>{calendar.title}</Text>
+                        <Text style={styles.selectionMeta}>{calendar.sourceLabel}</Text>
+                      </View>
+                      <Text style={styles.optionStateText}>
+                        {deviceCalendars.defaultCalendarId === calendar.id ? 'Default' : 'Choose'}
+                      </Text>
+                    </Pressable>
+                  ))}
+              </View>
+            </>
+          ) : null}
+
+          {deviceCalendars.staleSelectionRecovered ? (
+            <Text style={styles.errorText}>
+              A saved calendar was removed or became read only. Bearing-only creation is still
+              available.
+            </Text>
+          ) : null}
+          {deviceCalendars.error ? (
+            <Text style={styles.errorText}>{deviceCalendars.error.message}</Text>
+          ) : null}
+          {deviceCalendarError ? <Text style={styles.errorText}>{deviceCalendarError}</Text> : null}
+        </>
       </AppModal>
 
-      <AppModal visible={icsModalVisible} title="Apple Calendar (.ics)" onClose={closeIcsModal}>
+      <AppModal visible={icsModalVisible} title="Calendar Export (.ics)" onClose={closeIcsModal}>
         <Text style={styles.stateDescription}>
-          Import and export timed events with Apple Calendar compatible .ics files. This first slice
-          skips recurring events, all-day events, attendees, conference links, and reminders.
+          Export Bearing-owned timed events to a portable .ics file. Expanded all-day, recurrence,
+          alarm, and timezone coverage remains scheduled for M6.12.
         </Text>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Import ics file"
-          onPress={() => void handleImportIcs()}
-          disabled={icsPending}
-          style={({ pressed }) => [
-            styles.secondaryActionButton,
-            pressed && !icsPending ? styles.buttonPressed : null,
-            icsPending ? styles.buttonDisabled : null,
-          ]}
-        >
-          <Text style={styles.secondaryActionButtonText}>
-            {icsPending ? 'Working...' : 'Import .ics File'}
-          </Text>
-        </Pressable>
 
         <Pressable
           accessibilityRole="button"

@@ -9,13 +9,24 @@ const config: ExpoConfig = {
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'light',
-  plugins: ['expo-audio', 'expo-sharing'],
+  plugins: [
+    'expo-audio',
+    'expo-sharing',
+    [
+      'expo-calendar',
+      {
+        calendarPermission:
+          'Bearing uses calendar access to show calendars you choose and publish events when requested.',
+      },
+    ],
+  ],
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.reactfulbytes.bearing',
   },
   android: {
     package: 'com.reactfulbytes.bearing',
+    permissions: ['android.permission.READ_CALENDAR', 'android.permission.WRITE_CALENDAR'],
     adaptiveIcon: {
       foregroundImage: './assets/android-icon-foreground.png',
       backgroundImage: './assets/android-icon-background.png',

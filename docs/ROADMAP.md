@@ -73,9 +73,9 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | Task ID   | Status      | Description                                          | Exit Criteria                                                                                  |
 | --------- | ----------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | M6.1-M6.5 | superseded  | Provider connection, mirror, and ICS-import approach | Historical implementation retained; no active provider dependency remains                      |
-| M6.6      | not-started | Remove provider integration and migrate legacy data  | Provider UI/services/gates and ICS import are gone without losing imported Bearing events      |
-| M6.7      | not-started | Add `expo-calendar`, permissions, and adapter        | SDK 57 object API is testable in iOS/Android development builds and degrades safely elsewhere  |
-| M6.8      | not-started | Add per-device calendar settings                     | Users select visible calendars and one writable default independently on each device           |
+| M6.6      | completed   | Remove provider integration and migrate legacy data  | Provider UI/services/gates and ICS import are gone without losing imported Bearing events      |
+| M6.7      | in-progress | Add `expo-calendar`, permissions, and adapter        | Host validation passes; current-device development-build verification remains                  |
+| M6.8      | completed   | Add per-device calendar settings                     | Users select visible calendars and one writable default independently on each device           |
 | M6.9      | not-started | Aggregate live device and Firestore events           | Selected system events display without Firestore mirrors or duplicate linked copies            |
 | M6.10     | not-started | Build complete Bearing event editor                  | Supported ordinary and recurring event fields can be created and edited with capability checks |
 | M6.11     | not-started | Publish and reconcile linked Bearing events          | Optional copies rediscover across devices and recover honestly from partial writes/deletions   |
@@ -172,6 +172,6 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ## Immediate Next Steps
 
-1. Complete M0.7 documentation reconciliation and commit the scope reset.
-2. Complete M1.5 so clean install, typecheck, formatting, tests, Expo Doctor, and CI are trustworthy.
-3. Implement M6.6-M6.8 first: remove provider code, configure `expo-calendar`, and establish per-device calendar settings before event aggregation.
+1. Validate the M6.7 development-build workflow on current iOS and Android devices.
+2. Implement M6.9 live Firestore/device event aggregation and deterministic refresh triggers.
+3. Continue through M6.10-M6.13 event editing, publication, export, and native acceptance validation.

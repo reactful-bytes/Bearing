@@ -18,12 +18,10 @@ import {
 } from 'firebase/firestore';
 
 import { getFirebaseApp } from './firebaseApp';
+import { decodeCalendarEventData } from '../../features/calendar/calendarEventDecoder';
 import {
   CalendarEvent,
   CreateEventInput,
-  CreateMirroredEventInput,
-  EventSource,
-  EventStatus,
   UpdateEventInput,
 } from '../../features/calendar/calendarTypes';
 
@@ -50,37 +48,11 @@ function getFirebaseFirestore(): Firestore {
 // Firestore → domain type conversion
 // ---------------------------------------------------------------------------
 
-function docToCalendarEvent(snapshot: QueryDocumentSnapshot<DocumentData>): CalendarEvent {
-  const d = snapshot.data();
-  return {
-    id: snapshot.id,
-    userId: d.userId as string,
-    title: d.title as string,
-    description: d.description as string,
-    startAt: (d.startAt as Timestamp).toDate(),
-    endAt: (d.endAt as Timestamp).toDate(),
-    timezone: d.timezone as string,
-    source: d.source as EventSource,
-    externalEventId: (d.externalEventId as string | null) ?? null,
-    calendarConnectionId: (d.calendarConnectionId as string | null) ?? null,
-    goalId: (d.goalId as string | null) ?? null,
-    stepId: (d.stepId as string | null) ?? null,
-    status: d.status as EventStatus,
-    createdAt: (d.createdAt as Timestamp).toDate(),
-    updatedAt: (d.updatedAt as Timestamp).toDate(),
-  };
+export function docToCalendarEvent(snapshot: QueryDocumentSnapshot<DocumentData>): CalendarEvent {
+  return decodeCalendarEventData(snapshot.id, snapshot.data());
 }
 
-function buildEventPayload(
-  userId: string,
-  input: CreateEventInput | CreateMirroredEventInput,
-  options?: {
-    source?: EventSource;
-    externalEventId?: string | null;
-    calendarConnectionId?: string | null;
-    status?: EventStatus;
-  },
-): Record<string, unknown> {
+function buildEventPayload(userId: string, input: CreateEventInput): Record<string, unknown> {
   const now = Timestamp.now();
 
   return {
@@ -90,12 +62,9 @@ function buildEventPayload(
     startAt: Timestamp.fromDate(input.startAt),
     endAt: Timestamp.fromDate(input.endAt),
     timezone: input.timezone,
-    source: options?.source ?? 'local',
-    externalEventId: options?.externalEventId ?? null,
-    calendarConnectionId: options?.calendarConnectionId ?? null,
     goalId: input.goalId ?? null,
     stepId: input.stepId ?? null,
-    status: options?.status ?? 'scheduled',
+    status: 'scheduled',
     createdAt: now,
     updatedAt: now,
   };
@@ -170,24 +139,6 @@ export function subscribeToEventsByStepId(
 export async function createEvent(userId: string, input: CreateEventInput): Promise<string> {
   const db = getFirebaseFirestore();
   const docRef = await addDoc(collection(db, 'events'), buildEventPayload(userId, input));
-
-  return docRef.id;
-}
-
-export async function createMirroredEvent(
-  userId: string,
-  input: CreateMirroredEventInput,
-): Promise<string> {
-  const db = getFirebaseFirestore();
-  const docRef = await addDoc(
-    collection(db, 'events'),
-    buildEventPayload(userId, input, {
-      source: input.source,
-      externalEventId: input.externalEventId ?? null,
-      calendarConnectionId: input.calendarConnectionId ?? null,
-      status: input.status ?? 'scheduled',
-    }),
-  );
 
   return docRef.id;
 }
