@@ -6,6 +6,11 @@ import { setGlobalOptions } from "firebase-functions/v2/options";
 import { getBackendStatus } from "./status";
 import { generateGoalPlanDraft as generateGoalPlanDraftHandler } from "./aiGoalPlan";
 import { createGeminiGoalPlanGenerator } from "./geminiGoalPlan";
+import {
+  deleteUserAccount as deleteUserAccountHandler,
+  exportUserData as exportUserDataHandler,
+} from "./privacy";
+import { deleteUserDataAdmin, readUserDataAdmin } from "./privacyAdmin";
 
 initializeApp();
 
@@ -35,4 +40,20 @@ export const generateGoalPlanDraft = onCall(
       request,
       createGeminiGoalPlanGenerator(geminiApiKey.value()),
     ),
+);
+
+export const exportUserData = onCall(
+  {
+    enforceAppCheck: true,
+    timeoutSeconds: 60,
+  },
+  (request) => exportUserDataHandler(request, readUserDataAdmin),
+);
+
+export const deleteUserAccount = onCall(
+  {
+    enforceAppCheck: true,
+    timeoutSeconds: 120,
+  },
+  (request) => deleteUserAccountHandler(request, deleteUserDataAdmin),
 );

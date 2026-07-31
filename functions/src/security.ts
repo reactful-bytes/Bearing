@@ -2,7 +2,10 @@ import { HttpsError } from "firebase-functions/v2/https";
 
 export type CallableIdentityRequest = {
   app?: { appId: string };
-  auth?: { uid: string };
+  auth?: {
+    uid: string;
+    token?: { auth_time?: number };
+  };
 };
 
 export type VerifiedCaller = {

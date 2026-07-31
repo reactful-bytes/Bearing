@@ -153,7 +153,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M9.2    | completed   | Perform security hardening and secret management audit   | No secrets exposed and auth flows validated                                                                              |
 | M9.3    | not-started | Add analytics dashboards and operational alerts          | Product and reliability telemetry available                                                                              |
 | M9.4    | not-started | Finalize legal copy (privacy policy, terms, disclosures) | Store-compliant legal docs available                                                                                     |
-| M9.5    | not-started | Add general export and account deletion                  | JSON and ICS exports work anytime; deletion is reauthenticated, retryable, and optionally cleans reachable linked copies |
+| M9.5    | in-progress | Add general export and account deletion                  | Caller-scoped JSON export and recent-auth retryable deletion backend pass; mobile download, reauth, confirmation, and linked-copy cleanup remain |
 | M9.6    | not-started | Establish backup, migration, and recovery readiness      | Firestore exports, schema ownership, rollback, and restore drill meet approved RPO/RTO                                   |
 
 ### M10 - Final UI Fixes and Operability Fixes
