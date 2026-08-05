@@ -23,7 +23,10 @@ describe('EventForm', () => {
     fireEvent.press(screen.getByText('Weekly'));
     fireEvent.changeText(screen.getByLabelText('Recurrence interval'), '2');
     fireEvent.changeText(screen.getByLabelText('Recurrence occurrences'), '3');
-    fireEvent.changeText(screen.getByLabelText('Alarm offsets'), '-60, -15');
+    fireEvent.press(screen.getByLabelText('Open first alert selector'));
+    fireEvent.press(screen.getByLabelText('Select first alert 60 minutes before'));
+    fireEvent.press(screen.getByLabelText('Open second alert selector'));
+    fireEvent.press(screen.getByLabelText('Select second alert 15 minutes before'));
     fireEvent.press(screen.getByText('Free'));
     fireEvent.changeText(screen.getByLabelText('Event URL'), 'https://example.com/release');
 
@@ -77,5 +80,39 @@ describe('EventForm', () => {
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ title: 'Publish me' }), {
       publishToDevice: true,
     });
+  });
+
+  it('uses date and time picker selections with the chosen 24-hour display', async () => {
+    const onSave = jest.fn(async () => undefined);
+    render(
+      <EventForm
+        active
+        initialDate={new Date('2026-07-31T09:00:00.000Z')}
+        initialValues={{ timezone: 'UTC' }}
+        locale="en-US"
+        timeFormat="24-hour"
+        onSave={onSave}
+      />,
+    );
+
+    fireEvent.changeText(screen.getByLabelText('Event title'), 'Picker planning');
+    fireEvent.press(screen.getByLabelText('Start date'));
+    fireEvent(
+      screen.getByTestId('Start date picker'),
+      'valueChange',
+      { nativeEvent: { timestamp: Date.UTC(2026, 7, 4, 10, 0), utcOffset: 0 } },
+      new Date('2026-08-04T10:00:00.000Z'),
+    );
+    fireEvent.press(screen.getByLabelText('Done choose start date'));
+    fireEvent.press(screen.getByLabelText('Start time'));
+    fireEvent(
+      screen.getByTestId('Start time picker'),
+      'valueChange',
+      { nativeEvent: { timestamp: Date.UTC(2026, 7, 4, 14, 30), utcOffset: 0 } },
+      new Date('2026-08-04T14:30:00.000Z'),
+    );
+    fireEvent.press(screen.getByLabelText('Done choose start time'));
+
+    expect(screen.getByText('14:30')).toBeTruthy();
   });
 });

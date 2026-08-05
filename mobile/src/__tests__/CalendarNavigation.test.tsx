@@ -1,8 +1,13 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
+import { ScrollView } from 'react-native';
 
 import { CalendarScreen } from '../screens/CalendarScreen';
 import { formatDayLabel } from '../components/calendar/DayNavBar';
+
+jest.mock('../features/profile/useUserProfile', () => ({
+  useUserProfile: jest.fn(() => ({ profile: { locale: 'en-US', timeFormat: '12-hour' } })),
+}));
 
 jest.mock('../features/notes/useNotes', () => ({
   useCreateNote: jest.fn(() => async () => undefined),
@@ -87,6 +92,32 @@ describe('CalendarScreen navigation', () => {
 
     const expectedLabel = formatDayLabel(new Date(2026, 6, 18));
     expect(screen.getByText(expectedLabel)).toBeTruthy();
+  });
+
+  it('centers the current time after refreshing today', () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 6, 17, 14, 30, 0));
+    const scrollToSpy = jest
+      .spyOn(ScrollView.prototype, 'scrollTo')
+      .mockImplementation(() => undefined);
+
+    try {
+      render(<CalendarScreen initialDateOverride={FIXED_DATE} stateOverride="ready" />);
+
+      fireEvent(screen.getByTestId('hourly-timeline-scroll'), 'layout', {
+        nativeEvent: { layout: { height: 640, width: 375, x: 0, y: 0 } },
+      });
+      act(() => jest.advanceTimersByTime(50));
+      scrollToSpy.mockClear();
+
+      fireEvent.press(screen.getByLabelText('Refresh calendar events'));
+      act(() => jest.advanceTimersByTime(50));
+
+      expect(scrollToSpy).toHaveBeenCalledWith({ y: 608, animated: false });
+    } finally {
+      scrollToSpy.mockRestore();
+      jest.useRealTimers();
+    }
   });
 
   it('switches to day view and updates selected date when a month date is tapped', () => {

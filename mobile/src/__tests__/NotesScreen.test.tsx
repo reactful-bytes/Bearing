@@ -2,6 +2,10 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { NotesScreen } from '../screens/NotesScreen';
+
+jest.mock('../features/profile/useUserProfile', () => ({
+  useUserProfile: jest.fn(() => ({ profile: { locale: 'en-US', timeFormat: '12-hour' } })),
+}));
 import { useNotes } from '../features/notes/useNotes';
 import { CreateNoteInput, NoteRecord, UpdateNoteInput } from '../features/notes/noteTypes';
 

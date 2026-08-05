@@ -1,3 +1,5 @@
+import { TimeFormat } from './timeFormat';
+
 export type PremiumStatus = 'free' | 'premium' | 'grace_period' | 'canceled';
 
 export type PremiumSource = 'ios' | 'android' | 'stripe' | 'none';
@@ -10,6 +12,7 @@ export type UserProfileRecord = {
   email: string;
   timezone: string;
   locale: string;
+  timeFormat: TimeFormat;
   premiumStatus: PremiumStatus;
   premiumSource: PremiumSource;
   tipsEnabled: boolean;
@@ -22,7 +25,13 @@ export type UserProfileRecord = {
 export type UpdateUserProfileInput = Partial<
   Pick<
     UserProfileRecord,
-    'displayName' | 'timezone' | 'locale' | 'tipsEnabled' | 'reminderSoundId' | 'alarmSoundId'
+    | 'displayName'
+    | 'timezone'
+    | 'locale'
+    | 'timeFormat'
+    | 'tipsEnabled'
+    | 'reminderSoundId'
+    | 'alarmSoundId'
   >
 >;
 

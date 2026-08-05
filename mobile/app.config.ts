@@ -13,6 +13,7 @@ const config: ExpoConfig = {
     'expo-dev-client',
     'expo-audio',
     'expo-sharing',
+    '@react-native-community/datetimepicker',
     [
       'expo-calendar',
       {

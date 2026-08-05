@@ -51,17 +51,17 @@ Detailed acceptance criteria remain in `LEGAL_RELEASE_CHECKLIST.md`, `MONETIZATI
 
 - [ ] **Programmatic - Both:** Improve the Calendar view FABs so they have a cleaner, more polished
       appearance and interaction design.
-- [ ] **Programmatic - Both:** Change the Calendar refresh button so it automatically focuses or
+- [x] **Programmatic - Both:** Change the Calendar refresh button so it automatically focuses or
       scrolls the view to the current time after refreshing.
 - [ ] **Programmatic - Both:** Change the Calendar navigation button into a FAB menu that lets the
       user open either Calendar view or Focus Mode.
-- [ ] **Programmatic - Both:** Add a Profile preference for selecting 12-hour or 24-hour time.
+- [x] **Programmatic - Both:** Add a Profile preference for selecting 12-hour or 24-hour time.
 - [ ] **Programmatic - Both:** Change the Calendar screen time-zone field to a selector input.
-- [ ] **Programmatic - Both:** Replace Event Alarms with two separate selector inputs and rename the
+- [x] **Programmatic - Both:** Replace Event Alarms with two separate selector inputs and rename the
       feature from Alarms to Alerts.
-- [ ] **Programmatic - Both:** Display all-day events in a dedicated header instead of blocking the
+- [x] **Programmatic - Both:** Display all-day events in a dedicated header instead of blocking the
       entire day on the Calendar.
-- [ ] **Programmatic - Both:** Replace the Event date and time fields with proper platform-appropriate
+- [x] **Programmatic - Both:** Replace the Event date and time fields with proper platform-appropriate
       date and time selectors.
 
 - [ ] **Programmatic - Both:** Fix all walkthrough release blockers and approved UI, copy, behavior,

@@ -24,6 +24,7 @@ import { ListItem } from '../components/ui/ListItem';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { SectionHeading } from '../components/ui/SectionHeading';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
+import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { colors, layout, radii, spacing, typography } from '../design/tokens';
 import {
   buildIcsFilename,
@@ -62,6 +63,11 @@ import { useSoundPreview } from '../features/profile/useSoundPreview';
 import { useTelemetryConsent } from '../features/profile/useTelemetryConsent';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { ProfileTip } from '../features/profile/profileTypes';
+import {
+  DEFAULT_TIME_FORMAT,
+  TIME_FORMAT_OPTIONS,
+  TimeFormat,
+} from '../features/profile/timeFormat';
 import { listUserEvents } from '../services/firebase/firebaseEvents';
 import { reauthenticateCurrentUser } from '../services/firebase/firebaseAuthActions';
 import {
@@ -96,6 +102,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   const [displayName, setDisplayName] = useState('');
   const [timezone, setTimezone] = useState('');
   const [locale, setLocale] = useState('');
+  const [timeFormat, setTimeFormat] = useState<TimeFormat>(DEFAULT_TIME_FORMAT);
   const [accountPending, setAccountPending] = useState(false);
   const [accountFeedback, setAccountFeedback] = useState<string | null>(null);
   const [accountError, setAccountError] = useState<string | null>(null);
@@ -142,6 +149,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
     setDisplayName(profile.displayName);
     setTimezone(profile.timezone);
     setLocale(profile.locale);
+    setTimeFormat(profile.timeFormat);
     setLinkDisplayName((current) => current || profile.displayName);
   }, [profile]);
 
@@ -169,6 +177,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
         displayName,
         timezone,
         locale,
+        timeFormat,
       });
       setAccountFeedback('Account settings saved.');
     } catch (saveError) {
@@ -720,6 +729,16 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                   </Text>
                   <Text style={styles.selectionMeta}>{locale || 'Select a locale'}</Text>
                 </Pressable>
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>Time format</Text>
+                <SegmentedControl
+                  accessibilityLabel="Time format"
+                  options={TIME_FORMAT_OPTIONS}
+                  value={timeFormat}
+                  onChange={setTimeFormat}
+                />
               </View>
 
               <AppButton

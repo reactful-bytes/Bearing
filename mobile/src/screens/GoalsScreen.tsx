@@ -52,7 +52,7 @@ function getGoalProgressPercent(goal: GoalWithSteps): number {
 
 export function GoalsScreen() {
   const { createEvent, publicationCalendarTitle } = useCalendarPublication();
-  const { authUser, isAnonymous } = useUserProfile();
+  const { authUser, isAnonymous, profile } = useUserProfile();
   const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
   const {
     goals,
@@ -352,6 +352,8 @@ export function GoalsScreen() {
         visible={selectedStep !== null}
         linkedEvents={linkedEvents}
         linkedEventsState={linkedEventsState}
+        locale={profile?.locale}
+        timeFormat={profile?.timeFormat}
         onClose={() => setSelectedStepId(null)}
         onSaveStep={handleSaveStep}
         onDeleteStep={handleDeleteStep}
@@ -376,6 +378,8 @@ export function GoalsScreen() {
             : undefined
         }
         publicationCalendarTitle={publicationCalendarTitle}
+        locale={profile?.locale}
+        timeFormat={profile?.timeFormat}
         onClose={() => setScheduleStepId(null)}
         onSave={handleScheduleStepEvent}
       />

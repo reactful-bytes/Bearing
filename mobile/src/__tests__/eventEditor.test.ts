@@ -41,7 +41,8 @@ describe('event editor validation', () => {
       recurrenceFrequency: 'weekly',
       recurrenceInterval: '2',
       recurrenceOccurrenceCount: '4',
-      alarmOffsets: '-30, 0',
+      firstAlertTiming: '-30',
+      secondAlertTiming: '0',
       availability: 'tentative',
       url: 'https://example.com/plan',
     });
@@ -66,13 +67,13 @@ describe('event editor validation', () => {
     });
   });
 
-  it('rejects missing titles, invalid ranges, timezones, alarm bounds, and URLs', () => {
+  it('rejects missing titles, invalid ranges, timezones, alert bounds, and URLs', () => {
     const result = parseCalendarEventForm({
       ...validValues(),
       title: ' ',
       endTime: '08:00',
       timezone: 'Not/A_Timezone',
-      alarmOffsets: '-50000',
+      firstAlertTiming: '-50000',
       url: 'example.com',
     });
 
@@ -81,7 +82,7 @@ describe('event editor validation', () => {
       expect.arrayContaining([
         'Title is required.',
         'Timezone is invalid.',
-        'Alarm offsets must be whole minutes between -40320 and 40320.',
+        'Alert timing must be whole minutes between -40320 and 40320.',
         'URL must start with http:// or https://.',
       ]),
     );

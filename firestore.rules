@@ -28,6 +28,7 @@ service cloud.firestore {
           'email',
           'timezone',
           'locale',
+          'timeFormat',
           'tipsEnabled',
           'reminderSoundId',
           'alarmSoundId',

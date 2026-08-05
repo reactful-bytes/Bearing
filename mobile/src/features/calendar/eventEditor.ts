@@ -16,7 +16,8 @@ export type CalendarEventFormValues = {
   recurrenceInterval: string;
   recurrenceEndDate: string;
   recurrenceOccurrenceCount: string;
-  alarmOffsets: string;
+  firstAlertTiming: string;
+  secondAlertTiming: string;
   availability: EventAvailability;
   url: string;
 };
@@ -34,13 +35,13 @@ type DateParts = {
 
 const MAX_RECURRENCE_INTERVAL = 999;
 const MAX_RECURRENCE_OCCURRENCES = 9999;
-const MAX_ALARM_OFFSET_MINUTES = 40_320;
+const MAX_ALERT_OFFSET_MINUTES = 40_320;
 
 function pad(value: number): string {
   return String(value).padStart(2, '0');
 }
 
-function toDateString(date: Date, timezone?: string): string {
+export function toEventDateString(date: Date, timezone?: string): string {
   if (timezone && isValidTimeZone(timezone)) {
     const parts = getPartsInTimeZone(date, timezone);
     return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`;
@@ -48,7 +49,7 @@ function toDateString(date: Date, timezone?: string): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-function toTimeString(date: Date, timezone?: string): string {
+export function toEventTimeString(date: Date, timezone?: string): string {
   if (timezone && isValidTimeZone(timezone)) {
     const parts = getPartsInTimeZone(date, timezone);
     return `${pad(parts.hour)}:${pad(parts.minute)}`;
@@ -152,6 +153,14 @@ function parseWallTime(dateValue: string, timeValue: string, timezone: string): 
   return dateFromWallTime({ ...date, ...time }, timezone);
 }
 
+export function eventFormValueToDate(
+  dateValue: string,
+  timeValue: string,
+  timezone: string,
+): Date | null {
+  return isValidTimeZone(timezone) ? parseWallTime(dateValue, timeValue, timezone) : null;
+}
+
 function parsePositiveInteger(value: string): number | null {
   if (!/^\d+$/.test(value)) return null;
   const parsed = Number(value);
@@ -182,30 +191,30 @@ export function buildCalendarEventFormValues(
   const endAt = initialValues?.endAt ?? new Date(startAt.getTime() + 3_600_000);
   const timezone =
     initialValues?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
+  const alertTimings = (initialValues?.alarms ?? []).flatMap((alarm) =>
+    alarm.relativeOffsetMinutes === null ? [] : [String(alarm.relativeOffsetMinutes)],
+  );
 
   return {
     title: initialValues?.title ?? '',
     description: initialValues?.description ?? '',
-    startDate: toDateString(startAt, timezone),
-    startTime: toTimeString(startAt, timezone),
-    endDate: toDateString(endAt, timezone),
-    endTime: toTimeString(endAt, timezone),
+    startDate: toEventDateString(startAt, timezone),
+    startTime: toEventTimeString(startAt, timezone),
+    endDate: toEventDateString(endAt, timezone),
+    endTime: toEventTimeString(endAt, timezone),
     allDay: initialValues?.allDay ?? false,
     timezone,
     location: initialValues?.location ?? '',
     recurrenceFrequency: initialValues?.recurrenceRule?.frequency ?? 'none',
     recurrenceInterval: String(initialValues?.recurrenceRule?.interval ?? 1),
     recurrenceEndDate: initialValues?.recurrenceRule?.endAt
-      ? toDateString(initialValues.recurrenceRule.endAt, timezone)
+      ? toEventDateString(initialValues.recurrenceRule.endAt, timezone)
       : '',
     recurrenceOccurrenceCount: initialValues?.recurrenceRule?.occurrenceCount
       ? String(initialValues.recurrenceRule.occurrenceCount)
       : '',
-    alarmOffsets: (initialValues?.alarms ?? [])
-      .flatMap((alarm) =>
-        alarm.relativeOffsetMinutes === null ? [] : [String(alarm.relativeOffsetMinutes)],
-      )
-      .join(', '),
+    firstAlertTiming: alertTimings[0] ?? 'none',
+    secondAlertTiming: alertTimings[1] ?? 'none',
     availability: initialValues?.availability ?? 'busy',
     url: initialValues?.url ?? '',
   };
@@ -282,21 +291,25 @@ export function parseCalendarEventForm(
     }
   }
 
-  const alarms = values.alarmOffsets.trim()
-    ? values.alarmOffsets.split(',').map((value) => {
-        const trimmed = value.trim();
-        if (!/^-?\d+$/.test(trimmed)) return null;
-        const offset = Number(trimmed);
-        if (!Number.isSafeInteger(offset) || Math.abs(offset) > MAX_ALARM_OFFSET_MINUTES) {
-          return null;
-        }
-        return { absoluteAt: null, relativeOffsetMinutes: offset };
-      })
-    : [];
-  if (alarms.some((alarm) => alarm === null)) {
+  const alertTimings = [values.firstAlertTiming, values.secondAlertTiming];
+  const alertOffsets = alertTimings.map((timing) => {
+    if (timing === 'none') return null;
+    if (!/^-?\d+$/.test(timing)) return undefined;
+    const offset = Number(timing);
+    return Number.isSafeInteger(offset) && Math.abs(offset) <= MAX_ALERT_OFFSET_MINUTES
+      ? offset
+      : undefined;
+  });
+  if (alertOffsets.some((offset) => offset === undefined)) {
     errors.push(
-      `Alarm offsets must be whole minutes between -${MAX_ALARM_OFFSET_MINUTES} and ${MAX_ALARM_OFFSET_MINUTES}.`,
+      `Alert timing must be whole minutes between -${MAX_ALERT_OFFSET_MINUTES} and ${MAX_ALERT_OFFSET_MINUTES}.`,
     );
+  }
+  const selectedAlertOffsets = alertOffsets.filter(
+    (offset): offset is number => typeof offset === 'number',
+  );
+  if (new Set(selectedAlertOffsets).size !== selectedAlertOffsets.length) {
+    errors.push('Choose a different time for each alert.');
   }
 
   const url = values.url.trim();
@@ -314,7 +327,10 @@ export function parseCalendarEventForm(
       allDay: values.allDay,
       location: values.location.trim(),
       recurrenceRule,
-      alarms: alarms.flatMap((alarm) => (alarm ? [alarm] : [])),
+      alarms: selectedAlertOffsets.map((relativeOffsetMinutes) => ({
+        absoluteAt: null,
+        relativeOffsetMinutes,
+      })),
       availability: values.availability,
       url: url || null,
       goalId: linkedFields.goalId ?? null,

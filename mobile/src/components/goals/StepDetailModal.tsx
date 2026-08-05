@@ -23,6 +23,7 @@ import { colors, radii, spacing, typography } from '../../design/tokens';
 import { CalendarEvent } from '../../features/calendar/calendarTypes';
 import { GoalStepRecord } from '../../features/goals/goalTypes';
 import { GoalStepEventsUiState } from '../../features/goals/useGoalStepEvents';
+import { DEFAULT_TIME_FORMAT, TimeFormat, timeFormatOptions } from '../../features/profile/timeFormat';
 
 type StepDetailModalProps = {
   goalTitle: string;
@@ -30,6 +31,8 @@ type StepDetailModalProps = {
   visible: boolean;
   linkedEvents: CalendarEvent[];
   linkedEventsState: GoalStepEventsUiState;
+  locale?: string;
+  timeFormat?: TimeFormat;
   onClose: () => void;
   onSaveStep: (
     stepId: string,
@@ -53,12 +56,13 @@ function formatDateString(date: Date): string {
   });
 }
 
-function formatLinkedEvent(event: CalendarEvent): string {
-  return event.startAt.toLocaleString(undefined, {
+function formatLinkedEvent(event: CalendarEvent, timeFormat: TimeFormat, locale?: string): string {
+  return event.startAt.toLocaleString(locale, {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    ...timeFormatOptions(timeFormat),
   });
 }
 
@@ -68,6 +72,8 @@ export function StepDetailModal({
   visible,
   linkedEvents,
   linkedEventsState,
+  locale,
+  timeFormat = DEFAULT_TIME_FORMAT,
   onClose,
   onSaveStep,
   onDeleteStep,
@@ -340,7 +346,7 @@ export function StepDetailModal({
                     <Text
                       style={[styles.infoLabel, event.endAt < new Date() ? styles.pastEvent : null]}
                     >
-                      {formatLinkedEvent(event)}
+                      {formatLinkedEvent(event, timeFormat, locale)}
                     </Text>
                   </AppCard>
                 ))

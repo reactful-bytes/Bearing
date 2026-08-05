@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-nat
 
 import { AppButton } from '../ui/AppButton';
 import { FormField } from '../ui/FormField';
+import { EventDateTimePickerField } from './EventDateTimePickerField';
 import { colors, radii, spacing, typography } from '../../design/tokens';
 import {
   CreateEventInput,
@@ -15,12 +16,15 @@ import {
   buildCalendarEventFormValues,
   parseCalendarEventForm,
 } from '../../features/calendar/eventEditor';
+import { DEFAULT_TIME_FORMAT, TimeFormat } from '../../features/profile/timeFormat';
 
 type EventFormProps = {
   active: boolean;
   initialDate: Date;
   initialValues?: Partial<CreateEventInput>;
   publicationCalendarTitle?: string | null;
+  locale?: string;
+  timeFormat?: TimeFormat;
   saveLabel?: string;
   onSave: (input: CreateEventInput, options: CreateEventOptions) => Promise<void>;
 };
@@ -40,6 +44,18 @@ const AVAILABILITY_OPTIONS: { label: string; value: EventAvailability }[] = [
   { label: 'Unavailable', value: 'unavailable' },
 ];
 
+type AlertSelector = 'first' | 'second';
+
+const ALERT_TIMING_OPTIONS = [
+  { label: 'No alert', value: 'none' },
+  { label: 'At event time', value: '0' },
+  { label: '5 minutes before', value: '-5' },
+  { label: '10 minutes before', value: '-10' },
+  { label: '15 minutes before', value: '-15' },
+  { label: '30 minutes before', value: '-30' },
+  { label: '60 minutes before', value: '-60' },
+] as const;
+
 function nextDate(dateValue: string): string | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateValue);
   if (!match) return null;
@@ -47,11 +63,25 @@ function nextDate(dateValue: string): string | null {
   return date.toISOString().slice(0, 10);
 }
 
+function formatAlertTiming(timing: string): string {
+  const option = ALERT_TIMING_OPTIONS.find((candidate) => candidate.value === timing);
+  if (option) return option.label;
+
+  const offset = Number(timing);
+  if (!Number.isSafeInteger(offset)) return 'Custom alert timing';
+  if (offset === 0) return 'At event time';
+
+  const minutes = Math.abs(offset);
+  return `Custom: ${minutes} minute${minutes === 1 ? '' : 's'} ${offset < 0 ? 'before' : 'after'}`;
+}
+
 export function EventForm({
   active,
   initialDate,
   initialValues,
   publicationCalendarTitle,
+  locale,
+  timeFormat = DEFAULT_TIME_FORMAT,
   saveLabel = 'Save Event',
   onSave,
 }: EventFormProps) {
@@ -62,6 +92,7 @@ export function EventForm({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [publishToDevice, setPublishToDevice] = useState(false);
+  const [activeAlertSelector, setActiveAlertSelector] = useState<AlertSelector | null>(null);
 
   useEffect(() => {
     if (!active) return;
@@ -70,6 +101,7 @@ export function EventForm({
     setError(null);
     setSaving(false);
     setPublishToDevice(false);
+    setActiveAlertSelector(null);
   }, [active, initialDate, initialValues]);
 
   function updateValue<Key extends keyof CalendarEventFormValues>(
@@ -87,6 +119,11 @@ export function EventForm({
           : current.endDate;
       return { ...current, allDay, endDate };
     });
+  }
+
+  function handleAlertTimingChange(selector: AlertSelector, timing: string): void {
+    updateValue(selector === 'first' ? 'firstAlertTiming' : 'secondAlertTiming', timing);
+    setActiveAlertSelector(null);
   }
 
   async function handleSave(): Promise<void> {
@@ -149,49 +186,61 @@ export function EventForm({
       </View>
 
       <View style={styles.dateRow}>
-        <FormField
+        <EventDateTimePickerField
           label="Start date"
           containerStyle={styles.flexField}
           value={values.startDate}
-          onChangeText={(value) => updateValue('startDate', value)}
-          placeholder="YYYY-MM-DD"
-          placeholderTextColor={colors.textSecondary}
-          keyboardType="numbers-and-punctuation"
           accessibilityLabel="Start date"
+          mode="date"
+          dateValue={values.startDate}
+          timeValue={values.allDay ? '00:00' : values.startTime}
+          timezone={values.timezone}
+          locale={locale}
+          timeFormat={timeFormat}
+          onChange={(value) => updateValue('startDate', value)}
         />
-        <FormField
+        <EventDateTimePickerField
           label="End date"
           containerStyle={styles.flexField}
           value={values.endDate}
-          onChangeText={(value) => updateValue('endDate', value)}
-          placeholder="YYYY-MM-DD"
-          placeholderTextColor={colors.textSecondary}
-          keyboardType="numbers-and-punctuation"
           accessibilityLabel="End date"
+          mode="date"
+          dateValue={values.endDate}
+          timeValue={values.allDay ? '00:00' : values.endTime}
+          timezone={values.timezone}
+          locale={locale}
+          timeFormat={timeFormat}
+          onChange={(value) => updateValue('endDate', value)}
         />
       </View>
 
       {!values.allDay ? (
         <View style={styles.dateRow}>
-          <FormField
+          <EventDateTimePickerField
             label="Start time"
             containerStyle={styles.flexField}
             value={values.startTime}
-            onChangeText={(value) => updateValue('startTime', value)}
-            placeholder="HH:MM"
-            placeholderTextColor={colors.textSecondary}
-            keyboardType="numbers-and-punctuation"
             accessibilityLabel="Start time"
+            mode="time"
+            dateValue={values.startDate}
+            timeValue={values.startTime}
+            timezone={values.timezone}
+            locale={locale}
+            timeFormat={timeFormat}
+            onChange={(value) => updateValue('startTime', value)}
           />
-          <FormField
+          <EventDateTimePickerField
             label="End time"
             containerStyle={styles.flexField}
             value={values.endTime}
-            onChangeText={(value) => updateValue('endTime', value)}
-            placeholder="HH:MM"
-            placeholderTextColor={colors.textSecondary}
-            keyboardType="numbers-and-punctuation"
             accessibilityLabel="End time"
+            mode="time"
+            dateValue={values.endDate}
+            timeValue={values.endTime}
+            timezone={values.timezone}
+            locale={locale}
+            timeFormat={timeFormat}
+            onChange={(value) => updateValue('endTime', value)}
           />
         </View>
       ) : null}
@@ -283,15 +332,20 @@ export function EventForm({
                 accessibilityLabel="Recurrence interval"
               />
               <View style={styles.dateRow}>
-                <FormField
+                <EventDateTimePickerField
                   label="End date (optional)"
                   containerStyle={styles.flexField}
                   value={values.recurrenceEndDate}
-                  onChangeText={(value) => updateValue('recurrenceEndDate', value)}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="numbers-and-punctuation"
                   accessibilityLabel="Recurrence end date"
+                  mode="date"
+                  dateValue={values.recurrenceEndDate}
+                  fallbackDateValue={values.endDate}
+                  timeValue="12:00"
+                  timezone={values.timezone}
+                  locale={locale}
+                  timeFormat={timeFormat}
+                  allowClear
+                  onChange={(value) => updateValue('recurrenceEndDate', value)}
                 />
                 <FormField
                   label="Occurrences (optional)"
@@ -305,15 +359,78 @@ export function EventForm({
             </>
           ) : null}
 
-          <FormField
-            label="Alarm offsets (minutes)"
-            value={values.alarmOffsets}
-            onChangeText={(value) => updateValue('alarmOffsets', value)}
-            placeholder="-30, -10"
-            placeholderTextColor={colors.textSecondary}
-            keyboardType="numbers-and-punctuation"
-            accessibilityLabel="Alarm offsets"
-          />
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Alerts</Text>
+            <View style={styles.alertSelectorRow}>
+              {(
+                [
+                  { label: 'First alert', selector: 'first', timing: values.firstAlertTiming },
+                  { label: 'Second alert', selector: 'second', timing: values.secondAlertTiming },
+                ] as const
+              ).map(({ label, selector, timing }) => (
+                <Pressable
+                  key={selector}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open ${label.toLowerCase()} selector`}
+                  onPress={() =>
+                    setActiveAlertSelector((current) => (current === selector ? null : selector))
+                  }
+                  style={({ pressed }) => [
+                    styles.alertSelector,
+                    pressed ? styles.pressed : null,
+                  ]}
+                >
+                  <Text style={styles.alertSelectorLabel}>{label}</Text>
+                  <Text style={styles.alertSelectorValue}>{formatAlertTiming(timing)}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {activeAlertSelector ? (
+              <View style={styles.alertOptions}>
+                {ALERT_TIMING_OPTIONS.map((option) => {
+                  const activeTiming =
+                    activeAlertSelector === 'first'
+                      ? values.firstAlertTiming
+                      : values.secondAlertTiming;
+                  const otherTiming =
+                    activeAlertSelector === 'first'
+                      ? values.secondAlertTiming
+                      : values.firstAlertTiming;
+                  const isSelected = activeTiming === option.value;
+                  const isUnavailable = option.value !== 'none' && otherTiming === option.value;
+                  return (
+                    <Pressable
+                      key={option.value}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Select ${
+                        activeAlertSelector === 'first' ? 'first' : 'second'
+                      } alert ${option.label}`}
+                      accessibilityState={{ disabled: isUnavailable, selected: isSelected }}
+                      disabled={isUnavailable}
+                      onPress={() => handleAlertTimingChange(activeAlertSelector, option.value)}
+                      style={({ pressed }) => [
+                        styles.alertOption,
+                        isSelected ? styles.alertOptionSelected : null,
+                        isUnavailable ? styles.alertOptionDisabled : null,
+                        pressed ? styles.pressed : null,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.alertOptionText,
+                          isSelected ? styles.alertOptionTextSelected : null,
+                          isUnavailable ? styles.alertOptionTextDisabled : null,
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+          </View>
 
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Availability</Text>
@@ -431,6 +548,65 @@ const styles = StyleSheet.create({
   },
   advancedFields: {
     gap: spacing.md,
+  },
+  alertSelectorRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  alertSelector: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 64,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.xs,
+  },
+  alertSelectorLabel: {
+    ...typography.label,
+    color: colors.textSecondary,
+  },
+  alertSelectorValue: {
+    ...typography.helper,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  alertOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceMuted,
+    padding: spacing.sm,
+  },
+  alertOption: {
+    minHeight: 40,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    justifyContent: 'center',
+  },
+  alertOptionSelected: {
+    backgroundColor: colors.surfaceBrand,
+  },
+  alertOptionDisabled: {
+    opacity: 0.45,
+  },
+  alertOptionText: {
+    ...typography.helper,
+    color: colors.textSecondary,
+  },
+  alertOptionTextSelected: {
+    color: colors.brand,
+    fontWeight: '700',
+  },
+  alertOptionTextDisabled: {
+    color: colors.textSecondary,
   },
   optionWrap: {
     flexDirection: 'row',

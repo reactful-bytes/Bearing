@@ -101,6 +101,7 @@ function makeProfile(overrides: Partial<UserProfileRecord> = {}): UserProfileRec
     email: 'preston@example.com',
     timezone: 'America/New_York',
     locale: 'en-US',
+    timeFormat: '12-hour',
     premiumStatus: 'free',
     premiumSource: 'none',
     tipsEnabled: true,
@@ -316,6 +317,7 @@ describe('ProfileScreen', () => {
     fireEvent.press(screen.getByLabelText('Select Timezone America/Chicago'));
     fireEvent.press(screen.getByLabelText('Open locale picker'));
     fireEvent.press(screen.getByLabelText('Select Locale en-GB'));
+    fireEvent.press(screen.getByText('24 hour'));
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Save account settings'));
@@ -326,6 +328,7 @@ describe('ProfileScreen', () => {
         displayName: 'Preston Bateman',
         timezone: 'America/Chicago',
         locale: 'en-GB',
+        timeFormat: '24-hour',
       });
     });
 

@@ -17,15 +17,18 @@ import { useCalendarPublication } from '../features/calendar/useCalendarPublicat
 import { useTasks } from '../features/tasks/useTasks';
 import { CreateTaskInput, TaskRecord, UpdateTaskInput } from '../features/tasks/taskTypes';
 import { AppTabParamList, CalendarFocusLaunch } from '../navigation/navigationTypes';
+import { useUserProfile } from '../features/profile/useUserProfile';
+import { DEFAULT_TIME_FORMAT, TimeFormat, timeFormatOptions } from '../features/profile/timeFormat';
 
 type TaskFilter = 'active' | 'completed' | 'all';
 
-function formatDateTime(date: Date): string {
-  return date.toLocaleString(undefined, {
+function formatDateTime(date: Date, timeFormat: TimeFormat, locale?: string): string {
+  return date.toLocaleString(locale, {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    ...timeFormatOptions(timeFormat),
   });
 }
 
@@ -47,6 +50,8 @@ function completionLabel(task: TaskRecord): string {
 
 export function TasksScreen() {
   const navigation = useNavigation<NavigationProp<AppTabParamList>>();
+  const { profile } = useUserProfile();
+  const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
   const { publicationCalendarTitle, publishEvent } = useCalendarPublication();
   const {
     tasks,
@@ -242,7 +247,9 @@ export function TasksScreen() {
                   <Text numberOfLines={2} style={styles.taskDescription}>
                     {task.description.trim() ? task.description : 'No description added.'}
                   </Text>
-                  <Text style={styles.taskDate}>Updated {formatDateTime(task.updatedAt)}</Text>
+                  <Text style={styles.taskDate}>
+                    Updated {formatDateTime(task.updatedAt, timeFormat, profile?.locale)}
+                  </Text>
                 </AppCard>
               </Pressable>
             ))
@@ -266,6 +273,8 @@ export function TasksScreen() {
       <TaskDetailModal
         visible={selectedTask !== null}
         task={selectedTask}
+        locale={profile?.locale}
+        timeFormat={timeFormat}
         onClose={() => setSelectedTaskId(null)}
         onSave={handleUpdateTask}
         onDelete={handleDeleteTask}
@@ -287,6 +296,8 @@ export function TasksScreen() {
             : undefined
         }
         publicationCalendarTitle={publicationCalendarTitle}
+        locale={profile?.locale}
+        timeFormat={timeFormat}
         onClose={() => setScheduleTaskId(null)}
         onSave={handleScheduleTaskEvent}
       />

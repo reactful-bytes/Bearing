@@ -32,6 +32,7 @@ Fields:
 - email: string
 - timezone: string
 - locale: string
+- timeFormat: enum (12-hour, 24-hour), defaults to 12-hour
 - premiumStatus: enum (free, premium, grace_period, canceled), legacy server-owned mirror only
 - premiumSource: enum (ios, android, stripe, none), legacy server-owned mirror only
 - tipsEnabled: boolean

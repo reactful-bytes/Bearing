@@ -54,6 +54,7 @@ function makeProfile(overrides: Partial<UserProfileRecord> = {}): UserProfileRec
     email: 'preston@example.com',
     timezone: 'America/New_York',
     locale: 'en-US',
+    timeFormat: '12-hour',
     premiumStatus: 'free',
     premiumSource: 'none',
     tipsEnabled: true,

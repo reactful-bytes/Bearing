@@ -4,6 +4,10 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { CalendarScreen } from '../screens/CalendarScreen';
 import { CalendarEvent, createUnpublishedMetadata } from '../features/calendar/calendarTypes';
 
+jest.mock('../features/profile/useUserProfile', () => ({
+  useUserProfile: jest.fn(() => ({ profile: { locale: 'en-US', timeFormat: '12-hour' } })),
+}));
+
 jest.mock('../features/notes/useNotes', () => ({
   useCreateNote: jest.fn(() => jest.fn()),
 }));
@@ -118,6 +122,28 @@ describe('CalendarScreen interaction states', () => {
 
     expect(screen.getByText('Morning standup')).toBeTruthy();
     expect(screen.getByText('Design review')).toBeTruthy();
+  });
+
+  it('renders all-day events above the hourly timeline instead of as timed blocks', () => {
+    const allDayEvent = makeTestEvent({
+      id: 'all-day-1',
+      title: 'Company holiday',
+      startAt: new Date(2026, 6, 17),
+      endAt: new Date(2026, 6, 18),
+      allDay: true,
+    });
+
+    render(
+      <CalendarScreen
+        stateOverride="ready"
+        eventsOverride={[allDayEvent]}
+        initialDateOverride={new Date(2026, 6, 17)}
+      />,
+    );
+
+    expect(screen.getByTestId('all-day-events-header')).toBeTruthy();
+    expect(screen.getByTestId('all-day-event-all-day-1')).toBeTruthy();
+    expect(screen.queryByTestId('timed-event-all-day-1')).toBeNull();
   });
 
   it('bounds offscreen month rendering to the visible neighborhood', () => {

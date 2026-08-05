@@ -97,6 +97,7 @@ describe('Firestore ownership rules', () => {
       }),
     );
     await assertSucceeds(updateDoc(profileRef, { displayName: 'Updated owner' }));
+    await assertSucceeds(updateDoc(profileRef, { timeFormat: '24-hour' }));
     await assertFails(updateDoc(profileRef, { premiumStatus: 'premium' }));
     await assertFails(updateDoc(profileRef, { premiumSource: 'app_store' }));
   });
