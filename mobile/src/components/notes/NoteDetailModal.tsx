@@ -7,7 +7,11 @@ import { AppModal } from '../ui/AppModal';
 import { FormField } from '../ui/FormField';
 import { colors, radii, spacing, typography } from '../../design/tokens';
 import { NoteRecord, UpdateNoteInput } from '../../features/notes/noteTypes';
-import { DEFAULT_TIME_FORMAT, TimeFormat, timeFormatOptions } from '../../features/profile/timeFormat';
+import {
+  DEFAULT_TIME_FORMAT,
+  TimeFormat,
+  timeFormatOptions,
+} from '../../features/profile/timeFormat';
 
 type NoteDetailModalProps = {
   visible: boolean;

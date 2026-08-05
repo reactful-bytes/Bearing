@@ -17,10 +17,7 @@ import {
   DEFAULT_TIMER_SOUND_ID,
 } from '../../features/profile/profileSounds';
 import { UpdateUserProfileInput, UserProfileRecord } from '../../features/profile/profileTypes';
-import {
-  DEFAULT_TIME_FORMAT,
-  isTimeFormat,
-} from '../../features/profile/timeFormat';
+import { DEFAULT_TIME_FORMAT, isTimeFormat } from '../../features/profile/timeFormat';
 import { getFirebaseApp } from './firebaseApp';
 
 let cachedDb: Firestore | null = null;

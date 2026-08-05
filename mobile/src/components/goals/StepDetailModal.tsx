@@ -23,7 +23,11 @@ import { colors, radii, spacing, typography } from '../../design/tokens';
 import { CalendarEvent } from '../../features/calendar/calendarTypes';
 import { GoalStepRecord } from '../../features/goals/goalTypes';
 import { GoalStepEventsUiState } from '../../features/goals/useGoalStepEvents';
-import { DEFAULT_TIME_FORMAT, TimeFormat, timeFormatOptions } from '../../features/profile/timeFormat';
+import {
+  DEFAULT_TIME_FORMAT,
+  TimeFormat,
+  timeFormatOptions,
+} from '../../features/profile/timeFormat';
 
 type StepDetailModalProps = {
   goalTitle: string;

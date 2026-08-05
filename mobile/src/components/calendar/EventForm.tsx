@@ -375,10 +375,7 @@ export function EventForm({
                   onPress={() =>
                     setActiveAlertSelector((current) => (current === selector ? null : selector))
                   }
-                  style={({ pressed }) => [
-                    styles.alertSelector,
-                    pressed ? styles.pressed : null,
-                  ]}
+                  style={({ pressed }) => [styles.alertSelector, pressed ? styles.pressed : null]}
                 >
                   <Text style={styles.alertSelectorLabel}>{label}</Text>
                   <Text style={styles.alertSelectorValue}>{formatAlertTiming(timing)}</Text>

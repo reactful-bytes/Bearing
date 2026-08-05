@@ -90,8 +90,11 @@ export function EventDateTimePickerField({
   const [pickerError, setPickerError] = useState<string | null>(null);
   const effectiveDateValue = dateValue || fallbackDateValue || toEventDateString(new Date());
   const pickerValue =
-    eventFormValueToDate(effectiveDateValue, mode === 'date' ? timeValue || '12:00' : timeValue, timezone) ??
-    new Date();
+    eventFormValueToDate(
+      effectiveDateValue,
+      mode === 'date' ? timeValue || '12:00' : timeValue,
+      timezone,
+    ) ?? new Date();
 
   function handleValueChange(_event: DateTimePickerChangeEvent, selectedDate: Date): void {
     onChange(
@@ -167,13 +170,7 @@ export function EventDateTimePickerField({
             mode={mode}
             display="spinner"
             timeZoneName={timezone}
-            locale={
-              mode === 'time'
-                ? timeFormat === '24-hour'
-                  ? 'en-GB'
-                  : 'en-US'
-                : locale
-            }
+            locale={mode === 'time' ? (timeFormat === '24-hour' ? 'en-GB' : 'en-US') : locale}
             themeVariant="light"
             onValueChange={handleValueChange}
             style={styles.iosPicker}

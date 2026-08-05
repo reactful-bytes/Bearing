@@ -166,60 +166,62 @@ export function HourlyTimeline({
         testID="hourly-timeline-scroll"
       >
         <View style={styles.timelineContainer}>
-        {/* Hour rows */}
-        {HOURS.map((hour) => (
-          <View key={hour} style={[styles.hourRow, { top: hour * HOUR_HEIGHT }]}>
-            <Text style={styles.hourLabel}>{hour === 0 ? '' : formatHourLabel(hour, timeFormat)}</Text>
-            <View style={styles.hourLine} />
-          </View>
-        ))}
+          {/* Hour rows */}
+          {HOURS.map((hour) => (
+            <View key={hour} style={[styles.hourRow, { top: hour * HOUR_HEIGHT }]}>
+              <Text style={styles.hourLabel}>
+                {hour === 0 ? '' : formatHourLabel(hour, timeFormat)}
+              </Text>
+              <View style={styles.hourLine} />
+            </View>
+          ))}
 
-        {/* Current time indicator */}
-        {isToday ? (
-          <View style={[styles.currentTimeLine, { top: currentTimeTop }]}>
-            <View style={styles.currentTimeDot} />
-          </View>
-        ) : null}
+          {/* Current time indicator */}
+          {isToday ? (
+            <View style={[styles.currentTimeLine, { top: currentTimeTop }]}>
+              <View style={styles.currentTimeDot} />
+            </View>
+          ) : null}
 
-        {/* Event blocks */}
-        {(uiState === 'ready' || uiState === 'empty') && timedEvents.length > 0
-          ? timedEvents.map((event) => {
-              const bgColor =
-                event.ownership === 'device' && event.calendarColor
-                  ? event.calendarColor
-                  : getEventBgColor(event.status);
-              const textColor = getEventTextColor(event.status);
-              return (
-                <Pressable
-                  key={event.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={event.title}
-                  onPress={() => onPressEvent(event)}
-                  testID={`timed-event-${event.id}`}
-                  style={({ pressed }) => [
-                    styles.eventBlock,
-                    {
-                      top: getEventTop(event.startAt),
-                      height: getEventHeight(event.startAt, event.endAt),
-                      left: LABEL_COL_WIDTH + EVENT_PADDING_H,
-                      right: EVENT_PADDING_H,
-                      backgroundColor: bgColor,
-                    },
-                    event.status === 'canceled' ? styles.eventBlockCanceled : null,
-                    pressed ? styles.eventBlockPressed : null,
-                  ]}
-                >
-                  <Text style={[styles.eventTitle, { color: textColor }]} numberOfLines={1}>
-                    {event.title}
-                  </Text>
-                  <Text style={[styles.eventTime, { color: textColor }]} numberOfLines={1}>
-                    {formatClockTime(event.startAt, timeFormat)} –{' '}
-                    {formatClockTime(event.endAt, timeFormat)}
-                  </Text>
-                </Pressable>
-              );
-            })
-          : null}
+          {/* Event blocks */}
+          {(uiState === 'ready' || uiState === 'empty') && timedEvents.length > 0
+            ? timedEvents.map((event) => {
+                const bgColor =
+                  event.ownership === 'device' && event.calendarColor
+                    ? event.calendarColor
+                    : getEventBgColor(event.status);
+                const textColor = getEventTextColor(event.status);
+                return (
+                  <Pressable
+                    key={event.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={event.title}
+                    onPress={() => onPressEvent(event)}
+                    testID={`timed-event-${event.id}`}
+                    style={({ pressed }) => [
+                      styles.eventBlock,
+                      {
+                        top: getEventTop(event.startAt),
+                        height: getEventHeight(event.startAt, event.endAt),
+                        left: LABEL_COL_WIDTH + EVENT_PADDING_H,
+                        right: EVENT_PADDING_H,
+                        backgroundColor: bgColor,
+                      },
+                      event.status === 'canceled' ? styles.eventBlockCanceled : null,
+                      pressed ? styles.eventBlockPressed : null,
+                    ]}
+                  >
+                    <Text style={[styles.eventTitle, { color: textColor }]} numberOfLines={1}>
+                      {event.title}
+                    </Text>
+                    <Text style={[styles.eventTime, { color: textColor }]} numberOfLines={1}>
+                      {formatClockTime(event.startAt, timeFormat)} –{' '}
+                      {formatClockTime(event.endAt, timeFormat)}
+                    </Text>
+                  </Pressable>
+                );
+              })
+            : null}
         </View>
       </ScrollView>
     </View>
