@@ -138,13 +138,14 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M12 - Release and Store Deployment
 
-| Task ID | Status         | Description                                           | Exit Criteria                                                              |
-| ------- | -------------- | ----------------------------------------------------- | -------------------------------------------------------------------------- |
-| M12.1   | manual-handoff | Prepare release build pipelines and signing setup     | EAS profiles/checklist ready; owner generates signed candidates            |
-| M12.2   | manual-handoff | Complete App Store listing assets and metadata        | Source copy/checklist ready; owner assembles and approves Apple package    |
-| M12.3   | manual-handoff | Complete Google Play listing assets and metadata      | Source copy/checklist ready; owner assembles and approves Play package     |
-| M12.4   | manual-handoff | Run beta testing cycles (TestFlight/Internal Testing) | Evidence template/blocker policy ready; owner runs and records beta cycles |
-| M12.5   | manual-handoff | Submit and publish to both stores                     | Owner completes store-console submission and release                       |
+| Task ID | Status         | Description                                           | Exit Criteria                                                                           |
+| ------- | -------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| M12.1   | manual-handoff | Prepare release build pipelines and signing setup     | EAS profiles/checklist ready; owner generates signed candidates                         |
+| M12.2   | manual-handoff | Complete App Store listing assets and metadata        | Source copy/checklist ready; owner assembles and approves Apple package                 |
+| M12.3   | manual-handoff | Complete Google Play listing assets and metadata      | Source copy/checklist ready; owner assembles and approves Play package                  |
+| M12.4   | manual-handoff | Run beta testing cycles (TestFlight/Internal Testing) | Evidence template/blocker policy ready; owner runs and records beta cycles              |
+| M12.5   | manual-handoff | Submit and publish to both stores                     | Owner completes store-console submission and release                                    |
+| M12.6   | completed      | Create chronological dual-store deployment checklist  | One ordered checklist covers code, consoles, native validation, submission, and rollout |
 
 ### M13 - Launch Operations
 
