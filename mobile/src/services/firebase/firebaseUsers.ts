@@ -17,6 +17,7 @@ import {
   DEFAULT_TIMER_SOUND_ID,
 } from '../../features/profile/profileSounds';
 import { UpdateUserProfileInput, UserProfileRecord } from '../../features/profile/profileTypes';
+import { DEFAULT_TIME_FORMAT, isTimeFormat } from '../../features/profile/timeFormat';
 import { getFirebaseApp } from './firebaseApp';
 
 let cachedDb: Firestore | null = null;
@@ -60,6 +61,7 @@ function docToUserProfile(snapshot: DocumentSnapshot<DocumentData>): UserProfile
     email: (data.email as string | undefined) ?? '',
     timezone: (data.timezone as string | undefined) ?? 'UTC',
     locale: (data.locale as string | undefined) ?? 'en-US',
+    timeFormat: isTimeFormat(data.timeFormat) ? data.timeFormat : DEFAULT_TIME_FORMAT,
     premiumStatus: (data.premiumStatus as UserProfileRecord['premiumStatus'] | undefined) ?? 'free',
     premiumSource: (data.premiumSource as UserProfileRecord['premiumSource'] | undefined) ?? 'none',
     tipsEnabled: data.tipsEnabled !== false,
@@ -86,6 +88,7 @@ export async function ensureUserProfile(user: User): Promise<void> {
       email: nextEmail,
       timezone,
       locale,
+      timeFormat: DEFAULT_TIME_FORMAT,
       premiumStatus: 'free',
       premiumSource: 'none',
       tipsEnabled: true,
@@ -115,6 +118,10 @@ export async function ensureUserProfile(user: User): Promise<void> {
 
   if (!(data.locale as string | undefined)) {
     updates.locale = locale;
+  }
+
+  if (!isTimeFormat(data.timeFormat)) {
+    updates.timeFormat = DEFAULT_TIME_FORMAT;
   }
 
   if (typeof data.tipsEnabled !== 'boolean') {
@@ -178,6 +185,10 @@ export async function updateUserProfile(
 
   if (fields.locale !== undefined) {
     updates.locale = fields.locale.trim();
+  }
+
+  if (fields.timeFormat !== undefined) {
+    updates.timeFormat = fields.timeFormat;
   }
 
   if (fields.tipsEnabled !== undefined) {

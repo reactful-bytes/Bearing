@@ -24,6 +24,8 @@ import { CreateNoteInput as CreateNotePayload } from '../features/notes/noteType
 import { CalendarFocusLaunch } from '../navigation/navigationTypes';
 import { getFirebaseAuth } from '../services/firebase/firebaseAuth';
 import { useCreateNote } from '../features/notes/useNotes';
+import { useUserProfile } from '../features/profile/useUserProfile';
+import { DEFAULT_TIME_FORMAT } from '../features/profile/timeFormat';
 
 // ---------------------------------------------------------------------------
 // Month carousel data
@@ -90,6 +92,7 @@ export function CalendarScreen({
   const [focusModeVisible, setFocusModeVisible] = useState(false);
   const [pendingFocusEvent, setPendingFocusEvent] = useState<CalendarEvent | null>(null);
   const [preferredFocusEventId, setPreferredFocusEventId] = useState<string | null>(null);
+  const [timelineFocusRequest, setTimelineFocusRequest] = useState(0);
   const { width: screenWidth } = useWindowDimensions();
   const year = selectedDate.getFullYear();
   const month = selectedDate.getMonth();
@@ -108,6 +111,8 @@ export function CalendarScreen({
     publicationCalendarTitle,
   } = useCalendarEvents(selectedDate);
   const createNote = useCreateNote();
+  const { profile } = useUserProfile();
+  const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
 
   const uiState: CalendarUiState = stateOverride ?? realUiState;
   const calendarEvents = eventsOverride ?? realEvents;
@@ -233,6 +238,13 @@ export function CalendarScreen({
     flatListRef.current?.scrollToIndex({ index: newIndex, animated: true });
   }
 
+  function handleRefreshCalendar(): void {
+    if (isSameCalendarDay(selectedDate, new Date())) {
+      setTimelineFocusRequest((current) => current + 1);
+    }
+    void refreshEvents();
+  }
+
   async function handleAddEvent(
     input: CreateEventInput,
     options: CreateEventOptions,
@@ -304,7 +316,7 @@ export function CalendarScreen({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Refresh calendar events"
-          onPress={() => void refreshEvents()}
+          onPress={handleRefreshCalendar}
           style={({ pressed }) => [styles.refreshButton, pressed ? styles.buttonPressed : null]}
         >
           <Text style={styles.refreshButtonText}>Refresh</Text>
@@ -320,8 +332,10 @@ export function CalendarScreen({
           <HourlyTimeline
             date={selectedDate}
             events={dayEvents}
+            focusCurrentTimeRequest={timelineFocusRequest}
             onPressEvent={handlePressEvent}
             uiState={uiState}
+            timeFormat={timeFormat}
           />
         </>
       ) : (
@@ -420,6 +434,8 @@ export function CalendarScreen({
         visible={addEventVisible}
         initialDate={selectedDate}
         publicationCalendarTitle={publicationCalendarTitle}
+        locale={profile?.locale}
+        timeFormat={timeFormat}
         onClose={() => setAddEventVisible(false)}
         onSave={handleAddEvent}
       />
@@ -429,6 +445,8 @@ export function CalendarScreen({
         onUpdate={handleUpdateEvent}
         onDelete={handleDeleteEvent}
         onRetryPublication={retryPublication}
+        locale={profile?.locale}
+        timeFormat={timeFormat}
       />
       <FocusModeOverlay
         visible={focusModeVisible}

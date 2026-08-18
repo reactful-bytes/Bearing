@@ -7,21 +7,29 @@ import { AppModal } from '../ui/AppModal';
 import { FormField } from '../ui/FormField';
 import { colors, radii, spacing, typography } from '../../design/tokens';
 import { NoteRecord, UpdateNoteInput } from '../../features/notes/noteTypes';
+import {
+  DEFAULT_TIME_FORMAT,
+  TimeFormat,
+  timeFormatOptions,
+} from '../../features/profile/timeFormat';
 
 type NoteDetailModalProps = {
   visible: boolean;
   note: NoteRecord | null;
+  locale?: string;
+  timeFormat?: TimeFormat;
   onClose: () => void;
   onSave: (noteId: string, fields: UpdateNoteInput) => Promise<void>;
   onDelete: (noteId: string) => Promise<void>;
 };
 
-function formatDateTime(date: Date): string {
-  return date.toLocaleString(undefined, {
+function formatDateTime(date: Date, timeFormat: TimeFormat, locale?: string): string {
+  return date.toLocaleString(locale, {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    ...timeFormatOptions(timeFormat),
   });
 }
 
@@ -32,6 +40,8 @@ function noteSourceLabel(note: NoteRecord): string {
 export function NoteDetailModal({
   visible,
   note,
+  locale,
+  timeFormat = DEFAULT_TIME_FORMAT,
   onClose,
   onSave,
   onDelete,
@@ -137,7 +147,9 @@ export function NoteDetailModal({
         <ScrollView contentContainerStyle={styles.content}>
           <AppCard style={styles.summaryCard}>
             <Text style={styles.noteSource}>{noteSourceLabel(note)}</Text>
-            <Text style={styles.noteDate}>Updated {formatDateTime(note.updatedAt)}</Text>
+            <Text style={styles.noteDate}>
+              Updated {formatDateTime(note.updatedAt, timeFormat, locale)}
+            </Text>
           </AppCard>
 
           {editMode ? (

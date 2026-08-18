@@ -34,7 +34,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M1.2    | completed      | Configure Firebase project and environment wiring             | Firebase init/auth/env setup complete with manual signed-in/signed-out verification in web dev runtime   |
 | M1.3    | completed      | Set up linting, test runner, and baseline CI checks           | ESLint + Prettier config + Jest smoke test + PR CI workflow added                                        |
 | M1.4    | completed      | Implement bottom tab navigation shell and screen placeholders | Authenticated tab shell implemented; manual iOS/Android tap-through validation confirmed                 |
-| M1.5    | in-progress    | Restore a reproducible engineering baseline                   | Move local and CI support to latest LTS Node 24/npm 11, then prove a clean expanded gate                 |
+| M1.5    | in-progress    | Restore a reproducible engineering baseline                   | Node 24/npm 11 baseline established; mobile and Functions lint/Prettier checks pass, expanded gate remains |
 | M1.6    | manual-handoff | Add shared Firebase Functions foundation                      | Local foundation and CI definition pass; owner deploys and invokes authenticated staging services        |
 
 ### M2 - Design System and UX Foundation
@@ -167,6 +167,10 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M10.0d  | completed      | Improve Tasks presentation and filtering           | Active, completed, and all tasks have counts, selected state, and concise cards                                      |
 | M10.0e  | completed      | Normalize forms, modals, sizing, and accessibility | Existing screens use consistent controls without clipping or undersized interactions                                 |
 | M10.1   | manual-handoff | Polish UI interactions and accessibility           | Automated semantics pass; physical screen-reader review is a manual handoff                                          |
+| M10.1a  | completed      | Center Calendar refresh on the current time        | Today's refreshed day timeline uses its measured viewport to center the current-time indicator                       |
+| M10.1b  | completed      | Show all-day events above the hourly timeline      | Compact pressable headers keep all-day events out of the timed grid; typecheck and owner visual acceptance pass      |
+| M10.1c  | completed      | Replace event alarm input with alert selectors     | Two discrete timing selectors replace free-text offsets; typecheck and owner visual acceptance pass                   |
+| M10.1d  | manual-handoff | Add time format preference and event pickers       | Browser fallback accepted; rebuilt Android client still awaits native picker visual acceptance                        |
 | M10.2   | completed      | Fix operability edge cases and error recovery      | Core startup and Firestore failures expose tested executable retry                                                   |
 | M10.3   | manual-handoff | Optimize app performance and startup time          | Startup subscriptions and month rendering are bounded; owner records release-device launch, FPS, and memory evidence |
 | M10.4   | manual-handoff | Run end-to-end user acceptance testing             | Owner completes final native UAT and signoff                                                                         |

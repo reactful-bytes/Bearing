@@ -10,13 +10,16 @@ import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { colors, layout, radii, spacing, typography } from '../design/tokens';
 import { useNotes } from '../features/notes/useNotes';
 import { CreateNoteInput, NoteRecord, UpdateNoteInput } from '../features/notes/noteTypes';
+import { useUserProfile } from '../features/profile/useUserProfile';
+import { DEFAULT_TIME_FORMAT, TimeFormat, timeFormatOptions } from '../features/profile/timeFormat';
 
-function formatDateTime(date: Date): string {
-  return date.toLocaleString(undefined, {
+function formatDateTime(date: Date, timeFormat: TimeFormat, locale?: string): string {
+  return date.toLocaleString(locale, {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    ...timeFormatOptions(timeFormat),
   });
 }
 
@@ -26,6 +29,8 @@ function noteSourceLabel(note: NoteRecord): string {
 
 export function NotesScreen() {
   const { notes, uiState, createNote, updateNote, deleteNote, retry } = useNotes();
+  const { profile } = useUserProfile();
+  const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
   const [addNoteVisible, setAddNoteVisible] = useState(false);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
 
@@ -91,7 +96,9 @@ export function NotesScreen() {
                 <AppCard style={styles.noteCard}>
                   <View style={styles.noteMetaRow}>
                     <Text style={styles.noteSource}>{noteSourceLabel(note)}</Text>
-                    <Text style={styles.noteDate}>{formatDateTime(note.updatedAt)}</Text>
+                    <Text style={styles.noteDate}>
+                      {formatDateTime(note.updatedAt, timeFormat, profile?.locale)}
+                    </Text>
                   </View>
                   <Text style={styles.noteTitle}>{note.title}</Text>
                   <Text style={styles.noteBody}>{note.body}</Text>
@@ -118,6 +125,8 @@ export function NotesScreen() {
       <NoteDetailModal
         visible={selectedNote !== null}
         note={selectedNote}
+        locale={profile?.locale}
+        timeFormat={timeFormat}
         onClose={() => setSelectedNoteId(null)}
         onSave={handleUpdateNote}
         onDelete={handleDeleteNote}

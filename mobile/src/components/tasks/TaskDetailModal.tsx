@@ -7,10 +7,17 @@ import { AppModal } from '../ui/AppModal';
 import { FormField } from '../ui/FormField';
 import { colors, radii, spacing, typography } from '../../design/tokens';
 import { TaskRecord, UpdateTaskInput } from '../../features/tasks/taskTypes';
+import {
+  DEFAULT_TIME_FORMAT,
+  TimeFormat,
+  timeFormatOptions,
+} from '../../features/profile/timeFormat';
 
 type TaskDetailModalProps = {
   visible: boolean;
   task: TaskRecord | null;
+  locale?: string;
+  timeFormat?: TimeFormat;
   onClose: () => void;
   onSave: (taskId: string, fields: UpdateTaskInput) => Promise<void>;
   onDelete: (taskId: string) => Promise<void>;
@@ -19,16 +26,17 @@ type TaskDetailModalProps = {
   onMarkComplete: (task: TaskRecord) => Promise<void>;
 };
 
-function formatDateTime(date: Date | null): string {
+function formatDateTime(date: Date | null, timeFormat: TimeFormat, locale?: string): string {
   if (!date) {
     return 'Not completed';
   }
 
-  return date.toLocaleString(undefined, {
+  return date.toLocaleString(locale, {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    ...timeFormatOptions(timeFormat),
   });
 }
 
@@ -51,6 +59,8 @@ function getCompletionLabel(task: TaskRecord): string {
 export function TaskDetailModal({
   visible,
   task,
+  locale,
+  timeFormat = DEFAULT_TIME_FORMAT,
   onClose,
   onSave,
   onDelete,
@@ -177,9 +187,13 @@ export function TaskDetailModal({
           <AppCard style={styles.summaryCard}>
             <Text style={styles.statusLabel}>{getCompletionLabel(task)}</Text>
             <Text style={styles.summaryTitle}>{task.title}</Text>
-            <Text style={styles.summaryDate}>Updated {formatDateTime(task.updatedAt)}</Text>
+            <Text style={styles.summaryDate}>
+              Updated {formatDateTime(task.updatedAt, timeFormat, locale)}
+            </Text>
             {task.status === 'completed' ? (
-              <Text style={styles.summaryDate}>Completed {formatDateTime(task.completedAt)}</Text>
+              <Text style={styles.summaryDate}>
+                Completed {formatDateTime(task.completedAt, timeFormat, locale)}
+              </Text>
             ) : null}
           </AppCard>
 

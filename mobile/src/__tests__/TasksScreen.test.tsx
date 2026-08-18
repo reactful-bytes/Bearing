@@ -1,11 +1,15 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-import { TasksScreen } from '../screens/TasksScreen';
-import { useTasks } from '../features/tasks/useTasks';
-import { TaskRecord } from '../features/tasks/taskTypes';
-import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { CreateEventInput } from '../features/calendar/calendarTypes';
+import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
+import { TaskRecord } from '../features/tasks/taskTypes';
+import { useTasks } from '../features/tasks/useTasks';
+import { TasksScreen } from '../screens/TasksScreen';
+
+jest.mock('../features/profile/useUserProfile', () => ({
+  useUserProfile: jest.fn(() => ({ profile: { locale: 'en-US', timeFormat: '12-hour' } })),
+}));
 
 const mockNavigate = jest.fn();
 

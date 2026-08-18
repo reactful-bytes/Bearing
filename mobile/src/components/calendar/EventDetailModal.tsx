@@ -9,6 +9,11 @@ import {
   CreateEventInput,
 } from '../../features/calendar/calendarTypes';
 import { EventForm } from './EventForm';
+import {
+  DEFAULT_TIME_FORMAT,
+  TimeFormat,
+  formatClockTime,
+} from '../../features/profile/timeFormat';
 
 type EventDetailModalProps = {
   event: CalendarDisplayEvent | null;
@@ -16,6 +21,8 @@ type EventDetailModalProps = {
   onUpdate: (event: CalendarDisplayEvent, input: CreateEventInput) => Promise<void>;
   onDelete: (event: CalendarDisplayEvent) => Promise<void>;
   onRetryPublication?: (event: BearingEvent) => Promise<void>;
+  locale?: string;
+  timeFormat?: TimeFormat;
 };
 
 const MONTH_NAMES_SHORT = [
@@ -33,16 +40,8 @@ const MONTH_NAMES_SHORT = [
   'Dec',
 ];
 
-function formatTimeRange(startAt: Date, endAt: Date): string {
-  function fmt(d: Date): string {
-    const h = d.getHours();
-    const m = d.getMinutes();
-    const period = h >= 12 ? 'PM' : 'AM';
-    const displayH = h % 12 === 0 ? 12 : h % 12;
-    const displayM = m.toString().padStart(2, '0');
-    return `${displayH}:${displayM} ${period}`;
-  }
-  return `${fmt(startAt)} – ${fmt(endAt)}`;
+function formatTimeRange(startAt: Date, endAt: Date, timeFormat: TimeFormat): string {
+  return `${formatClockTime(startAt, timeFormat)} – ${formatClockTime(endAt, timeFormat)}`;
 }
 
 function formatFullDate(date: Date): string {
@@ -64,6 +63,8 @@ export function EventDetailModal({
   onUpdate,
   onDelete,
   onRetryPublication,
+  locale,
+  timeFormat = DEFAULT_TIME_FORMAT,
 }: EventDetailModalProps) {
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -134,6 +135,8 @@ export function EventDetailModal({
           initialDate={event.startAt}
           initialValues={event}
           saveLabel="Update Event"
+          locale={locale}
+          timeFormat={timeFormat}
           onSave={handleUpdate}
         />
       ) : event ? (
@@ -194,7 +197,9 @@ export function EventDetailModal({
 
           <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>Time</Text>
-            <Text style={styles.metaValue}>{formatTimeRange(event.startAt, event.endAt)}</Text>
+            <Text style={styles.metaValue}>
+              {formatTimeRange(event.startAt, event.endAt, timeFormat)}
+            </Text>
           </View>
 
           <View style={styles.metaRow}>
