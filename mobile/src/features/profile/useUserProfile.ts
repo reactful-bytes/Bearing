@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { onAuthStateChanged, reload, User } from 'firebase/auth';
 
 import { revokeNativeGoogleAccess } from '../auth/googleNativeAuth';
 import { useGoogleAuth } from '../auth/useGoogleAuth';
@@ -42,9 +42,24 @@ export type UseUserProfileReturn = {
   retry: () => void;
 };
 
+type AuthUserSnapshot = {
+  user: User | null;
+  providerIds: string[];
+};
+
+function createAuthUserSnapshot(user: User | null): AuthUserSnapshot {
+  return {
+    user,
+    providerIds: user?.providerData.map((provider) => provider.providerId) ?? [],
+  };
+}
+
 export function useUserProfile(): UseUserProfileReturn {
   const googleAuth = useGoogleAuth();
-  const [authUser, setAuthUser] = useState<User | null>(() => getFirebaseAuth().currentUser);
+  const [authSnapshot, setAuthSnapshot] = useState<AuthUserSnapshot>(() =>
+    createAuthUserSnapshot(getFirebaseAuth().currentUser),
+  );
+  const authUser = authSnapshot.user;
   const [profile, setProfile] = useState<UserProfileRecord | null>(null);
   const [uiState, setUiState] = useState<UserProfileUiState>('loading');
   const [error, setError] = useState<Error | null>(null);
@@ -52,17 +67,41 @@ export function useUserProfile(): UseUserProfileReturn {
 
   useEffect(() => {
     const auth = getFirebaseAuth();
+    let cancelled = false;
+    let authChangeId = 0;
 
-    return onAuthStateChanged(
+    const unsubscribe = onAuthStateChanged(
       auth,
       (nextUser) => {
-        setAuthUser(nextUser);
+        const currentAuthChangeId = ++authChangeId;
+
+        void (async () => {
+          if (nextUser) {
+            try {
+              await reload(nextUser);
+            } catch {
+              // Keep the authenticated session usable when metadata refresh is temporarily offline.
+            }
+          }
+
+          if (cancelled || currentAuthChangeId !== authChangeId) {
+            return;
+          }
+
+          setAuthSnapshot(createAuthUserSnapshot(nextUser));
+        })();
       },
       (authError) => {
         setUiState('error');
         setError(authError);
       },
     );
+
+    return () => {
+      cancelled = true;
+      authChangeId += 1;
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -165,7 +204,7 @@ export function useUserProfile(): UseUserProfileReturn {
       );
 
       await ensureUserProfile(linkedUser);
-      setAuthUser(linkedUser);
+      setAuthSnapshot(createAuthUserSnapshot(linkedUser));
     },
     [authUser],
   );
@@ -189,7 +228,7 @@ export function useUserProfile(): UseUserProfileReturn {
       : await linkCurrentUserWithGoogleAuth(tokens, authUser.uid);
 
     await ensureUserProfile(linkedUser);
-    setAuthUser(linkedUser);
+    setAuthSnapshot(createAuthUserSnapshot(linkedUser));
     return 'linked';
   }, [authUser, googleAuth]);
 
@@ -211,12 +250,8 @@ export function useUserProfile(): UseUserProfileReturn {
     await revokeNativeGoogleAccess();
   }, []);
 
-  const hasPasswordProvider = Boolean(
-    authUser?.providerData.some((provider) => provider.providerId === 'password'),
-  );
-  const hasGoogleProvider = Boolean(
-    authUser?.providerData.some((provider) => provider.providerId === 'google.com'),
-  );
+  const hasPasswordProvider = authSnapshot.providerIds.includes('password');
+  const hasGoogleProvider = authSnapshot.providerIds.includes('google.com');
 
   return {
     authUser,
