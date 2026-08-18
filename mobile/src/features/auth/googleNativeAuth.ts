@@ -4,17 +4,11 @@ import { assertGoogleOAuthConfigured } from '../../services/config/googleAuthEnv
 
 type NativeGoogleSigninClient = Pick<
   typeof import('@react-native-google-signin/google-signin').GoogleSignin,
-  | 'configure'
-  | 'getTokens'
-  | 'hasPlayServices'
-  | 'revokeAccess'
-  | 'signIn'
-  | 'signOut'
+  'configure' | 'getTokens' | 'hasPlayServices' | 'revokeAccess' | 'signIn' | 'signOut'
 >;
 
 export type GoogleTokenResult =
-  | { type: 'success'; idToken: string; accessToken: string | null }
-  | { type: 'cancelled' };
+  { type: 'success'; idToken: string; accessToken: string | null } | { type: 'cancelled' };
 
 let nativeClientPromise: Promise<NativeGoogleSigninClient> | null = null;
 let configuredWebClientId: string | null = null;

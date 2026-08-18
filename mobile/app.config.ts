@@ -16,6 +16,7 @@ const config: ExpoConfig = {
   userInterfaceStyle: 'light',
   plugins: [
     'expo-dev-client',
+    'expo-asset',
     'expo-audio',
     'expo-sharing',
     'expo-web-browser',
