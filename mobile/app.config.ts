@@ -1,19 +1,26 @@
 import type { ExpoConfig } from 'expo/config';
 
 const appEnv = process.env.EXPO_PUBLIC_APP_ENV ?? 'development';
+const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+const googleIosUrlScheme = googleIosClientId?.endsWith('.apps.googleusercontent.com')
+  ? `com.googleusercontent.apps.${googleIosClientId.slice(0, -'.apps.googleusercontent.com'.length)}`
+  : 'com.googleusercontent.apps.configure-bearing-ios-client';
 
 const config: ExpoConfig = {
   name: 'Bearing',
   slug: 'bearing',
   version: '1.0.0',
+  scheme: 'bearing',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'light',
   plugins: [
     'expo-dev-client',
+    'expo-asset',
     'expo-audio',
     'expo-sharing',
-    '@react-native-community/datetimepicker',
+    'expo-web-browser',
+    ['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosUrlScheme }],
     [
       'expo-calendar',
       {
@@ -49,6 +56,11 @@ const config: ExpoConfig = {
       storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
       messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
       appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+    },
+    google: {
+      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+      iosClientId: googleIosClientId,
+      androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
     },
   },
 };

@@ -1,21 +1,30 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import App from '../../App';
 import { useAuthBootstrap } from '../features/auth/useAuthBootstrap';
+import { useGoogleAuth } from '../features/auth/useGoogleAuth';
 import {
+  completeGooglePasswordConflict,
   sendPasswordResetForEmail,
   signInWithEmailPassword,
+  signInWithGoogleAuth,
 } from '../services/firebase/firebaseAuthActions';
 
 jest.mock('../features/auth/useAuthBootstrap', () => ({
   useAuthBootstrap: jest.fn(),
 }));
 
+jest.mock('../features/auth/useGoogleAuth', () => ({
+  useGoogleAuth: jest.fn(),
+}));
+
 jest.mock('../services/firebase/firebaseAuthActions', () => ({
+  completeGooglePasswordConflict: jest.fn(),
   registerWithEmailPassword: jest.fn(),
   sendPasswordResetForEmail: jest.fn(),
   signInWithEmailPassword: jest.fn(),
+  signInWithGoogleAuth: jest.fn(),
   signOutCurrentUser: jest.fn(),
 }));
 
@@ -75,6 +84,20 @@ jest.mock('../navigation/AppTabs', () => ({
 }));
 
 describe('App shell', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    const mockedUseGoogleAuth = useGoogleAuth as jest.MockedFunction<typeof useGoogleAuth>;
+    mockedUseGoogleAuth.mockReturnValue({
+      isConfigured: true,
+      isReady: true,
+      acquireTokens: jest.fn(async () => ({
+        type: 'success' as const,
+        idToken: 'google-id-token',
+        accessToken: null,
+      })),
+    });
+  });
+
   it('renders signed-out state entry point', () => {
     const mockedUseAuthBootstrap = useAuthBootstrap as jest.MockedFunction<typeof useAuthBootstrap>;
 
@@ -91,6 +114,8 @@ describe('App shell', () => {
     expect(screen.getByLabelText('Email address')).toBeTruthy();
     expect(screen.getByLabelText('Password')).toBeTruthy();
     expect(screen.getByText('Sign In')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Forgot password?' })).toBeTruthy();
   });
 
   it('submits email sign-in from the unauthenticated shell', async () => {
@@ -119,7 +144,7 @@ describe('App shell', () => {
     });
   });
 
-  it('sends a password reset email from the unauthenticated shell', async () => {
+  it('uses a dedicated password reset view with neutral confirmation copy', async () => {
     const mockedUseAuthBootstrap = useAuthBootstrap as jest.MockedFunction<typeof useAuthBootstrap>;
     const mockedPasswordReset = sendPasswordResetForEmail as jest.MockedFunction<
       typeof sendPasswordResetForEmail
@@ -134,13 +159,67 @@ describe('App shell', () => {
 
     render(<App />);
 
-    fireEvent.changeText(screen.getByLabelText('Email address'), 'person@example.com');
+    fireEvent.press(screen.getByRole('link', { name: 'Forgot password?' }));
+    expect(screen.getByRole('header', { name: 'Reset your password' })).toBeTruthy();
+    fireEvent.changeText(screen.getByLabelText('Password reset email'), 'person@example.com');
     await act(async () => {
-      fireEvent.press(screen.getByText('Send Password Reset Email'));
+      fireEvent.press(screen.getByRole('button', { name: 'Send reset link' }));
     });
 
     await waitFor(() => {
       expect(mockedPasswordReset).toHaveBeenCalledWith('person@example.com');
+    });
+    expect(
+      screen.getByText(
+        'If an account exists for that email, a password reset link is on its way. Check your inbox and spam folder.',
+      ),
+    ).toBeTruthy();
+  });
+
+  it('verifies a password account before linking a pending Google credential', async () => {
+    const credential = { providerId: 'google.com' };
+    const mockedGoogleSignIn = signInWithGoogleAuth as jest.MockedFunction<
+      typeof signInWithGoogleAuth
+    >;
+    const mockedCompleteConflict = completeGooglePasswordConflict as jest.MockedFunction<
+      typeof completeGooglePasswordConflict
+    >;
+    const mockedUseAuthBootstrap = useAuthBootstrap as jest.MockedFunction<typeof useAuthBootstrap>;
+    mockedUseAuthBootstrap.mockReturnValue({
+      status: 'unauthenticated',
+      user: null,
+      error: null,
+      retry: jest.fn(),
+    });
+    mockedGoogleSignIn.mockResolvedValue({
+      type: 'password-conflict',
+      email: 'person@example.com',
+      credential: credential as never,
+    });
+    mockedCompleteConflict.mockResolvedValue({ uid: 'canonical-user' } as never);
+
+    render(<App />);
+
+    await act(async () => {
+      fireEvent.press(screen.getByRole('button', { name: 'Continue with Google' }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('header', { name: 'Keep your Bearing data' })).toBeTruthy();
+    });
+    expect(screen.getByLabelText('Existing account email').props.value).toBe('person@example.com');
+    fireEvent.changeText(screen.getByLabelText('Existing account password'), 'current-password');
+
+    await act(async () => {
+      fireEvent.press(screen.getByRole('button', { name: 'Verify password and link Google' }));
+    });
+
+    await waitFor(() => {
+      expect(mockedCompleteConflict).toHaveBeenCalledWith(
+        'person@example.com',
+        'current-password',
+        credential,
+      );
     });
   });
 

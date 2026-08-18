@@ -8,7 +8,9 @@ from `app.config.ts` and remain gitignored.
 
 1. Use Node.js 24.x LTS and npm 11.x.
 2. From `mobile/`, run `npm install`.
-3. Copy `.env.example` to `.env` and set the development Firebase values.
+3. Copy `.env.example` to `.env` and set the development Firebase and Google OAuth client IDs.
+
+Google authentication also requires a rebuilt development client. Expo Go cannot load the Android native Google Sign-In module or validate the app-specific OAuth configuration.
 
 ## Android
 
@@ -45,6 +47,19 @@ Open the installed Bearing app if it does not reconnect automatically. Rebuild w
 `npm run android` or `npm run ios` after adding or upgrading a native module or changing a config
 plugin, permission, bundle identifier, or package name. If generated native configuration is stale,
 regenerate it with `npm run prebuild:clean` before rebuilding.
+
+## Google Authentication Smoke Test
+
+1. Confirm the Firebase project has Google enabled and one account per email address selected.
+2. Confirm the Android signing SHA-1/SHA-256 or iOS bundle OAuth client matches the installed build.
+3. Launch the signed-out screen and complete Google Sign-In.
+4. Record the Firebase UID, sign out, sign back in, and confirm the same UID and Bearing data return.
+5. From Profile, add Google to a disposable password account and confirm both providers return the same UID.
+6. Link Google to a disposable anonymous session containing test data and confirm its UID and data remain unchanged.
+7. Try a Google credential already owned by another disposable Firebase user. Confirm Bearing stops without switching accounts, merging records, or deleting either user.
+8. Open deletion for a Google-only disposable account. Cancel Google verification once and confirm nothing is deleted, then repeat and complete deletion.
+
+Record platform, OS version, build profile, signing identity, Firebase project, OAuth client type, starting UID, ending UID, and outcome. Do not record ID tokens, access tokens, passwords, or client secrets.
 
 ## Calendar Permission Smoke Test
 

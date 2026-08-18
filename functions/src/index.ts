@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase-admin/app";
-import { defineSecret } from "firebase-functions/params";
+import { defineString } from "firebase-functions/params";
 import { logger } from "firebase-functions/logger";
 import { onCall, onRequest } from "firebase-functions/v2/https";
 import { setGlobalOptions } from "firebase-functions/v2/options";
@@ -22,23 +22,18 @@ setGlobalOptions({
   region: "us-central1",
 });
 
-const geminiApiKey = defineSecret("GEMINI_API_KEY");
-const revenueCatApiKey = defineSecret("REVENUECAT_SECRET_API_KEY");
-const revenueCatWebhookAuthorization = defineSecret(
+const geminiApiKey = defineString("GEMINI_API_KEY");
+const revenueCatApiKey = defineString("REVENUECAT_SECRET_API_KEY");
+const revenueCatWebhookAuthorization = defineString(
   "REVENUECAT_WEBHOOK_AUTHORIZATION",
 );
-const revenueCatWebhookSigningSecret = defineSecret(
+const revenueCatWebhookSigningSecret = defineString(
   "REVENUECAT_WEBHOOK_SIGNING_SECRET",
 );
 
 export const revenueCatWebhook = onRequest(
   {
     cors: false,
-    secrets: [
-      revenueCatApiKey,
-      revenueCatWebhookAuthorization,
-      revenueCatWebhookSigningSecret,
-    ],
     timeoutSeconds: 30,
   },
   (request, response) =>
@@ -71,7 +66,6 @@ export const recordTelemetryEvent = onCall(
 export const generateGoalPlanDraft = onCall(
   {
     enforceAppCheck: true,
-    secrets: [geminiApiKey],
     timeoutSeconds: 45,
   },
   (request) =>
@@ -92,7 +86,6 @@ export const exportUserData = onCall(
 export const deleteUserAccount = onCall(
   {
     enforceAppCheck: true,
-    secrets: [revenueCatApiKey],
     timeoutSeconds: 120,
   },
   async (request) => {

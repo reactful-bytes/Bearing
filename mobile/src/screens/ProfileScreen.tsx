@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import { AppButton } from '../components/ui/AppButton';
+import { GoogleAuthButton } from '../components/auth/GoogleAuthButton';
 import { AppModal } from '../components/ui/AppModal';
 import { FormField } from '../components/ui/FormField';
 import { PremiumPaywallModal } from '../components/premium/PremiumPaywallModal';
@@ -90,9 +91,16 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
     error,
     isAnonymous,
     email,
+    hasPasswordProvider,
+    hasGoogleProvider,
+    isGoogleAuthReady,
     updateProfile,
     sendPasswordReset,
     linkAnonymousAccount,
+    linkGoogleAccount,
+    disconnectGoogleAccount,
+    reauthenticateWithGoogle,
+    revokeGoogleAccess,
     retry: retryProfile,
   } = useUserProfile();
   const { entitlement } = usePremiumEntitlement(authUser?.uid ?? null);
@@ -111,6 +119,10 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   const [linkPassword, setLinkPassword] = useState('');
   const [linkPasswordConfirm, setLinkPasswordConfirm] = useState('');
   const [linkPending, setLinkPending] = useState(false);
+  const [googleLinkPending, setGoogleLinkPending] = useState(false);
+  const [disconnectGoogleVisible, setDisconnectGoogleVisible] = useState(false);
+  const [googleDisconnectPending, setGoogleDisconnectPending] = useState(false);
+  const [googleDisconnectError, setGoogleDisconnectError] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
   const [soundPicker, setSoundPicker] = useState<'alarm' | 'reminder' | null>(null);
   const [selectionPicker, setSelectionPicker] = useState<'timezone' | 'locale' | null>(null);
@@ -270,6 +282,65 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
       );
     } finally {
       setLinkPending(false);
+    }
+  }
+
+  async function handleLinkGoogleAccount(): Promise<void> {
+    setGoogleLinkPending(true);
+    setLinkError(null);
+
+    try {
+      const result = await linkGoogleAccount();
+      if (result === 'cancelled') return;
+
+      void recordTelemetryEvent('auth_result', {
+        operation: 'account_link',
+        outcome: 'success',
+      });
+      Alert.alert(
+        isAnonymous ? 'Account secured' : 'Google connected',
+        isAnonymous
+          ? 'This session is now secured with Google and keeps the same Bearing data.'
+          : 'Google Sign-In was added without changing your Bearing account or data.',
+      );
+    } catch (googleError) {
+      void recordTelemetryEvent('auth_result', {
+        operation: 'account_link',
+        outcome: 'failure',
+      });
+      setLinkError(
+        googleError instanceof Error ? googleError.message : 'Failed to connect Google.',
+      );
+    } finally {
+      setGoogleLinkPending(false);
+    }
+  }
+
+  function closeDisconnectGoogle(): void {
+    if (googleDisconnectPending) return;
+    setDisconnectGoogleVisible(false);
+    setGoogleDisconnectError(null);
+  }
+
+  async function handleDisconnectGoogle(): Promise<void> {
+    setGoogleDisconnectPending(true);
+    setGoogleDisconnectError(null);
+
+    try {
+      await disconnectGoogleAccount();
+      setDisconnectGoogleVisible(false);
+      Alert.alert(
+        'Google disconnected',
+        'Continue signing in to this Bearing account with your email and password.',
+      );
+    } catch (disconnectError) {
+      setGoogleDisconnectError(
+        disconnectError instanceof Error
+          ? disconnectError.message
+          : 'Failed to disconnect Google Sign-In.',
+      );
+    } finally {
+      setGoogleDisconnectPending(false);
     }
   }
 
@@ -522,7 +593,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
       setDeleteError('Type DELETE exactly to confirm permanent account deletion.');
       return;
     }
-    if (!isAnonymous && !deletePassword) {
+    if (hasPasswordProvider && !deletePassword) {
       setDeleteError('Enter the current password to continue.');
       return;
     }
@@ -530,7 +601,15 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
     setDeletePending(true);
     setDeleteError(null);
     try {
-      if (!isAnonymous) await reauthenticateCurrentUser(deletePassword);
+      if (hasPasswordProvider) {
+        await reauthenticateCurrentUser(deletePassword);
+      } else if (hasGoogleProvider) {
+        const result = await reauthenticateWithGoogle();
+        if (result === 'cancelled') {
+          setDeleteError('Google verification was cancelled. No account data was deleted.');
+          return;
+        }
+      }
       if (deleteLinkedCopies) {
         const cleanup = await cleanupLinkedCalendarCopies(authUser.uid);
         if (cleanup.failedCount > 0) {
@@ -540,6 +619,9 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
         }
       }
       await deleteCurrentUserAccount();
+      if (hasGoogleProvider) {
+        await revokeGoogleAccess().catch(() => undefined);
+      }
       const localCleanup = await purgeLocalAccountData(authUser.uid);
       setDeleteAccountVisible(false);
       Alert.alert(
@@ -619,9 +701,18 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                 <View style={styles.sectionBody}>
                   <Text style={styles.sectionTitle}>Secure this anonymous session</Text>
                   <Text style={styles.stateDescription}>
-                    Add email and password to keep the same app data while turning this session into
-                    a real account.
+                    Add Google or email and password while keeping this Firebase user ID and its
+                    existing app data.
                   </Text>
+
+                  <GoogleAuthButton
+                    label="Secure with Google"
+                    disabled={!isGoogleAuthReady || linkPending}
+                    loading={googleLinkPending}
+                    onPress={() => void handleLinkGoogleAccount()}
+                  />
+
+                  <Text style={styles.sectionTitle}>Or use email and password</Text>
 
                   <FormField
                     label="Display name"
@@ -670,13 +761,46 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                   />
                 </View>
               ) : (
-                <ListItem
-                  onPress={() => void handleSendPasswordReset()}
-                  title="Reset password"
-                  description="Send a Firebase reset email to the current account address."
-                  trailingText={passwordResetPending ? 'Working...' : 'Send'}
-                  disabled={passwordResetPending}
-                />
+                <View style={styles.sectionBody}>
+                  {hasGoogleProvider ? (
+                    <ListItem
+                      onPress={
+                        hasPasswordProvider
+                          ? () => {
+                              setGoogleDisconnectError(null);
+                              setDisconnectGoogleVisible(true);
+                            }
+                          : undefined
+                      }
+                      title="Google Sign-In"
+                      description={
+                        hasPasswordProvider
+                          ? 'Connected. Disconnecting Google will keep email and password access.'
+                          : 'Connected. Add a password before disconnecting Google.'
+                      }
+                      trailingText={hasPasswordProvider ? 'Disconnect' : 'Connected'}
+                    />
+                  ) : (
+                    <GoogleAuthButton
+                      label="Add Google Sign-In"
+                      disabled={!isGoogleAuthReady}
+                      loading={googleLinkPending}
+                      onPress={() => void handleLinkGoogleAccount()}
+                    />
+                  )}
+
+                  {hasPasswordProvider ? (
+                    <ListItem
+                      onPress={() => void handleSendPasswordReset()}
+                      title="Reset password"
+                      description="Send a Firebase reset email to the current account address."
+                      trailingText={passwordResetPending ? 'Working...' : 'Send'}
+                      disabled={passwordResetPending}
+                    />
+                  ) : null}
+
+                  {linkError ? <Text style={styles.errorText}>{linkError}</Text> : null}
+                </View>
               )}
             </View>
 
@@ -1150,7 +1274,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
           This permanently deletes your Bearing profile, events, goals, steps, notes, tasks, and
           subscription record. This action cannot be undone.
         </Text>
-        {!isAnonymous ? (
+        {hasPasswordProvider ? (
           <FormField
             label="Current password"
             accessibilityLabel="Account deletion current password"
@@ -1158,6 +1282,10 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
             onChangeText={setDeletePassword}
             secureTextEntry
           />
+        ) : hasGoogleProvider ? (
+          <Text style={styles.stateDescription}>
+            Google will ask you to verify this account before permanent deletion begins.
+          </Text>
         ) : (
           <Text style={styles.stateDescription}>
             Anonymous sessions can only be deleted while their sign-in is recent. Secure the account
@@ -1191,6 +1319,33 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
           loadingLabel="Deleting..."
         />
         {deleteError ? <Text style={styles.errorText}>{deleteError}</Text> : null}
+      </AppModal>
+
+      <AppModal
+        visible={disconnectGoogleVisible}
+        title="Disconnect Google Sign-In"
+        onClose={closeDisconnectGoogle}
+      >
+        <Text style={styles.stateDescription}>
+          You’ll continue to access this Bearing account with your email and password. Your account
+          and data will not be deleted.
+        </Text>
+        <AppButton
+          label="Keep Google Connected"
+          variant="secondary"
+          onPress={closeDisconnectGoogle}
+          disabled={googleDisconnectPending}
+        />
+        <AppButton
+          label="Disconnect Google"
+          variant="danger"
+          onPress={() => void handleDisconnectGoogle()}
+          loading={googleDisconnectPending}
+          loadingLabel="Disconnecting..."
+        />
+        {googleDisconnectError ? (
+          <Text style={styles.errorText}>{googleDisconnectError}</Text>
+        ) : null}
       </AppModal>
     </View>
   );
