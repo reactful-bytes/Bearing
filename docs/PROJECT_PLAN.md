@@ -200,6 +200,16 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M13.4   | manual-handoff | Complete 7-day and 30-day launch reviews                  | Review template is ready; live findings and owned follow-ups require elapsed launch windows   |
 | M13.5   | manual-handoff | Establish recurring maintenance cadence                   | Weekly/monthly/quarterly/release/annual schedule ready; owner creates recurring evidence      |
 
+### M14 - Google Authentication
+
+| Task ID | Status         | Description                                             | Notes                                                                                                        |
+| ------- | -------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| M14.1   | completed      | Add Android, iOS, and web Google OAuth foundation       | Expo AuthSession and native Google Sign-In normalize to Firebase-compatible tokens                           |
+| M14.2   | completed      | Preserve Firebase identity across Google operations     | Sign-in, UID-checked linking, password conflict recovery, typed collisions, and sign-out cleanup are covered |
+| M14.3   | completed      | Redesign signed-out and password recovery experiences   | Branded auth shell, Google entry, dedicated reset, and in-memory conflict verification pass smoke tests      |
+| M14.4   | completed      | Complete authenticated Google provider lifecycle        | Profile linking, provider-aware reset, deletion reauthentication, cancellation safety, and revocation pass   |
+| M14.5   | manual-handoff | Validate release Firebase projects and signed platforms | Owner confirms console mode, OAuth clients, fingerprints, origins, and staging/device matrix                 |
+
 ## Update Rules
 
 - Read this file before starting a task.
@@ -282,3 +292,4 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | 2026-07-31 | M8.4             | Premium conversion telemetry completion                                       | completed      | Client and server allowlists cover purchase start/result, restore result, and Firestore activation result; focused mobile telemetry tests and the 31-test Functions gate pass                                                                                                                                                                                           |
 | 2026-07-31 | M11.3/M12/M13    | Monetization, release, beta, and launch handoff package                       | manual-handoff | Pricing/no-trial matrix, sandbox checklist, EAS profiles, store copy/assets checklist, beta evidence, rollout thresholds, monitoring, incident/rollback/privacy/subscription/support runbooks, launch reviews, and maintenance cadence are formatted and repository-ready; owner execution and evidence remain                                                          |
 | 2026-08-04 | M12.6            | Chronological Apple and Google deployment checklist                           | completed      | Added and formatted one ordered checklist covering repository fixes, accounts, legal, Firebase, RevenueCat, EAS/signing, native acceptance, listings, review, staged rollout, and post-launch evidence                                                                                                                                                                  |
+| 2026-08-18 | M14.1-M14.4      | Google authentication repository implementation                               | completed      | Cross-platform token acquisition, identity-preserving Firebase operations, branded login/reset UX, Profile linking, provider-aware deletion, and focused automated coverage implemented; console, signed-build, and physical-device proof remains M14.5                                                                                                                 |

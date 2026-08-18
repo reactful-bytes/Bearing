@@ -20,30 +20,45 @@ This guide wires the Bearing mobile app to Firebase Authentication for local dev
 
 1. In Firebase Console, open Build > Authentication.
 2. Click Get started.
-3. Enable at least one sign-in provider for testing.
-4. Recommended for M1.2 validation: Anonymous (quick) or Email/Password.
+3. Enable Anonymous, Email/Password, and Google for the complete Bearing account lifecycle.
+4. Open Authentication settings and confirm the project uses one account per email address. Bearing does not support Firebase's multiple-accounts-per-email mode.
+5. Keep Google enabled in every development, staging, and production Firebase project used by a Google-enabled build.
 
-## 4) Create local environment file
+## 4) Configure Google OAuth clients
+
+1. Register Android package `com.reactfulbytes.bearing` and iOS bundle ID `com.reactfulbytes.bearing` in the Firebase project.
+2. Add Android SHA-1 and SHA-256 fingerprints for each development and release signing certificate.
+3. Create or select Web, iOS, and Android OAuth client IDs for those registered apps.
+4. Add every development or release web origin used by Expo AuthSession to the web OAuth client.
+5. Put the client IDs in local or EAS environment configuration:
+   - `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`
+   - `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`
+   - `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`
+6. Treat these client IDs as public configuration, but keep environment-specific values out of committed `.env` files.
+7. Rebuild native clients after changing OAuth, signing, package, bundle, scheme, or config-plugin settings.
+
+## 5) Create local environment file
 
 1. In `mobile/`, copy `.env.example` to `.env`.
 2. Replace placeholder values with your Firebase config.
 3. Confirm `EXPO_PUBLIC_APP_ENV=development`.
 
-## 5) Install dependencies and run app
+## 6) Install dependencies and run app
 
 1. From `mobile/`, run `npm install`.
-2. Start Expo with `npx expo start`.
+2. Start the installed development client with `npm start` for native testing, or use `npm run web` for a registered development web origin.
 3. Verify app startup does not show a Firebase config error.
 
-## 6) Validate auth bootstrap behavior
+## 7) Validate auth behavior
 
 1. Launch app on device or emulator.
-2. Confirm one of these appears:
-   - `Session detected.` when a session exists.
-   - `No active session found.` when no session exists.
-3. Tap `Open Sign-In Entry` to run anonymous sign-in and verify session changes to `Session detected.`.
-4. Tap `Sign Out` to verify the app returns to `No active session found.`.
-5. If config is missing, app should show an actionable startup error listing missing env keys.
+2. Confirm the signed-out screen offers Google and email/password without a Firebase configuration error.
+3. Complete a fresh Google sign-in and record the Firebase UID.
+4. Sign out, use the alternate linked provider, and confirm the same Firebase UID and Firestore data return.
+5. Link an anonymous test session from Profile and confirm its UID does not change.
+6. Validate password-first same-email recovery and an already-owned credential collision in staging; neither case may copy or delete Firestore data.
+7. Confirm Google-only account deletion requires fresh Google verification and cancellation leaves the account intact.
+8. If config is missing, the app should show an actionable Google configuration message without exposing client ID values.
 
 ## Environment Strategy
 
@@ -57,3 +72,5 @@ This guide wires the Bearing mobile app to Firebase Authentication for local dev
 - Never commit `.env`, `.env.development`, `.env.staging`, or `.env.production`.
 - Do not place service account keys in client code.
 - Restrict Firebase auth providers and security rules per environment.
+- Never merge Firestore account data based only on an email address.
+- Never persist pending Google credentials in client storage, logs, telemetry, or Firestore.

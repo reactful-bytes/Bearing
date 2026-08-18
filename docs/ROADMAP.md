@@ -157,6 +157,16 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M13.4   | manual-handoff | Complete launch reviews       | Templates ready; live 7-day and 30-day findings remain                     |
 | M13.5   | manual-handoff | Establish maintenance cadence | Schedule ready; owner creates recurring calendar and evidence              |
 
+### M14 - Google Authentication
+
+| Task ID | Status         | Description                                  | Exit Criteria                                                                                     |
+| ------- | -------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| M14.1   | completed      | Add cross-platform Google OAuth foundation   | Android, iOS, and web return normalized Firebase-compatible Google tokens                         |
+| M14.2   | completed      | Preserve identity across provider operations | UID-checked linking and typed collisions prevent silent account switches or data merges           |
+| M14.3   | completed      | Redesign login and password recovery         | Google/email entry, reset, and password-conflict recovery pass focused UI tests                   |
+| M14.4   | completed      | Complete Profile and deletion lifecycle      | Provider-aware link, reset, reauthentication, sign-out, cancellation, and revocation are covered  |
+| M14.5   | manual-handoff | Validate Firebase and signed platform setup  | Owner proves console settings, OAuth clients, origins, fingerprints, and staging collision matrix |
+
 ## Dependency Order Summary
 
 1. M0 Product definition
@@ -170,6 +180,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 9. M10 Final UI, resilience, performance, and UAT
 10. M12 Native build, beta, and store release
 11. M13 Staged rollout and operations
+12. M14 Google authentication and release-project validation
 
 ## Validation Gates Per Milestone
 
@@ -180,7 +191,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ## Immediate Next Steps
 
-1. Run native M6.13, M9.1, M10.1, M10.3, and M10.4 acceptance on installed release candidates.
+1. Run native M6.13, M9.1, M10.1, M10.3, M10.4, and M14.5 acceptance on installed release candidates.
 2. Execute M11 store/RevenueCat setup, deployment, sandbox, and regional pricing handoffs.
 3. Link EAS, sign candidates, assemble store packages, run beta cycles, and complete legal approval.
 4. Execute M9.3-M9.6 and M13 owner handoffs, then record rollout and launch evidence.
