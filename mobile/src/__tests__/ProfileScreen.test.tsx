@@ -149,6 +149,9 @@ function mockProfileHooks(
   updateProfile: jest.Mock;
   sendPasswordReset: jest.Mock;
   linkAnonymousAccount: jest.Mock;
+  linkGoogleAccount: jest.Mock;
+  reauthenticateWithGoogle: jest.Mock;
+  revokeGoogleAccess: jest.Mock;
   requestPermission: jest.Mock;
   refreshCalendars: jest.Mock;
   toggleCalendar: jest.Mock;
@@ -161,6 +164,9 @@ function mockProfileHooks(
   const updateProfile = jest.fn(async () => undefined);
   const sendPasswordReset = jest.fn(async () => undefined);
   const linkAnonymousAccount = jest.fn(async () => undefined);
+  const linkGoogleAccount = jest.fn(async () => 'linked' as const);
+  const reauthenticateWithGoogle = jest.fn(async () => 'verified' as const);
+  const revokeGoogleAccess = jest.fn(async () => undefined);
   const retryProfile = jest.fn();
   const requestPermission = jest.fn(async () => undefined);
   const refreshCalendars = jest.fn(async () => undefined);
@@ -184,15 +190,26 @@ function mockProfileHooks(
   >;
 
   mockedUseUserProfile.mockReturnValue({
-    authUser: { isAnonymous: false, email: 'preston@example.com' } as never,
+    authUser: {
+      uid: 'user-1',
+      isAnonymous: false,
+      email: 'preston@example.com',
+      providerData: [{ providerId: 'password' }],
+    } as never,
     profile: makeProfile(),
     uiState: 'ready',
     error: null,
     isAnonymous: false,
     email: 'preston@example.com',
+    hasPasswordProvider: true,
+    hasGoogleProvider: false,
+    isGoogleAuthReady: true,
     updateProfile,
     sendPasswordReset,
     linkAnonymousAccount,
+    linkGoogleAccount,
+    reauthenticateWithGoogle,
+    revokeGoogleAccess,
     retry: retryProfile,
     ...overrides.userProfile,
   });
@@ -250,6 +267,9 @@ function mockProfileHooks(
     updateProfile,
     sendPasswordReset,
     linkAnonymousAccount,
+    linkGoogleAccount,
+    reauthenticateWithGoogle,
+    revokeGoogleAccess,
     requestPermission,
     refreshCalendars,
     toggleCalendar,
@@ -469,6 +489,18 @@ describe('ProfileScreen', () => {
     });
   });
 
+  it('adds Google Sign-In to an existing password account', async () => {
+    const { linkGoogleAccount } = mockProfileHooks();
+
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+
+    await act(async () => {
+      fireEvent.press(screen.getByRole('button', { name: 'Add Google Sign-In' }));
+    });
+
+    expect(linkGoogleAccount).toHaveBeenCalledTimes(1);
+  });
+
   it('offers free device calendar permission to anonymous accounts', async () => {
     const { requestPermission } = mockProfileHooks({
       deviceCalendars: {
@@ -647,6 +679,67 @@ describe('ProfileScreen', () => {
     expect(cleanupLinkedCalendarCopies).toHaveBeenCalledWith('user-1');
     expect(deleteCurrentUserAccount).toHaveBeenCalled();
     expect(purgeLocalAccountData).toHaveBeenCalledWith('user-1');
+  });
+
+  it('reauthenticates a Google-only account before deletion and revokes native access', async () => {
+    const { reauthenticateWithGoogle, revokeGoogleAccess } = mockProfileHooks({
+      userProfile: {
+        authUser: {
+          uid: 'user-1',
+          isAnonymous: false,
+          email: 'preston@example.com',
+          providerData: [{ providerId: 'google.com' }],
+        } as never,
+        hasPasswordProvider: false,
+        hasGoogleProvider: true,
+      },
+    });
+
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    expect(screen.queryByLabelText('Reset password')).toBeNull();
+    fireEvent.press(screen.getByLabelText('Delete account'));
+    expect(screen.queryByLabelText('Account deletion current password')).toBeNull();
+    fireEvent.changeText(screen.getByLabelText('Account deletion confirmation'), 'DELETE');
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Permanently Delete Account'));
+    });
+
+    expect(reauthenticateWithGoogle).toHaveBeenCalledTimes(1);
+    expect(reauthenticateCurrentUser).not.toHaveBeenCalled();
+    expect(deleteCurrentUserAccount).toHaveBeenCalledTimes(1);
+    expect(revokeGoogleAccess).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops Google-only deletion when account verification is cancelled', async () => {
+    const reauthenticateWithGoogle = jest.fn(async () => 'cancelled' as const);
+    mockProfileHooks({
+      userProfile: {
+        authUser: {
+          uid: 'user-1',
+          isAnonymous: false,
+          email: 'preston@example.com',
+          providerData: [{ providerId: 'google.com' }],
+        } as never,
+        hasPasswordProvider: false,
+        hasGoogleProvider: true,
+        reauthenticateWithGoogle,
+      },
+    });
+
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    fireEvent.press(screen.getByLabelText('Delete account'));
+    fireEvent.changeText(screen.getByLabelText('Account deletion confirmation'), 'DELETE');
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Permanently Delete Account'));
+    });
+
+    expect(
+      screen.getByText('Google verification was cancelled. No account data was deleted.'),
+    ).toBeTruthy();
+    expect(cleanupLinkedCalendarCopies).not.toHaveBeenCalled();
+    expect(deleteCurrentUserAccount).not.toHaveBeenCalled();
   });
 
   it('directs the user to clear app data when local cleanup is incomplete', async () => {

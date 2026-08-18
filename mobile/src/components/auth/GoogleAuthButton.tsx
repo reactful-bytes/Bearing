@@ -3,12 +3,14 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radii, spacing, typography } from '../../design/tokens';
 
 type GoogleAuthButtonProps = {
+  label?: string;
   disabled?: boolean;
   loading?: boolean;
   onPress: () => void;
 };
 
 export function GoogleAuthButton({
+  label = 'Continue with Google',
   disabled = false,
   loading = false,
   onPress,
@@ -18,7 +20,7 @@ export function GoogleAuthButton({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Continue with Google"
+      accessibilityLabel={label}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       disabled={isDisabled}
       onPress={onPress}
@@ -31,7 +33,7 @@ export function GoogleAuthButton({
       <View accessibilityElementsHidden style={styles.mark}>
         <Text style={styles.markText}>G</Text>
       </View>
-      <Text style={styles.label}>{loading ? 'Connecting...' : 'Continue with Google'}</Text>
+      <Text style={styles.label}>{loading ? 'Connecting...' : label}</Text>
       <View style={styles.balance} />
     </Pressable>
   );
