@@ -9,6 +9,7 @@ import {
   linkCurrentUserWithGoogleAuth,
   reauthenticateCurrentUserWithGoogleAuth,
   sendPasswordResetForEmail,
+  unlinkGoogleFromCurrentUser,
   updateCurrentUserDisplayName,
 } from '../../services/firebase/firebaseAuthActions';
 import { getFirebaseAuth } from '../../services/firebase/firebaseAuth';
@@ -37,6 +38,7 @@ export type UseUserProfileReturn = {
     displayName: string;
   }) => Promise<void>;
   linkGoogleAccount: () => Promise<'linked' | 'cancelled'>;
+  disconnectGoogleAccount: () => Promise<void>;
   reauthenticateWithGoogle: () => Promise<'verified' | 'cancelled'>;
   revokeGoogleAccess: () => Promise<void>;
   retry: () => void;
@@ -232,6 +234,16 @@ export function useUserProfile(): UseUserProfileReturn {
     return 'linked';
   }, [authUser, googleAuth]);
 
+  const disconnectGoogleAccount = useCallback(async (): Promise<void> => {
+    if (!authUser) {
+      throw new Error('User is not authenticated.');
+    }
+
+    const unlinkedUser = await unlinkGoogleFromCurrentUser(authUser.uid);
+    setAuthSnapshot(createAuthUserSnapshot(unlinkedUser));
+    await revokeNativeGoogleAccess().catch(() => undefined);
+  }, [authUser]);
+
   const reauthenticateWithGoogle = useCallback(async (): Promise<'verified' | 'cancelled'> => {
     if (!authUser) {
       throw new Error('User is not authenticated.');
@@ -267,6 +279,7 @@ export function useUserProfile(): UseUserProfileReturn {
     sendPasswordReset,
     linkAnonymousAccount,
     linkGoogleAccount,
+    disconnectGoogleAccount,
     reauthenticateWithGoogle,
     revokeGoogleAccess,
     retry,

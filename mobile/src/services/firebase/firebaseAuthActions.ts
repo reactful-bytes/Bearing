@@ -11,12 +11,12 @@ import {
   signInWithCredential,
   signInWithEmailAndPassword,
   signOut,
+  unlink,
   updateProfile,
   User,
 } from 'firebase/auth';
 
-import { clearNativeGoogleSession } from '../../features/auth/googleNativeAuth';
-import { GoogleTokenResult } from '../../features/auth/googleNativeAuth';
+import { clearNativeGoogleSession, GoogleTokenResult } from '../../features/auth/googleNativeAuth';
 import { getFirebaseAuth } from './firebaseAuth';
 
 type GoogleTokens = Extract<GoogleTokenResult, { type: 'success' }>;
@@ -207,6 +207,33 @@ export async function reauthenticateCurrentUserWithGoogleAuth(
     await reauthenticateWithCredential(currentUser, createGoogleCredential(tokens));
   } catch (error) {
     throwGoogleOperationError('Failed to verify the current account with Google.', error);
+  }
+}
+
+export async function unlinkGoogleFromCurrentUser(expectedUid: string): Promise<User> {
+  try {
+    const currentUser = requireExpectedCurrentUser(expectedUid);
+    const providerIds = currentUser.providerData.map((provider) => provider.providerId);
+
+    if (!providerIds.includes('google.com')) {
+      return currentUser;
+    }
+
+    if (!providerIds.includes('password')) {
+      throw new Error(
+        'Add a password before disconnecting Google so you can continue accessing this account.',
+      );
+    }
+
+    const unlinkedUser = await unlink(currentUser, 'google.com');
+
+    if (unlinkedUser.uid !== expectedUid) {
+      throw new Error('Disconnecting Google changed the Firebase user ID.');
+    }
+
+    return unlinkedUser;
+  } catch (error) {
+    throw new Error('Failed to disconnect Google Sign-In.', { cause: error });
   }
 }
 

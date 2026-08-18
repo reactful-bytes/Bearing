@@ -82,6 +82,7 @@ function mockUserProfile(overrides: Partial<ReturnType<typeof useUserProfile>> =
     sendPasswordReset: jest.fn(async () => undefined),
     linkAnonymousAccount: jest.fn(async () => undefined),
     linkGoogleAccount: jest.fn(async () => 'linked' as const),
+    disconnectGoogleAccount: jest.fn(async () => undefined),
     reauthenticateWithGoogle: jest.fn(async () => 'verified' as const),
     revokeGoogleAccess: jest.fn(async () => undefined),
     retry: jest.fn(),

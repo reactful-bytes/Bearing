@@ -150,6 +150,7 @@ function mockProfileHooks(
   sendPasswordReset: jest.Mock;
   linkAnonymousAccount: jest.Mock;
   linkGoogleAccount: jest.Mock;
+  disconnectGoogleAccount: jest.Mock;
   reauthenticateWithGoogle: jest.Mock;
   revokeGoogleAccess: jest.Mock;
   requestPermission: jest.Mock;
@@ -165,6 +166,7 @@ function mockProfileHooks(
   const sendPasswordReset = jest.fn(async () => undefined);
   const linkAnonymousAccount = jest.fn(async () => undefined);
   const linkGoogleAccount = jest.fn(async () => 'linked' as const);
+  const disconnectGoogleAccount = jest.fn(async () => undefined);
   const reauthenticateWithGoogle = jest.fn(async () => 'verified' as const);
   const revokeGoogleAccess = jest.fn(async () => undefined);
   const retryProfile = jest.fn();
@@ -208,6 +210,7 @@ function mockProfileHooks(
     sendPasswordReset,
     linkAnonymousAccount,
     linkGoogleAccount,
+    disconnectGoogleAccount,
     reauthenticateWithGoogle,
     revokeGoogleAccess,
     retry: retryProfile,
@@ -268,6 +271,7 @@ function mockProfileHooks(
     sendPasswordReset,
     linkAnonymousAccount,
     linkGoogleAccount,
+    disconnectGoogleAccount,
     reauthenticateWithGoogle,
     revokeGoogleAccess,
     requestPermission,
@@ -499,6 +503,57 @@ describe('ProfileScreen', () => {
     });
 
     expect(linkGoogleAccount).toHaveBeenCalledTimes(1);
+  });
+
+  it('confirms before disconnecting Google from a password account', async () => {
+    const alert = jest.spyOn(Alert, 'alert');
+    const { disconnectGoogleAccount } = mockProfileHooks({
+      userProfile: {
+        authUser: {
+          uid: 'user-1',
+          isAnonymous: false,
+          email: 'preston@example.com',
+          providerData: [{ providerId: 'password' }, { providerId: 'google.com' }],
+        } as never,
+        hasPasswordProvider: true,
+        hasGoogleProvider: true,
+      },
+    });
+
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    fireEvent.press(screen.getByRole('button', { name: 'Google Sign-In' }));
+    expect(screen.getByText('Disconnect Google Sign-In')).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.press(screen.getByRole('button', { name: 'Disconnect Google' }));
+    });
+
+    expect(disconnectGoogleAccount).toHaveBeenCalledTimes(1);
+    expect(alert).toHaveBeenCalledWith(
+      'Google disconnected',
+      'Continue signing in to this Bearing account with your email and password.',
+    );
+    alert.mockRestore();
+  });
+
+  it('does not offer Google disconnection when no password provider remains', () => {
+    mockProfileHooks({
+      userProfile: {
+        authUser: {
+          uid: 'user-1',
+          isAnonymous: false,
+          email: 'preston@example.com',
+          providerData: [{ providerId: 'google.com' }],
+        } as never,
+        hasPasswordProvider: false,
+        hasGoogleProvider: true,
+      },
+    });
+
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+
+    expect(screen.getByText(/Add a password before disconnecting Google/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Google Sign-In' })).toBeNull();
   });
 
   it('offers free device calendar permission to anonymous accounts', async () => {

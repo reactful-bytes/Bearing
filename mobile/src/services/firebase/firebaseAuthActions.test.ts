@@ -6,6 +6,7 @@ import {
   signInWithCredential,
   signInWithEmailAndPassword,
   signOut,
+  unlink,
 } from 'firebase/auth';
 
 import { clearNativeGoogleSession } from '../../features/auth/googleNativeAuth';
@@ -16,6 +17,7 @@ import {
   reauthenticateCurrentUserWithGoogleAuth,
   signInWithGoogleAuth,
   signOutCurrentUser,
+  unlinkGoogleFromCurrentUser,
 } from './firebaseAuthActions';
 import { getFirebaseAuth } from './firebaseAuth';
 
@@ -30,6 +32,7 @@ jest.mock('firebase/auth', () => ({
   signInWithCredential: jest.fn(),
   signInWithEmailAndPassword: jest.fn(),
   signOut: jest.fn(),
+  unlink: jest.fn(),
   updateProfile: jest.fn(),
 }));
 
@@ -54,6 +57,7 @@ const mockedSignInWithEmailAndPassword = signInWithEmailAndPassword as jest.Mock
   typeof signInWithEmailAndPassword
 >;
 const mockedSignOut = signOut as jest.MockedFunction<typeof signOut>;
+const mockedUnlink = unlink as jest.MockedFunction<typeof unlink>;
 const mockedClearNativeGoogleSession = clearNativeGoogleSession as jest.MockedFunction<
   typeof clearNativeGoogleSession
 >;
@@ -144,6 +148,28 @@ describe('Firebase Google auth actions', () => {
 
     await reauthenticateCurrentUserWithGoogleAuth(tokens, 'user-1');
     expect(reauthenticateWithCredential).toHaveBeenCalledWith(user, googleCredential);
+  });
+
+  it('disconnects Google while preserving the password account UID', async () => {
+    const user = createUser({
+      providerData: [{ providerId: 'password' }, { providerId: 'google.com' }],
+    });
+    const unlinkedUser = createUser();
+    (getFirebaseAuth as jest.Mock).mockReturnValue({ currentUser: user });
+    mockedUnlink.mockResolvedValue(unlinkedUser as never);
+
+    await expect(unlinkGoogleFromCurrentUser('user-1')).resolves.toBe(unlinkedUser);
+    expect(unlink).toHaveBeenCalledWith(user, 'google.com');
+  });
+
+  it('does not disconnect Google when it is the only sign-in provider', async () => {
+    const user = createUser({ providerData: [{ providerId: 'google.com' }] });
+    (getFirebaseAuth as jest.Mock).mockReturnValue({ currentUser: user });
+
+    await expect(unlinkGoogleFromCurrentUser('user-1')).rejects.toThrow(
+      'Failed to disconnect Google Sign-In.',
+    );
+    expect(unlink).not.toHaveBeenCalled();
   });
 
   it('signs Firebase out before best-effort native cleanup', async () => {

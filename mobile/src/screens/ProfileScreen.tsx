@@ -92,6 +92,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
     sendPasswordReset,
     linkAnonymousAccount,
     linkGoogleAccount,
+    disconnectGoogleAccount,
     reauthenticateWithGoogle,
     revokeGoogleAccess,
     retry: retryProfile,
@@ -112,6 +113,9 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   const [linkPasswordConfirm, setLinkPasswordConfirm] = useState('');
   const [linkPending, setLinkPending] = useState(false);
   const [googleLinkPending, setGoogleLinkPending] = useState(false);
+  const [disconnectGoogleVisible, setDisconnectGoogleVisible] = useState(false);
+  const [googleDisconnectPending, setGoogleDisconnectPending] = useState(false);
+  const [googleDisconnectError, setGoogleDisconnectError] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
   const [soundPicker, setSoundPicker] = useState<'alarm' | 'reminder' | null>(null);
   const [selectionPicker, setSelectionPicker] = useState<'timezone' | 'locale' | null>(null);
@@ -300,6 +304,34 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
       );
     } finally {
       setGoogleLinkPending(false);
+    }
+  }
+
+  function closeDisconnectGoogle(): void {
+    if (googleDisconnectPending) return;
+    setDisconnectGoogleVisible(false);
+    setGoogleDisconnectError(null);
+  }
+
+  async function handleDisconnectGoogle(): Promise<void> {
+    setGoogleDisconnectPending(true);
+    setGoogleDisconnectError(null);
+
+    try {
+      await disconnectGoogleAccount();
+      setDisconnectGoogleVisible(false);
+      Alert.alert(
+        'Google disconnected',
+        'Continue signing in to this Bearing account with your email and password.',
+      );
+    } catch (disconnectError) {
+      setGoogleDisconnectError(
+        disconnectError instanceof Error
+          ? disconnectError.message
+          : 'Failed to disconnect Google Sign-In.',
+      );
+    } finally {
+      setGoogleDisconnectPending(false);
     }
   }
 
@@ -723,9 +755,21 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                 <View style={styles.sectionBody}>
                   {hasGoogleProvider ? (
                     <ListItem
+                      onPress={
+                        hasPasswordProvider
+                          ? () => {
+                              setGoogleDisconnectError(null);
+                              setDisconnectGoogleVisible(true);
+                            }
+                          : undefined
+                      }
                       title="Google Sign-In"
-                      description="Google is connected to this Bearing account."
-                      trailingText="Connected"
+                      description={
+                        hasPasswordProvider
+                          ? 'Connected. Disconnecting Google will keep email and password access.'
+                          : 'Connected. Add a password before disconnecting Google.'
+                      }
+                      trailingText={hasPasswordProvider ? 'Disconnect' : 'Connected'}
                     />
                   ) : (
                     <GoogleAuthButton
@@ -1256,6 +1300,33 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
           loadingLabel="Deleting..."
         />
         {deleteError ? <Text style={styles.errorText}>{deleteError}</Text> : null}
+      </AppModal>
+
+      <AppModal
+        visible={disconnectGoogleVisible}
+        title="Disconnect Google Sign-In"
+        onClose={closeDisconnectGoogle}
+      >
+        <Text style={styles.stateDescription}>
+          You’ll continue to access this Bearing account with your email and password. Your account
+          and data will not be deleted.
+        </Text>
+        <AppButton
+          label="Keep Google Connected"
+          variant="secondary"
+          onPress={closeDisconnectGoogle}
+          disabled={googleDisconnectPending}
+        />
+        <AppButton
+          label="Disconnect Google"
+          variant="danger"
+          onPress={() => void handleDisconnectGoogle()}
+          loading={googleDisconnectPending}
+          loadingLabel="Disconnecting..."
+        />
+        {googleDisconnectError ? (
+          <Text style={styles.errorText}>{googleDisconnectError}</Text>
+        ) : null}
       </AppModal>
     </View>
   );

@@ -13,6 +13,7 @@ Add Google as a Firebase Authentication provider on Android, iOS, and developmen
 - Same-email password/Google recovery verifies the existing password first, then links the pending Google credential in memory.
 - Pending OAuth credentials are never persisted to Firestore, AsyncStorage, logs, or telemetry.
 - Password reset appears only when the current user has the Firebase password provider.
+- Disconnecting Google must preserve the Firebase UID and is allowed only when password sign-in remains linked.
 - Google-only deletion requires a fresh Google credential. Password accounts continue to use password reauthentication.
 - Firebase sign-out completes before best-effort native Google session cleanup.
 - Android, iOS, and web share one Firebase credential boundary while using platform-appropriate token acquisition.
@@ -55,13 +56,14 @@ Add Google as a Firebase Authentication provider on Android, iOS, and developmen
 
 ## M14.4 Authenticated Provider Lifecycle
 
-| Ticket | Status    | Deliverable                                     | Acceptance                                                                                       |
-| ------ | --------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| M14.4a | completed | Expose provider-aware Profile state             | Password and Google controls are derived from Firebase provider IDs                              |
-| M14.4b | completed | Link Google from anonymous or password accounts | Linking preserves the current UID and reports non-destructive collisions                         |
-| M14.4c | completed | Make reset controls provider-aware              | Google-only users do not receive an inapplicable password-reset action                           |
-| M14.4d | completed | Reauthenticate Google-only deletion             | Cancellation stops before cleanup; success permits deletion and best-effort native access revoke |
-| M14.4e | completed | Cover provider lifecycle behavior               | Profile linking, password deletion, Google deletion, cancellation, and revocation pass tests     |
+| Ticket | Status    | Deliverable                                      | Acceptance                                                                                       |
+| ------ | --------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| M14.4a | completed | Expose provider-aware Profile state              | Password and Google controls are derived from Firebase provider IDs                              |
+| M14.4b | completed | Link Google from anonymous or password accounts  | Linking preserves the current UID and reports non-destructive collisions                         |
+| M14.4c | completed | Make reset controls provider-aware               | Google-only users do not receive an inapplicable password-reset action                           |
+| M14.4d | completed | Reauthenticate Google-only deletion              | Cancellation stops before cleanup; success permits deletion and best-effort native access revoke |
+| M14.4e | completed | Cover provider lifecycle behavior                | Profile linking, password deletion, Google deletion, cancellation, and revocation pass tests     |
+| M14.4f | completed | Disconnect Google without risking account access | UID-checked unlink requires a remaining password provider and performs best-effort access revoke |
 
 ## M14.5 Validation And Release Handoff
 
@@ -89,6 +91,8 @@ Add Google as a Firebase Authentication provider on Android, iOS, and developmen
 - User cancellation returns to the current view without an error or account switch.
 - Anonymous session with existing Firestore data links Google and retains the same Firebase UID and records.
 - Password account adds Google from Profile and can subsequently use either provider with the same UID.
+- Password-and-Google account disconnects Google only after confirmation and retains the same UID and password access.
+- Google-only account cannot disconnect its sole sign-in provider and is directed to add a password first.
 - Password-first same-email Google sign-in asks for the existing password and links only after verification.
 - Google credential already attached to another Firebase UID stops and leaves both accounts unchanged.
 - Sign-out clears Firebase state and does not silently reuse an unintended Android Google account.
