@@ -167,6 +167,17 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M14.4   | completed      | Complete Profile and deletion lifecycle      | Provider-aware link, reset, reauthentication, sign-out, cancellation, and revocation are covered  |
 | M14.5   | manual-handoff | Validate Firebase and signed platform setup  | Owner proves console settings, OAuth clients, origins, fingerprints, and staging collision matrix |
 
+### M15 - Desktop Web Experience
+
+| Task ID | Status    | Description                                    | Exit Criteria                                                                                      |
+| ------- | --------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| M15.1   | completed | Establish desktop web scope and delivery plan  | Calendar/navigation scope, platform boundaries, and deferred Hosting decisions are documented      |
+| M15.2   | completed | Add responsive desktop navigation              | Desktop uses persistent navigation while compact web and native layouts retain bottom tabs         |
+| M15.3   | completed | Add a Sunday-first seven-day Calendar view     | Desktop week view supports shared Firestore event display and existing event actions               |
+| M15.4   | completed | Preserve explicit web capability boundaries    | Device calendar and purchase limitations are honest while subscription cancellation remains usable |
+| M15.5   | completed | Document development and deployment options    | Runbook covers local web startup plus manual and GitHub Actions tradeoffs without deploying        |
+| M15.6   | completed | Validate responsive web and retained mobile UX | Automated checks pass and signed-in desktop visual refinements are accepted                        |
+
 ## Dependency Order Summary
 
 1. M0 Product definition
@@ -181,6 +192,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 10. M12 Native build, beta, and store release
 11. M13 Staged rollout and operations
 12. M14 Google authentication and release-project validation
+13. M15 Desktop web experience and deployment planning
 
 ## Validation Gates Per Milestone
 

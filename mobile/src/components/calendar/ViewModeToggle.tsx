@@ -6,17 +6,21 @@ import { ViewMode } from '../../features/calendar/calendarTypes';
 type ViewModeToggleProps = {
   mode: ViewMode;
   onChange: (mode: ViewMode) => void;
+  showWeek?: boolean;
 };
 
 const MODES: { key: ViewMode; label: string }[] = [
   { key: 'day', label: 'Day' },
+  { key: 'week', label: 'Week' },
   { key: 'month', label: 'Month' },
 ];
 
-export function ViewModeToggle({ mode, onChange }: ViewModeToggleProps) {
+export function ViewModeToggle({ mode, onChange, showWeek = false }: ViewModeToggleProps) {
+  const visibleModes = showWeek ? MODES : MODES.filter(({ key }) => key !== 'week');
+
   return (
     <View style={styles.container}>
-      {MODES.map(({ key, label }) => (
+      {visibleModes.map(({ key, label }) => (
         <Pressable
           key={key}
           accessibilityRole="button"

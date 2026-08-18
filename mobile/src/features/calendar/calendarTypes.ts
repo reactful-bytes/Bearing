@@ -100,4 +100,4 @@ export type UpdateEventInput = Partial<CreateEventInput & { status: EventStatus 
 
 export type CalendarUiState = 'loading' | 'error' | 'empty' | 'ready';
 
-export type ViewMode = 'day' | 'month';
+export type ViewMode = 'day' | 'week' | 'month';

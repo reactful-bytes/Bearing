@@ -1,13 +1,21 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Image,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 
 import { CalendarScreen } from '../screens/CalendarScreen';
 import { GoalsScreen } from '../screens/GoalsScreen';
 import { NotesScreen } from '../screens/NotesScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { TasksScreen } from '../screens/TasksScreen';
-import { colors, componentTokens, layout, typography } from '../design/tokens';
+import { colors, componentTokens, layout, spacing, typography } from '../design/tokens';
 import { AppTabParamList } from './navigationTypes';
 
 type AppTabsProps = {
@@ -16,6 +24,12 @@ type AppTabsProps = {
 };
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
+const DESKTOP_NAVIGATION_BREAKPOINT = 1024;
+export const DESKTOP_NAVIGATION_WIDTH = 152;
+
+export function usesDesktopNavigation(platform: string, width: number): boolean {
+  return platform === 'web' && width >= DESKTOP_NAVIGATION_BREAKPOINT;
+}
 
 const TAB_ICON_TEXT: Record<Exclude<keyof AppTabParamList, 'Calendar'>, string> = {
   Goals: 'G',
@@ -24,12 +38,24 @@ const TAB_ICON_TEXT: Record<Exclude<keyof AppTabParamList, 'Calendar'>, string> 
   Profile: 'P',
 };
 
-function TabIcon({ routeName, focused }: { routeName: keyof AppTabParamList; focused: boolean }) {
+function TabIcon({
+  routeName,
+  focused,
+  isDesktop,
+}: {
+  routeName: keyof AppTabParamList;
+  focused: boolean;
+  isDesktop: boolean;
+}) {
   if (routeName === 'Calendar') {
     return (
       <View
         testID="calendar-tab-icon"
-        style={[styles.logoCircle, focused ? styles.logoCircleFocused : null]}
+        style={[
+          styles.logoCircle,
+          isDesktop ? styles.logoCircleDesktop : null,
+          focused ? styles.logoCircleFocused : null,
+        ]}
       >
         <Image source={require('../../assets/logoBlueBackground.png')} style={styles.logoImage} />
       </View>
@@ -46,18 +72,31 @@ function TabIcon({ routeName, focused }: { routeName: keyof AppTabParamList; foc
 }
 
 export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
+  const { width } = useWindowDimensions();
+  const isDesktopNavigation = usesDesktopNavigation(Platform.OS, width);
+
   return (
     <NavigationContainer>
       <Tab.Navigator
         initialRouteName="Calendar"
         screenOptions={({ route }) => ({
           headerShown: false,
+          tabBarPosition: isDesktopNavigation ? 'left' : 'bottom',
           tabBarActiveTintColor: colors.brand,
           tabBarInactiveTintColor: colors.textSecondary,
-          tabBarStyle: styles.tabBar,
-          tabBarLabelStyle: styles.tabBarLabel,
+          tabBarStyle: isDesktopNavigation ? styles.desktopTabBar : styles.tabBar,
+          tabBarItemStyle: isDesktopNavigation ? styles.desktopTabBarItem : undefined,
+          tabBarLabelStyle: [
+            styles.tabBarLabel,
+            isDesktopNavigation ? styles.desktopTabLabel : null,
+          ],
+          tabBarLabelPosition: isDesktopNavigation ? 'beside-icon' : 'below-icon',
           tabBarIcon: ({ focused }) => (
-            <TabIcon routeName={route.name as keyof AppTabParamList} focused={focused} />
+            <TabIcon
+              routeName={route.name as keyof AppTabParamList}
+              focused={focused}
+              isDesktop={isDesktopNavigation}
+            />
           ),
         })}
       >
@@ -66,21 +105,25 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
         <Tab.Screen
           name="Calendar"
           component={CalendarScreen}
-          options={{
-            tabBarLabel: () => null,
-            tabBarButton: ({ children, onLongPress, onPress, accessibilityState, style }) => (
-              <Pressable
-                testID="calendar-tab-button"
-                accessibilityRole="button"
-                accessibilityState={accessibilityState}
-                onLongPress={onLongPress}
-                onPress={onPress}
-                style={[style, styles.calendarTabButton]}
-              >
-                {children}
-              </Pressable>
-            ),
-          }}
+          options={
+            isDesktopNavigation
+              ? undefined
+              : {
+                  tabBarLabel: () => null,
+                  tabBarButton: ({ children, onLongPress, onPress, accessibilityState, style }) => (
+                    <Pressable
+                      testID="calendar-tab-button"
+                      accessibilityRole="button"
+                      accessibilityState={accessibilityState}
+                      onLongPress={onLongPress}
+                      onPress={onPress}
+                      style={[style, styles.calendarTabButton]}
+                    >
+                      {children}
+                    </Pressable>
+                  ),
+                }
+          }
         />
         <Tab.Screen name="Notes" component={NotesScreen} />
         <Tab.Screen name="Profile">
@@ -103,6 +146,24 @@ const styles = StyleSheet.create({
   },
   tabBarLabel: {
     ...typography.tabLabel,
+  },
+  desktopTabBar: {
+    width: DESKTOP_NAVIGATION_WIDTH,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xl,
+    backgroundColor: componentTokens.tabBar.backgroundColor,
+    borderRightColor: componentTokens.tabBar.borderTopColor,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: 0,
+  },
+  desktopTabBarItem: {
+    minHeight: 52,
+    borderRadius: 8,
+    marginVertical: spacing.xs,
+  },
+  desktopTabLabel: {
+    ...typography.button,
+    textAlign: 'left',
   },
   iconCircle: {
     width: layout.tabIconSize,
@@ -143,6 +204,11 @@ const styles = StyleSheet.create({
   },
   logoCircleFocused: {
     borderColor: colors.brand,
+  },
+  logoCircleDesktop: {
+    width: layout.tabIconSize,
+    height: layout.tabIconSize,
+    borderRadius: layout.tabIconRadius,
   },
   logoImage: {
     width: '100%',

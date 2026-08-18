@@ -19,6 +19,12 @@ Expo React Native mobile application for Bearing.
    - npm run ios
 4. For later JavaScript-only sessions, start Metro and open the installed Bearing development build:
    - npm start
+5. Start the browser development environment:
+   - npm run start:web
+   - Direct Expo equivalent: npx expo start --web
+
+`npx expo start web` is not valid Expo CLI syntax; the `--web` flag is required. The existing
+`npm run web` command remains available as a shorter alias.
 
 Calendar access requires the Bearing development build and is unavailable in Expo Go. See
 [Development Builds](docs/DEVELOPMENT_BUILDS.md) for physical-device commands, native rebuilds, and
@@ -50,6 +56,8 @@ the permission smoke test.
 - `npm run test -- --watch=false`: run Jest tests once.
 - `npm run test:rules`: run Firestore authorization tests in the local emulator (Java 21 required).
 - `npm run test:coverage`: run tests with coverage output.
+- `npm run start:web`: run the Expo web development environment.
+- `npm run build:web`: export the static production web bundle to `dist/`.
 
 Required variables:
 

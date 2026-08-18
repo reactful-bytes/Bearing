@@ -51,7 +51,7 @@ function isSameCalendarDay(a: Date, b: Date): boolean {
 // ---------------------------------------------------------------------------
 
 export type UseCalendarEventsReturn = {
-  /** All events loaded for the visible month. */
+  /** All events loaded for the visible range. */
   events: CalendarDisplayEvent[];
   /** Events filtered to the given date. */
   eventsForDate: (date: Date) => CalendarDisplayEvent[];
@@ -65,6 +65,11 @@ export type UseCalendarEventsReturn = {
   retryPublication: (event: BearingEvent) => Promise<void>;
 };
 
+export type CalendarVisibleRange = {
+  start: Date;
+  end: Date;
+};
+
 /**
  * Loads and subscribes to events for the month containing `selectedDate`.
  * Re-subscribes automatically when the month changes.
@@ -72,6 +77,7 @@ export type UseCalendarEventsReturn = {
 export function useCalendarEvents(
   selectedDate: Date,
   adapter: DeviceCalendarAdapter = deviceCalendarAdapter,
+  visibleRange?: CalendarVisibleRange,
 ): UseCalendarEventsReturn {
   const userId = getFirebaseAuth().currentUser?.uid ?? null;
   const deviceCalendars = useDeviceCalendars(userId, adapter);
@@ -94,8 +100,22 @@ export function useCalendarEvents(
 
   const year = selectedDate.getFullYear();
   const month = selectedDate.getMonth();
-  const monthStart = useMemo(() => getMonthStart(new Date(year, month, 1)), [month, year]);
-  const monthEnd = useMemo(() => getMonthEnd(new Date(year, month, 1)), [month, year]);
+  const visibleStartTime = visibleRange?.start.getTime();
+  const visibleEndTime = visibleRange?.end.getTime();
+  const monthStart = useMemo(
+    () =>
+      visibleStartTime === undefined
+        ? getMonthStart(new Date(year, month, 1))
+        : new Date(visibleStartTime),
+    [month, visibleStartTime, year],
+  );
+  const monthEnd = useMemo(
+    () =>
+      visibleEndTime === undefined
+        ? getMonthEnd(new Date(year, month, 1))
+        : new Date(visibleEndTime),
+    [month, visibleEndTime, year],
+  );
 
   useEffect(() => {
     if (!userId) {
