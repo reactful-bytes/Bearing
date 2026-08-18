@@ -4,7 +4,6 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { Platform, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
-import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { colors, radii, spacing, typography } from '../../design/tokens';
 import {
@@ -114,9 +113,7 @@ export function EventDateTimePickerField({
         display: 'default',
         timeZoneName: timezone,
         is24Hour: mode === 'time' ? timeFormat === '24-hour' : undefined,
-        onValueChange: handleValueChange,
-        onError: () =>
-          setPickerError('Picker unavailable. Rebuild and reinstall the development app.'),
+        onChange: handleValueChange,
       });
       return;
     }
@@ -175,7 +172,6 @@ export function EventDateTimePickerField({
             onValueChange={handleValueChange}
             style={styles.iosPicker}
           />
-          <AppButton label="Done" onPress={() => setIosPickerVisible(false)} />
         </AppModal>
       ) : null}
     </View>
