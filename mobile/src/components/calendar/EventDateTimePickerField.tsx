@@ -95,10 +95,7 @@ export function EventDateTimePickerField({
       timezone,
     ) ?? new Date();
 
-  function handleValueChange(
-    _event: DateTimePickerChangeEvent,
-    selectedDate?: Date,
-  ): void {
+  function handleValueChange(_event: DateTimePickerChangeEvent, selectedDate?: Date): void {
     if (!selectedDate) return;
 
     onChange(
