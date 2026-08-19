@@ -103,7 +103,7 @@ describe('EventForm', () => {
       { nativeEvent: { timestamp: Date.UTC(2026, 7, 4, 10, 0), utcOffset: 0 } },
       new Date('2026-08-04T10:00:00.000Z'),
     );
-    fireEvent.press(screen.getByLabelText('Done choose start date'));
+    fireEvent.press(screen.getByText('Done'));
     fireEvent.press(screen.getByLabelText('Start time'));
     fireEvent(
       screen.getByTestId('Start time picker'),
@@ -111,7 +111,7 @@ describe('EventForm', () => {
       { nativeEvent: { timestamp: Date.UTC(2026, 7, 4, 14, 30), utcOffset: 0 } },
       new Date('2026-08-04T14:30:00.000Z'),
     );
-    fireEvent.press(screen.getByLabelText('Done choose start time'));
+    fireEvent.press(screen.getByText('Done'));
 
     expect(screen.getByText('14:30')).toBeTruthy();
   });
