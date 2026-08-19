@@ -9,6 +9,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CalendarScreen } from '../screens/CalendarScreen';
 import { GoalsScreen } from '../screens/GoalsScreen';
@@ -73,6 +74,7 @@ function TabIcon({
 
 export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const isDesktopNavigation = usesDesktopNavigation(Platform.OS, width);
 
   return (
@@ -84,7 +86,15 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
           tabBarPosition: isDesktopNavigation ? 'left' : 'bottom',
           tabBarActiveTintColor: colors.brand,
           tabBarInactiveTintColor: colors.textSecondary,
-          tabBarStyle: isDesktopNavigation ? styles.desktopTabBar : styles.tabBar,
+          tabBarStyle: isDesktopNavigation
+            ? styles.desktopTabBar
+            : [
+                styles.tabBar,
+                {
+                  height: layout.tabBarHeight + insets.bottom,
+                  paddingBottom: insets.bottom,
+                },
+              ],
           tabBarItemStyle: isDesktopNavigation ? styles.desktopTabBarItem : undefined,
           tabBarLabelStyle: [
             styles.tabBarLabel,

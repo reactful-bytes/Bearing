@@ -29,6 +29,10 @@ jest.mock('@react-navigation/native', () => ({
   NavigationContainer: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: jest.fn(() => ({ top: 0, right: 0, bottom: 24, left: 0 })),
+}));
+
 jest.mock('@react-navigation/bottom-tabs', () => {
   const ReactModule = jest.requireActual<typeof import('react')>('react');
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
@@ -80,6 +84,7 @@ jest.mock('@react-navigation/bottom-tabs', () => {
 
           return (
             <View key={route.name} testID={`tab-button-${route.name}`}>
+              <View testID={`tab-bar-${route.name}`} style={mergedOptions.tabBarStyle} />
               {icon}
             </View>
           );
@@ -125,6 +130,21 @@ describe('AppTabs', () => {
     expect(calendarTabIcon.props.style).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ height: 76, width: 76, borderRadius: 38 }),
+      ]),
+    );
+  });
+
+  it('reserves the Android bottom safe-area inset for the tab bar', () => {
+    const { getByTestId } = render(
+      <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
+    );
+
+    expect(getByTestId('tab-bar-Goals').props.style).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          height: layout.tabBarHeight + 24,
+          paddingBottom: 24,
+        }),
       ]),
     );
   });

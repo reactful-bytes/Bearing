@@ -268,9 +268,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#07161F',
     paddingHorizontal: spacing['2xl'],
-    paddingVertical: spacing['3xl'],
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
     justifyContent: 'space-between',
-    gap: spacing['2xl'],
+    gap: spacing.xl,
   },
   heroBlock: {
     gap: spacing.sm,
@@ -308,11 +309,9 @@ const styles = StyleSheet.create({
     color: '#F4F8FA',
   },
   ideaBlock: {
-    flex: 1,
     gap: spacing.md,
   },
   ideaField: {
-    flex: 1,
   },
   ideaTitle: {
     ...typography.screenTitle,
@@ -323,8 +322,7 @@ const styles = StyleSheet.create({
     color: '#B7D0DC',
   },
   ideaInput: {
-    flex: 1,
-    minHeight: 220,
+    height: 144,
     borderRadius: radii.xl,
     backgroundColor: '#0D2430',
     borderWidth: 1,

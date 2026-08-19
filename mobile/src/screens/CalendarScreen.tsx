@@ -8,6 +8,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { DayNavBar } from '../components/calendar/DayNavBar';
@@ -369,7 +370,7 @@ export function CalendarScreen({
   const visibleMonth = monthList[visibleMonthIndex];
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen}>
       <View style={styles.calendarToolbar}>
         <ViewModeToggle
           mode={viewMode}
@@ -569,7 +570,7 @@ export function CalendarScreen({
         onClose={handleCloseFocusMode}
         onSaveIdeaDump={handleSaveIdeaDump}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
