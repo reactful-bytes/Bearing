@@ -18,6 +18,7 @@ type AppModalProps = {
   onClose: () => void;
   closeLabel?: string;
   headerAccessory?: ReactNode;
+  fullScreen?: boolean;
   children: ReactNode;
 };
 
@@ -27,12 +28,13 @@ export function AppModal({
   onClose,
   closeLabel = 'Close',
   headerAccessory,
+  fullScreen = false,
   children,
 }: AppModalProps) {
   return (
     <Modal
       visible={visible}
-      transparent
+      transparent={!fullScreen}
       animationType="fade"
       onRequestClose={onClose}
       accessibilityLabel={`${title} modal`}
@@ -40,15 +42,20 @@ export function AppModal({
       <KeyboardAvoidingView
         accessibilityViewIsModal
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.backdrop}
+        style={[styles.backdrop, fullScreen && styles.fullScreenBackdrop]}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Dismiss ${title}`}
-          style={styles.backdropPressArea}
-          onPress={onClose}
-        />
-        <SafeAreaView edges={['top', 'right', 'bottom', 'left']} style={styles.sheet}>
+        {!fullScreen ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Dismiss ${title}`}
+            style={styles.backdropPressArea}
+            onPress={onClose}
+          />
+        ) : null}
+        <SafeAreaView
+          edges={['top', 'right', 'bottom', 'left']}
+          style={fullScreen ? styles.fullScreenSheet : styles.sheet}
+        >
           <View style={styles.header}>
             <Text accessibilityRole="header" accessibilityLabel={title} style={styles.title}>
               {title}
@@ -65,7 +72,7 @@ export function AppModal({
               </Pressable>
             </View>
           </View>
-          <View style={styles.body}>{children}</View>
+          <View style={[styles.body, fullScreen && styles.fullScreenBody]}>{children}</View>
         </SafeAreaView>
       </KeyboardAvoidingView>
     </Modal>
@@ -80,6 +87,9 @@ const styles = StyleSheet.create({
   },
   backdropPressArea: {
     ...StyleSheet.absoluteFill,
+  },
+  fullScreenBackdrop: {
+    backgroundColor: colors.background,
   },
   sheet: {
     maxHeight: '88%',
@@ -125,5 +135,16 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     minHeight: 0,
     gap: spacing.md,
+  },
+  fullScreenSheet: {
+    flex: 1,
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing['2xl'],
+    paddingTop: spacing['2xl'],
+    paddingBottom: spacing['3xl'],
+    gap: spacing.lg,
+  },
+  fullScreenBody: {
+    flex: 1,
   },
 });

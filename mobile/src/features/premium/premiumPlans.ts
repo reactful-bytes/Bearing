@@ -1,10 +1,13 @@
-import { PremiumPlan, PremiumPlanPeriod } from './purchaseTypes';
+import { PremiumPlan } from './purchaseTypes';
 
 export type StorePackageSummary = {
   identifier: string;
   packageType: string;
   product: {
+    title: string;
+    productType: string;
     priceString: string;
+    pricePerMonthString: string | null;
     subscriptionPeriod: string | null;
     introPrice: {
       priceString: string;
@@ -15,16 +18,91 @@ export type StorePackageSummary = {
   };
 };
 
-function getPlanPeriod(
-  packageType: string,
-  subscriptionPeriod: string | null,
-): PremiumPlanPeriod | null {
-  if (packageType === 'MONTHLY' || subscriptionPeriod === 'P1M') return 'monthly';
-  if (packageType === 'ANNUAL' || subscriptionPeriod === 'P1Y') return 'annual';
-  return null;
+type PlanPeriodDetails = {
+  fallbackTitle: string;
+  priceSuffixText: string | null;
+  isAutoRenewing: boolean;
+  isOneTimePurchase: boolean;
+};
+
+const PERIOD_UNITS = {
+  D: 'day',
+  W: 'week',
+  M: 'month',
+  Y: 'year',
+} as const;
+
+const PRICE_PERIOD_UNITS = {
+  D: 'day',
+  W: 'wk',
+  M: 'mo',
+  Y: 'yr',
+} as const;
+
+function getSubscriptionPeriodDetails(subscriptionPeriod: string): PlanPeriodDetails | null {
+  const match = /^P(\d+)([DWMY])$/.exec(subscriptionPeriod);
+  if (!match) return null;
+
+  const quantity = Number(match[1]);
+  const unit = PERIOD_UNITS[match[2] as keyof typeof PERIOD_UNITS];
+  const unitLabel = `${unit}${quantity === 1 ? '' : 's'}`;
+  const interval = quantity === 1 ? unit : `${quantity} ${unitLabel}`;
+  const pricePeriodUnit = PRICE_PERIOD_UNITS[match[2] as keyof typeof PRICE_PERIOD_UNITS];
+  const fallbackTitle =
+    quantity === 1
+      ? ({ D: 'Daily', W: 'Weekly', M: 'Monthly', Y: 'Annual' } as const)[match[2] as keyof typeof PERIOD_UNITS]
+      : `Every ${interval}`;
+
+  return {
+    fallbackTitle,
+    priceSuffixText: `/${quantity === 1 ? '' : `${quantity} `}${pricePeriodUnit}`,
+    isAutoRenewing: false,
+    isOneTimePurchase: false,
+  };
 }
 
-function getIntroductoryTerms(storePackage: StorePackageSummary): string | null {
+function getPlanPeriodDetails(storePackage: StorePackageSummary): PlanPeriodDetails {
+  const subscriptionPeriod = storePackage.product.subscriptionPeriod;
+  if (subscriptionPeriod) {
+    const details = getSubscriptionPeriodDetails(subscriptionPeriod);
+    if (details) {
+      return {
+        ...details,
+        isAutoRenewing: storePackage.product.productType === 'AUTO_RENEWABLE_SUBSCRIPTION',
+      };
+    }
+  }
+
+  if (
+    storePackage.packageType === 'LIFETIME' ||
+    storePackage.product.productType === 'NON_CONSUMABLE'
+  ) {
+    return {
+      fallbackTitle: 'Lifetime',
+      priceSuffixText: null,
+      isAutoRenewing: false,
+      isOneTimePurchase: true,
+    };
+  }
+
+  if (storePackage.product.productType === 'AUTO_RENEWABLE_SUBSCRIPTION') {
+    return {
+      fallbackTitle: 'Premium',
+      priceSuffixText: null,
+      isAutoRenewing: true,
+      isOneTimePurchase: false,
+    };
+  }
+
+  return {
+    fallbackTitle: 'Premium',
+    priceSuffixText: null,
+    isAutoRenewing: false,
+    isOneTimePurchase: false,
+  };
+}
+
+function getIntroductoryOfferText(storePackage: StorePackageSummary): string | null {
   const intro = storePackage.product.introPrice;
   if (!intro) return null;
 
@@ -32,28 +110,41 @@ function getIntroductoryTerms(storePackage: StorePackageSummary): string | null 
   const duration = intro.periodNumberOfUnits * intro.cycles;
   const unitLabel = `${unit}${duration === 1 ? '' : 's'}`;
   return intro.priceString === '0' || Number(intro.priceString.replace(/[^0-9.]/g, '')) === 0
-    ? `${duration} ${unitLabel} free, then ${storePackage.product.priceString}.`
-    : `${intro.priceString} for ${duration} ${unitLabel}, then ${storePackage.product.priceString}.`;
+    ? `${duration} ${unitLabel} free`
+    : `${intro.priceString} for ${duration} ${unitLabel}`;
+}
+
+function getAnnualMonthlyBreakdownText(storePackage: StorePackageSummary): string | null {
+  if (storePackage.product.subscriptionPeriod !== 'P1Y') return null;
+  const monthlyPrice = storePackage.product.pricePerMonthString?.trim();
+  return monthlyPrice ? `Only ${monthlyPrice}/mo` : null;
+}
+
+function getCustomerFacingPlanTitle(
+  storePackage: StorePackageSummary,
+  fallbackTitle: string,
+): string {
+  const title = storePackage.product.title.trim();
+  const isTechnicalTitle =
+    /^P\d+[DWMY]$/i.test(title) || title.startsWith('$rc_') || title.includes('_');
+  return title && !isTechnicalTitle ? title : fallbackTitle;
 }
 
 export function normalizePremiumPlans(packages: StorePackageSummary[]): PremiumPlan[] {
-  return packages
-    .map((storePackage): PremiumPlan | null => {
-      const period = getPlanPeriod(
-        storePackage.packageType,
-        storePackage.product.subscriptionPeriod,
-      );
-      if (!period) return null;
-
-      return {
-        packageIdentifier: storePackage.identifier,
-        period,
-        title: period === 'monthly' ? 'Monthly' : 'Annual',
-        priceText: storePackage.product.priceString,
-        billingPeriodText: period === 'monthly' ? 'per month' : 'per year',
-        introductoryTermsText: getIntroductoryTerms(storePackage),
-      };
-    })
-    .filter((plan): plan is PremiumPlan => plan !== null)
-    .sort((left, right) => (left.period === 'monthly' && right.period === 'annual' ? -1 : 1));
+  return packages.map((storePackage): PremiumPlan => {
+    const periodDetails = getPlanPeriodDetails(storePackage);
+    return {
+      packageIdentifier: storePackage.identifier,
+      telemetryPlanType: storePackage.packageType,
+      title: getCustomerFacingPlanTitle(storePackage, periodDetails.fallbackTitle),
+      priceText: storePackage.product.priceString,
+      priceSuffixText: periodDetails.priceSuffixText,
+      annualMonthlyBreakdownText: periodDetails.isAutoRenewing
+        ? getAnnualMonthlyBreakdownText(storePackage)
+        : null,
+      introductoryOfferText: getIntroductoryOfferText(storePackage),
+      isAutoRenewing: periodDetails.isAutoRenewing,
+      isOneTimePurchase: periodDetails.isOneTimePurchase,
+    };
+  });
 }

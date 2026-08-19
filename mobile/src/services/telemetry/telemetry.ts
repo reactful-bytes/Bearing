@@ -26,10 +26,10 @@ export type TelemetryEventProperties = {
     feature: 'ai_goal_builder' | 'premium_overview';
   };
   premium_purchase_started: {
-    period: 'monthly' | 'annual';
+    period: string;
   };
   premium_purchase_result: {
-    period: 'monthly' | 'annual';
+    period: string;
     outcome: 'success' | 'cancelled' | 'failure';
   };
   premium_restore_result: {
@@ -78,6 +78,16 @@ function hasExactKeys(value: Record<string, unknown>, keys: string[]): boolean {
 
 function isOneOf<T extends string>(value: unknown, values: readonly T[]): value is T {
   return typeof value === 'string' && values.includes(value as T);
+}
+
+function isPremiumPurchasePeriod(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    (value === 'monthly' ||
+      value === 'annual' ||
+      /^P[1-9]\d*[DWMY]$/.test(value) ||
+      /^[A-Z_]{1,32}$/.test(value))
+  );
 }
 
 export function buildTelemetryPayload(name: unknown, properties: unknown): TelemetryPayload | null {
@@ -137,12 +147,12 @@ export function buildTelemetryPayload(name: unknown, properties: unknown): Telem
       break;
     case 'premium_purchase_started':
       if (!hasExactKeys(properties, ['period'])) return null;
-      if (!isOneOf(properties.period, ['monthly', 'annual'])) return null;
+      if (!isPremiumPurchasePeriod(properties.period)) return null;
       break;
     case 'premium_purchase_result':
       if (!hasExactKeys(properties, ['outcome', 'period'])) return null;
       if (
-        !isOneOf(properties.period, ['monthly', 'annual']) ||
+        !isPremiumPurchasePeriod(properties.period) ||
         !isOneOf(properties.outcome, ['success', 'cancelled', 'failure'])
       )
         return null;

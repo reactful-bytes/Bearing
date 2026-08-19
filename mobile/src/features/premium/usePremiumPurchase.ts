@@ -77,9 +77,12 @@ export function usePremiumPurchase(
     setPendingAction(plan.packageIdentifier);
     setError(null);
     setFeedback(null);
-    void recordTelemetryEvent('premium_purchase_started', { period: plan.period });
+    void recordTelemetryEvent('premium_purchase_started', { period: plan.telemetryPlanType });
     const result = await purchasePremiumPlan(userId, plan.packageIdentifier);
-    void recordTelemetryEvent('premium_purchase_result', { period: plan.period, outcome: result });
+    void recordTelemetryEvent('premium_purchase_result', {
+      period: plan.telemetryPlanType,
+      outcome: result,
+    });
     if (result === 'success') {
       setFeedback('Purchase accepted. Activating Premium...');
       setActivationSource('purchase');

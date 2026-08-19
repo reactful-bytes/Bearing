@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppCard } from '../ui/AppCard';
 import { AppButton } from '../ui/AppButton';
@@ -7,6 +7,7 @@ import { AppModal } from '../ui/AppModal';
 import { colors, radii, spacing, typography } from '../../design/tokens';
 import { PremiumFeature, getPremiumPaywallCopy } from '../../features/premium/premiumAccess';
 import { usePremiumPurchase } from '../../features/premium/usePremiumPurchase';
+import { PremiumPlan } from '../../features/premium/purchaseTypes';
 import { recordTelemetryEvent } from '../../services/telemetry/telemetry';
 import { LEGAL_DOCUMENTS, LegalDocumentId } from '../../features/profile/legalDocuments';
 import { LegalDocumentModal } from '../profile/LegalDocumentModal';
@@ -29,6 +30,8 @@ export function PremiumPaywallModal({
   onClose,
 }: PremiumPaywallModalProps) {
   const [legalDocumentId, setLegalDocumentId] = useState<LegalDocumentId | null>(null);
+  const [selectedPackageIdentifier, setSelectedPackageIdentifier] = useState<string | null>(null);
+  const [confirmationPlan, setConfirmationPlan] = useState<PremiumPlan | null>(null);
   const purchase = usePremiumPurchase(userId, !isAnonymous, visible, hasPremiumAccess);
   useEffect(() => {
     if (visible && feature) {
@@ -36,18 +39,44 @@ export function PremiumPaywallModal({
     }
   }, [feature, visible]);
 
+  useEffect(() => {
+    setSelectedPackageIdentifier((currentIdentifier) =>
+      purchase.plans.some((plan) => plan.packageIdentifier === currentIdentifier)
+        ? currentIdentifier
+        : (purchase.plans[0]?.packageIdentifier ?? null),
+    );
+  }, [purchase.plans]);
+
   if (!visible || !feature) {
     return null;
   }
 
   const copy = getPremiumPaywallCopy(feature);
+  const hasAutoRenewingPlans = purchase.plans.some((plan) => plan.isAutoRenewing);
+  const hasOneTimePurchasePlans = purchase.plans.some((plan) => plan.isOneTimePurchase);
+  const selectedPlan =
+    purchase.plans.find((plan) => plan.packageIdentifier === selectedPackageIdentifier) ?? null;
+  const isPurchaseDisabled =
+    !selectedPlan ||
+    isAnonymous ||
+    hasPremiumAccess ||
+    purchase.availability !== 'available' ||
+    purchase.awaitingActivation ||
+    purchase.pendingAction !== null;
+
+  async function confirmPurchase(): Promise<void> {
+    if (!confirmationPlan) return;
+    await purchase.purchase(confirmationPlan);
+    setConfirmationPlan(null);
+  }
 
   return (
     <>
       <AppModal
-        visible={visible && legalDocumentId === null}
+        visible={visible && legalDocumentId === null && confirmationPlan === null}
         title="Bearing Premium"
         onClose={onClose}
+        fullScreen
       >
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.heroBlock}>
@@ -71,26 +100,61 @@ export function PremiumPaywallModal({
           {purchase.loading ? <Text style={styles.planMeta}>Loading store plans...</Text> : null}
 
           <View style={styles.planColumn}>
-            {purchase.plans.map((plan) => (
-              <AppCard key={plan.packageIdentifier} style={styles.planCard}>
-                <Text style={styles.planName}>{plan.title}</Text>
-                <Text style={styles.planPrice}>
-                  {plan.priceText} {plan.billingPeriodText}
-                </Text>
-                {plan.introductoryTermsText ? (
-                  <Text style={styles.planMeta}>{plan.introductoryTermsText}</Text>
-                ) : null}
-                <AppButton
-                  label={`Choose ${plan.title}`}
-                  accessibilityLabel={`Purchase ${plan.title} Premium plan`}
-                  onPress={() => void purchase.purchase(plan)}
-                  loading={purchase.pendingAction === plan.packageIdentifier}
-                  loadingLabel="Opening store..."
-                  disabled={purchase.awaitingActivation || hasPremiumAccess}
-                />
-              </AppCard>
-            ))}
+            {purchase.plans.map((plan) => {
+              const isSelected = plan.packageIdentifier === selectedPackageIdentifier;
+              return (
+                <Pressable
+                  key={plan.packageIdentifier}
+                  accessibilityRole="radio"
+                  accessibilityLabel={`Select ${plan.title} Premium plan`}
+                  accessibilityState={{ selected: isSelected, disabled: purchase.pendingAction !== null }}
+                  disabled={purchase.pendingAction !== null}
+                  onPress={() => setSelectedPackageIdentifier(plan.packageIdentifier)}
+                  style={({ pressed }) => [
+                    styles.planCard,
+                    isSelected && styles.planCardSelected,
+                    pressed && purchase.pendingAction === null && styles.planCardPressed,
+                  ]}
+                >
+                  <View style={styles.planHeader}>
+                    <View style={styles.planDetails}>
+                      <View style={styles.planTitleRow}>
+                        <View style={[styles.selectionIndicator, isSelected && styles.selectionIndicatorSelected]}>
+                          {isSelected ? <View style={styles.selectionIndicatorFill} /> : null}
+                        </View>
+                        <Text style={styles.planName}>{plan.title}</Text>
+                      </View>
+                      {plan.annualMonthlyBreakdownText ? (
+                        <Text style={styles.planSummary}>{plan.annualMonthlyBreakdownText}</Text>
+                      ) : null}
+                      {plan.introductoryOfferText ? (
+                        <View style={styles.planOfferBadge}>
+                          <Text style={styles.planIntroductoryOffer}>
+                            {plan.introductoryOfferText}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <View style={styles.planPriceBlock}>
+                      <Text style={styles.planPrice}>
+                        {plan.priceText}
+                        {plan.priceSuffixText}
+                      </Text>
+                    </View>
+                  </View>
+                </Pressable>
+              );
+            })}
           </View>
+
+          <AppButton
+            label="Continue"
+            accessibilityLabel={
+              selectedPlan ? `Continue with ${selectedPlan.title} Premium plan` : 'Select a plan'
+            }
+            onPress={() => selectedPlan && setConfirmationPlan(selectedPlan)}
+            disabled={isPurchaseDisabled}
+          />
 
           {purchase.availability !== 'available' && !isAnonymous ? (
             <Text style={styles.accountNote}>
@@ -124,10 +188,15 @@ export function PremiumPaywallModal({
             }
           />
 
-          <Text style={styles.footnote}>
-            Subscriptions renew automatically unless canceled in Apple or Google account settings.
-            Deleting Bearing does not cancel a store subscription.
-          </Text>
+          {hasAutoRenewingPlans || hasOneTimePurchasePlans ? (
+            <Text style={styles.footnote}>
+              {hasAutoRenewingPlans
+                ? 'Subscriptions renew automatically unless canceled in Apple or Google account settings. '
+                : ''}
+              {hasOneTimePurchasePlans ? 'One-time purchases do not renew automatically. ' : ''}
+              {hasAutoRenewingPlans ? 'Deleting Bearing does not cancel a store subscription.' : ''}
+            </Text>
+          ) : null}
 
           <View style={styles.legalActions}>
             <AppButton
@@ -155,6 +224,57 @@ export function PremiumPaywallModal({
         document={legalDocumentId ? LEGAL_DOCUMENTS[legalDocumentId] : null}
         onClose={() => setLegalDocumentId(null)}
       />
+      <AppModal
+        visible={confirmationPlan !== null}
+        title="Confirm Premium"
+        closeLabel="Back"
+        onClose={() => {
+          if (!purchase.pendingAction) setConfirmationPlan(null);
+        }}
+      >
+        {confirmationPlan ? (
+          <View style={styles.confirmationContent}>
+            <Text style={styles.confirmationIntro}>You are selecting</Text>
+            <View style={styles.confirmationPlan}>
+              <View style={styles.confirmationPlanDetails}>
+                <Text style={styles.confirmationPlanTitle}>{confirmationPlan.title}</Text>
+                {confirmationPlan.annualMonthlyBreakdownText ? (
+                  <Text style={styles.planSummary}>{confirmationPlan.annualMonthlyBreakdownText}</Text>
+                ) : null}
+                {confirmationPlan.introductoryOfferText ? (
+                  <Text style={styles.planMeta}>{confirmationPlan.introductoryOfferText}</Text>
+                ) : null}
+              </View>
+              <Text style={styles.confirmationPlanPrice}>
+                {confirmationPlan.priceText}
+                {confirmationPlan.priceSuffixText}
+              </Text>
+            </View>
+            <Text style={styles.confirmationTerms}>
+              {confirmationPlan.isAutoRenewing
+                ? 'Renews automatically unless you cancel in your Apple or Google account settings.'
+                : confirmationPlan.isOneTimePurchase
+                  ? 'This is a one-time purchase and does not renew automatically.'
+                  : 'The store will show the final purchase terms before you confirm.'}
+            </Text>
+            <AppButton
+              label="Continue to Store"
+              accessibilityLabel={`Continue to the store for ${confirmationPlan.title} Premium`}
+              onPress={() => void confirmPurchase()}
+              loading={purchase.pendingAction === confirmationPlan.packageIdentifier}
+              loadingLabel="Opening store..."
+              disabled={purchase.pendingAction !== null || purchase.awaitingActivation}
+            />
+            <AppButton
+              label="Choose Another Plan"
+              variant="secondary"
+              accessibilityLabel="Return to Premium plan selection"
+              onPress={() => setConfirmationPlan(null)}
+              disabled={purchase.pendingAction !== null}
+            />
+          </View>
+        ) : null}
+      </AppModal>
     </>
   );
 }
@@ -209,7 +329,56 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   planCard: {
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
+  },
+  planCardSelected: {
+    borderColor: colors.brand,
+    backgroundColor: colors.surfaceBrand,
+  },
+  planCardPressed: {
+    opacity: 0.88,
+  },
+  planHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  planTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  selectionIndicator: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: colors.textSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectionIndicatorSelected: {
+    borderColor: colors.brand,
+  },
+  selectionIndicatorFill: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.brand,
+  },
+  planDetails: {
+    flex: 1,
+    minWidth: 0,
     gap: spacing.xs,
+  },
+  planPriceBlock: {
+    alignItems: 'flex-end',
+    flexShrink: 0,
   },
   planName: {
     ...typography.button,
@@ -222,6 +391,18 @@ const styles = StyleSheet.create({
   planPrice: {
     ...typography.button,
     color: colors.brand,
+    textAlign: 'right',
+  },
+  planIntroductoryOffer: {
+    ...typography.helper,
+    color: colors.brand,
+  },
+  planOfferBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: radii.sm,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   planMeta: {
     ...typography.helper,
@@ -249,18 +430,37 @@ const styles = StyleSheet.create({
     ...typography.helper,
     color: colors.brand,
   },
-  primaryButton: {
+  confirmationContent: {
+    gap: spacing.lg,
+  },
+  confirmationIntro: {
+    ...typography.helper,
+    color: colors.textSecondary,
+  },
+  confirmationPlan: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.md,
     borderRadius: radii.md,
-    backgroundColor: colors.brand,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    padding: spacing.lg,
   },
-  primaryButtonText: {
+  confirmationPlanDetails: {
+    flex: 1,
+    minWidth: 0,
+    gap: spacing.xs,
+  },
+  confirmationPlanTitle: {
     ...typography.button,
-    color: colors.background,
+    color: colors.text,
   },
-  buttonPressed: {
-    opacity: 0.9,
+  confirmationPlanPrice: {
+    ...typography.button,
+    color: colors.brand,
+    textAlign: 'right',
+  },
+  confirmationTerms: {
+    ...typography.body,
+    color: colors.textPrimary,
   },
 });

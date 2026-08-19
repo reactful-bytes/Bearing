@@ -87,7 +87,7 @@ export const LEGAL_DOCUMENTS: Record<LegalDocumentId, LegalDocument> = {
       },
       {
         heading: 'Subscriptions',
-        body: 'Bearing Premium is offered through monthly and annual auto-renewing store subscriptions. The live localized price, billing period, any introductory terms, and included features are shown before purchase. No trial is planned for launch. Apple or Google processes payment and controls cancellation and refund requests. Purchases can be restored to the secured Bearing account. Deleting Bearing does not by itself cancel a store subscription.',
+        body: 'Bearing Premium may be offered through auto-renewing store subscriptions and one-time purchases. The live localized product title, price, billing period, any introductory terms, and included features are shown before purchase. No trial is planned for launch. Apple or Google processes payment and controls cancellation and refund requests. Purchases can be restored to the secured Bearing account. Deleting Bearing does not by itself cancel a store subscription.',
       },
       {
         heading: 'Availability and changes',

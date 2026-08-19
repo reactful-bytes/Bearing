@@ -79,15 +79,15 @@ describe('telemetry privacy boundary', () => {
     });
   });
 
-  it('accepts only fixed premium purchase and activation outcomes', () => {
-    expect(buildTelemetryPayload('premium_purchase_started', { period: 'monthly' })).toEqual({
+  it('accepts safe RevenueCat premium periods and fixed activation outcomes', () => {
+    expect(buildTelemetryPayload('premium_purchase_started', { period: 'P1W' })).toEqual({
       schemaVersion: 1,
       name: 'premium_purchase_started',
-      properties: { period: 'monthly' },
+      properties: { period: 'P1W' },
     });
     expect(
       buildTelemetryPayload('premium_purchase_result', {
-        period: 'annual',
+        period: 'LIFETIME',
         outcome: 'cancelled',
       }),
     ).not.toBeNull();
@@ -104,6 +104,9 @@ describe('telemetry privacy boundary', () => {
         outcome: 'success',
         productId: 'private-store-product',
       }),
+    ).toBeNull();
+    expect(
+      buildTelemetryPayload('premium_purchase_started', { period: 'private product title' }),
     ).toBeNull();
   });
 
