@@ -1,10 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import {
+  FlatList,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { DayNavBar } from '../components/calendar/DayNavBar';
 import { ViewModeToggle } from '../components/calendar/ViewModeToggle';
 import { HourlyTimeline } from '../components/calendar/HourlyTimeline';
+import { WeekTimeline } from '../components/calendar/WeekTimeline';
 import { MonthGrid, MONTH_NAMES } from '../components/calendar/MonthGrid';
 import { AddEventModal } from '../components/calendar/AddEventModal';
 import { EventDetailModal } from '../components/calendar/EventDetailModal';
@@ -36,6 +45,7 @@ type MonthItem = { year: number; month: number };
 const MONTH_RANGE = 12; // months before and after today
 
 const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 50 };
+const DESKTOP_CALENDAR_BREAKPOINT = 1024;
 
 function buildMonthList(baseDate: Date): MonthItem[] {
   const items: MonthItem[] = [];
@@ -52,6 +62,33 @@ function isSameCalendarDay(a: Date, b: Date): boolean {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate()
   );
+}
+
+export function getSundayWeekStart(date: Date): Date {
+  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  start.setDate(start.getDate() - start.getDay());
+  return start;
+}
+
+export function getDefaultCalendarView(platform: string, width: number): ViewMode {
+  return platform === 'web' && width >= DESKTOP_CALENDAR_BREAKPOINT ? 'week' : 'day';
+}
+
+function formatWeekRange(start: Date): string {
+  const end = addDays(start, 6);
+  const startMonth = start.toLocaleDateString('en-US', { month: 'short' });
+  const endMonth = end.toLocaleDateString('en-US', { month: 'short' });
+  const endYear = end.getFullYear();
+
+  return startMonth === endMonth
+    ? `${startMonth} ${start.getDate()}–${end.getDate()}, ${endYear}`
+    : `${startMonth} ${start.getDate()} – ${endMonth} ${end.getDate()}, ${endYear}`;
+}
+
+function addDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -81,21 +118,31 @@ export function CalendarScreen({
   stateOverride,
   eventsOverride,
   initialDateOverride,
-  initialViewMode = 'day',
+  initialViewMode,
   route,
   navigation,
 }: CalendarScreenProps) {
+  const { width: screenWidth } = useWindowDimensions();
+  const isDesktopCalendar = Platform.OS === 'web' && screenWidth >= DESKTOP_CALENDAR_BREAKPOINT;
   const [selectedDate, setSelectedDate] = useState<Date>(initialDateOverride ?? new Date());
-  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    initialViewMode ?? getDefaultCalendarView(Platform.OS, screenWidth),
+  );
   const [activeEvent, setActiveEvent] = useState<CalendarDisplayEvent | null>(null);
   const [addEventVisible, setAddEventVisible] = useState(false);
   const [focusModeVisible, setFocusModeVisible] = useState(false);
   const [pendingFocusEvent, setPendingFocusEvent] = useState<CalendarEvent | null>(null);
   const [preferredFocusEventId, setPreferredFocusEventId] = useState<string | null>(null);
   const [timelineFocusRequest, setTimelineFocusRequest] = useState(0);
-  const { width: screenWidth } = useWindowDimensions();
   const year = selectedDate.getFullYear();
   const month = selectedDate.getMonth();
+  const weekStart = useMemo(() => getSundayWeekStart(selectedDate), [selectedDate]);
+  const visibleRange = useMemo(() => {
+    if (viewMode !== 'week') return undefined;
+    const end = addDays(weekStart, 6);
+    end.setHours(23, 59, 59, 999);
+    return { start: weekStart, end };
+  }, [viewMode, weekStart]);
 
   // Real data from hook (test overrides only when eventsOverride provided)
   const {
@@ -109,7 +156,7 @@ export function CalendarScreen({
     refresh: refreshEvents,
     deviceError,
     publicationCalendarTitle,
-  } = useCalendarEvents(selectedDate);
+  } = useCalendarEvents(selectedDate, undefined, visibleRange);
   const createNote = useCreateNote();
   const { profile } = useUserProfile();
   const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
@@ -150,6 +197,12 @@ export function CalendarScreen({
     return [pendingFocusEvent, ...focusEvents.filter((event) => event.id !== pendingFocusEvent.id)];
   }, [focusEvents, pendingFocusEvent]);
   const focusLaunchToken = route?.params?.focusLaunch?.token;
+
+  useEffect(() => {
+    if (!isDesktopCalendar && viewMode === 'week' && initialViewMode === undefined) {
+      setViewMode('day');
+    }
+  }, [initialViewMode, isDesktopCalendar, viewMode]);
 
   useEffect(() => {
     if (!pendingFocusEvent) {
@@ -209,12 +262,6 @@ export function CalendarScreen({
     [],
   );
 
-  function addDays(date: Date, days: number): Date {
-    const result = new Date(date);
-    result.setDate(result.getDate() + days);
-    return result;
-  }
-
   function handlePrevDay(): void {
     setSelectedDate((d) => addDays(d, -1));
   }
@@ -226,6 +273,18 @@ export function CalendarScreen({
   function handleSelectDate(date: Date): void {
     setSelectedDate(date);
     setViewMode('day');
+  }
+
+  function handlePrevWeek(): void {
+    setSelectedDate((date) => addDays(date, -7));
+  }
+
+  function handleNextWeek(): void {
+    setSelectedDate((date) => addDays(date, 7));
+  }
+
+  function handleToday(): void {
+    setSelectedDate(new Date());
   }
 
   function handlePrevMonth(): void {
@@ -312,15 +371,31 @@ export function CalendarScreen({
   return (
     <View style={styles.screen}>
       <View style={styles.calendarToolbar}>
-        <ViewModeToggle mode={viewMode} onChange={setViewMode} />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Refresh calendar events"
-          onPress={handleRefreshCalendar}
-          style={({ pressed }) => [styles.refreshButton, pressed ? styles.buttonPressed : null]}
-        >
-          <Text style={styles.refreshButtonText}>Refresh</Text>
-        </Pressable>
+        <ViewModeToggle
+          mode={viewMode}
+          onChange={setViewMode}
+          showWeek={isDesktopCalendar || initialViewMode === 'week'}
+        />
+        <View style={styles.toolbarActions} testID="calendar-toolbar-actions">
+          {viewMode === 'week' ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Go to current week"
+              onPress={handleToday}
+              style={({ pressed }) => [styles.todayButton, pressed ? styles.buttonPressed : null]}
+            >
+              <Text style={styles.todayButtonText}>Today</Text>
+            </Pressable>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Refresh calendar events"
+            onPress={handleRefreshCalendar}
+            style={({ pressed }) => [styles.refreshButton, pressed ? styles.buttonPressed : null]}
+          >
+            <Text style={styles.refreshButtonText}>Refresh</Text>
+          </Pressable>
+        </View>
       </View>
       {deviceError ? (
         <Text style={styles.deviceErrorText}>Device events could not be refreshed.</Text>
@@ -338,6 +413,45 @@ export function CalendarScreen({
             timeFormat={timeFormat}
           />
         </>
+      ) : viewMode === 'week' ? (
+        <View style={styles.weekContainer}>
+          <View style={styles.weekNavRow}>
+            <View style={styles.weekNavControls} testID="week-navigation-controls">
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Previous week"
+                onPress={handlePrevWeek}
+                style={({ pressed }) => [
+                  styles.weekNavButton,
+                  pressed ? styles.buttonPressed : null,
+                ]}
+              >
+                <Text style={styles.weekArrowText}>‹</Text>
+              </Pressable>
+              <Text style={styles.weekRangeLabel}>{formatWeekRange(weekStart)}</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Next week"
+                onPress={handleNextWeek}
+                style={({ pressed }) => [
+                  styles.weekNavButton,
+                  pressed ? styles.buttonPressed : null,
+                ]}
+              >
+                <Text style={styles.weekArrowText}>›</Text>
+              </Pressable>
+            </View>
+          </View>
+          <WeekTimeline
+            weekStart={weekStart}
+            events={calendarEvents}
+            focusCurrentTimeRequest={timelineFocusRequest}
+            onPressEvent={handlePressEvent}
+            onSelectDate={handleSelectDate}
+            uiState={uiState}
+            timeFormat={timeFormat}
+          />
+        </View>
       ) : (
         <View style={styles.monthContainer}>
           {/* Month nav header */}
@@ -470,6 +584,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingRight: spacing.md,
   },
+  toolbarActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   refreshButton: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
@@ -488,6 +607,53 @@ const styles = StyleSheet.create({
   },
   monthContainer: {
     flex: 1,
+  },
+  weekContainer: {
+    flex: 1,
+  },
+  weekNavRow: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  weekNavControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  weekNavButton: {
+    width: 40,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weekArrowText: {
+    fontSize: 28,
+    lineHeight: 32,
+    color: colors.brand,
+    fontWeight: '300',
+  },
+  todayButton: {
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 6,
+    backgroundColor: colors.surface,
+  },
+  todayButtonText: {
+    ...typography.button,
+    color: colors.brand,
+  },
+  weekRangeLabel: {
+    ...typography.button,
+    minWidth: 190,
+    color: colors.text,
+    textAlign: 'center',
   },
   monthNavRow: {
     flexDirection: 'row',

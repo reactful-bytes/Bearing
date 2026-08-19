@@ -224,6 +224,26 @@ describe('useCalendarEvents', () => {
     expect(result.current.events.some((event) => event.title === 'Stale July event')).toBe(false);
   });
 
+  it('subscribes to an explicit cross-month visible range', async () => {
+    const adapter = makeAdapter(jest.fn(async () => []));
+    const range = {
+      start: new Date(2026, 6, 26, 0, 0, 0, 0),
+      end: new Date(2026, 7, 1, 23, 59, 59, 999),
+    };
+
+    renderHook(() => useCalendarEvents(new Date(2026, 6, 31), adapter, range));
+
+    await waitFor(() => expect(subscribeToEventsByDateRange).toHaveBeenCalled());
+    expect(subscribeToEventsByDateRange).toHaveBeenCalledWith(
+      'user-1',
+      range.start,
+      range.end,
+      expect.any(Function),
+      expect.any(Function),
+    );
+    expect(adapter.listEvents).toHaveBeenCalledWith(['work'], range.start, range.end);
+  });
+
   it('refreshes calendar discovery when this account preferences change', async () => {
     const refreshCalendars = jest.fn(async () => undefined);
     const adapter = makeAdapter(jest.fn(async () => []));

@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { GoalsScreen } from '../screens/GoalsScreen';
 import { CreateGoalInput, GoalStepRecord, GoalWithSteps } from '../features/goals/goalTypes';
@@ -175,6 +175,10 @@ describe('GoalsScreen', () => {
     });
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('retries after the goals subscriptions fail', () => {
     const retry = jest.fn();
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
@@ -313,6 +317,9 @@ describe('GoalsScreen', () => {
   });
 
   it('walks the manual goal wizard and saves a goal', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 6, 20));
+
     let savedGoalInput: CreateGoalInput | null = null;
     const createGoalMock = jest.fn(async (input: CreateGoalInput) => {
       savedGoalInput = input;

@@ -28,14 +28,14 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 ### M1 - Foundation Setup
 
-| Task ID | Status         | Description                                                   | Notes                                                                                                    |
-| ------- | -------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| M1.1    | completed      | Initialize Expo application workspace structure               | Expo scaffold implemented in mobile/; iOS/Android runtime validation deferred per user environment setup |
-| M1.2    | completed      | Configure Firebase project and environment wiring             | Firebase init/auth/env setup complete with manual signed-in/signed-out verification in web dev runtime   |
-| M1.3    | completed      | Set up linting, test runner, and baseline CI checks           | ESLint + Prettier config + Jest smoke test + PR CI workflow added                                        |
-| M1.4    | completed      | Implement bottom tab navigation shell and screen placeholders | Authenticated tab shell implemented; manual iOS/Android tap-through validation confirmed                 |
+| Task ID | Status         | Description                                                   | Notes                                                                                                      |
+| ------- | -------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| M1.1    | completed      | Initialize Expo application workspace structure               | Expo scaffold implemented in mobile/; iOS/Android runtime validation deferred per user environment setup   |
+| M1.2    | completed      | Configure Firebase project and environment wiring             | Firebase init/auth/env setup complete with manual signed-in/signed-out verification in web dev runtime     |
+| M1.3    | completed      | Set up linting, test runner, and baseline CI checks           | ESLint + Prettier config + Jest smoke test + PR CI workflow added                                          |
+| M1.4    | completed      | Implement bottom tab navigation shell and screen placeholders | Authenticated tab shell implemented; manual iOS/Android tap-through validation confirmed                   |
 | M1.5    | in-progress    | Restore a reproducible engineering baseline                   | Node 24/npm 11 baseline established; mobile and Functions lint/Prettier checks pass, expanded gate remains |
-| M1.6    | manual-handoff | Add shared Firebase Functions foundation                      | Local foundation and CI definition pass; owner deploys and invokes authenticated staging services        |
+| M1.6    | manual-handoff | Add shared Firebase Functions foundation                      | Local foundation and CI definition pass; owner deploys and invokes authenticated staging services          |
 
 ### M2 - Design System and UX Foundation
 
@@ -169,8 +169,8 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M10.1   | manual-handoff | Polish UI interactions and accessibility           | Automated semantics pass; physical screen-reader review is a manual handoff                                          |
 | M10.1a  | completed      | Center Calendar refresh on the current time        | Today's refreshed day timeline uses its measured viewport to center the current-time indicator                       |
 | M10.1b  | completed      | Show all-day events above the hourly timeline      | Compact pressable headers keep all-day events out of the timed grid; typecheck and owner visual acceptance pass      |
-| M10.1c  | completed      | Replace event alarm input with alert selectors     | Two discrete timing selectors replace free-text offsets; typecheck and owner visual acceptance pass                   |
-| M10.1d  | manual-handoff | Add time format preference and event pickers       | Browser fallback accepted; rebuilt Android client still awaits native picker visual acceptance                        |
+| M10.1c  | completed      | Replace event alarm input with alert selectors     | Two discrete timing selectors replace free-text offsets; typecheck and owner visual acceptance pass                  |
+| M10.1d  | manual-handoff | Add time format preference and event pickers       | Browser fallback accepted; rebuilt Android client still awaits native picker visual acceptance                       |
 | M10.2   | completed      | Fix operability edge cases and error recovery      | Core startup and Firestore failures expose tested executable retry                                                   |
 | M10.3   | manual-handoff | Optimize app performance and startup time          | Startup subscriptions and month rendering are bounded; owner records release-device launch, FPS, and memory evidence |
 | M10.4   | manual-handoff | Run end-to-end user acceptance testing             | Owner completes final native UAT and signoff                                                                         |
@@ -213,6 +213,18 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M14.3   | completed      | Redesign signed-out and password recovery experiences   | Branded auth shell, Google entry, dedicated reset, and in-memory conflict verification pass smoke tests      |
 | M14.4   | completed      | Complete authenticated Google provider lifecycle        | Profile linking, provider-aware reset, deletion reauthentication, cancellation safety, and revocation pass   |
 | M14.5   | manual-handoff | Validate release Firebase projects and signed platforms | Owner confirms console mode, OAuth clients, fingerprints, origins, and staging/device matrix                 |
+
+### M15 - Desktop Web Experience
+
+| Task ID | Status    | Description                                       | Notes                                                                                               |
+| ------- | --------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| M15.1   | completed | Establish desktop web scope and delivery plan     | Calendar and navigation are the first release; deployment configuration remains out of scope        |
+| M15.2   | completed | Add responsive desktop navigation                 | Wide web uses a persistent left rail while compact and native layouts retain bottom tabs            |
+| M15.3   | completed | Add a Sunday-first seven-day Calendar view        | Desktop week view loads exact cross-month ranges and shares Firestore Bearing events with mobile    |
+| M15.4   | completed | Preserve explicit web capability boundaries       | Device calendars and purchases remain unavailable; store-specific cancellation links are available  |
+| M15.5   | completed | Document web development and deployment options   | Detailed manual and GitHub Actions tradeoffs added without Firebase Hosting or domain configuration |
+| M15.6   | completed | Validate responsive web and retained mobile flows | Automated checks pass and signed-in desktop visual refinements are accepted                         |
+| M15.7   | completed | Stabilize pull request lint and test validation    | Modal close interaction and date-sensitive goal wizard coverage now pass the complete mobile gate    |
 
 ## Update Rules
 
@@ -297,3 +309,8 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | 2026-07-31 | M11.3/M12/M13    | Monetization, release, beta, and launch handoff package                       | manual-handoff | Pricing/no-trial matrix, sandbox checklist, EAS profiles, store copy/assets checklist, beta evidence, rollout thresholds, monitoring, incident/rollback/privacy/subscription/support runbooks, launch reviews, and maintenance cadence are formatted and repository-ready; owner execution and evidence remain                                                          |
 | 2026-08-04 | M12.6            | Chronological Apple and Google deployment checklist                           | completed      | Added and formatted one ordered checklist covering repository fixes, accounts, legal, Firebase, RevenueCat, EAS/signing, native acceptance, listings, review, staged rollout, and post-launch evidence                                                                                                                                                                  |
 | 2026-08-18 | M14.1-M14.4      | Google authentication repository implementation and automated validation      | completed      | 39 focused auth/Profile tests, typecheck, lint, format, Expo package check, Expo Doctor 21/21, redacted config inspection, and web export pass. Full Jest is 199/200 with one unrelated Goals fixture using the now-past date 2026-08-05; console, signed-build, and physical-device proof remains M14.5                                                                |
+| 2026-08-18 | M15.1-M15.5      | Desktop web navigation, Calendar, boundaries, and deployment guide            | completed      | Wide web navigation uses a left rail; Sunday-first Week view loads exact cross-month ranges; web subscription management is cancellation-only; local web command and detailed deployment options are documented without Hosting configuration                                                                                                                           |
+| 2026-08-18 | M15.6            | Automated web implementation validation                                       | manual-handoff | M15 focused tests, typecheck, lint, static web export, Expo Doctor 21/21, dependency check, and HTTP 200 runtime pass. Full Jest is 221/223 with unrelated existing EventForm label-case and past-date Goals fixture failures; signed-in viewport acceptance remains owner-run                                                                                          |
+| 2026-08-18 | M15.6            | Desktop web visual refinement validation                                      | manual-handoff | Narrower desktop rail, shared week header/timeline geometry, centered week controls, and top-right Today action pass 20 focused tests, typecheck, lint, static web export, and HTTP 200 on port 8083; signed-in visual acceptance remains owner-run                                                                                                                     |
+| 2026-08-18 | M15.6            | Signed-in desktop visual acceptance                                           | completed      | User accepted the narrower navigation rail, aligned week grid, centered week controls, and relocated Today action                                                                                                                                                                                                                                                       |
+| 2026-08-18 | M15.7            | Pull request lint and test stabilization                                      | completed      | EventForm modal interaction now targets the visible Done action; the manual goal wizard uses a deterministic July 2026 clock; lint, format check, and all 40 suites with 224 tests pass                                                                                                                    |

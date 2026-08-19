@@ -423,9 +423,9 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
 
     setAccountError(null);
     try {
-      await showPremiumSubscriptionManagement(authUser.uid);
+      await showPremiumSubscriptionManagement(authUser.uid, entitlement?.platform ?? null);
     } catch {
-      setAccountError('Unable to open store subscription settings on this device.');
+      setAccountError('Unable to open the store subscription settings for this account.');
     }
   }
 

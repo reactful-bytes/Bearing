@@ -3,7 +3,7 @@ import { render } from '@testing-library/react-native';
 import React from 'react';
 
 import { layout } from '../design/tokens';
-import { AppTabs } from '../navigation/AppTabs';
+import { AppTabs, DESKTOP_NAVIGATION_WIDTH, usesDesktopNavigation } from '../navigation/AppTabs';
 
 jest.mock('../screens/CalendarScreen', () => ({
   CalendarScreen: () => null,
@@ -94,6 +94,17 @@ jest.mock('@react-navigation/bottom-tabs', () => {
 });
 
 describe('AppTabs', () => {
+  it('uses desktop navigation only for wide web viewports', () => {
+    expect(usesDesktopNavigation('web', 1024)).toBe(true);
+    expect(usesDesktopNavigation('web', 1023)).toBe(false);
+    expect(usesDesktopNavigation('ios', 1440)).toBe(false);
+    expect(usesDesktopNavigation('android', 1440)).toBe(false);
+  });
+
+  it('keeps the desktop rail close to its icon and longest label', () => {
+    expect(DESKTOP_NAVIGATION_WIDTH).toBe(152);
+  });
+
   it('renders the Calendar tab button as an oversized floating action', () => {
     const { getByTestId } = render(
       <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,

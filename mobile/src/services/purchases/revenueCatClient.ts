@@ -1,8 +1,9 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import type { PurchasesPackage } from 'react-native-purchases';
 
 import { normalizePremiumPlans } from '../../features/premium/premiumPlans';
+import { SubscriptionPlatform } from '../../features/premium/premiumTypes';
 import {
   PremiumPlan,
   PremiumPurchaseAvailability,
@@ -89,7 +90,29 @@ export async function restorePremiumPurchases(
   }
 }
 
-export async function showPremiumSubscriptionManagement(userId: string): Promise<void> {
+export function getWebSubscriptionManagementUrl(
+  subscriptionPlatform: SubscriptionPlatform | null,
+): string | null {
+  if (subscriptionPlatform === 'ios') return 'https://apps.apple.com/account/subscriptions';
+  if (subscriptionPlatform === 'android') {
+    return 'https://play.google.com/store/account/subscriptions';
+  }
+  return null;
+}
+
+export async function showPremiumSubscriptionManagement(
+  userId: string,
+  subscriptionPlatform: SubscriptionPlatform | null = null,
+): Promise<void> {
+  if (Platform.OS === 'web') {
+    const managementUrl = getWebSubscriptionManagementUrl(subscriptionPlatform);
+    if (!managementUrl) {
+      throw new Error('The subscription store could not be determined.');
+    }
+    await Linking.openURL(managementUrl);
+    return;
+  }
+
   const Purchases = await getConfiguredPurchases(userId);
   await Purchases.showManageSubscriptions();
 }

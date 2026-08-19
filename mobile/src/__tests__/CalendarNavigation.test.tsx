@@ -2,7 +2,11 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
 import { ScrollView } from 'react-native';
 
-import { CalendarScreen } from '../screens/CalendarScreen';
+import {
+  CalendarScreen,
+  getDefaultCalendarView,
+  getSundayWeekStart,
+} from '../screens/CalendarScreen';
 import { formatDayLabel } from '../components/calendar/DayNavBar';
 
 jest.mock('../features/profile/useUserProfile', () => ({
@@ -74,6 +78,34 @@ describe('CalendarScreen navigation', () => {
 
     expect(screen.getByLabelText('Previous day')).toBeTruthy();
     expect(screen.getByLabelText('Next day')).toBeTruthy();
+  });
+
+  it('defaults wide web to Week while retaining Day elsewhere', () => {
+    expect(getDefaultCalendarView('web', 1024)).toBe('week');
+    expect(getDefaultCalendarView('web', 1023)).toBe('day');
+    expect(getDefaultCalendarView('ios', 1440)).toBe('day');
+  });
+
+  it('starts weeks on Sunday', () => {
+    expect(getSundayWeekStart(new Date(2026, 6, 22))).toEqual(new Date(2026, 6, 19));
+  });
+
+  it('navigates Sunday-first weeks and opens a selected day', () => {
+    render(
+      <CalendarScreen
+        initialDateOverride={FIXED_DATE}
+        initialViewMode="week"
+        stateOverride="empty"
+      />,
+    );
+
+    expect(screen.getByText('Sun')).toBeTruthy();
+    expect(screen.getByText('Sat')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Next week'));
+    expect(screen.getByText('Jul 19–25, 2026')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Wednesday, July 22, 2026'));
+    expect(screen.getByText(formatDayLabel(new Date(2026, 6, 22)))).toBeTruthy();
   });
 
   it('navigates to previous day when prev arrow is pressed', () => {
