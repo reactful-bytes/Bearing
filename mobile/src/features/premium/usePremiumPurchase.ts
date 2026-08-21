@@ -86,6 +86,8 @@ export function usePremiumPurchase(
     if (result === 'success') {
       setFeedback('Purchase accepted. Activating Premium...');
       setActivationSource('purchase');
+    } else if (result === 'cancelled') {
+      setError('The purchase was canceled. Choose a plan when you are ready.');
     } else if (result === 'failure') {
       setError('The purchase could not be completed. Please try again.');
     }
