@@ -62,6 +62,7 @@ function docToPremiumEntitlement(
   return {
     userId: snapshot.id,
     platform: parsePlatform(data.platform),
+    revenueCatStore: typeof data.revenueCatStore === 'string' ? data.revenueCatStore : undefined,
     productId: typeof data.productId === 'string' ? data.productId : '',
     status: parseStatus(data.status),
     periodStartAt: timestampToDate(data.periodStartAt),

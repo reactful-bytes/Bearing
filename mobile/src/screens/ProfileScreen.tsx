@@ -424,6 +424,13 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
     }
     if (!authUser || isAnonymous) return;
 
+    if (entitlement?.revenueCatStore === 'test_store') {
+      setPremiumManagementError(
+        'Subscription management is unavailable for RevenueCat Test Store purchases. Test Store access expires automatically.',
+      );
+      return;
+    }
+
     if (Platform.OS === 'web' && entitlement?.platform === 'web') {
       setPremiumManagementError(
         'This subscription is not linked to an Apple or Google store account. Manage it from the store account used to purchase.',

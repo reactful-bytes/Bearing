@@ -412,6 +412,39 @@ describe('ProfileScreen', () => {
     expect(screen.getByLabelText('Save account settings')).toBeTruthy();
   });
 
+  it('explains that RevenueCat Test Store purchases cannot be managed', async () => {
+    mockProfileHooks();
+    (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
+      entitlement: {
+        userId: 'user-1',
+        platform: 'android',
+        revenueCatStore: 'test_store',
+        productId: 'rc_monthly',
+        status: 'active',
+        periodStartAt: null,
+        periodEndAt: null,
+        autoRenew: true,
+        lastValidatedAt: null,
+        createdAt: null,
+        updatedAt: null,
+      },
+      uiState: 'ready',
+      error: null,
+    });
+
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    await act(async () => {
+      fireEvent.press(screen.getByText('Premium access'));
+    });
+
+    expect(
+      screen.getByText(
+        'Subscription management is unavailable for RevenueCat Test Store purchases. Test Store access expires automatically.',
+      ),
+    ).toBeTruthy();
+    expect(showPremiumSubscriptionManagement).not.toHaveBeenCalled();
+  });
+
   it('opens in-app legal documents and reports an unconfigured support contact', () => {
     mockProfileHooks();
 

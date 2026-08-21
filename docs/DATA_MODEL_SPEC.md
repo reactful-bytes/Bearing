@@ -188,6 +188,7 @@ Fields:
 
 - userId: string
 - platform: enum (ios, android, web)
+- revenueCatStore: string, optional (for example `play_store`, `app_store`, or `test_store`)
 - productId: string
 - status: enum (active, in_grace_period, expired, canceled)
 - periodStartAt: timestamp
@@ -202,6 +203,8 @@ Notes:
 - This UID-keyed server-owned document is the authoritative premium entitlement read model.
 - RevenueCat uses the Firebase UID as App User ID. An authenticated webhook triggers a canonical
   subscriber lookup; clients and webhook event names do not directly grant access.
+- `revenueCatStore` distinguishes RevenueCat Test Store access, which has no native subscription
+  management page, from real App Store or Play Store purchases.
 - A missing document means free access. Clients must fail closed on missing, malformed, loading, or error states.
 - Only `active` and `in_grace_period` unlock premium features.
 - Clients may read only their own document and may not write subscription state.

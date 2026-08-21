@@ -7,6 +7,7 @@ import {
   fetchRevenueCatSubscriber,
   mapRevenueCatSubscription,
   parseRevenueCatWebhookEvent,
+  redactRevenueCatWebhookBody,
   verifyRevenueCatWebhook,
 } from "./revenueCat";
 
@@ -24,7 +25,7 @@ describe("RevenueCat reconciliation", () => {
         },
         subscriptions: {
           bearing_premium_monthly: {
-            store: "APP_STORE",
+            store: "app_store",
             purchase_date: "2026-07-01T00:00:00Z",
             expires_date: "2026-08-01T00:00:00Z",
             unsubscribe_detected_at: "2026-07-20T00:00:00Z",
@@ -55,7 +56,7 @@ describe("RevenueCat reconciliation", () => {
         },
         subscriptions: {
           bearing_premium_annual: {
-            store: "PLAY_STORE",
+            store: "play_store",
             expires_date: "2027-01-01T00:00:00Z",
             billing_issues_detected_at: "2026-07-30T00:00:00Z",
           },
@@ -66,6 +67,81 @@ describe("RevenueCat reconciliation", () => {
 
     assert.equal(record.status, "in_grace_period");
     assert.equal(record.platform, "android");
+  });
+
+  it("uses the verified webhook store when the entitlement product has no subscription key", () => {
+    const record = mapRevenueCatSubscription(
+      "user-1",
+      {
+        entitlements: {
+          premium: {
+            product_identifier: "bearing_premium_monthly:monthly-base-plan",
+            expires_date: "2027-01-01T00:00:00Z",
+          },
+        },
+        subscriptions: {
+          bearing_premium_monthly: {
+            store: "play_store",
+            expires_date: "2027-01-01T00:00:00Z",
+          },
+        },
+      },
+      new Date("2026-07-31T00:00:00Z"),
+      "premium",
+      "PLAY_STORE",
+    );
+
+    assert.equal(record.platform, "android");
+  });
+
+  it("maps RevenueCat Test Store events to the configured development platform", () => {
+    const record = mapRevenueCatSubscription(
+      "user-1",
+      {
+        entitlements: {
+          premium: {
+            product_identifier: "rc_monthly",
+            expires_date: "2027-01-01T00:00:00Z",
+          },
+        },
+        subscriptions: {
+          rc_monthly: {
+            store: "test_store",
+            expires_date: "2027-01-01T00:00:00Z",
+          },
+        },
+      },
+      new Date("2026-07-31T00:00:00Z"),
+      "premium",
+      undefined,
+      "android",
+    );
+
+    assert.equal(record.platform, "android");
+    assert.equal(record.revenueCatStore, "test_store");
+  });
+
+  it("fails closed for an invalid RevenueCat Test Store platform", () => {
+    const record = mapRevenueCatSubscription(
+      "user-1",
+      {
+        entitlements: {
+          premium: {
+            product_identifier: "rc_monthly",
+            expires_date: "2027-01-01T00:00:00Z",
+          },
+        },
+        subscriptions: {
+          rc_monthly: { store: "test_store" },
+        },
+      },
+      new Date("2026-07-31T00:00:00Z"),
+      "premium",
+      undefined,
+      "android-development",
+    );
+
+    assert.equal(record.platform, "web");
   });
 
   it("uses the configured entitlement identifier and ignores other grants", () => {
@@ -129,6 +205,29 @@ describe("RevenueCat reconciliation", () => {
       parseRevenueCatWebhookEvent({
         event: { id: "event-1", app_user_id: "$RCAnonymousID:value" },
       }),
+    );
+  });
+
+  it("redacts customer and transaction values from webhook diagnostics", () => {
+    assert.deepEqual(
+      redactRevenueCatWebhookBody({
+        event: {
+          app_user_id: "user-1",
+          store: "PLAY_STORE",
+          product_id: "bearing_premium_monthly",
+          transaction_id: "transaction-1",
+          entitlement_ids: ["premium"],
+        },
+      }),
+      {
+        event: {
+          app_user_id: "[redacted]",
+          store: "PLAY_STORE",
+          product_id: "bearing_premium_monthly",
+          transaction_id: "[redacted]",
+          entitlement_ids: ["premium"],
+        },
+      },
     );
   });
 

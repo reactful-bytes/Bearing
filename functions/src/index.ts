@@ -13,7 +13,10 @@ import {
 } from "./privacy";
 import { createUserDataAdminDeleter, readUserDataAdmin } from "./privacyAdmin";
 import { recordTelemetryEvent as recordTelemetryEventHandler } from "./telemetry";
-import { handleRevenueCatWebhook } from "./revenueCat";
+import {
+  handleRevenueCatWebhook,
+  redactRevenueCatWebhookBody,
+} from "./revenueCat";
 
 initializeApp();
 
@@ -34,6 +37,14 @@ const revenueCatEntitlementIdentifier = defineString(
   "REVENUECAT_ENTITLEMENT_IDENTIFIER",
   { default: "premium" },
 );
+const revenueCatWebhookDebugLogging = defineString(
+  "REVENUECAT_WEBHOOK_DEBUG_LOGGING",
+  { default: "false" },
+);
+const revenueCatTestStorePlatform = defineString(
+  "REVENUECAT_TEST_STORE_PLATFORM",
+  { default: "web" },
+);
 
 export const revenueCatWebhook = onRequest(
   {
@@ -46,6 +57,14 @@ export const revenueCatWebhook = onRequest(
       authorization: revenueCatWebhookAuthorization.value(),
       signingSecret: revenueCatWebhookSigningSecret.value(),
       entitlementIdentifier: revenueCatEntitlementIdentifier.value(),
+      testStorePlatform: revenueCatTestStorePlatform.value(),
+      onVerifiedWebhookEvent:
+        revenueCatWebhookDebugLogging.value() === "true"
+          ? (body) =>
+              logger.info("revenuecat_webhook_event", {
+                event: redactRevenueCatWebhookBody(body),
+              })
+          : undefined,
     });
     if (!result) return;
 

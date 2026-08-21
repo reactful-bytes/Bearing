@@ -59,6 +59,13 @@ entitlements fail closed.
 - [ ] Set `REVENUECAT_SECRET_API_KEY`, `REVENUECAT_WEBHOOK_AUTHORIZATION`,
       `REVENUECAT_WEBHOOK_SIGNING_SECRET`, and (when different from `premium`)
       `REVENUECAT_ENTITLEMENT_IDENTIFIER` as Firebase Functions parameters.
+- [ ] Set `REVENUECAT_TEST_STORE_PLATFORM=android` while validating Android RevenueCat Test Store
+      purchases. This setting applies only to RevenueCat `TEST_STORE` events, which do not identify
+      an App Store or Play Store platform; use `ios` for isolated iOS Test Store validation, or
+      leave it as the fail-closed default `web` outside that testing window.
+- [ ] For temporary webhook diagnostics, set `REVENUECAT_WEBHOOK_DEBUG_LOGGING=true`, deploy,
+      inspect the redacted `revenuecat_webhook_event` Cloud Log entry, then set it back to `false`
+      and redeploy.
 - [ ] Deploy `revenueCatWebhook` and `deleteUserAccount` after secrets are available.
 - [ ] Configure the webhook URL as
       `https://us-central1-<firebase-project-id>.cloudfunctions.net/revenueCatWebhook`.

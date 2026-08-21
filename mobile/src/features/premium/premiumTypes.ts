@@ -5,6 +5,7 @@ export type SubscriptionStatus = 'active' | 'in_grace_period' | 'expired' | 'can
 export type PremiumEntitlementRecord = {
   userId: string;
   platform: SubscriptionPlatform;
+  revenueCatStore?: string;
   productId: string;
   status: SubscriptionStatus;
   periodStartAt: Date | null;

@@ -6,6 +6,8 @@ import { Timestamp, getFirestore } from "firebase-admin/firestore";
 export type RevenueCatSubscriptionStatus =
   "active" | "in_grace_period" | "expired" | "canceled";
 
+type SubscriptionPlatform = "ios" | "android" | "web";
+
 type RevenueCatEntitlement = {
   expires_date?: string | null;
   product_identifier?: string;
@@ -28,6 +30,7 @@ export type RevenueCatSubscriber = {
 export type SubscriptionRecord = {
   userId: string;
   platform: "ios" | "android" | "web";
+  revenueCatStore?: string;
   productId: string;
   status: RevenueCatSubscriptionStatus;
   periodStartAt: Timestamp | null;
@@ -55,7 +58,10 @@ type WebhookResponse = {
   json: (body: unknown) => void;
 };
 
-type WebhookEvent = { id: string; appUserId: string };
+type WebhookEvent = { id: string; appUserId: string; store?: string };
+
+const WEBHOOK_LOG_REDACTED_KEYS =
+  /^(app_user_id|original_app_user_id|aliases|transaction_id|original_transaction_id|receipt|token|authorization|api_key)$/i;
 
 function parseDate(value: string | null | undefined): Date | null {
   if (!value) return null;
@@ -70,10 +76,26 @@ function toTimestamp(value: string | null | undefined): Timestamp | null {
 
 function platformForStore(
   store: string | undefined,
-): SubscriptionRecord["platform"] {
-  if (store === "APP_STORE" || store === "MAC_APP_STORE") return "ios";
-  if (store === "PLAY_STORE") return "android";
+  testStorePlatform: SubscriptionPlatform,
+): SubscriptionPlatform {
+  switch (store?.toLowerCase()) {
+    case "app_store":
+    case "mac_app_store":
+      return "ios";
+    case "play_store":
+      return "android";
+    case "test_store":
+      return testStorePlatform;
+  }
   return "web";
+}
+
+function parseTestStorePlatform(
+  value: string | undefined,
+): SubscriptionPlatform {
+  return value === "ios" || value === "android" || value === "web"
+    ? value
+    : "web";
 }
 
 export function mapRevenueCatSubscription(
@@ -81,6 +103,8 @@ export function mapRevenueCatSubscription(
   subscriber: RevenueCatSubscriber,
   now = new Date(),
   entitlementIdentifier = "premium",
+  fallbackStore?: string,
+  testStorePlatform?: string,
 ): SubscriptionRecord {
   const entitlement = subscriber.entitlements?.[entitlementIdentifier];
   const entitlementEnd = parseDate(entitlement?.expires_date);
@@ -90,13 +114,18 @@ export function mapRevenueCatSubscription(
   const subscription = productId
     ? subscriber.subscriptions?.[productId]
     : undefined;
+  const store = subscription?.store ?? fallbackStore;
   const hasBillingIssue = Boolean(subscription?.billing_issues_detected_at);
   const wasCanceled = Boolean(subscription?.unsubscribe_detected_at);
   const timestamp = Timestamp.fromDate(now);
 
   return {
     userId,
-    platform: platformForStore(subscription?.store),
+    platform: platformForStore(
+      store,
+      parseTestStorePlatform(testStorePlatform),
+    ),
+    revenueCatStore: store?.toLowerCase(),
     productId,
     status: entitlement
       ? isActive
@@ -188,7 +217,27 @@ export function parseRevenueCatWebhookEvent(body: unknown): WebhookEvent {
   ) {
     throw new Error("Webhook customer is not a Firebase account.");
   }
-  return { id: eventRecord.id, appUserId: eventRecord.app_user_id };
+  return {
+    id: eventRecord.id,
+    appUserId: eventRecord.app_user_id,
+    store:
+      typeof eventRecord.store === "string" ? eventRecord.store : undefined,
+  };
+}
+
+export function redactRevenueCatWebhookBody(body: unknown): unknown {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return body;
+
+  return Object.fromEntries(
+    Object.entries(body as Record<string, unknown>).map(([key, value]) => [
+      key,
+      WEBHOOK_LOG_REDACTED_KEYS.test(key)
+        ? "[redacted]"
+        : value && typeof value === "object" && !Array.isArray(value)
+          ? redactRevenueCatWebhookBody(value)
+          : value,
+    ]),
+  );
 }
 
 export async function fetchRevenueCatSubscriber(
@@ -238,6 +287,8 @@ export async function handleRevenueCatWebhook(
     signingSecret: string;
     apiKey: string;
     entitlementIdentifier: string;
+    testStorePlatform: string;
+    onVerifiedWebhookEvent?: (body: unknown) => void;
   },
 ): Promise<RevenueCatWebhookResult | null> {
   if (
@@ -250,6 +301,8 @@ export async function handleRevenueCatWebhook(
     response.status(401).json({ error: "Unauthorized." });
     return null;
   }
+
+  secrets.onVerifiedWebhookEvent?.(request.body);
 
   let event: WebhookEvent;
   try {
@@ -276,6 +329,8 @@ export async function handleRevenueCatWebhook(
     subscriber,
     new Date(),
     secrets.entitlementIdentifier,
+    event.store,
+    secrets.testStorePlatform,
   );
   const result: RevenueCatWebhookResult = {
     status: subscription.status,
