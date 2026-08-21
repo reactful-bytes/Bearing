@@ -38,6 +38,11 @@ export type SubscriptionRecord = {
   updatedAt: Timestamp;
 };
 
+export type RevenueCatWebhookResult = {
+  status: RevenueCatSubscriptionStatus;
+  premiumEntitlementPresent: boolean;
+};
+
 type WebhookRequest = {
   method?: string;
   headers: Record<string, string | string[] | undefined>;
@@ -75,8 +80,9 @@ export function mapRevenueCatSubscription(
   userId: string,
   subscriber: RevenueCatSubscriber,
   now = new Date(),
+  entitlementIdentifier = "premium",
 ): SubscriptionRecord {
-  const entitlement = subscriber.entitlements?.premium;
+  const entitlement = subscriber.entitlements?.[entitlementIdentifier];
   const entitlementEnd = parseDate(entitlement?.expires_date);
   const isActive =
     entitlementEnd === null || entitlementEnd.getTime() > now.getTime();
@@ -188,13 +194,20 @@ export function parseRevenueCatWebhookEvent(body: unknown): WebhookEvent {
 export async function fetchRevenueCatSubscriber(
   userId: string,
   apiKey: string,
+  fetcher: typeof fetch = fetch,
 ): Promise<RevenueCatSubscriber> {
-  const response = await fetch(
+  const response = await fetcher(
     `https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(userId)}`,
     { headers: { Authorization: `Bearer ${apiKey}` } },
   );
-  if (!response.ok)
+  if (response.status === 403) {
+    throw new Error(
+      "RevenueCat subscriber lookup was forbidden. Verify REVENUECAT_SECRET_API_KEY is a valid secret API key for this RevenueCat project, then redeploy the webhook.",
+    );
+  }
+  if (!response.ok) {
     throw new Error(`RevenueCat subscriber lookup failed: ${response.status}`);
+  }
   const payload = (await response.json()) as {
     subscriber?: RevenueCatSubscriber;
   };
@@ -220,8 +233,13 @@ export async function deleteRevenueCatCustomer(
 export async function handleRevenueCatWebhook(
   request: WebhookRequest,
   response: WebhookResponse,
-  secrets: { authorization: string; signingSecret: string; apiKey: string },
-): Promise<void> {
+  secrets: {
+    authorization: string;
+    signingSecret: string;
+    apiKey: string;
+    entitlementIdentifier: string;
+  },
+): Promise<RevenueCatWebhookResult | null> {
   if (
     !verifyRevenueCatWebhook(
       request,
@@ -230,7 +248,7 @@ export async function handleRevenueCatWebhook(
     )
   ) {
     response.status(401).json({ error: "Unauthorized." });
-    return;
+    return null;
   }
 
   let event: WebhookEvent;
@@ -238,14 +256,14 @@ export async function handleRevenueCatWebhook(
     event = parseRevenueCatWebhookEvent(request.body);
   } catch {
     response.status(400).json({ error: "Invalid event." });
-    return;
+    return null;
   }
 
   const db = getFirestore();
   const receiptRef = db.doc(`revenueCatWebhookEvents/${event.id}`);
   if ((await receiptRef.get()).exists) {
     response.status(200).json({ received: true, duplicate: true });
-    return;
+    return null;
   }
 
   await getAuth().getUser(event.appUserId);
@@ -253,7 +271,18 @@ export async function handleRevenueCatWebhook(
     event.appUserId,
     secrets.apiKey,
   );
-  const subscription = mapRevenueCatSubscription(event.appUserId, subscriber);
+  const subscription = mapRevenueCatSubscription(
+    event.appUserId,
+    subscriber,
+    new Date(),
+    secrets.entitlementIdentifier,
+  );
+  const result: RevenueCatWebhookResult = {
+    status: subscription.status,
+    premiumEntitlementPresent: Boolean(
+      subscriber.entitlements?.[secrets.entitlementIdentifier],
+    ),
+  };
   const subscriptionRef = db.doc(`subscriptions/${event.appUserId}`);
   await db.runTransaction(async (transaction) => {
     const receipt = await transaction.get(receiptRef);
@@ -272,5 +301,6 @@ export async function handleRevenueCatWebhook(
       receivedAt: Timestamp.now(),
     });
   });
-  response.status(200).json({ received: true });
+  response.status(200).json({ received: true, ...result });
+  return result;
 }

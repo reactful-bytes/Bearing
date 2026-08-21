@@ -122,12 +122,12 @@ describe("telemetry callable", () => {
       {
         schemaVersion: 1 as const,
         name: "premium_purchase_started" as const,
-        properties: { period: "annual" },
+        properties: { period: "ANNUAL" },
       },
       {
         schemaVersion: 1 as const,
         name: "premium_purchase_result" as const,
-        properties: { period: "annual", outcome: "cancelled" },
+        properties: { period: "ANNUAL", outcome: "cancelled" },
       },
       {
         schemaVersion: 1 as const,
@@ -164,6 +164,24 @@ describe("telemetry callable", () => {
               outcome: "success",
               productId: "private-store-product",
             },
+          },
+        },
+        () => undefined,
+      ),
+      (error: unknown) =>
+        error instanceof HttpsError && error.code === "invalid-argument",
+    );
+  });
+
+  it("rejects customer-facing text as a premium purchase period", async () => {
+    await assert.rejects(
+      recordTelemetryEvent(
+        {
+          ...verifiedRequest,
+          data: {
+            schemaVersion: 1,
+            name: "premium_purchase_started",
+            properties: { period: "Premium Annual Plan" },
           },
         },
         () => undefined,

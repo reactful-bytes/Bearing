@@ -30,18 +30,35 @@ const revenueCatWebhookAuthorization = defineString(
 const revenueCatWebhookSigningSecret = defineString(
   "REVENUECAT_WEBHOOK_SIGNING_SECRET",
 );
+const revenueCatEntitlementIdentifier = defineString(
+  "REVENUECAT_ENTITLEMENT_IDENTIFIER",
+  { default: "premium" },
+);
 
 export const revenueCatWebhook = onRequest(
   {
     cors: false,
     timeoutSeconds: 30,
   },
-  (request, response) =>
-    handleRevenueCatWebhook(request, response, {
+  async (request, response) => {
+    const result = await handleRevenueCatWebhook(request, response, {
       apiKey: revenueCatApiKey.value(),
       authorization: revenueCatWebhookAuthorization.value(),
       signingSecret: revenueCatWebhookSigningSecret.value(),
-    }),
+      entitlementIdentifier: revenueCatEntitlementIdentifier.value(),
+    });
+    if (!result) return;
+
+    const logContext = {
+      premiumEntitlementPresent: result.premiumEntitlementPresent,
+      status: result.status,
+    };
+    if (result.status === "active" || result.status === "in_grace_period") {
+      logger.info("revenuecat_subscription_reconciled", logContext);
+      return;
+    }
+    logger.warn("revenuecat_subscription_not_active", logContext);
+  },
 );
 
 export const backendStatus = onCall(

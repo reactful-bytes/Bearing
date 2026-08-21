@@ -38,6 +38,16 @@ function isOneOf(value: unknown, values: readonly string[]): value is string {
   return typeof value === "string" && values.includes(value);
 }
 
+function isPremiumPurchasePeriod(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    (value === "monthly" ||
+      value === "annual" ||
+      /^P[1-9]\d*[DWMY]$/.test(value) ||
+      /^[A-Z_]{1,32}$/.test(value))
+  );
+}
+
 export function parseTelemetryEvent(data: unknown): TelemetryEvent {
   if (
     !isRecord(data) ||
@@ -117,7 +127,7 @@ export function parseTelemetryEvent(data: unknown): TelemetryEvent {
     case "premium_purchase_started":
       if (
         !hasExactKeys(properties, ["period"]) ||
-        !isOneOf(properties.period, ["monthly", "annual"])
+        !isPremiumPurchasePeriod(properties.period)
       ) {
         throw new HttpsError("invalid-argument", "Telemetry event is invalid.");
       }
@@ -125,7 +135,7 @@ export function parseTelemetryEvent(data: unknown): TelemetryEvent {
     case "premium_purchase_result":
       if (
         !hasExactKeys(properties, ["period", "outcome"]) ||
-        !isOneOf(properties.period, ["monthly", "annual"]) ||
+        !isPremiumPurchasePeriod(properties.period) ||
         !isOneOf(properties.outcome, ["success", "cancelled", "failure"])
       ) {
         throw new HttpsError("invalid-argument", "Telemetry event is invalid.");

@@ -11,7 +11,7 @@ release-owner handoffs.
 
 | Setting                 | Launch value                                 |
 | ----------------------- | -------------------------------------------- |
-| RevenueCat entitlement  | `premium`                                    |
+| RevenueCat entitlement  | `premium` (configured by `REVENUECAT_ENTITLEMENT_IDENTIFIER`) |
 | RevenueCat offering     | `default`, set as current                    |
 | Monthly product ID      | `bearing_premium_monthly`                    |
 | Annual product ID       | `bearing_premium_annual`                     |
@@ -48,14 +48,17 @@ entitlements fail closed.
 - [ ] Create the matching base plans/subscriptions in Google Play Console.
 - [ ] Set USD reference prices to 7.99 monthly and 59.99 annual; do not add a trial or intro offer.
 - [ ] Connect both store apps to one RevenueCat project.
-- [ ] Create entitlement `premium` and attach both products.
+- [ ] Create entitlement `premium` and attach both products. If it is renamed, set
+      `REVENUECAT_ENTITLEMENT_IDENTIFIER` to the new identifier before deploying; the default is
+      `premium`.
 - [ ] Create offering `default`, make it current, and add monthly and annual packages.
 - [ ] Configure RevenueCat restore behavior to transfer a purchase to the currently authenticated
       Firebase UID. Record and approve the collision/support policy before enabling production.
 - [ ] Add the iOS and Android public SDK keys to the corresponding EAS environments as
       `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY` and `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY`.
-- [ ] Set `REVENUECAT_SECRET_API_KEY`, `REVENUECAT_WEBHOOK_AUTHORIZATION`, and
-      `REVENUECAT_WEBHOOK_SIGNING_SECRET` as Firebase managed secrets.
+- [ ] Set `REVENUECAT_SECRET_API_KEY`, `REVENUECAT_WEBHOOK_AUTHORIZATION`,
+      `REVENUECAT_WEBHOOK_SIGNING_SECRET`, and (when different from `premium`)
+      `REVENUECAT_ENTITLEMENT_IDENTIFIER` as Firebase Functions parameters.
 - [ ] Deploy `revenueCatWebhook` and `deleteUserAccount` after secrets are available.
 - [ ] Configure the webhook URL as
       `https://us-central1-<firebase-project-id>.cloudfunctions.net/revenueCatWebhook`.
