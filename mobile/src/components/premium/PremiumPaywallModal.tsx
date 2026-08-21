@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppCard } from '../ui/AppCard';
 import { AppButton } from '../ui/AppButton';
@@ -32,6 +32,7 @@ export function PremiumPaywallModal({
   const [legalDocumentId, setLegalDocumentId] = useState<LegalDocumentId | null>(null);
   const [selectedPackageIdentifier, setSelectedPackageIdentifier] = useState<string | null>(null);
   const [confirmationPlan, setConfirmationPlan] = useState<PremiumPlan | null>(null);
+  const [transactionPlan, setTransactionPlan] = useState<PremiumPlan | null>(null);
   const purchase = usePremiumPurchase(userId, !isAnonymous, visible, hasPremiumAccess);
   useEffect(() => {
     if (visible && feature) {
@@ -66,9 +67,16 @@ export function PremiumPaywallModal({
 
   async function confirmPurchase(): Promise<void> {
     if (!confirmationPlan) return;
-    await purchase.purchase(confirmationPlan);
+    setTransactionPlan(confirmationPlan);
     setConfirmationPlan(null);
+    await purchase.purchase(confirmationPlan);
   }
+
+  const isPurchaseInProgress =
+    transactionPlan !== null &&
+    (purchase.pendingAction === transactionPlan.packageIdentifier || purchase.awaitingActivation);
+  const isPurchaseComplete =
+    transactionPlan !== null && (purchase.feedback !== null || purchase.error !== null);
 
   return (
     <>
@@ -79,145 +87,204 @@ export function PremiumPaywallModal({
         fullScreen
       >
         <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.heroBlock}>
-            <Text style={styles.badge}>{copy.badge}</Text>
-            <Text style={styles.headline}>{copy.headline}</Text>
-            <Text style={styles.body}>{copy.body}</Text>
-          </View>
-
-          <AppCard style={styles.highlightsCard}>
-            <Text style={styles.sectionTitle}>Included with Premium</Text>
-            <View style={styles.highlightList}>
-              {copy.highlights.map((highlight) => (
-                <View key={highlight} style={styles.highlightRow}>
-                  <View style={styles.highlightDot} />
-                  <Text style={styles.highlightText}>{highlight}</Text>
-                </View>
-              ))}
+          {isPurchaseInProgress ? (
+            <View style={styles.purchaseState}>
+              <ActivityIndicator
+                accessibilityLabel="Activating Premium purchase"
+                color={colors.brand}
+              />
+              <Text style={styles.purchaseStateTitle}>
+                {purchase.awaitingActivation ? 'Activating Premium' : 'Confirming purchase'}
+              </Text>
+              <Text style={styles.purchaseStateDescription}>
+                {purchase.awaitingActivation
+                  ? 'Confirming your purchase with Bearing. This can take a moment.'
+                  : `Opening the store for ${transactionPlan.title}.`}
+              </Text>
             </View>
-          </AppCard>
+          ) : isPurchaseComplete ? (
+            <View style={styles.purchaseState}>
+              <Text style={styles.purchaseStateTitle}>
+                {purchase.error
+                  ? 'Purchase not completed'
+                  : hasPremiumAccess
+                    ? `${transactionPlan.title} Premium is active`
+                    : 'Premium activation is still syncing'}
+              </Text>
+              <Text style={styles.purchaseStateDescription}>
+                {purchase.error ?? purchase.feedback}
+              </Text>
+              <AppButton
+                label={purchase.error ? 'Choose Another Plan' : 'Done'}
+                accessibilityLabel={
+                  purchase.error ? 'Choose another Premium plan' : 'Close Premium'
+                }
+                onPress={() => setTransactionPlan(null)}
+              />
+            </View>
+          ) : (
+            <>
+              <View style={styles.heroBlock}>
+                <Text style={styles.badge}>{copy.badge}</Text>
+                <Text style={styles.headline}>{copy.headline}</Text>
+                <Text style={styles.body}>{copy.body}</Text>
+              </View>
 
-          {purchase.loading ? <Text style={styles.planMeta}>Loading store plans...</Text> : null}
+              <AppCard style={styles.highlightsCard}>
+                <Text style={styles.sectionTitle}>Included with Premium</Text>
+                <View style={styles.highlightList}>
+                  {copy.highlights.map((highlight) => (
+                    <View key={highlight} style={styles.highlightRow}>
+                      <View style={styles.highlightDot} />
+                      <Text style={styles.highlightText}>{highlight}</Text>
+                    </View>
+                  ))}
+                </View>
+              </AppCard>
 
-          <View style={styles.planColumn}>
-            {purchase.plans.map((plan) => {
-              const isSelected = plan.packageIdentifier === selectedPackageIdentifier;
-              return (
-                <Pressable
-                  key={plan.packageIdentifier}
-                  accessibilityRole="radio"
-                  accessibilityLabel={`Select ${plan.title} Premium plan`}
-                  accessibilityState={{ selected: isSelected, disabled: purchase.pendingAction !== null }}
-                  disabled={purchase.pendingAction !== null}
-                  onPress={() => setSelectedPackageIdentifier(plan.packageIdentifier)}
-                  style={({ pressed }) => [
-                    styles.planCard,
-                    isSelected && styles.planCardSelected,
-                    pressed && purchase.pendingAction === null && styles.planCardPressed,
-                  ]}
-                >
-                  <View style={styles.planHeader}>
-                    <View style={styles.planDetails}>
-                      <View style={styles.planTitleRow}>
-                        <View style={[styles.selectionIndicator, isSelected && styles.selectionIndicatorSelected]}>
-                          {isSelected ? <View style={styles.selectionIndicatorFill} /> : null}
+              {purchase.loading ? (
+                <Text style={styles.planMeta}>Loading store plans...</Text>
+              ) : null}
+
+              <View style={styles.planColumn}>
+                {purchase.plans.map((plan) => {
+                  const isSelected = plan.packageIdentifier === selectedPackageIdentifier;
+                  return (
+                    <Pressable
+                      key={plan.packageIdentifier}
+                      accessibilityRole="radio"
+                      accessibilityLabel={`Select ${plan.title} Premium plan`}
+                      accessibilityState={{
+                        selected: isSelected,
+                        disabled: purchase.pendingAction !== null,
+                      }}
+                      disabled={purchase.pendingAction !== null}
+                      onPress={() => setSelectedPackageIdentifier(plan.packageIdentifier)}
+                      style={({ pressed }) => [
+                        styles.planCard,
+                        isSelected && styles.planCardSelected,
+                        pressed && purchase.pendingAction === null && styles.planCardPressed,
+                      ]}
+                    >
+                      <View style={styles.planHeader}>
+                        <View style={styles.planDetails}>
+                          <View style={styles.planTitleRow}>
+                            <View
+                              style={[
+                                styles.selectionIndicator,
+                                isSelected && styles.selectionIndicatorSelected,
+                              ]}
+                            >
+                              {isSelected ? <View style={styles.selectionIndicatorFill} /> : null}
+                            </View>
+                            <Text style={styles.planName}>{plan.title}</Text>
+                          </View>
+                          {plan.annualMonthlyBreakdownText ? (
+                            <Text style={styles.planSummary}>
+                              {plan.annualMonthlyBreakdownText}
+                            </Text>
+                          ) : null}
+                          {plan.introductoryOfferText ? (
+                            <View style={styles.planOfferBadge}>
+                              <Text style={styles.planIntroductoryOffer}>
+                                {plan.introductoryOfferText}
+                              </Text>
+                            </View>
+                          ) : null}
                         </View>
-                        <Text style={styles.planName}>{plan.title}</Text>
-                      </View>
-                      {plan.annualMonthlyBreakdownText ? (
-                        <Text style={styles.planSummary}>{plan.annualMonthlyBreakdownText}</Text>
-                      ) : null}
-                      {plan.introductoryOfferText ? (
-                        <View style={styles.planOfferBadge}>
-                          <Text style={styles.planIntroductoryOffer}>
-                            {plan.introductoryOfferText}
+                        <View style={styles.planPriceBlock}>
+                          <Text style={styles.planPrice}>
+                            {plan.priceText}
+                            {plan.priceSuffixText}
                           </Text>
                         </View>
-                      ) : null}
-                    </View>
-                    <View style={styles.planPriceBlock}>
-                      <Text style={styles.planPrice}>
-                        {plan.priceText}
-                        {plan.priceSuffixText}
-                      </Text>
-                    </View>
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
 
-          <AppButton
-            label="Continue"
-            accessibilityLabel={
-              selectedPlan ? `Continue with ${selectedPlan.title} Premium plan` : 'Select a plan'
-            }
-            onPress={() => selectedPlan && setConfirmationPlan(selectedPlan)}
-            disabled={isPurchaseDisabled}
-          />
+              <AppButton
+                label="Continue"
+                accessibilityLabel={
+                  selectedPlan
+                    ? `Continue with ${selectedPlan.title} Premium plan`
+                    : 'Select a plan'
+                }
+                onPress={() => selectedPlan && setConfirmationPlan(selectedPlan)}
+                disabled={isPurchaseDisabled}
+              />
 
-          {purchase.availability !== 'available' && !isAnonymous ? (
-            <Text style={styles.accountNote}>
-              {purchase.availability === 'web'
-                ? 'Premium checkout is available in the iOS and Android apps.'
-                : purchase.availability === 'expo_go'
-                  ? 'Use an installed development build to test real store purchases.'
-                  : 'Store billing is not configured in this build.'}
-            </Text>
-          ) : null}
+              {purchase.availability !== 'available' && !isAnonymous ? (
+                <Text style={styles.accountNote}>
+                  {purchase.availability === 'web'
+                    ? 'Premium checkout is available in the iOS and Android apps.'
+                    : purchase.availability === 'expo_go'
+                      ? 'Use an installed development build to test real store purchases.'
+                      : 'Store billing is not configured in this build.'}
+                </Text>
+              ) : null}
 
-          {isAnonymous ? (
-            <Text style={styles.accountNote}>
-              Secure this anonymous session before purchasing so Premium can be restored across
-              devices.
-            </Text>
-          ) : null}
+              {isAnonymous ? (
+                <Text style={styles.accountNote}>
+                  Secure this anonymous session before purchasing so Premium can be restored across
+                  devices.
+                </Text>
+              ) : null}
 
-          {purchase.error ? <Text style={styles.errorText}>{purchase.error}</Text> : null}
-          {purchase.feedback ? <Text style={styles.successText}>{purchase.feedback}</Text> : null}
+              {purchase.error ? <Text style={styles.errorText}>{purchase.error}</Text> : null}
+              {purchase.feedback ? (
+                <Text style={styles.successText}>{purchase.feedback}</Text>
+              ) : null}
 
-          <AppButton
-            label="Restore Purchases"
-            variant="secondary"
-            accessibilityLabel="Restore Premium purchases"
-            onPress={() => void purchase.restore()}
-            loading={purchase.pendingAction === 'restore'}
-            loadingLabel="Restoring..."
-            disabled={
-              isAnonymous || purchase.availability !== 'available' || purchase.awaitingActivation
-            }
-          />
+              <AppButton
+                label="Restore Purchases"
+                variant="secondary"
+                accessibilityLabel="Restore Premium purchases"
+                onPress={() => void purchase.restore()}
+                loading={purchase.pendingAction === 'restore'}
+                loadingLabel="Restoring..."
+                disabled={
+                  isAnonymous ||
+                  purchase.availability !== 'available' ||
+                  purchase.awaitingActivation
+                }
+              />
 
-          {hasAutoRenewingPlans || hasOneTimePurchasePlans ? (
-            <Text style={styles.footnote}>
-              {hasAutoRenewingPlans
-                ? 'Subscriptions renew automatically unless canceled in Apple or Google account settings. '
-                : ''}
-              {hasOneTimePurchasePlans ? 'One-time purchases do not renew automatically. ' : ''}
-              {hasAutoRenewingPlans ? 'Deleting Bearing does not cancel a store subscription.' : ''}
-            </Text>
-          ) : null}
+              {hasAutoRenewingPlans || hasOneTimePurchasePlans ? (
+                <Text style={styles.footnote}>
+                  {hasAutoRenewingPlans
+                    ? 'Subscriptions renew automatically unless canceled in Apple or Google account settings. '
+                    : ''}
+                  {hasOneTimePurchasePlans ? 'One-time purchases do not renew automatically. ' : ''}
+                  {hasAutoRenewingPlans
+                    ? 'Deleting Bearing does not cancel a store subscription.'
+                    : ''}
+                </Text>
+              ) : null}
 
-          <View style={styles.legalActions}>
-            <AppButton
-              label="Privacy Policy"
-              variant="secondary"
-              accessibilityLabel="Open Privacy Policy"
-              onPress={() => setLegalDocumentId('privacy')}
-            />
-            <AppButton
-              label="Terms of Service"
-              variant="secondary"
-              accessibilityLabel="Open Terms of Service"
-              onPress={() => setLegalDocumentId('terms')}
-            />
-          </View>
+              <View style={styles.legalActions}>
+                <AppButton
+                  label="Privacy Policy"
+                  variant="secondary"
+                  accessibilityLabel="Open Privacy Policy"
+                  onPress={() => setLegalDocumentId('privacy')}
+                />
+                <AppButton
+                  label="Terms of Service"
+                  variant="secondary"
+                  accessibilityLabel="Open Terms of Service"
+                  onPress={() => setLegalDocumentId('terms')}
+                />
+              </View>
 
-          <AppButton
-            label="Continue on Free Plan"
-            accessibilityLabel="Close premium paywall"
-            onPress={onClose}
-          />
+              <AppButton
+                label="Continue on Free Plan"
+                accessibilityLabel="Close premium paywall"
+                onPress={onClose}
+              />
+            </>
+          )}
         </ScrollView>
       </AppModal>
       <LegalDocumentModal
@@ -239,7 +306,9 @@ export function PremiumPaywallModal({
               <View style={styles.confirmationPlanDetails}>
                 <Text style={styles.confirmationPlanTitle}>{confirmationPlan.title}</Text>
                 {confirmationPlan.annualMonthlyBreakdownText ? (
-                  <Text style={styles.planSummary}>{confirmationPlan.annualMonthlyBreakdownText}</Text>
+                  <Text style={styles.planSummary}>
+                    {confirmationPlan.annualMonthlyBreakdownText}
+                  </Text>
                 ) : null}
                 {confirmationPlan.introductoryOfferText ? (
                   <Text style={styles.planMeta}>{confirmationPlan.introductoryOfferText}</Text>
@@ -429,6 +498,21 @@ const styles = StyleSheet.create({
   successText: {
     ...typography.helper,
     color: colors.brand,
+  },
+  purchaseState: {
+    alignItems: 'center',
+    gap: spacing.lg,
+    paddingVertical: spacing.xl,
+  },
+  purchaseStateTitle: {
+    ...typography.title,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  purchaseStateDescription: {
+    ...typography.body,
+    color: colors.textPrimary,
+    textAlign: 'center',
   },
   confirmationContent: {
     gap: spacing.lg,

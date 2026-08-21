@@ -63,12 +63,16 @@ describe('PremiumPaywallModal', () => {
       />,
     );
 
-    expect(screen.getByRole('radio', { name: 'Select Monthly Premium plan', selected: true })).toBeTruthy();
+    expect(
+      screen.getByRole('radio', { name: 'Select Monthly Premium plan', selected: true }),
+    ).toBeTruthy();
     expect(screen.getByText('$7.99/mo')).toBeTruthy();
     expect(screen.queryByText('Choose Monthly')).toBeNull();
 
     fireEvent.press(screen.getByRole('radio', { name: 'Select Yearly Premium plan' }));
-    expect(screen.getByRole('radio', { name: 'Select Yearly Premium plan', selected: true })).toBeTruthy();
+    expect(
+      screen.getByRole('radio', { name: 'Select Yearly Premium plan', selected: true }),
+    ).toBeTruthy();
 
     fireEvent.press(screen.getByRole('button', { name: 'Continue with Yearly Premium plan' }));
 
@@ -80,9 +84,91 @@ describe('PremiumPaywallModal', () => {
     expect(screen.queryByText('P1Y')).toBeNull();
 
     await act(async () => {
-      fireEvent.press(screen.getByRole('button', { name: 'Continue to the store for Yearly Premium' }));
+      fireEvent.press(
+        screen.getByRole('button', { name: 'Continue to the store for Yearly Premium' }),
+      );
     });
 
     expect(purchasePlan).toHaveBeenCalledWith(annualPlan);
+  });
+
+  it('replaces plan selection with activation progress and a named purchase result', () => {
+    jest.mocked(usePremiumPurchase).mockReturnValue({
+      availability: 'available',
+      plans: [monthlyPlan],
+      loading: false,
+      pendingAction: null,
+      awaitingActivation: false,
+      error: null,
+      feedback: null,
+      purchase: jest.fn(async () => undefined),
+      restore: jest.fn(async () => undefined),
+    });
+
+    const { rerender } = render(
+      <PremiumPaywallModal
+        visible
+        feature="premium_overview"
+        userId="user-1"
+        isAnonymous={false}
+        hasPremiumAccess={false}
+        onClose={jest.fn()}
+      />,
+    );
+
+    fireEvent.press(screen.getByRole('button', { name: 'Continue with Monthly Premium plan' }));
+    fireEvent.press(
+      screen.getByRole('button', { name: 'Continue to the store for Monthly Premium' }),
+    );
+
+    jest.mocked(usePremiumPurchase).mockReturnValue({
+      availability: 'available',
+      plans: [monthlyPlan],
+      loading: false,
+      pendingAction: null,
+      awaitingActivation: true,
+      error: null,
+      feedback: null,
+      purchase: jest.fn(async () => undefined),
+      restore: jest.fn(async () => undefined),
+    });
+    rerender(
+      <PremiumPaywallModal
+        visible
+        feature="premium_overview"
+        userId="user-1"
+        isAnonymous={false}
+        hasPremiumAccess={false}
+        onClose={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Activating Premium')).toBeTruthy();
+    expect(screen.queryByRole('radio', { name: 'Select Monthly Premium plan' })).toBeNull();
+
+    jest.mocked(usePremiumPurchase).mockReturnValue({
+      availability: 'available',
+      plans: [monthlyPlan],
+      loading: false,
+      pendingAction: null,
+      awaitingActivation: false,
+      error: null,
+      feedback: 'Premium is active on this account.',
+      purchase: jest.fn(async () => undefined),
+      restore: jest.fn(async () => undefined),
+    });
+    rerender(
+      <PremiumPaywallModal
+        visible
+        feature="premium_overview"
+        userId="user-1"
+        isAnonymous={false}
+        hasPremiumAccess
+        onClose={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Monthly Premium is active')).toBeTruthy();
+    expect(screen.getByText('Premium is active on this account.')).toBeTruthy();
   });
 });

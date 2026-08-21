@@ -135,6 +135,8 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   const [deviceCalendarPending, setDeviceCalendarPending] = useState(false);
   const [deviceCalendarError, setDeviceCalendarError] = useState<string | null>(null);
   const [premiumPaywallFeature, setPremiumPaywallFeature] = useState<PremiumFeature | null>(null);
+  const [premiumManagementPending, setPremiumManagementPending] = useState(false);
+  const [premiumManagementError, setPremiumManagementError] = useState<string | null>(null);
   const [icsModalVisible, setIcsModalVisible] = useState(false);
   const [icsPending, setIcsPending] = useState(false);
   const [icsError, setIcsError] = useState<string | null>(null);
@@ -416,16 +418,27 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
 
   async function handlePremiumAction(): Promise<void> {
     if (!hasPremiumAccess) {
+      setPremiumManagementError(null);
       setPremiumPaywallFeature('premium_overview');
       return;
     }
     if (!authUser || isAnonymous) return;
 
-    setAccountError(null);
+    if (Platform.OS === 'web' && entitlement?.platform === 'web') {
+      setPremiumManagementError(
+        'This subscription is not linked to an Apple or Google store account. Manage it from the store account used to purchase.',
+      );
+      return;
+    }
+
+    setPremiumManagementPending(true);
+    setPremiumManagementError(null);
     try {
       await showPremiumSubscriptionManagement(authUser.uid, entitlement?.platform ?? null);
     } catch {
-      setAccountError('Unable to open the store subscription settings for this account.');
+      setPremiumManagementError('Unable to open the store subscription settings for this account.');
+    } finally {
+      setPremiumManagementPending(false);
     }
   }
 
@@ -931,8 +944,18 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                 onPress={() => void handlePremiumAction()}
                 title="Premium access"
                 description={getPremiumAccessDescription()}
-                trailingText={hasPremiumAccess ? 'Manage' : 'View plans'}
+                trailingText={
+                  premiumManagementPending
+                    ? 'Opening...'
+                    : hasPremiumAccess
+                      ? 'Manage'
+                      : 'View plans'
+                }
+                disabled={premiumManagementPending}
               />
+              {premiumManagementError ? (
+                <Text style={styles.errorText}>{premiumManagementError}</Text>
+              ) : null}
             </View>
 
             <View style={styles.section}>

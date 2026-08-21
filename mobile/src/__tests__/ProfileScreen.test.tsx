@@ -34,6 +34,7 @@ import {
   deleteCurrentUserAccount,
   exportCurrentUserData,
 } from '../services/firebase/firebasePrivacy';
+import { showPremiumSubscriptionManagement } from '../services/purchases/revenueCatClient';
 
 jest.setTimeout(10000);
 
@@ -69,6 +70,10 @@ jest.mock('../features/profile/dataExportFileInterop', () => ({
 
 jest.mock('../features/premium/usePremiumEntitlement', () => ({
   usePremiumEntitlement: jest.fn(),
+}));
+
+jest.mock('../services/purchases/revenueCatClient', () => ({
+  showPremiumSubscriptionManagement: jest.fn(),
 }));
 
 jest.mock('../features/calendar/icsFileInterop', () => ({
@@ -314,6 +319,9 @@ describe('ProfileScreen', () => {
         retry,
       },
     });
+    jest
+      .mocked(showPremiumSubscriptionManagement)
+      .mockRejectedValueOnce(new Error('Store subscription route unavailable.'));
 
     render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
     fireEvent.press(screen.getByRole('button', { name: 'Try Again' }));
@@ -372,6 +380,36 @@ describe('ProfileScreen', () => {
     fireEvent(screen.getByLabelText('Share product diagnostics'), 'valueChange', true);
 
     expect(updateTelemetryConsent).toHaveBeenCalledWith(true);
+  });
+
+  it('shows subscription-management errors in the Plan section', async () => {
+    mockProfileHooks();
+    (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
+      entitlement: {
+        userId: 'user-1',
+        platform: 'web',
+        productId: 'bearing_premium_monthly',
+        status: 'active',
+        periodStartAt: null,
+        periodEndAt: null,
+        autoRenew: true,
+        lastValidatedAt: null,
+        createdAt: null,
+        updatedAt: null,
+      },
+      uiState: 'ready',
+      error: null,
+    });
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    await act(async () => {
+      fireEvent.press(screen.getByText('Premium access'));
+    });
+
+    expect(
+      screen.getByText('Unable to open the store subscription settings for this account.'),
+    ).toBeTruthy();
+    expect(showPremiumSubscriptionManagement).toHaveBeenCalledWith('user-1', 'web');
+    expect(screen.getByLabelText('Save account settings')).toBeTruthy();
   });
 
   it('opens in-app legal documents and reports an unconfigured support contact', () => {

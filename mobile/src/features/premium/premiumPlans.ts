@@ -50,7 +50,9 @@ function getSubscriptionPeriodDetails(subscriptionPeriod: string): PlanPeriodDet
   const pricePeriodUnit = PRICE_PERIOD_UNITS[match[2] as keyof typeof PRICE_PERIOD_UNITS];
   const fallbackTitle =
     quantity === 1
-      ? ({ D: 'Daily', W: 'Weekly', M: 'Monthly', Y: 'Annual' } as const)[match[2] as keyof typeof PERIOD_UNITS]
+      ? ({ D: 'Daily', W: 'Weekly', M: 'Monthly', Y: 'Annual' } as const)[
+          match[2] as keyof typeof PERIOD_UNITS
+        ]
       : `Every ${interval}`;
 
   return {

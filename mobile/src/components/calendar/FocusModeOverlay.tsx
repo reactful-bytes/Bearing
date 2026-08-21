@@ -311,8 +311,7 @@ const styles = StyleSheet.create({
   ideaBlock: {
     gap: spacing.md,
   },
-  ideaField: {
-  },
+  ideaField: {},
   ideaTitle: {
     ...typography.screenTitle,
     color: '#F4F8FA',
