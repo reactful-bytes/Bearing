@@ -535,6 +535,9 @@ describe('GoalsScreen', () => {
   });
 
   it('generates an editable AI draft before saving for premium users', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 7, 23, 9, 0, 0));
+
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
     const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
       typeof useGoalStepEvents
@@ -583,7 +586,7 @@ describe('GoalsScreen', () => {
           title: 'Choose weekly run times',
           description: 'Reserve three repeatable windows.',
           starter: 'Open the calendar.',
-          targetDate: '2027-01-15',
+          targetDate: '2026-08-20',
         },
       ],
       timelineSummary: 'Build consistency before increasing distance.',
@@ -646,6 +649,7 @@ describe('GoalsScreen', () => {
     fireEvent.changeText(screen.getByLabelText('AI milestone 1 name'), 'Build consistency');
     fireEvent.press(screen.getByLabelText('Continue'));
     expect(screen.getByDisplayValue('Choose weekly run times')).toBeTruthy();
+    expect(screen.getByText('Selected date: 08-24-2026')).toBeTruthy();
     fireEvent.changeText(screen.getByLabelText('Draft step 1 name'), 'Schedule weekly runs');
 
     await act(async () => {
@@ -665,6 +669,7 @@ describe('GoalsScreen', () => {
           steps: [
             expect.objectContaining({
               title: 'Schedule weekly runs',
+              estimatedFinishDate: new Date(2026, 7, 24),
             }),
           ],
         }),

@@ -68,10 +68,14 @@ function makeEmptyDraftStep(index: number, baseDate: Date): DraftGoalStep {
   };
 }
 
-function parseAiDateParts(value: string, fallback: GoalDateParts): GoalDateParts {
+function parseAiDateParts(
+  value: string,
+  goalTargetDateParts: GoalDateParts,
+  currentDate: Date,
+): GoalDateParts {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) {
-    return fallback;
+    return goalTargetDateParts;
   }
 
   const dateParts = {
@@ -79,8 +83,23 @@ function parseAiDateParts(value: string, fallback: GoalDateParts): GoalDateParts
     month: Number(match[2]),
     day: Number(match[3]),
   };
+  const parsedDate = getGoalDateFromParts(dateParts);
+  const isValidCalendarDate =
+    parsedDate.getFullYear() === dateParts.year &&
+    parsedDate.getMonth() + 1 === dateParts.month &&
+    parsedDate.getDate() === dateParts.day;
 
-  return Number.isNaN(getGoalDateFromParts(dateParts).getTime()) ? fallback : dateParts;
+  if (!isValidCalendarDate) {
+    return goalTargetDateParts;
+  }
+
+  if (!isFutureDate(parsedDate, currentDate)) {
+    return buildDefaultGoalDateParts(currentDate);
+  }
+
+  return parsedDate.getTime() > getGoalDateFromParts(goalTargetDateParts).getTime()
+    ? goalTargetDateParts
+    : dateParts;
 }
 
 function formatAiTargetDate(dateParts: GoalDateParts): string {
@@ -216,9 +235,10 @@ export function CreateGoalModal({
 
       setAiDraft(draft);
       setAiMilestones(draft.milestones);
+      const responseDate = new Date();
       setDraftSteps(
         draft.steps.map((step, index) => {
-          const dateParts = parseAiDateParts(step.targetDate, goalDateParts);
+          const dateParts = parseAiDateParts(step.targetDate, goalDateParts, responseDate);
           return {
             id: `ai-draft-step-${index + 1}`,
             title: step.title,
@@ -319,6 +339,7 @@ export function CreateGoalModal({
 
   function validateCurrentStep(): boolean {
     setError(null);
+    const currentDate = new Date();
 
     if (wizardIndex === 1) {
       if (!title.trim()) {
@@ -333,7 +354,7 @@ export function CreateGoalModal({
 
     if (wizardIndex === 2) {
       const selectedDate = getGoalDateFromParts(goalDateParts);
-      if (!isFutureDate(selectedDate, today)) {
+      if (!isFutureDate(selectedDate, currentDate)) {
         setError('Estimated completion date must be in the future.');
         return false;
       }
@@ -347,7 +368,7 @@ export function CreateGoalModal({
       }
 
       const invalidStepIndex = filledSteps.findIndex(
-        (step) => !step.estimatedFinishDate || !isFutureDate(step.estimatedFinishDate, today),
+        (step) => !step.estimatedFinishDate || !isFutureDate(step.estimatedFinishDate, currentDate),
       );
 
       if (invalidStepIndex !== -1) {
