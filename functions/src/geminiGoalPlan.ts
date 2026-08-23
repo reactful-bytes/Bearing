@@ -1,6 +1,6 @@
 import { GoalPlanDraft, GoalPlanGenerator } from "./aiGoalPlan";
 
-export const GEMINI_GOAL_PLAN_MODEL = "gemini-2.5-flash";
+export const GEMINI_GOAL_PLAN_MODEL = "gemini-3.6-flash";
 
 const GOAL_PLAN_SCHEMA = {
   type: "object",
