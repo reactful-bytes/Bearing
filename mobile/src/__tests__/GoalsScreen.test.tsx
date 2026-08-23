@@ -192,7 +192,11 @@ function mockEmptyGoals(): void {
 function openAiPlanningStep(): void {
   fireEvent.press(screen.getByText('New Goal'));
   fireEvent.press(screen.getByLabelText('Continue'));
-  fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
+  fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
+  fireEvent.changeText(
+    screen.getByLabelText('Planning context for AI'),
+    'Build endurance safely with three runs per week over eight weeks.',
+  );
   fireEvent.press(screen.getByLabelText('Continue'));
   fireEvent.press(screen.getByLabelText('Continue'));
 }
@@ -391,16 +395,16 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByText('New Goal'));
     fireEvent.press(screen.getByLabelText('Continue'));
 
-    fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
+    fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
+    fireEvent.press(screen.getByLabelText('Continue'));
+    expect(screen.getByText('Planning context is required for milestones and steps.')).toBeTruthy();
     fireEvent.changeText(
-      screen.getByLabelText('Goal description'),
+      screen.getByLabelText('Planning context for AI'),
       'Train consistently for eight weeks.',
     );
-    expect(screen.getByText('Simple SMART example')).toBeTruthy();
+    expect(screen.getByText('What the AI plans from')).toBeTruthy();
     expect(
-      screen.getByText(
-        'Good goal: Walk 30 minutes after work, 4 days a week, for the next 6 weeks.',
-      ),
+      screen.getByText(/These details become the basis for every generated milestone and step/),
     ).toBeTruthy();
     expect(screen.queryByLabelText('SMART Specific')).toBeNull();
     fireEvent.press(screen.getByLabelText('Continue'));
@@ -423,9 +427,14 @@ describe('GoalsScreen', () => {
     fireEvent.changeText(screen.getByLabelText('Draft step 1 starter'), 'Visit two stores');
     expect(screen.queryByLabelText('Draft step 1 estimated finish date')).toBeNull();
     fireEvent.press(screen.getByLabelText('Open draft step 1 month dropdown'));
-    fireEvent.press(screen.getByLabelText('Select draft step 1 month 08 - Aug'));
+    fireEvent.press(screen.getByLabelText('Select draft step 1 month 11 - Nov'));
     fireEvent.press(screen.getByLabelText('Open draft step 1 day dropdown'));
     fireEvent.press(screen.getByLabelText('Select draft step 1 day 05'));
+    fireEvent.press(screen.getByLabelText('Save goal'));
+    expect(screen.getByText('Step 1 must finish on or before the goal target date.')).toBeTruthy();
+    expect(createGoalMock).not.toHaveBeenCalled();
+    fireEvent.press(screen.getByLabelText('Open draft step 1 month dropdown'));
+    fireEvent.press(screen.getByLabelText('Select draft step 1 month 08 - Aug'));
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Save goal'));
@@ -474,12 +483,14 @@ describe('GoalsScreen', () => {
 
     fireEvent.press(screen.getByText('New Goal'));
     fireEvent.press(screen.getByLabelText('Continue'));
-    fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
+    fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.changeText(
-      screen.getByLabelText('Goal description'),
+      screen.getByLabelText('Planning context for AI'),
       'Train consistently for eight weeks.',
     );
     fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Open goal target year dropdown'));
+    fireEvent.press(screen.getByLabelText('Select goal target year 2027'));
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.press(screen.getByLabelText('View premium plans for AI goal builder'));
 
@@ -549,12 +560,14 @@ describe('GoalsScreen', () => {
 
     fireEvent.press(screen.getByText('New Goal'));
     fireEvent.press(screen.getByLabelText('Continue'));
-    fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
+    fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.changeText(
-      screen.getByLabelText('Goal description'),
+      screen.getByLabelText('Planning context for AI'),
       'Train consistently for eight weeks.',
     );
     fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Open goal target year dropdown'));
+    fireEvent.press(screen.getByLabelText('Select goal target year 2027'));
     fireEvent.press(screen.getByLabelText('Continue'));
 
     expect(screen.getByText('Build an editable first draft.')).toBeTruthy();
@@ -573,6 +586,26 @@ describe('GoalsScreen', () => {
         description: 'Train consistently for eight weeks.',
       }),
     );
+    expect(
+      screen.getByText(/clarify the goal outcome, objectives, constraints, or timing/i),
+    ).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Regenerate AI goal plan'));
+    expect(screen.getByText('Regenerate AI Draft?')).toBeTruthy();
+    expect(
+      screen.getByText(/uses 1 AI credit and replaces the current milestones and steps/i),
+    ).toBeTruthy();
+    expect(mockedGenerateAiGoalPlanDraft).toHaveBeenCalledTimes(1);
+    fireEvent.press(screen.getByLabelText('Cancel AI goal plan regeneration'));
+    expect(screen.queryByText('Regenerate AI Draft?')).toBeNull();
+    expect(mockedGenerateAiGoalPlanDraft).toHaveBeenCalledTimes(1);
+
+    fireEvent.press(screen.getByLabelText('Regenerate AI goal plan'));
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Confirm AI goal plan regeneration'));
+    });
+    await waitFor(() => expect(mockedGenerateAiGoalPlanDraft).toHaveBeenCalledTimes(2));
+
     fireEvent.changeText(screen.getByLabelText('AI milestone 1 name'), 'Build consistency');
     fireEvent.press(screen.getByLabelText('Continue'));
     expect(screen.getByDisplayValue('Choose weekly run times')).toBeTruthy();
@@ -633,7 +666,11 @@ describe('GoalsScreen', () => {
     render(<GoalsScreen />);
     fireEvent.press(screen.getByText('New Goal'));
     fireEvent.press(screen.getByLabelText('Continue'));
-    fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
+    fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
+    fireEvent.changeText(
+      screen.getByLabelText('Planning context for AI'),
+      'Build endurance safely with three runs per week over eight weeks.',
+    );
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.press(screen.getByLabelText('Continue'));
 
@@ -762,9 +799,9 @@ describe('GoalsScreen', () => {
 
     fireEvent.press(screen.getByText('New Goal'));
     fireEvent.press(screen.getByLabelText('Continue'));
-    fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
+    fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.changeText(
-      screen.getByLabelText('Goal description'),
+      screen.getByLabelText('Planning context for AI'),
       'Train consistently for eight weeks.',
     );
     fireEvent.press(screen.getByLabelText('Continue'));

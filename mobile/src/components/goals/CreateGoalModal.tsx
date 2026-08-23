@@ -111,6 +111,7 @@ export function CreateGoalModal({
   const [aiDraft, setAiDraft] = useState<AiGoalPlanDraft | null>(null);
   const [aiMilestones, setAiMilestones] = useState<AiGoalMilestone[]>([]);
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [regenerationConfirmationVisible, setRegenerationConfirmationVisible] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiCreditStatus, setAiCreditStatus] = useState<AiCreditStatus | null>(null);
   const [aiCreditsLoading, setAiCreditsLoading] = useState(false);
@@ -159,6 +160,7 @@ export function CreateGoalModal({
     setAiDraft(null);
     setAiMilestones([]);
     setAiGenerating(false);
+    setRegenerationConfirmationVisible(false);
     setAiError(null);
     setAiCreditStatus(null);
     setAiCreditsLoading(false);
@@ -192,6 +194,7 @@ export function CreateGoalModal({
   }
 
   async function handleGenerateAiPlan(): Promise<void> {
+    setRegenerationConfirmationVisible(false);
     setAiGenerating(true);
     setAiError(null);
 
@@ -319,7 +322,11 @@ export function CreateGoalModal({
 
     if (wizardIndex === 1) {
       if (!title.trim()) {
-        setError('Goal name is required.');
+        setError('Goal outcome is required.');
+        return false;
+      }
+      if (!description.trim()) {
+        setError('Planning context is required for milestones and steps.');
         return false;
       }
     }
@@ -345,6 +352,17 @@ export function CreateGoalModal({
 
       if (invalidStepIndex !== -1) {
         setError(`Step ${invalidStepIndex + 1} estimated finish date must be in the future.`);
+        return false;
+      }
+
+      const goalTargetDate = getGoalDateFromParts(goalDateParts);
+      const afterGoalIndex = filledSteps.findIndex(
+        (step) =>
+          step.estimatedFinishDate !== null &&
+          step.estimatedFinishDate.getTime() > goalTargetDate.getTime(),
+      );
+      if (afterGoalIndex !== -1) {
+        setError(`Step ${afterGoalIndex + 1} must finish on or before the goal target date.`);
         return false;
       }
     }
@@ -422,277 +440,337 @@ export function CreateGoalModal({
   );
 
   return (
-    <AppModal visible={visible} title="Create Goal" onClose={handleClose}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.stepLabel}>{wizardLabel}</Text>
+    <>
+      <AppModal visible={visible} title="Create Goal" onClose={handleClose}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <Text style={styles.stepLabel}>{wizardLabel}</Text>
 
-        {wizardIndex === 0 ? (
-          <AppCard style={styles.card}>
-            <Text style={styles.cardTitle}>Build a SMART goal before you plan it.</Text>
-            <Text style={styles.cardBody}>
-              Specific, measurable, achievable, relevant, and time-bound goals make the next step
-              clear.
-            </Text>
-          </AppCard>
-        ) : null}
-
-        {wizardIndex === 1 ? (
-          <View style={styles.section}>
-            <FormField
-              label="Goal name"
-              accessibilityLabel="Goal name"
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Run my first 10k"
-              placeholderTextColor={colors.textSecondary}
-            />
-
-            <FormField
-              label="Description"
-              accessibilityLabel="Goal description"
-              value={description}
-              onChangeText={setDescription}
-              multiline
-              placeholder="Why this goal matters"
-              placeholderTextColor={colors.textSecondary}
-            />
-
-            <AppCard style={styles.exampleCard}>
-              <Text style={styles.exampleLabel}>Simple SMART example</Text>
-              <Text style={styles.exampleText}>
-                Good goal: Walk 30 minutes after work, 4 days a week, for the next 6 weeks.
-              </Text>
-            </AppCard>
-          </View>
-        ) : null}
-
-        {wizardIndex === 3 ? (
-          !isPremiumStatusResolved ? (
+          {wizardIndex === 0 ? (
             <AppCard style={styles.card}>
-              <Text style={styles.cardTitle}>Checking premium access...</Text>
+              <Text style={styles.cardTitle}>Build a SMART goal before you plan it.</Text>
               <Text style={styles.cardBody}>
-                Bearing is confirming whether AI goal planning should be unlocked for this account.
+                Specific, measurable, achievable, relevant, and time-bound goals make the next step
+                clear.
               </Text>
             </AppCard>
-          ) : hasPremiumAccess ? (
-            <AppCard style={styles.card}>
-              <Text style={styles.cardTitle}>
-                {aiDraft ? 'Review your AI draft.' : 'Build an editable first draft.'}
-              </Text>
-              {aiDraft ? (
-                <>
-                  <Text style={styles.cardBody}>{aiDraft.timelineSummary}</Text>
-                  {aiMilestones.map((milestone, index) => (
-                    <View key={`ai-milestone-${index + 1}`} style={styles.milestoneFields}>
-                      <Text style={styles.exampleLabel}>Milestone {index + 1}</Text>
-                      <FormField
-                        label="Milestone name"
-                        accessibilityLabel={`AI milestone ${index + 1} name`}
-                        value={milestone.title}
-                        onChangeText={(value) => updateAiMilestone(index, 'title', value)}
-                      />
-                      <FormField
-                        label="Description"
-                        accessibilityLabel={`AI milestone ${index + 1} description`}
-                        value={milestone.description}
-                        onChangeText={(value) => updateAiMilestone(index, 'description', value)}
-                        multiline
-                      />
-                    </View>
-                  ))}
+          ) : null}
+
+          {wizardIndex === 1 ? (
+            <View style={styles.section}>
+              <FormField
+                label="Goal outcome"
+                accessibilityLabel="Goal outcome"
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Complete my first 10k"
+                placeholderTextColor={colors.textSecondary}
+              />
+
+              <FormField
+                label="Planning context for AI"
+                accessibilityLabel="Planning context for AI"
+                value={description}
+                onChangeText={setDescription}
+                multiline
+                placeholder="List 2-4 objectives, success measures, your starting point, constraints, and timing for each outcome."
+                placeholderTextColor={colors.textSecondary}
+              />
+
+              <AppCard style={styles.exampleCard}>
+                <Text style={styles.exampleLabel}>What the AI plans from</Text>
+                <Text style={styles.exampleText}>
+                  Include the results you want, how success will be measured, available time or
+                  resources, important constraints, and any intermediate deadlines. These details
+                  become the basis for every generated milestone and step.
+                </Text>
+              </AppCard>
+            </View>
+          ) : null}
+
+          {wizardIndex === 3 ? (
+            !isPremiumStatusResolved ? (
+              <AppCard style={styles.card}>
+                <Text style={styles.cardTitle}>Checking premium access...</Text>
+                <Text style={styles.cardBody}>
+                  Bearing is confirming whether AI goal planning should be unlocked for this
+                  account.
+                </Text>
+              </AppCard>
+            ) : hasPremiumAccess ? (
+              <AppCard style={styles.card}>
+                <Text style={styles.cardTitle}>
+                  {aiDraft ? 'Review your AI draft.' : 'Build an editable first draft.'}
+                </Text>
+                {aiDraft ? (
+                  <>
+                    <Text style={styles.cardBody}>{aiDraft.timelineSummary}</Text>
+                    {aiMilestones.map((milestone, index) => (
+                      <View key={`ai-milestone-${index + 1}`} style={styles.milestoneFields}>
+                        <Text style={styles.exampleLabel}>Milestone {index + 1}</Text>
+                        <FormField
+                          label="Milestone name"
+                          accessibilityLabel={`AI milestone ${index + 1} name`}
+                          value={milestone.title}
+                          onChangeText={(value) => updateAiMilestone(index, 'title', value)}
+                        />
+                        <FormField
+                          label="Description"
+                          accessibilityLabel={`AI milestone ${index + 1} description`}
+                          value={milestone.description}
+                          onChangeText={(value) => updateAiMilestone(index, 'description', value)}
+                          multiline
+                        />
+                      </View>
+                    ))}
+                    <Text style={styles.cardBody}>
+                      Continue to review and edit every generated step before saving.
+                    </Text>
+                    <Text style={styles.regenerationGuidance}>
+                      Need a different plan? Go back and clarify the goal outcome, objectives,
+                      constraints, or timing before using another AI credit.
+                    </Text>
+                    <AppButton
+                      label="Edit Goal Details"
+                      variant="secondary"
+                      accessibilityLabel="Edit goal details before regenerating"
+                      onPress={() => setWizardIndex(1)}
+                    />
+                  </>
+                ) : (
                   <Text style={styles.cardBody}>
-                    Continue to review and edit every generated step before saving.
+                    Generate milestones and ordered steps from your goal details. Nothing is saved
+                    until you review the draft and save the goal.
                   </Text>
-                </>
-              ) : (
-                <Text style={styles.cardBody}>
-                  Generate milestones and ordered steps from your goal details. Nothing is saved
-                  until you review the draft and save the goal.
-                </Text>
-              )}
-              <View style={styles.enabledBadge}>
-                <Text style={styles.enabledBadgeText}>Premium Enabled</Text>
-              </View>
-              {aiCreditsLoading ? (
-                <Text style={styles.cardBody}>Checking AI credits...</Text>
-              ) : null}
-              {aiCreditStatus ? (
-                <Text style={styles.cardBody}>
-                  AI credits available: {aiCreditStatus.availableCredits}
-                  {aiCreditStatus.nextGrantAt
-                    ? ` | Next grant ${new Date(aiCreditStatus.nextGrantAt).toLocaleDateString(
-                        undefined,
-                        { timeZone: 'UTC' },
-                      )}`
-                    : ''}
-                </Text>
-              ) : null}
-              {aiCreditStatus?.availableCredits === 0 && !aiError ? (
-                <Text style={styles.errorText}>
-                  No AI credits remain. Continue manually or wait for your next grant.
-                </Text>
-              ) : null}
-              {aiCreditStatusError ? (
-                <Text style={styles.errorText}>{aiCreditStatusError}</Text>
-              ) : null}
-              {aiError ? <Text style={styles.errorText}>{aiError}</Text> : null}
-              <AppButton
-                label={aiDraft ? 'Regenerate Draft' : 'Generate Draft'}
-                accessibilityLabel={aiDraft ? 'Regenerate AI goal plan' : 'Generate AI goal plan'}
-                onPress={handleGenerateAiPlan}
-                loading={aiGenerating}
-                loadingLabel="Generating..."
-                disabled={
-                  aiCreditsLoading ||
-                  aiCreditStatus?.availableCredits === 0 ||
-                  aiCreditStatus?.eligible === false
-                }
-              />
-            </AppCard>
-          ) : (
-            <AppCard style={styles.card}>
-              <Text style={styles.cardTitle}>Unlock AI goal builder with Premium.</Text>
-              <Text style={styles.cardBody}>
-                Bearing Premium will open AI-generated milestones and steps here once the service
-                integration ships. You can keep building the goal manually right now.
-              </Text>
-              <View style={styles.disabledBadge}>
-                <Text style={styles.disabledBadgeText}>Premium Required</Text>
-              </View>
-              <AppButton
-                label="View Premium Plans"
-                accessibilityLabel="View premium plans for AI goal builder"
-                onPress={onOpenPremiumPaywall}
-              />
-            </AppCard>
-          )
-        ) : null}
-
-        {wizardIndex === 2 ? (
-          <GoalDatePicker
-            title="Estimated completion date"
-            summaryLabel={`Selected date: ${formatGoalDateParts(goalDateParts)}`}
-            helperText="Format: MM-DD-YYYY"
-            accessibilityPrefix="goal target"
-            dateParts={goalDateParts}
-            activeField={activeGoalDateField}
-            optionsByField={{
-              month: MONTH_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
-              day: dayOptions.map((day) => ({ value: day, label: formatTwoDigits(day) })),
-              year: yearOptions.map((year) => ({ value: year, label: String(year) })),
-            }}
-            onToggleField={(field) =>
-              setActiveGoalDateField((current) => (current === field ? null : field))
-            }
-            onSelectField={updateGoalDateField}
-          />
-        ) : null}
-
-        {wizardIndex === 4 ? (
-          <View style={styles.section}>
-            {draftSteps.map((step, index) => (
-              <AppCard key={step.id} style={styles.card}>
-                <Text style={styles.cardTitle}>Step {index + 1}</Text>
-
-                <FormField
-                  label="Step name"
-                  accessibilityLabel={`Draft step ${index + 1} name`}
-                  value={step.title}
-                  onChangeText={(value) => updateDraftStep(step.id, 'title', value)}
-                  placeholder="Add the next action"
-                  placeholderTextColor={colors.textSecondary}
-                />
-
-                <FormField
-                  label="Description"
-                  accessibilityLabel={`Draft step ${index + 1} description`}
-                  value={step.description}
-                  onChangeText={(value) => updateDraftStep(step.id, 'description', value)}
-                  multiline
-                  placeholder="Optional details"
-                  placeholderTextColor={colors.textSecondary}
-                />
-
-                <FormField
-                  label="Starter"
-                  accessibilityLabel={`Draft step ${index + 1} starter`}
-                  value={step.starter}
-                  onChangeText={(value) => updateDraftStep(step.id, 'starter', value)}
-                  placeholder="Optional starter cue"
-                  placeholderTextColor={colors.textSecondary}
-                />
-
-                <GoalDatePicker
-                  title="Estimated finish date"
-                  summaryLabel={`Selected date: ${formatGoalDateParts(step.dateParts)}`}
-                  helperText="Format: MM-DD-YYYY"
-                  accessibilityPrefix={`draft step ${index + 1}`}
-                  dateParts={step.dateParts}
-                  activeField={step.activeDateField}
-                  optionsByField={{
-                    month: MONTH_OPTIONS.map((option) => ({
-                      value: option.value,
-                      label: option.label,
-                    })),
-                    day: getDayOptions(step.dateParts.month, step.dateParts.year).map((day) => ({
-                      value: day,
-                      label: formatTwoDigits(day),
-                    })),
-                    year: yearOptions.map((year) => ({ value: year, label: String(year) })),
+                )}
+                <View style={styles.enabledBadge}>
+                  <Text style={styles.enabledBadgeText}>Premium Enabled</Text>
+                </View>
+                {aiCreditsLoading ? (
+                  <Text style={styles.cardBody}>Checking AI credits...</Text>
+                ) : null}
+                {aiCreditStatus ? (
+                  <Text style={styles.cardBody}>
+                    AI credits available: {aiCreditStatus.availableCredits}
+                    {aiCreditStatus.nextGrantAt
+                      ? ` | Next grant ${new Date(aiCreditStatus.nextGrantAt).toLocaleDateString(
+                          undefined,
+                          { timeZone: 'UTC' },
+                        )}`
+                      : ''}
+                  </Text>
+                ) : null}
+                {aiCreditStatus?.availableCredits === 0 && !aiError ? (
+                  <Text style={styles.errorText}>
+                    No AI credits remain. Continue manually or wait for your next grant.
+                  </Text>
+                ) : null}
+                {aiCreditStatusError ? (
+                  <Text style={styles.errorText}>{aiCreditStatusError}</Text>
+                ) : null}
+                {aiError ? <Text style={styles.errorText}>{aiError}</Text> : null}
+                <AppButton
+                  label={aiDraft ? 'Regenerate Draft' : 'Generate Draft'}
+                  accessibilityLabel={aiDraft ? 'Regenerate AI goal plan' : 'Generate AI goal plan'}
+                  onPress={() => {
+                    if (aiDraft) {
+                      setRegenerationConfirmationVisible(true);
+                      return;
+                    }
+                    void handleGenerateAiPlan();
                   }}
-                  onToggleField={(field) => toggleDraftStepDateField(step.id, field)}
-                  onSelectField={(field, value) => updateDraftStepDateField(step.id, field, value)}
+                  loading={aiGenerating}
+                  loadingLabel="Generating..."
+                  disabled={
+                    aiCreditsLoading ||
+                    aiCreditStatus?.availableCredits === 0 ||
+                    aiCreditStatus?.eligible === false
+                  }
                 />
               </AppCard>
-            ))}
+            ) : (
+              <AppCard style={styles.card}>
+                <Text style={styles.cardTitle}>Unlock AI goal builder with Premium.</Text>
+                <Text style={styles.cardBody}>
+                  Bearing Premium will open AI-generated milestones and steps here once the service
+                  integration ships. You can keep building the goal manually right now.
+                </Text>
+                <View style={styles.disabledBadge}>
+                  <Text style={styles.disabledBadgeText}>Premium Required</Text>
+                </View>
+                <AppButton
+                  label="View Premium Plans"
+                  accessibilityLabel="View premium plans for AI goal builder"
+                  onPress={onOpenPremiumPaywall}
+                />
+              </AppCard>
+            )
+          ) : null}
 
-            <AppButton
-              label="Add Another Step"
-              variant="secondary"
-              accessibilityLabel="Add another draft step"
-              onPress={() =>
-                setDraftSteps((current) => [
-                  ...current,
-                  makeEmptyDraftStep(current.length + 1, today),
-                ])
+          {wizardIndex === 2 ? (
+            <GoalDatePicker
+              title="Estimated completion date"
+              summaryLabel={`Selected date: ${formatGoalDateParts(goalDateParts)}`}
+              helperText="Format: MM-DD-YYYY"
+              accessibilityPrefix="goal target"
+              dateParts={goalDateParts}
+              activeField={activeGoalDateField}
+              optionsByField={{
+                month: MONTH_OPTIONS.map((option) => ({
+                  value: option.value,
+                  label: option.label,
+                })),
+                day: dayOptions.map((day) => ({ value: day, label: formatTwoDigits(day) })),
+                year: yearOptions.map((year) => ({ value: year, label: String(year) })),
+              }}
+              onToggleField={(field) =>
+                setActiveGoalDateField((current) => (current === field ? null : field))
               }
-            />
-          </View>
-        ) : null}
-
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-        <View style={styles.actionRow}>
-          {canGoBack ? (
-            <AppButton
-              label="Back"
-              variant="secondary"
-              accessibilityLabel="Back"
-              onPress={() => setWizardIndex((current) => Math.max(0, current - 1))}
-              style={styles.actionButton}
+              onSelectField={updateGoalDateField}
             />
           ) : null}
 
-          {wizardIndex < WIZARD_TITLES.length - 1 ? (
-            <AppButton
-              label="Continue"
-              accessibilityLabel="Continue"
-              onPress={handleNext}
-              style={styles.actionButton}
-            />
-          ) : (
-            <AppButton
-              label="Save Goal"
-              accessibilityLabel="Save goal"
-              onPress={handleSave}
-              loading={saving}
-              loadingLabel="Saving..."
-              style={styles.actionButton}
-            />
-          )}
+          {wizardIndex === 4 ? (
+            <View style={styles.section}>
+              {draftSteps.map((step, index) => (
+                <AppCard key={step.id} style={styles.card}>
+                  <Text style={styles.cardTitle}>Step {index + 1}</Text>
+
+                  <FormField
+                    label="Step name"
+                    accessibilityLabel={`Draft step ${index + 1} name`}
+                    value={step.title}
+                    onChangeText={(value) => updateDraftStep(step.id, 'title', value)}
+                    placeholder="Add the next action"
+                    placeholderTextColor={colors.textSecondary}
+                  />
+
+                  <FormField
+                    label="Description"
+                    accessibilityLabel={`Draft step ${index + 1} description`}
+                    value={step.description}
+                    onChangeText={(value) => updateDraftStep(step.id, 'description', value)}
+                    multiline
+                    placeholder="Optional details"
+                    placeholderTextColor={colors.textSecondary}
+                  />
+
+                  <FormField
+                    label="Starter"
+                    accessibilityLabel={`Draft step ${index + 1} starter`}
+                    value={step.starter}
+                    onChangeText={(value) => updateDraftStep(step.id, 'starter', value)}
+                    placeholder="Optional starter cue"
+                    placeholderTextColor={colors.textSecondary}
+                  />
+
+                  <GoalDatePicker
+                    title="Estimated finish date"
+                    summaryLabel={`Selected date: ${formatGoalDateParts(step.dateParts)}`}
+                    helperText="Format: MM-DD-YYYY"
+                    accessibilityPrefix={`draft step ${index + 1}`}
+                    dateParts={step.dateParts}
+                    activeField={step.activeDateField}
+                    optionsByField={{
+                      month: MONTH_OPTIONS.map((option) => ({
+                        value: option.value,
+                        label: option.label,
+                      })),
+                      day: getDayOptions(step.dateParts.month, step.dateParts.year).map((day) => ({
+                        value: day,
+                        label: formatTwoDigits(day),
+                      })),
+                      year: yearOptions.map((year) => ({ value: year, label: String(year) })),
+                    }}
+                    onToggleField={(field) => toggleDraftStepDateField(step.id, field)}
+                    onSelectField={(field, value) =>
+                      updateDraftStepDateField(step.id, field, value)
+                    }
+                  />
+                </AppCard>
+              ))}
+
+              <AppButton
+                label="Add Another Step"
+                variant="secondary"
+                accessibilityLabel="Add another draft step"
+                onPress={() =>
+                  setDraftSteps((current) => [
+                    ...current,
+                    makeEmptyDraftStep(current.length + 1, today),
+                  ])
+                }
+              />
+            </View>
+          ) : null}
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+          <View style={styles.actionRow}>
+            {canGoBack ? (
+              <AppButton
+                label="Back"
+                variant="secondary"
+                accessibilityLabel="Back"
+                onPress={() => setWizardIndex((current) => Math.max(0, current - 1))}
+                style={styles.actionButton}
+              />
+            ) : null}
+
+            {wizardIndex < WIZARD_TITLES.length - 1 ? (
+              <AppButton
+                label="Continue"
+                accessibilityLabel="Continue"
+                onPress={handleNext}
+                style={styles.actionButton}
+              />
+            ) : (
+              <AppButton
+                label="Save Goal"
+                accessibilityLabel="Save goal"
+                onPress={handleSave}
+                loading={saving}
+                loadingLabel="Saving..."
+                style={styles.actionButton}
+              />
+            )}
+          </View>
+        </ScrollView>
+      </AppModal>
+      <AppModal
+        visible={regenerationConfirmationVisible}
+        title="Regenerate AI Draft?"
+        closeLabel="Keep Current Draft"
+        onClose={() => setRegenerationConfirmationVisible(false)}
+      >
+        <View style={styles.confirmationContent}>
+          <Text style={styles.cardBody}>
+            Regenerating uses 1 AI credit and replaces the current milestones and steps. Review or
+            edit your goal details first if the current draft needs clearer direction.
+          </Text>
+          <AppButton
+            label="Use 1 Credit and Regenerate"
+            accessibilityLabel="Confirm AI goal plan regeneration"
+            onPress={() => void handleGenerateAiPlan()}
+            disabled={aiGenerating}
+          />
+          <AppButton
+            label="Edit Goal Details"
+            variant="secondary"
+            accessibilityLabel="Edit goal details from regeneration confirmation"
+            onPress={() => {
+              setRegenerationConfirmationVisible(false);
+              setWizardIndex(1);
+            }}
+          />
+          <AppButton
+            label="Keep Current Draft"
+            variant="secondary"
+            accessibilityLabel="Cancel AI goal plan regeneration"
+            onPress={() => setRegenerationConfirmationVisible(false)}
+          />
         </View>
-      </ScrollView>
-    </AppModal>
+      </AppModal>
+    </>
   );
 }
 
@@ -730,6 +808,14 @@ const styles = StyleSheet.create({
     ...typography.helper,
     color: colors.textPrimary,
     lineHeight: 20,
+  },
+  regenerationGuidance: {
+    ...typography.helper,
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
+  confirmationContent: {
+    gap: spacing.md,
   },
   disabledBadge: {
     alignSelf: 'flex-start',
