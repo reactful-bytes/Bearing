@@ -279,12 +279,12 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M16.8f  | completed   | Refresh balance after generation              | Success/refund consistency                                   |
 | M16.8g  | completed   | Test client behavior                          | Balance, retry, errors, manual fallback                      |
 | M16.8h  | in-progress | Validate web parity                           | Static build and authenticated smoke                         |
-| M16.9   | not-started | Complete observability, docs, and rollout     | Operations and staging evidence                              |
-| M16.9a  | not-started | Add quota-safe events                         | No prompts, drafts, tokens, or keys                          |
-| M16.9b  | not-started | Reconcile architecture/privacy docs           | Auth/quota/App Check deferral current                        |
-| M16.9c  | not-started | Deploy Functions before clients               | Compatible quota enforcement                                 |
-| M16.9d  | not-started | Configure Firestore TTL                       | Temporary plans only                                         |
-| M16.9e  | not-started | Run staging native/web acceptance             | Full ownership/quota/privacy matrix                          |
+| M16.9   | in-progress | Complete observability, docs, and rollout     | Operations and staging evidence                              |
+| M16.9a  | completed   | Add quota-safe events                         | No prompts, drafts, tokens, or keys                          |
+| M16.9b  | completed   | Reconcile architecture/privacy docs           | Auth/quota/App Check deferral current                        |
+| M16.9c  | in-progress | Deploy Functions before clients               | Compatible quota enforcement                                 |
+| M16.9d  | in-progress | Configure Firestore TTL                       | Temporary plans only                                         |
+| M16.9e  | in-progress | Run staging native/web acceptance             | Full ownership/quota/privacy matrix                          |
 
 ### M17 - Cross-Platform App Check Defense In Depth
 

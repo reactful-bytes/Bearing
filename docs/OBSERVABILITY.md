@@ -2,8 +2,8 @@
 
 ## Scope
 
-Bearing emits optional product outcome events through the App Check-protected
-`recordTelemetryEvent` callable. Consent is device-local, defaults off, and can be changed under
+Bearing emits optional product outcome events through the authenticated `recordTelemetryEvent`
+callable. Consent is device-local, defaults off, and can be changed under
 Profile > Privacy. Consent is scoped to the signed-in account on that installation. The client and
 server independently enforce the same event and property allowlist.
 
@@ -74,6 +74,12 @@ resource.labels.service_name="deleteuseraccount"
 jsonPayload.message="account_deletion_result"
 ```
 
+AI credit accounting emits consent-independent `ai_credit_operation` records from
+`generateGoalPlanDraft`, `getAiCreditStatus`, and RevenueCat reconciliation. Allowed fields are
+`operation` (`grant`, `reserve`, `finalize`, or `refund`), fixed `outcome`, and numeric `credits`.
+These records must not add UID, request ID, fingerprint, prompt, draft, product ID, token, or raw
+error fields.
+
 ## Dashboards
 
 Create one product dashboard and one reliability dashboard in the production project.
@@ -95,7 +101,7 @@ Reliability dashboard:
 2. Function instance count, cold starts, and max-instance saturation.
 3. AI outcome failures and `generateGoalPlanDraft` latency.
 4. Firestore read/write/error metrics and quota utilization.
-5. App Check invalid-request metrics.
+5. AI credit grant/reserve/finalize/refund outcomes, exhaustion, and stale-lease recovery.
 6. Backup workflow recency and billing-budget status.
 7. Account deletion success rate from the server operational event.
 8. RevenueCat webhook 4xx/5xx, latency, and duplicate-delivery trend.
@@ -118,7 +124,7 @@ minimum volume protects against noisy percentages.
 | Premium activation delayed        | at least 5%                      | 30 minutes | 20 outcomes    | page         |
 | RevenueCat webhook 5xx            | greater than 2%                  | 10 minutes | 10 requests    | page         |
 | Account deletion failure          | at least 3 failures              | 60 minutes | 3 outcomes     | page         |
-| App Check rejection spike         | greater than 25 requests         | 10 minutes | 25 requests    | warning      |
+| AI credit exhaustion spike        | greater than 25 requests         | 10 minutes | 25 requests    | warning      |
 | Firestore quota                   | at least 80%                     | 15 minutes | not applicable | warning      |
 | Daily backup missing              | no successful export in 30 hours | rolling    | not applicable | page         |
 | Monthly cloud spend               | 50%, 80%, 100% of budget         | monthly    | not applicable | warning/page |
@@ -138,7 +144,8 @@ Optional telemetry is consent-dependent. Never alert on an absence or decline of
 ## Activation Handoff
 
 Repository implementation is complete when mobile and Functions tests pass. The release owner must
-still deploy Functions, enable App Check enforcement, create log-based metrics, dashboards, budget
-alerts, and notification channels in staging first, then production. Record screenshots or exported
+still deploy Functions, configure AI plan TTL, create log-based metrics, dashboards, budget alerts,
+and notification channels in staging first, then production. App Check remains deferred to M17 and
+must not be enforced before coordinated native/web token acceptance. Record screenshots or exported
 policies plus one synthetic alert delivery in the release evidence folder. Credentials and live
 cloud-console acceptance are intentionally outside repository automation.

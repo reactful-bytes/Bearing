@@ -125,12 +125,11 @@ store privacy questionnaires.
 
 ## 5. Close Repository and Security Blockers
 
-- [ ] **Programmatic - Both:** Initialize native production App Check in the mobile app and add the
-      required platform provider/configuration path. Functions enforce App Check, while the mobile
-      source currently has no App Check initialization; do not ship until authenticated callables
-      succeed from signed builds and invalid clients are rejected.
-- [ ] **Programmatic - Both:** Add tests or a bounded staging probe for App Check initialization,
-      `backendStatus`, AI generation, telemetry, export, and account deletion.
+- [ ] **Programmatic - Both:** Complete M17's coordinated native/web App Check implementation only
+      after M16 is stable. Ship token-capable clients and review metrics before enabling callable
+      enforcement; Auth, ownership, and quota checks remain mandatory.
+- [ ] **Programmatic - Both:** Add bounded staging probes for `backendStatus`, AI credit status and
+      generation, telemetry, export, and account deletion on native and web.
 - [ ] **Programmatic - Both:** Run `eas init` from `mobile/`, review the generated EAS project link in
       `mobile/app.config.ts`, and keep app slug, owner, bundle ID, and package consistent.
 - [ ] **Programmatic - Both:** Confirm `mobile/app.config.ts` contains the approved marketing
@@ -178,13 +177,15 @@ manifest review, commit SHA, and lockfile hashes.
       controls, authorized domains, support email, password policy, and account-email templates.
 - [ ] **Manual - Both:** Register signed Apple and Android apps with Firebase App Check using the
       approved platform providers; validate tokens before enabling enforcement.
-- [ ] **Manual - Both:** Set production managed secrets for `GEMINI_API_KEY`,
+- [ ] **Manual - Both:** Set production Functions environment values for `GEMINI_API_KEY`,
       `REVENUECAT_SECRET_API_KEY`, `REVENUECAT_WEBHOOK_AUTHORIZATION`, and
-      `REVENUECAT_WEBHOOK_SIGNING_SECRET`. Use separate staging and production values.
+      `REVENUECAT_WEBHOOK_SIGNING_SECRET` in the ignored deployment environment. Use separate
+      staging and production values and migrate to managed secrets only as a separately reviewed
+      change.
 - [ ] **Programmatic - Both:** Deploy reviewed Firestore rules, indexes, and Functions from the
       candidate source. Wait for every required index to become enabled.
-- [ ] **Manual - Both:** Enforce App Check for production callable endpoints after signed-build
-      success, and restrict Firebase/Google Cloud IAM to named operators.
+- [ ] **Manual - Both:** Keep App Check enforcement disabled until M17's native/web token and metric
+      gates pass, and restrict Firebase/Google Cloud IAM to named operators.
 - [ ] **Manual - Both:** Set Functions quotas/max-instance expectations, Gemini quota and safety
       settings, cloud budgets, billing alerts, and emergency spend thresholds.
 - [ ] **Manual - Both:** Create product and reliability dashboards, log-based metrics, two

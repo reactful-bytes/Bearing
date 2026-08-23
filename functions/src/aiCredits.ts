@@ -1,4 +1,5 @@
 import { Timestamp, getFirestore } from "firebase-admin/firestore";
+import { logger } from "firebase-functions/logger";
 import { HttpsError } from "firebase-functions/v2/https";
 
 export const AI_CREDITS_PER_BILLING_MONTH = 10;
@@ -68,6 +69,14 @@ export type AiCreditTransactionRunner = <T>(
   userId: string,
   operation: (transaction: AiCreditTransaction) => Promise<T>,
 ) => Promise<T>;
+
+function logCreditOperation(
+  operation: "grant" | "reserve" | "finalize" | "refund",
+  outcome: string,
+  credits: number,
+): void {
+  logger.info("ai_credit_operation", { operation, outcome, credits });
+}
 
 function isValidDate(value: Date): boolean {
   return !Number.isNaN(value.getTime());
@@ -250,6 +259,7 @@ export async function reconcileAiCredits(
         billingAt: lastGrantedBillingAt,
         createdAt: now,
       });
+      logCreditOperation("grant", "bootstrap", AI_CREDITS_PER_BILLING_MONTH);
       return account;
     }
 
@@ -288,6 +298,7 @@ export async function reconcileAiCredits(
         createdAt: now,
       });
     }
+    if (granted > 0) logCreditOperation("grant", "anniversary", granted);
     return account;
   });
 }
@@ -311,6 +322,7 @@ export async function reserveAiCredit(
   return runTransaction(userId, async (transaction) => {
     let account = await transaction.getAccount();
     if (!account || account.userId !== userId) {
+      logCreditOperation("reserve", "exhausted", 0);
       throw new HttpsError(
         "resource-exhausted",
         "No AI planning credits remain.",
@@ -330,6 +342,7 @@ export async function reserveAiCredit(
         );
       }
       if (existingPlan.state === "completed") {
+        logCreditOperation("reserve", "replay", 0);
         return {
           kind: "replay",
           availableCredits: account.availableCredits,
@@ -340,6 +353,7 @@ export async function reserveAiCredit(
         existingPlan.state === "reserved" &&
         existingPlan.leaseExpiresAt.getTime() > now.getTime()
       ) {
+        logCreditOperation("reserve", "concurrent", 0);
         throw new HttpsError(
           "aborted",
           "AI planning is already in progress for this request.",
@@ -353,6 +367,7 @@ export async function reserveAiCredit(
         activePlan?.state === "reserved" &&
         activePlan.leaseExpiresAt.getTime() > now.getTime()
       ) {
+        logCreditOperation("reserve", "concurrent", 0);
         throw new HttpsError(
           "aborted",
           "Another AI plan is already being generated.",
@@ -363,6 +378,7 @@ export async function reserveAiCredit(
           activePlan.requestId,
           refundedPlan(activePlan, now),
         );
+        logCreditOperation("refund", "expired_lease", 1);
       }
       account = {
         ...account,
@@ -375,6 +391,7 @@ export async function reserveAiCredit(
     }
 
     if (account.availableCredits < 1) {
+      logCreditOperation("reserve", "exhausted", 0);
       throw new HttpsError(
         "resource-exhausted",
         "No AI planning credits remain.",
@@ -404,6 +421,7 @@ export async function reserveAiCredit(
     assertValidAccount(account);
     transaction.setAccount(account);
     transaction.setPlan(requestId, plan);
+    logCreditOperation("reserve", "success", 1);
     return { kind: "reserved", availableCredits: account.availableCredits };
   });
 }
@@ -446,6 +464,7 @@ export async function finalizeAiCredit(
       completedAt: now,
       draft,
     });
+    logCreditOperation("finalize", "success", 1);
     return updated.availableCredits;
   });
 }
@@ -479,6 +498,7 @@ export async function refundAiCredit(
     assertValidAccount(updated);
     transaction.setAccount(updated);
     transaction.setPlan(requestId, refundedPlan(plan, now));
+    logCreditOperation("refund", "failure", 1);
   });
 }
 

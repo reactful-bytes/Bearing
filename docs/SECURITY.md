@@ -1,13 +1,14 @@
 # Security Baseline
 
-Last reviewed: 2026-07-31
+Last reviewed: 2026-08-22
 
 ## Firestore Authorization
 
 The repository-root `firestore.rules` file is authoritative. It enforces authenticated ownership for
 events, notes, goals, goal steps, and tasks; prevents ownership transfer during updates; limits user
 profile updates to client-owned preferences; keeps premium entitlement and subscription writes
-server-owned; and denies unknown collections by default.
+server-owned; explicitly denies client access to AI credit authority; and denies unknown
+collections by default.
 
 Run the authorization suite from `mobile/` with Node 24, npm 11, and Java 21:
 
@@ -15,7 +16,7 @@ Run the authorization suite from `mobile/` with Node 24, npm 11, and Java 21:
 npm run test:rules
 ```
 
-CI runs the same 14-case suite whenever mobile or Firestore configuration changes.
+CI runs the same 17-case suite whenever mobile or Firestore configuration changes.
 
 ## Secrets
 
@@ -24,9 +25,11 @@ CI runs the same 14-case suite whenever mobile or Firestore configuration change
 - Firebase web configuration and other `EXPO_PUBLIC_*` values are client-visible identifiers, not a
   secret-storage mechanism.
 - Service-account keys, billing secrets, AI provider keys, webhook secrets, and private API tokens
-  must live in managed server/CI secret storage and must never use an `EXPO_PUBLIC_*` name.
-- The AI callable reads `GEMINI_API_KEY` only through Firebase Functions managed secret binding. Do
-  not add this value to mobile configuration, local tracked files, or CI logs.
+  must remain in ignored server environment files or approved server/CI secret storage and must
+  never use an `EXPO_PUBLIC_*` name.
+- Functions currently bind `GEMINI_API_KEY` and RevenueCat values with `defineString`; Firebase CLI
+  loads them from ignored `functions/.env` files during deployment. Do not add these values to
+  mobile configuration, tracked files, or CI logs.
 - The 2026-07-31 tracked-file scan found no private-key, client-secret, refresh-token, Stripe-key, or
   Firebase-key patterns.
 
@@ -42,15 +45,16 @@ Review these findings during each Expo SDK upgrade. Keep `npx expo install --che
 
 ## Server Controls
 
-Firebase Functions derive premium authorization from `subscriptions/{uid}` after Auth and App Check
-verification. AI generation uses that server gate, managed secret binding, bounded structured
-output, and sanitized provider failures. Billing reconciliation, export, and account deletion must
-use the same Admin SDK authorization boundary.
+Firebase Functions require Firebase Auth and derive every target user from `request.auth.uid`.
+Premium authorization comes from `subscriptions/{uid}`. AI generation additionally uses
+server-owned rolling credits, one active reservation per user, idempotent request IDs, bounded
+structured output, success-only charging, and sanitized provider failures. Billing reconciliation,
+export, and account deletion use the same Admin SDK ownership boundary.
 
-App Check is enforced by the callable. Native App Check provider registration and deployed-device
-acceptance remain required before production rollout.
+App Check is not currently enforced. It is deferred to M17 as defense in depth and must not be
+partially enabled until native and web clients can both send valid tokens and rollout metrics have
+been reviewed. Auth, ownership checks, Premium authorization, recent deletion reauthentication,
+and quotas remain mandatory regardless of future App Check deployment.
 
-Firebase currently supports Node 22 as its newest Functions deployment runtime. The Functions
-package is therefore deployed with `nodejs22` while its local and CI quality gate also runs on the
-repository's Node 24 LTS baseline. Do not change the deployment runtime to Node 24 until Firebase
-lists it as supported.
+Functions and the repository quality gates use Node 24. The authoritative deployment runtime is
+`nodejs24` in `firebase.json`.

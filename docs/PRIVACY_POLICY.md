@@ -35,7 +35,7 @@ Device-local information includes selected calendar IDs, a writable default cale
 links to published system-calendar copies, and the account-scoped diagnostics preference. Exported
 JSON and ICS files may remain in app cache, downloads, or destinations chosen by the user.
 
-Operational data includes App Check and authentication results, function request metadata,
+Operational data includes authentication results, function request metadata,
 security and reliability logs, and, only after opt-in, finite product outcome events. Standard
 cloud request logs may contain IP address, user agent, timestamps, trace identifiers, and service
 metadata.
@@ -67,10 +67,12 @@ copy that is no longer reachable on the device or in an external calendar accoun
 ## AI Goal Planning
 
 For an eligible user who requests AI assistance, Bearing sends the goal title, description, and
-target date through an App Check-protected Firebase Function to Google Gemini. Bearing validates the
-response and presents an editable draft. No generated fields are saved until the user approves the
-plan. Bearing does not create a separate database of rejected or failed drafts. Users should avoid
-including sensitive information that is unnecessary for planning.
+target date through an authenticated Firebase Function to Google Gemini. Bearing validates the
+response and presents an editable draft. A server-owned credit account and grant history record
+usage totals and billing anniversaries. A successful draft may be cached in a temporary retry record
+for up to 24 hours so a repeated request can return without another charge. Failed requests do not
+retain a generated draft. No generated fields become goal content until the user approves and saves
+the plan. Users should avoid including sensitive information that is unnecessary for planning.
 
 AI output can be inaccurate and is not medical, legal, financial, emergency, or other professional
 advice.
@@ -87,7 +89,7 @@ events to advertising or data-broker systems.
 
 ## Sharing and Processors
 
-Bearing uses Google Firebase for authentication, Firestore, Functions, App Check, backups, and
+Bearing uses Google Firebase for authentication, Firestore, Functions, backups, and
 operational logging; Google Gemini for requested AI generation; RevenueCat for purchase and
 entitlement reconciliation; Apple and Google for distribution and billing; and GitHub for source
 and release automation. The authoritative purpose, data, configuration, retention, and approval
@@ -101,6 +103,8 @@ international-transfer mechanisms and processor agreements before launch.
 
 - Active account content remains until the user deletes it or the service applies an approved
   inactivity policy.
+- AI credit balances and grant history remain with the account and do not expire. Temporary AI plan
+  retry records target automatic deletion 24 hours after creation.
 - After recent verification, a successful deletion request removes the RevenueCat customer record,
   active Firestore records, and Firebase Authentication. It does not cancel the separate Apple or
   Google subscription. The current installation then attempts to purge account-scoped calendar
@@ -133,9 +137,10 @@ does not affect earlier lawful processing.
 
 ## Security and Children
 
-Bearing uses Firebase Authentication, App Check, owner-scoped Firestore rules, server-owned
-entitlements, least-privilege access, secret management, validation, and encrypted provider
-transport. No system is completely secure; users should use a unique password and protect their
+Bearing uses Firebase Authentication, owner-scoped Firestore rules, server-owned entitlements and
+AI credits, least-privilege access, server configuration controls, validation, and encrypted
+provider transport. App Check is planned as future defense in depth after coordinated native and web
+support. No system is completely secure; users should use a unique password and protect their
 device.
 
 Bearing is not directed to children below the release-approved minimum age and does not knowingly

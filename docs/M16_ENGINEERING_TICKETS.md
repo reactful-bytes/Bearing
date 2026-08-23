@@ -117,11 +117,11 @@ M16.1 -> M16.2 -> M16.3 -> M16.4 -> M16.5. M16.6 and M16.7 may proceed after M16
 
 | Ticket | Status      | Deliverable                             | Acceptance                                                                            |
 | ------ | ----------- | --------------------------------------- | ------------------------------------------------------------------------------------- |
-| M16.9a | not-started | Add quota-safe operational events       | Grant/reserve/finalize/refund/exhaustion outcomes exclude sensitive content           |
-| M16.9b | not-started | Reconcile architecture and privacy docs | Current docs accurately describe Auth, quota, retention, web, and App Check deferral  |
-| M16.9c | not-started | Deploy Functions before clients         | Quota-enforced compatible Functions are deployed first                                |
-| M16.9d | not-started | Configure Firestore TTL                 | Only temporary `aiPlans.expiresAt` records use TTL                                    |
-| M16.9e | not-started | Run staging native/web acceptance       | Ownership, quota, retries, subscription states, privacy, and web parity are evidenced |
+| M16.9a | completed   | Add quota-safe operational events       | Grant/reserve/finalize/refund/exhaustion outcomes exclude sensitive content           |
+| M16.9b | completed   | Reconcile architecture and privacy docs | Current docs accurately describe Auth, quota, retention, web, and App Check deferral  |
+| M16.9c | in-progress | Deploy Functions before clients         | Quota-enforced compatible Functions are deployed first                                |
+| M16.9d | in-progress | Configure Firestore TTL                 | Only temporary `aiPlans.expiresAt` records use TTL                                    |
+| M16.9e | in-progress | Run staging native/web acceptance       | Ownership, quota, retries, subscription states, privacy, and web parity are evidenced |
 
 ## Validation Gates
 

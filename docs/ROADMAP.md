@@ -190,7 +190,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M16.6   | completed   | Integrate RevenueCat paid periods                  | Active renewals accrue; grace/inactive states preserve balances without grants                    |
 | M16.7   | completed   | Complete credit privacy and authorization          | Export/deletion remain caller-scoped and quota collections remain server-owned                    |
 | M16.8   | in-progress | Add shared native and web credit UX                | Both platforms show and enforce the same balance, errors, retries, and manual fallback            |
-| M16.9   | not-started | Complete observability, documentation, and rollout | Safe operations, TTL, deployment, and native/web staging evidence are recorded                    |
+| M16.9   | in-progress | Complete observability, documentation, and rollout | Safe operations, TTL, deployment, and native/web staging evidence are recorded                    |
 
 ### M17 - Cross-Platform App Check Defense In Depth
 

@@ -227,26 +227,65 @@ Notes:
 
 ### aiPlans
 
-Document ID: aiPlanId
+Document ID: encoded userId plus request UUID
 
 Fields:
 
 - userId: string
-- goalId: string
-- promptVersion: number
-- modelId: string
-- inputGoalText: string
-- outputPlan:
-  - milestones: array
-  - steps: array
-  - timelineSummary: string
-- status: enum (generated, accepted, rejected, failed)
-- errorCode: string | null
+- requestId: UUID string
+- inputFingerprint: SHA-256 string
+- state: enum (reserved, completed, refunded)
+- reservedAt: timestamp
+- leaseExpiresAt: timestamp
+- completedAt: timestamp or null
+- draft: validated generated draft or null
+- expiresAt: timestamp
+
+Notes:
+
+- Server-only temporary reservation and retry record. Raw goal input is not stored.
+- Successful validated output supports idempotent replay without another charge.
+- Firestore TTL targets `expiresAt` 24 hours after reservation.
+
+### aiCreditAccounts
+
+Document ID: userId
+
+Fields:
+
+- userId: string
+- availableCredits: non-negative integer
+- reservedCredits: non-negative integer
+- totalGranted: non-negative integer
+- totalConsumed: non-negative integer
+- accrualStartedAt: timestamp
+- lastGrantedBillingAt: timestamp
+- activeReservationId: string or null
+- reservationExpiresAt: timestamp or null
+- createdAt: timestamp
+- updatedAt: timestamp
+
+Notes:
+
+- Server-only rolling balance; clients use authenticated callables for status and generation.
+- Available, reserved, and consumed totals must equal total granted.
+- Credits do not expire and balances remain stored across Premium lapses.
+
+### aiCreditGrants
+
+Document ID: deterministic user/bootstrap or user/billing-anniversary receipt
+
+Fields:
+
+- userId: string
+- amount: positive integer
+- billingAt: timestamp
 - createdAt: timestamp
 
 Notes:
 
-- Keep output editable by user before final commit to goals and steps.
+- Server-only idempotency receipt for rollout bootstrap and billing-anniversary grants.
+- Grant history remains until account deletion.
 
 ## Suggested Firestore Security Rules (High Level)
 
@@ -280,8 +319,8 @@ Notes:
 
 ## AI Draft Retention
 
-- Goal-plan requests and rejected/failed drafts are transient and are not stored in a dedicated
-  Firestore collection.
+- Goal-plan request metadata and successful validated drafts may remain in server-only `aiPlans`
+  for up to 24 hours to support reservations and idempotent retries. Failed records contain no draft.
 - Approved generated fields are stored only as editable goal, milestone, and step records.
 - Provider request handling and retention must be verified in the release processor review.
 
