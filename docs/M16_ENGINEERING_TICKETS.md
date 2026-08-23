@@ -71,16 +71,16 @@ M16.1 -> M16.2 -> M16.3 -> M16.4 -> M16.5. M16.6 and M16.7 may proceed after M16
 
 ## M16.5 Metered and Idempotent Generation
 
-| Ticket | Status      | Deliverable                            | Acceptance                                                                                         |
-| ------ | ----------- | -------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| M16.5a | not-started | Add request IDs and input fingerprints | Valid client UUIDs work; old clients receive server IDs; raw prompts are not stored                |
-| M16.5b | not-started | Reserve one credit                     | Transaction rejects zero/concurrency and moves one available credit to reserved                    |
-| M16.5c | not-started | Finalize successful generation         | Valid output consumes the reservation and returns the updated balance                              |
-| M16.5d | not-started | Refund failed generation               | Provider, JSON, and schema failures restore the reservation before returning                       |
-| M16.5e | not-started | Recover expired reservations           | Expired leases refund once; active leases cannot be stolen                                         |
-| M16.5f | not-started | Make retries idempotent                | Matching replay returns cached success without another charge; mismatch is rejected                |
-| M16.5g | not-started | Add temporary plan expiry              | Temporary request records receive a 24-hour `expiresAt` value                                      |
-| M16.5h | not-started | Cover generation accounting            | Tests cover success, zero, concurrency, refunds, stale lease, replay, compatibility, and isolation |
+| Ticket | Status    | Deliverable                            | Acceptance                                                                                         |
+| ------ | --------- | -------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| M16.5a | completed | Add request IDs and input fingerprints | Valid client UUIDs work; old clients receive server IDs; raw prompts are not stored                |
+| M16.5b | completed | Reserve one credit                     | Transaction rejects zero/concurrency and moves one available credit to reserved                    |
+| M16.5c | completed | Finalize successful generation         | Valid output consumes the reservation and returns the updated balance                              |
+| M16.5d | completed | Refund failed generation               | Provider, JSON, and schema failures restore the reservation before returning                       |
+| M16.5e | completed | Recover expired reservations           | Expired leases refund once; active leases cannot be stolen                                         |
+| M16.5f | completed | Make retries idempotent                | Matching replay returns cached success without another charge; mismatch is rejected                |
+| M16.5g | completed | Add temporary plan expiry              | Temporary request records receive a 24-hour `expiresAt` value                                      |
+| M16.5h | completed | Cover generation accounting            | Tests cover success, zero, concurrency, refunds, stale lease, replay, compatibility, and isolation |
 
 ## M16.6 RevenueCat Accrual Integration
 

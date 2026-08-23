@@ -5,7 +5,10 @@ import { onCall, onRequest } from "firebase-functions/v2/https";
 import { setGlobalOptions } from "firebase-functions/v2/options";
 
 import { getBackendStatus } from "./status";
-import { generateGoalPlanDraft as generateGoalPlanDraftHandler } from "./aiGoalPlan";
+import {
+  firestoreGoalPlanMeter,
+  generateGoalPlanDraft as generateGoalPlanDraftHandler,
+} from "./aiGoalPlan";
 import { getAiCreditStatus as getAiCreditStatusHandler } from "./aiCreditStatus";
 import { createGeminiGoalPlanGenerator } from "./geminiGoalPlan";
 import {
@@ -113,6 +116,8 @@ export const generateGoalPlanDraft = onCall(
     generateGoalPlanDraftHandler(
       request,
       createGeminiGoalPlanGenerator(geminiApiKey.value()),
+      undefined,
+      firestoreGoalPlanMeter,
     ),
 );
 

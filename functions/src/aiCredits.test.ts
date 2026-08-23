@@ -1,15 +1,22 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+
+import { HttpsError } from "firebase-functions/v2/https";
 import {
   AI_CREDITS_PER_BILLING_MONTH,
+  AI_PLAN_TTL_MS,
   AiCreditAccount,
   AiCreditGrant,
   AiCreditTransactionRunner,
+  AiPlanReservation,
   getBillingAnniversary,
   getDueBillingAnniversaries,
   getLatestBillingAnniversary,
   getNextBillingAnniversary,
+  finalizeAiCredit,
   reconcileAiCredits,
+  refundAiCredit,
+  reserveAiCredit,
 } from "./aiCredits";
 
 const utc = (value: string): Date => new Date(value);
@@ -20,9 +27,11 @@ function createMemoryRunner(initialAccount?: AiCreditAccount): {
   run: AiCreditTransactionRunner;
   accounts: Map<string, AiCreditAccount>;
   grants: Map<string, AiCreditGrant>;
+  plans: Map<string, AiPlanReservation>;
 } {
   const accounts = new Map<string, AiCreditAccount>();
   const grants = new Map<string, AiCreditGrant>();
+  const plans = new Map<string, AiPlanReservation>();
   if (initialAccount) accounts.set(initialAccount.userId, initialAccount);
   let queue = Promise.resolve();
 
@@ -36,27 +45,36 @@ function createMemoryRunner(initialAccount?: AiCreditAccount): {
 
     let stagedAccount: AiCreditAccount | undefined;
     const stagedGrants = new Map<string, AiCreditGrant>();
+    const stagedPlans = new Map<string, AiPlanReservation>();
     try {
       const result = await operation({
         getAccount: async () => accounts.get(userId) ?? null,
         hasGrant: async (grantId) =>
           grants.has(grantId) || stagedGrants.has(grantId),
+        getPlan: async (requestId) =>
+          stagedPlans.get(`${userId}:${requestId}`) ??
+          plans.get(`${userId}:${requestId}`) ??
+          null,
         setAccount: (account) => {
           stagedAccount = account;
         },
         setGrant: (grantId, grant) => {
           stagedGrants.set(grantId, grant);
         },
+        setPlan: (requestId, plan) => {
+          stagedPlans.set(`${userId}:${requestId}`, plan);
+        },
       });
       if (stagedAccount) accounts.set(userId, stagedAccount);
       for (const [grantId, grant] of stagedGrants) grants.set(grantId, grant);
+      for (const [requestId, plan] of stagedPlans) plans.set(requestId, plan);
       return result;
     } finally {
       release();
     }
   };
 
-  return { run, accounts, grants };
+  return { run, accounts, grants, plans };
 }
 
 function account(overrides: Partial<AiCreditAccount> = {}): AiCreditAccount {
@@ -306,6 +324,150 @@ describe("reconcileAiCredits", () => {
         memory.run,
       ),
       /account is invalid/,
+    );
+  });
+});
+
+describe("AI credit reservations", () => {
+  const now = utc("2026-02-15T00:00:00.000Z");
+
+  it("reserves and consumes exactly one credit after finalization", async () => {
+    const memory = createMemoryRunner(account());
+    const reserved = await reserveAiCredit(
+      "user-1",
+      "request-1",
+      "fingerprint-1",
+      now,
+      memory.run,
+    );
+    assert.deepEqual(reserved, { kind: "reserved", availableCredits: 9 });
+    assert.equal(memory.accounts.get("user-1")?.reservedCredits, 1);
+
+    const balance = await finalizeAiCredit(
+      "user-1",
+      "request-1",
+      { promptVersion: 1 },
+      now,
+      memory.run,
+    );
+    assert.equal(balance, 9);
+    assert.equal(memory.accounts.get("user-1")?.totalConsumed, 1);
+    assert.equal(memory.accounts.get("user-1")?.reservedCredits, 0);
+  });
+
+  it("rejects zero balance and an active concurrent reservation", async () => {
+    const empty = createMemoryRunner(
+      account({ availableCredits: 0, totalGranted: 1, totalConsumed: 1 }),
+    );
+    await assert.rejects(
+      reserveAiCredit("user-1", "request-1", "fingerprint", now, empty.run),
+      (error: unknown) =>
+        error instanceof HttpsError && error.code === "resource-exhausted",
+    );
+
+    const memory = createMemoryRunner(account());
+    await reserveAiCredit(
+      "user-1",
+      "request-1",
+      "fingerprint-1",
+      now,
+      memory.run,
+    );
+    await assert.rejects(
+      reserveAiCredit("user-1", "request-2", "fingerprint-2", now, memory.run),
+      (error: unknown) =>
+        error instanceof HttpsError && error.code === "aborted",
+    );
+  });
+
+  it("refunds failures once", async () => {
+    const memory = createMemoryRunner(account());
+    await reserveAiCredit(
+      "user-1",
+      "request-1",
+      "fingerprint",
+      now,
+      memory.run,
+    );
+    await refundAiCredit("user-1", "request-1", now, memory.run);
+    await refundAiCredit("user-1", "request-1", now, memory.run);
+
+    assert.equal(memory.accounts.get("user-1")?.availableCredits, 10);
+    assert.equal(memory.accounts.get("user-1")?.reservedCredits, 0);
+    assert.equal(memory.plans.get("user-1:request-1")?.state, "refunded");
+  });
+
+  it("recovers an expired lease before reserving a new request", async () => {
+    const memory = createMemoryRunner(account());
+    await reserveAiCredit(
+      "user-1",
+      "stale-request",
+      "stale-fingerprint",
+      now,
+      memory.run,
+    );
+    const later = new Date(now.getTime() + 3 * 60 * 1000);
+    const result = await reserveAiCredit(
+      "user-1",
+      "new-request",
+      "new-fingerprint",
+      later,
+      memory.run,
+    );
+
+    assert.deepEqual(result, { kind: "reserved", availableCredits: 9 });
+    assert.equal(memory.plans.get("user-1:stale-request")?.state, "refunded");
+  });
+
+  it("replays completed matching requests and rejects mismatches", async () => {
+    const memory = createMemoryRunner(account());
+    await reserveAiCredit(
+      "user-1",
+      "request-1",
+      "fingerprint",
+      now,
+      memory.run,
+    );
+    await finalizeAiCredit(
+      "user-1",
+      "request-1",
+      { promptVersion: 1 },
+      now,
+      memory.run,
+    );
+    assert.deepEqual(
+      await reserveAiCredit(
+        "user-1",
+        "request-1",
+        "fingerprint",
+        now,
+        memory.run,
+      ),
+      {
+        kind: "replay",
+        availableCredits: 9,
+        draft: { promptVersion: 1 },
+      },
+    );
+    await assert.rejects(
+      reserveAiCredit("user-1", "request-1", "different", now, memory.run),
+      (error: unknown) =>
+        error instanceof HttpsError && error.code === "invalid-argument",
+    );
+  });
+
+  it("sets 24-hour expiry and isolates matching request IDs by user", async () => {
+    const memory = createMemoryRunner(account());
+    memory.accounts.set("user-2", account({ userId: "user-2" }));
+    await Promise.all([
+      reserveAiCredit("user-1", "same", "first", now, memory.run),
+      reserveAiCredit("user-2", "same", "second", now, memory.run),
+    ]);
+
+    assert.equal(memory.plans.size, 2);
+    assert.equal(
+      memory.plans.get("user-1:same")?.expiresAt.getTime(),
+      now.getTime() + AI_PLAN_TTL_MS,
     );
   });
 });

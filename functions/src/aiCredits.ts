@@ -1,4 +1,5 @@
 import { Timestamp, getFirestore } from "firebase-admin/firestore";
+import { HttpsError } from "firebase-functions/v2/https";
 
 export const AI_CREDITS_PER_BILLING_MONTH = 10;
 export const AI_RESERVATION_LEASE_MS = 2 * 60 * 1000;
@@ -57,8 +58,10 @@ export type AiCreditStatus = {
 export type AiCreditTransaction = {
   getAccount: () => Promise<AiCreditAccount | null>;
   hasGrant: (grantId: string) => Promise<boolean>;
+  getPlan: (requestId: string) => Promise<AiPlanReservation | null>;
   setAccount: (account: AiCreditAccount) => void;
   setGrant: (grantId: string, grant: AiCreditGrant) => void;
+  setPlan: (requestId: string, plan: AiPlanReservation) => void;
 };
 
 export type AiCreditTransactionRunner = <T>(
@@ -128,10 +131,45 @@ function accountFromStoredValue(value: unknown): AiCreditAccount {
   return account;
 }
 
+function planFromStoredValue(value: unknown): AiPlanReservation {
+  const record = (value ?? {}) as Record<string, unknown>;
+  const state = record.state;
+  if (
+    typeof record.userId !== "string" ||
+    typeof record.requestId !== "string" ||
+    typeof record.inputFingerprint !== "string" ||
+    (state !== "reserved" && state !== "completed" && state !== "refunded")
+  ) {
+    throw new Error("AI plan reservation is invalid.");
+  }
+
+  const plan: AiPlanReservation = {
+    userId: record.userId,
+    requestId: record.requestId,
+    inputFingerprint: record.inputFingerprint,
+    state,
+    reservedAt: dateFromStoredValue(record.reservedAt) ?? new Date(NaN),
+    leaseExpiresAt: dateFromStoredValue(record.leaseExpiresAt) ?? new Date(NaN),
+    completedAt: dateFromStoredValue(record.completedAt),
+    draft: record.draft ?? null,
+    expiresAt: dateFromStoredValue(record.expiresAt) ?? new Date(NaN),
+  };
+  if (
+    !isValidDate(plan.reservedAt) ||
+    !isValidDate(plan.leaseExpiresAt) ||
+    !isValidDate(plan.expiresAt)
+  ) {
+    throw new Error("AI plan reservation is invalid.");
+  }
+  return plan;
+}
+
 export const runFirestoreAiCreditTransaction: AiCreditTransactionRunner =
   async (userId, operation) => {
     const db = getFirestore();
     const accountRef = db.doc(`aiCreditAccounts/${userId}`);
+    const planRef = (requestId: string) =>
+      db.doc(`aiPlans/${encodeURIComponent(userId)}:${requestId}`);
 
     return db.runTransaction(async (firestoreTransaction) =>
       operation({
@@ -144,12 +182,22 @@ export const runFirestoreAiCreditTransaction: AiCreditTransactionRunner =
         hasGrant: async (grantId) =>
           (await firestoreTransaction.get(db.doc(`aiCreditGrants/${grantId}`)))
             .exists,
+        getPlan: async (requestId) => {
+          const snapshot = await firestoreTransaction.get(planRef(requestId));
+          return snapshot.exists ? planFromStoredValue(snapshot.data()) : null;
+        },
         setAccount: (account) => firestoreTransaction.set(accountRef, account),
         setGrant: (grantId, grant) =>
           firestoreTransaction.set(db.doc(`aiCreditGrants/${grantId}`), grant),
+        setPlan: (requestId, plan) =>
+          firestoreTransaction.set(planRef(requestId), plan),
       }),
     );
   };
+
+export type AiCreditReservationResult =
+  | { kind: "reserved"; availableCredits: number }
+  | { kind: "replay"; availableCredits: number; draft: unknown };
 
 function bootstrapGrantId(userId: string): string {
   return `${encodeURIComponent(userId)}:bootstrap`;
@@ -241,6 +289,196 @@ export async function reconcileAiCredits(
       });
     }
     return account;
+  });
+}
+
+function refundedPlan(plan: AiPlanReservation, now: Date): AiPlanReservation {
+  return {
+    ...plan,
+    state: "refunded",
+    completedAt: now,
+    draft: null,
+  };
+}
+
+export async function reserveAiCredit(
+  userId: string,
+  requestId: string,
+  inputFingerprint: string,
+  now = new Date(),
+  runTransaction: AiCreditTransactionRunner = runFirestoreAiCreditTransaction,
+): Promise<AiCreditReservationResult> {
+  return runTransaction(userId, async (transaction) => {
+    let account = await transaction.getAccount();
+    if (!account || account.userId !== userId) {
+      throw new HttpsError(
+        "resource-exhausted",
+        "No AI planning credits remain.",
+      );
+    }
+    assertValidAccount(account);
+
+    const existingPlan = await transaction.getPlan(requestId);
+    if (existingPlan) {
+      if (
+        existingPlan.userId !== userId ||
+        existingPlan.inputFingerprint !== inputFingerprint
+      ) {
+        throw new HttpsError(
+          "invalid-argument",
+          "The AI planning request ID was reused for different goal details.",
+        );
+      }
+      if (existingPlan.state === "completed") {
+        return {
+          kind: "replay",
+          availableCredits: account.availableCredits,
+          draft: existingPlan.draft,
+        };
+      }
+      if (
+        existingPlan.state === "reserved" &&
+        existingPlan.leaseExpiresAt.getTime() > now.getTime()
+      ) {
+        throw new HttpsError(
+          "aborted",
+          "AI planning is already in progress for this request.",
+        );
+      }
+    }
+
+    if (account.activeReservationId) {
+      const activePlan = await transaction.getPlan(account.activeReservationId);
+      if (
+        activePlan?.state === "reserved" &&
+        activePlan.leaseExpiresAt.getTime() > now.getTime()
+      ) {
+        throw new HttpsError(
+          "aborted",
+          "Another AI plan is already being generated.",
+        );
+      }
+      if (activePlan?.state === "reserved") {
+        transaction.setPlan(
+          activePlan.requestId,
+          refundedPlan(activePlan, now),
+        );
+      }
+      account = {
+        ...account,
+        availableCredits: account.availableCredits + account.reservedCredits,
+        reservedCredits: 0,
+        activeReservationId: null,
+        reservationExpiresAt: null,
+        updatedAt: now,
+      };
+    }
+
+    if (account.availableCredits < 1) {
+      throw new HttpsError(
+        "resource-exhausted",
+        "No AI planning credits remain.",
+      );
+    }
+
+    const leaseExpiresAt = new Date(now.getTime() + AI_RESERVATION_LEASE_MS);
+    const plan: AiPlanReservation = {
+      userId,
+      requestId,
+      inputFingerprint,
+      state: "reserved",
+      reservedAt: now,
+      leaseExpiresAt,
+      completedAt: null,
+      draft: null,
+      expiresAt: new Date(now.getTime() + AI_PLAN_TTL_MS),
+    };
+    account = {
+      ...account,
+      availableCredits: account.availableCredits - 1,
+      reservedCredits: 1,
+      activeReservationId: requestId,
+      reservationExpiresAt: leaseExpiresAt,
+      updatedAt: now,
+    };
+    assertValidAccount(account);
+    transaction.setAccount(account);
+    transaction.setPlan(requestId, plan);
+    return { kind: "reserved", availableCredits: account.availableCredits };
+  });
+}
+
+export async function finalizeAiCredit(
+  userId: string,
+  requestId: string,
+  draft: unknown,
+  now = new Date(),
+  runTransaction: AiCreditTransactionRunner = runFirestoreAiCreditTransaction,
+): Promise<number> {
+  return runTransaction(userId, async (transaction) => {
+    const account = await transaction.getAccount();
+    const plan = await transaction.getPlan(requestId);
+    if (!account || !plan || plan.userId !== userId) {
+      throw new Error("AI credit reservation was not found.");
+    }
+    if (plan.state === "completed") return account.availableCredits;
+    if (
+      plan.state !== "reserved" ||
+      account.activeReservationId !== requestId ||
+      account.reservedCredits !== 1
+    ) {
+      throw new Error("AI credit reservation is not active.");
+    }
+
+    const updated: AiCreditAccount = {
+      ...account,
+      reservedCredits: 0,
+      totalConsumed: account.totalConsumed + 1,
+      activeReservationId: null,
+      reservationExpiresAt: null,
+      updatedAt: now,
+    };
+    assertValidAccount(updated);
+    transaction.setAccount(updated);
+    transaction.setPlan(requestId, {
+      ...plan,
+      state: "completed",
+      completedAt: now,
+      draft,
+    });
+    return updated.availableCredits;
+  });
+}
+
+export async function refundAiCredit(
+  userId: string,
+  requestId: string,
+  now = new Date(),
+  runTransaction: AiCreditTransactionRunner = runFirestoreAiCreditTransaction,
+): Promise<void> {
+  await runTransaction(userId, async (transaction) => {
+    const account = await transaction.getAccount();
+    const plan = await transaction.getPlan(requestId);
+    if (
+      !account ||
+      !plan ||
+      plan.state !== "reserved" ||
+      account.activeReservationId !== requestId
+    ) {
+      return;
+    }
+
+    const updated: AiCreditAccount = {
+      ...account,
+      availableCredits: account.availableCredits + account.reservedCredits,
+      reservedCredits: 0,
+      activeReservationId: null,
+      reservationExpiresAt: null,
+      updatedAt: now,
+    };
+    assertValidAccount(updated);
+    transaction.setAccount(updated);
+    transaction.setPlan(requestId, refundedPlan(plan, now));
   });
 }
 

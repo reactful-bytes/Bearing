@@ -1,5 +1,15 @@
+import { createHash, randomUUID } from "node:crypto";
+
 import { HttpsError } from "firebase-functions/v2/https";
 
+import {
+  AiCreditReservationResult,
+  finalizeAiCredit,
+  reconcileAiCredits,
+  refundAiCredit,
+  reserveAiCredit,
+} from "./aiCredits";
+import { loadAiCreditSubscription } from "./aiCreditStatus";
 import { EntitlementLookup, requirePremiumCaller } from "./entitlement";
 import { CallableIdentityRequest } from "./security";
 
@@ -41,6 +51,41 @@ export type GoalPlanRequest = CallableIdentityRequest & {
 };
 
 export type GoalPlanGenerator = (input: GoalPlanInput) => Promise<unknown>;
+
+export type MeteredGoalPlanDraft = GoalPlanDraft & {
+  requestId: string;
+  availableCredits: number;
+};
+
+export type GoalPlanMeter = {
+  prepare: (userId: string, now: Date) => Promise<void>;
+  reserve: (
+    userId: string,
+    requestId: string,
+    inputFingerprint: string,
+    now: Date,
+  ) => Promise<AiCreditReservationResult>;
+  finalize: (
+    userId: string,
+    requestId: string,
+    draft: GoalPlanDraft,
+    now: Date,
+  ) => Promise<number>;
+  refund: (userId: string, requestId: string, now: Date) => Promise<void>;
+};
+
+export const firestoreGoalPlanMeter: GoalPlanMeter = {
+  prepare: async (userId, now) => {
+    const subscription = await loadAiCreditSubscription(userId);
+    await reconcileAiCredits(userId, subscription, now);
+  },
+  reserve: reserveAiCredit,
+  finalize: finalizeAiCredit,
+  refund: refundAiCredit,
+};
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function requireTrimmedString(
   value: unknown,
@@ -89,6 +134,25 @@ export function parseGoalPlanInput(data: unknown): GoalPlanInput {
       "Provide a goal name up to 120 characters and a valid target date.",
     );
   }
+}
+
+function getRequestId(data: unknown): string {
+  const value =
+    data && typeof data === "object"
+      ? (data as Record<string, unknown>).requestId
+      : undefined;
+  if (value === undefined) return randomUUID();
+  if (typeof value !== "string" || !UUID_PATTERN.test(value)) {
+    throw new HttpsError(
+      "invalid-argument",
+      "AI planning request ID is invalid.",
+    );
+  }
+  return value.toLowerCase();
+}
+
+function fingerprintGoalPlanInput(input: GoalPlanInput): string {
+  return createHash("sha256").update(JSON.stringify(input)).digest("hex");
 }
 
 export function validateGoalPlanDraft(
@@ -181,13 +245,54 @@ export async function generateGoalPlanDraft(
   request: GoalPlanRequest,
   generator: GoalPlanGenerator,
   entitlementLookup?: EntitlementLookup,
-): Promise<GoalPlanDraft> {
-  await requirePremiumCaller(request, entitlementLookup);
+  meter?: GoalPlanMeter,
+  now = new Date(),
+): Promise<GoalPlanDraft | MeteredGoalPlanDraft> {
+  const caller = await requirePremiumCaller(request, entitlementLookup);
   const input = parseGoalPlanInput(request.data);
+  if (!meter) {
+    try {
+      return validateGoalPlanDraft(await generator(input), input.targetDate);
+    } catch {
+      throw new HttpsError(
+        "internal",
+        "A goal plan could not be generated. Try again or continue manually.",
+      );
+    }
+  }
+
+  const requestId = getRequestId(request.data);
+  const fingerprint = fingerprintGoalPlanInput(input);
+  await meter.prepare(caller.uid, now);
+  const reservation = await meter.reserve(
+    caller.uid,
+    requestId,
+    fingerprint,
+    now,
+  );
+  if (reservation.kind === "replay") {
+    const draft = validateGoalPlanDraft(reservation.draft, input.targetDate);
+    return {
+      ...draft,
+      requestId,
+      availableCredits: reservation.availableCredits,
+    };
+  }
 
   try {
-    return validateGoalPlanDraft(await generator(input), input.targetDate);
+    const draft = validateGoalPlanDraft(
+      await generator(input),
+      input.targetDate,
+    );
+    const availableCredits = await meter.finalize(
+      caller.uid,
+      requestId,
+      draft,
+      now,
+    );
+    return { ...draft, requestId, availableCredits };
   } catch {
+    await meter.refund(caller.uid, requestId, now);
     throw new HttpsError(
       "internal",
       "A goal plan could not be generated. Try again or continue manually.",
