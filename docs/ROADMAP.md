@@ -180,17 +180,17 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M16 - Authenticated AI Usage Credits
 
-| Task ID | Status      | Description                                        | Exit Criteria                                                                                     |
-| ------- | ----------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| M16.1   | completed   | Restore the authenticated callable boundary        | Native/web callers use Firebase Auth; forged UIDs and unauthenticated requests cannot cross users |
-| M16.2   | completed   | Define credits and billing-anniversary math        | UTC month-end/leap-year anniversary fixtures pass                                                 |
-| M16.3   | completed   | Add atomic rolling credit reconciliation           | Initial and monthly grants roll over without duplicate/concurrent over-crediting                  |
-| M16.4   | completed   | Add authenticated AI credit status                 | Caller receives eligibility, available credits, and next anniversary                              |
-| M16.5   | completed   | Meter AI generation idempotently                   | Successful drafts consume one credit; failures refund; retries and concurrency cannot double-use  |
-| M16.6   | completed   | Integrate RevenueCat paid periods                  | Active renewals accrue; grace/inactive states preserve balances without grants                    |
-| M16.7   | completed   | Complete credit privacy and authorization          | Export/deletion remain caller-scoped and quota collections remain server-owned                    |
-| M16.8   | in-progress | Add shared native and web credit UX                | Both platforms show and enforce the same balance, errors, retries, and manual fallback            |
-| M16.9   | in-progress | Complete observability, documentation, and rollout | Safe operations, TTL, deployment, and native/web staging evidence are recorded                    |
+| Task ID | Status    | Description                                        | Exit Criteria                                                                                     |
+| ------- | --------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| M16.1   | completed | Restore the authenticated callable boundary        | Native/web callers use Firebase Auth; forged UIDs and unauthenticated requests cannot cross users |
+| M16.2   | completed | Define credits and billing-anniversary math        | UTC month-end/leap-year anniversary fixtures pass                                                 |
+| M16.3   | completed | Add atomic rolling credit reconciliation           | Initial and monthly grants roll over without duplicate/concurrent over-crediting                  |
+| M16.4   | completed | Add authenticated AI credit status                 | Caller receives eligibility, available credits, and next anniversary                              |
+| M16.5   | completed | Meter AI generation idempotently                   | Successful drafts consume one credit; failures refund; retries and concurrency cannot double-use  |
+| M16.6   | completed | Integrate RevenueCat paid periods                  | Active renewals accrue; grace/inactive states preserve balances without grants                    |
+| M16.7   | completed | Complete credit privacy and authorization          | Export/deletion remain caller-scoped and quota collections remain server-owned                    |
+| M16.8   | completed | Add shared native and web credit UX                | Both platforms show and enforce the same balance, errors, retries, and manual fallback            |
+| M16.9   | completed | Complete observability, documentation, and rollout | Safe operations, TTL, deployment, and native/web staging evidence are recorded                    |
 
 ### M17 - Cross-Platform App Check Defense In Depth
 
@@ -231,6 +231,6 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 ## Immediate Next Steps
 
 1. Execute M16.1, then M16.2-M16.3; keep every leaf ticket current in the engineering tickets and project plan.
-2. Complete M16.4-M16.8, deploy quota-enforced Functions before clients, and run native/web staging acceptance.
+2. Maintain the deployed M16 quota controls and monitor credit operations during client rollout.
 3. Do not start M17 until explicitly authorized after a stable M16 rollout.
 4. Continue native M6.13, M9.1, M10.1, M10.3, M10.4, M11, M12-M14 owner handoffs in parallel.

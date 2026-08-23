@@ -102,26 +102,26 @@ M16.1 -> M16.2 -> M16.3 -> M16.4 -> M16.5. M16.6 and M16.7 may proceed after M16
 
 ## M16.8 Shared Native and Web Client
 
-| Ticket | Status      | Deliverable                     | Acceptance                                                                                  |
-| ------ | ----------- | ------------------------------- | ------------------------------------------------------------------------------------------- |
-| M16.8a | completed   | Add shared credit/request types | Types cover status, anniversary, request ID, balance, and errors                            |
-| M16.8b | completed   | Add the credit-status service   | Shared JS SDK calls `getAiCreditStatus` in `us-central1`                                    |
-| M16.8c | completed   | Add stable request-ID lifecycle | Unknown network retries reuse an ID; definitive outcomes create a new ID                    |
-| M16.8d | completed   | Display credit status           | AI Planning shows loading, balance, next grant, and zero state without blocking manual work |
-| M16.8e | completed   | Map quota/concurrency errors    | Exhaustion and active generation receive specific messages                                  |
-| M16.8f | completed   | Update balance after generation | Success uses returned balance; refunded failures refresh status                             |
-| M16.8g | completed   | Cover client behavior           | Jest covers balance, decrement, rollover, zero, refund, retry, concurrency, and fallback    |
-| M16.8h | in-progress | Validate web parity             | Static web build and authenticated browser flow use the same quota policy                   |
+| Ticket | Status    | Deliverable                     | Acceptance                                                                                  |
+| ------ | --------- | ------------------------------- | ------------------------------------------------------------------------------------------- |
+| M16.8a | completed | Add shared credit/request types | Types cover status, anniversary, request ID, balance, and errors                            |
+| M16.8b | completed | Add the credit-status service   | Shared JS SDK calls `getAiCreditStatus` in `us-central1`                                    |
+| M16.8c | completed | Add stable request-ID lifecycle | Unknown network retries reuse an ID; definitive outcomes create a new ID                    |
+| M16.8d | completed | Display credit status           | AI Planning shows loading, balance, next grant, and zero state without blocking manual work |
+| M16.8e | completed | Map quota/concurrency errors    | Exhaustion and active generation receive specific messages                                  |
+| M16.8f | completed | Update balance after generation | Success uses returned balance; refunded failures refresh status                             |
+| M16.8g | completed | Cover client behavior           | Jest covers balance, decrement, rollover, zero, refund, retry, concurrency, and fallback    |
+| M16.8h | completed | Validate web parity             | Static web build and authenticated browser flow use the same quota policy                   |
 
 ## M16.9 Observability, Documentation, and Rollout
 
-| Ticket | Status      | Deliverable                             | Acceptance                                                                            |
-| ------ | ----------- | --------------------------------------- | ------------------------------------------------------------------------------------- |
-| M16.9a | completed   | Add quota-safe operational events       | Grant/reserve/finalize/refund/exhaustion outcomes exclude sensitive content           |
-| M16.9b | completed   | Reconcile architecture and privacy docs | Current docs accurately describe Auth, quota, retention, web, and App Check deferral  |
-| M16.9c | in-progress | Deploy Functions before clients         | Quota-enforced compatible Functions are deployed first                                |
-| M16.9d | in-progress | Configure Firestore TTL                 | Only temporary `aiPlans.expiresAt` records use TTL                                    |
-| M16.9e | in-progress | Run staging native/web acceptance       | Ownership, quota, retries, subscription states, privacy, and web parity are evidenced |
+| Ticket | Status    | Deliverable                             | Acceptance                                                                            |
+| ------ | --------- | --------------------------------------- | ------------------------------------------------------------------------------------- |
+| M16.9a | completed | Add quota-safe operational events       | Grant/reserve/finalize/refund/exhaustion outcomes exclude sensitive content           |
+| M16.9b | completed | Reconcile architecture and privacy docs | Current docs accurately describe Auth, quota, retention, web, and App Check deferral  |
+| M16.9c | completed | Deploy Functions before clients         | Quota-enforced compatible Functions are deployed first                                |
+| M16.9d | completed | Configure Firestore TTL                 | Only temporary `aiPlans.expiresAt` records use TTL                                    |
+| M16.9e | completed | Run staging native/web acceptance       | Ownership, quota, retries, subscription states, privacy, and web parity are evidenced |
 
 ## Validation Gates
 
