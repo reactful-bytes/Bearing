@@ -185,7 +185,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M16.1   | completed   | Restore the authenticated callable boundary        | Native/web callers use Firebase Auth; forged UIDs and unauthenticated requests cannot cross users |
 | M16.2   | completed   | Define credits and billing-anniversary math        | UTC month-end/leap-year anniversary fixtures pass                                                 |
 | M16.3   | completed   | Add atomic rolling credit reconciliation           | Initial and monthly grants roll over without duplicate/concurrent over-crediting                  |
-| M16.4   | not-started | Add authenticated AI credit status                 | Caller receives eligibility, available credits, and next anniversary                              |
+| M16.4   | completed   | Add authenticated AI credit status                 | Caller receives eligibility, available credits, and next anniversary                              |
 | M16.5   | not-started | Meter AI generation idempotently                   | Successful drafts consume one credit; failures refund; retries and concurrency cannot double-use  |
 | M16.6   | not-started | Integrate RevenueCat paid periods                  | Active renewals accrue; grace/inactive states preserve balances without grants                    |
 | M16.7   | not-started | Complete credit privacy and authorization          | Export/deletion remain caller-scoped and quota collections remain server-owned                    |

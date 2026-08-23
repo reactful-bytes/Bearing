@@ -63,11 +63,11 @@ M16.1 -> M16.2 -> M16.3 -> M16.4 -> M16.5. M16.6 and M16.7 may proceed after M16
 
 ## M16.4 Authenticated Credit Status
 
-| Ticket | Status      | Deliverable                           | Acceptance                                                                    |
-| ------ | ----------- | ------------------------------------- | ----------------------------------------------------------------------------- |
-| M16.4a | not-started | Implement the credit-status handler   | Auth UID is reconciled and returns eligibility, balance, and next anniversary |
-| M16.4b | not-started | Export `getAiCreditStatus`            | Callable uses `us-central1`, a bounded timeout, and no target UID input       |
-| M16.4c | not-started | Cover status authorization and states | Tests cover forged UID, active, grace, inactive, and zero-balance responses   |
+| Ticket | Status    | Deliverable                           | Acceptance                                                                    |
+| ------ | --------- | ------------------------------------- | ----------------------------------------------------------------------------- |
+| M16.4a | completed | Implement the credit-status handler   | Auth UID is reconciled and returns eligibility, balance, and next anniversary |
+| M16.4b | completed | Export `getAiCreditStatus`            | Callable uses `us-central1`, a bounded timeout, and no target UID input       |
+| M16.4c | completed | Cover status authorization and states | Tests cover forged UID, active, grace, inactive, and zero-balance responses   |
 
 ## M16.5 Metered and Idempotent Generation
 
