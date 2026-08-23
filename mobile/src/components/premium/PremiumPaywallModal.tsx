@@ -383,6 +383,7 @@ export function PremiumPaywallModal({
 const styles = StyleSheet.create({
   content: {
     gap: spacing.lg,
+    paddingBottom: spacing['3xl'],
   },
   heroBlock: {
     gap: spacing.sm,

@@ -806,6 +806,7 @@ export function CreateGoalModal({
 const styles = StyleSheet.create({
   content: {
     gap: spacing.lg,
+    paddingBottom: spacing['3xl'],
   },
   section: {
     gap: spacing.lg,

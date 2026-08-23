@@ -141,7 +141,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     paddingHorizontal: spacing['2xl'],
     paddingTop: spacing['2xl'],
-    paddingBottom: spacing['3xl'],
     gap: spacing.lg,
   },
   fullScreenBody: {
