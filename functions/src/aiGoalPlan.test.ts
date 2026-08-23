@@ -75,6 +75,12 @@ describe("AI goal plan", () => {
   it("rejects malformed provider output", () => {
     assert.throws(() => validateGoalPlanDraft({ ...validDraft, steps: [] }));
     assert.throws(() =>
+      validateGoalPlanDraft({
+        ...validDraft,
+        steps: [{ ...validDraft.steps[0], targetDate: "2027-02-31" }],
+      }),
+    );
+    assert.throws(() =>
       validateGoalPlanDraft(
         {
           ...validDraft,
@@ -83,6 +89,54 @@ describe("AI goal plan", () => {
         "2027-06-01",
       ),
     );
+    assert.throws(() =>
+      validateGoalPlanDraft(validDraft, "2027-06-01", "2027-01-15"),
+    );
+  });
+
+  it("provides and enforces a server-owned forward planning window", async () => {
+    let planningStartDate = "";
+    const now = new Date("2027-01-01T23:30:00Z");
+
+    await generateGoalPlanDraft(
+      request,
+      async (input) => {
+        planningStartDate = input.planningStartDate;
+        return validDraft;
+      },
+      async () => "active",
+      undefined,
+      now,
+    );
+
+    assert.equal(planningStartDate, "2027-01-01");
+  });
+
+  it("rejects a non-future goal target before reserving a credit", async () => {
+    let prepared = false;
+    let generated = false;
+
+    await assert.rejects(
+      generateGoalPlanDraft(
+        { ...request, data: { ...request.data, targetDate: "2027-01-01" } },
+        async () => {
+          generated = true;
+          return validDraft;
+        },
+        async () => "active",
+        meter({
+          prepare: async () => {
+            prepared = true;
+          },
+        }),
+        new Date("2027-01-01T00:00:00Z"),
+      ),
+      (error: unknown) =>
+        error instanceof HttpsError && error.code === "invalid-argument",
+    );
+
+    assert.equal(prepared, false);
+    assert.equal(generated, false);
   });
 
   it("returns a draft for a verified premium caller", async () => {
@@ -240,6 +294,7 @@ describe("AI goal plan", () => {
           kind: "replay",
           availableCredits: 8,
           draft: validDraft,
+          reservedAt: new Date("2027-01-01T23:30:00Z"),
         }),
       }),
     );

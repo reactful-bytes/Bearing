@@ -24,6 +24,10 @@ export type GoalPlanInput = {
   targetDate: string;
 };
 
+export type GoalPlanPromptInput = GoalPlanInput & {
+  planningStartDate: string;
+};
+
 export type GoalPlanDraft = {
   promptVersion: 1;
   smartMeta: {
@@ -50,7 +54,9 @@ export type GoalPlanRequest = CallableIdentityRequest & {
   data: unknown;
 };
 
-export type GoalPlanGenerator = (input: GoalPlanInput) => Promise<unknown>;
+export type GoalPlanGenerator = (
+  input: GoalPlanPromptInput,
+) => Promise<unknown>;
 
 export type MeteredGoalPlanDraft = GoalPlanDraft & {
   requestId: string;
@@ -101,15 +107,26 @@ function requireTrimmedString(
 
 function requireIsoDate(value: unknown, field: string): string {
   const date = requireTrimmedString(value, field, 10);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) {
+    throw new Error(`${field} is invalid.`);
+  }
 
+  const parsed = new Date(`${date}T00:00:00Z`);
   if (
-    !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
-    Number.isNaN(Date.parse(`${date}T00:00:00Z`))
+    Number.isNaN(parsed.getTime()) ||
+    parsed.getUTCFullYear() !== Number(match[1]) ||
+    parsed.getUTCMonth() + 1 !== Number(match[2]) ||
+    parsed.getUTCDate() !== Number(match[3])
   ) {
     throw new Error(`${field} is invalid.`);
   }
 
   return date;
+}
+
+function formatUtcDate(value: Date): string {
+  return value.toISOString().slice(0, 10);
 }
 
 export function parseGoalPlanInput(data: unknown): GoalPlanInput {
@@ -158,6 +175,7 @@ function fingerprintGoalPlanInput(input: GoalPlanInput): string {
 export function validateGoalPlanDraft(
   value: unknown,
   latestTargetDate?: string,
+  earliestExclusiveTargetDate?: string,
 ): GoalPlanDraft {
   if (!value || typeof value !== "object") {
     throw new Error("AI goal plan is not an object.");
@@ -217,6 +235,14 @@ export function validateGoalPlanDraft(
           `step ${index + 1} targetDate exceeds the goal target date.`,
         );
       }
+      if (
+        earliestExclusiveTargetDate &&
+        targetDate <= earliestExclusiveTargetDate
+      ) {
+        throw new Error(
+          `step ${index + 1} targetDate must be after the planning start date.`,
+        );
+      }
 
       return {
         title: requireTrimmedString(step.title, `step ${index + 1} title`, 120),
@@ -250,9 +276,20 @@ export async function generateGoalPlanDraft(
 ): Promise<GoalPlanDraft | MeteredGoalPlanDraft> {
   const caller = await requirePremiumCaller(request, entitlementLookup);
   const input = parseGoalPlanInput(request.data);
+  const planningStartDate = formatUtcDate(now);
+  if (input.targetDate <= planningStartDate) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Goal target date must be in the future.",
+    );
+  }
   if (!meter) {
     try {
-      return validateGoalPlanDraft(await generator(input), input.targetDate);
+      return validateGoalPlanDraft(
+        await generator({ ...input, planningStartDate }),
+        input.targetDate,
+        planningStartDate,
+      );
     } catch {
       throw new HttpsError(
         "internal",
@@ -271,7 +308,11 @@ export async function generateGoalPlanDraft(
     now,
   );
   if (reservation.kind === "replay") {
-    const draft = validateGoalPlanDraft(reservation.draft, input.targetDate);
+    const draft = validateGoalPlanDraft(
+      reservation.draft,
+      input.targetDate,
+      formatUtcDate(reservation.reservedAt),
+    );
     return {
       ...draft,
       requestId,
@@ -281,8 +322,9 @@ export async function generateGoalPlanDraft(
 
   try {
     const draft = validateGoalPlanDraft(
-      await generator(input),
+      await generator({ ...input, planningStartDate }),
       input.targetDate,
+      planningStartDate,
     );
     const availableCredits = await meter.finalize(
       caller.uid,

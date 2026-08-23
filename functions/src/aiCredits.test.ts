@@ -447,6 +447,7 @@ describe("AI credit reservations", () => {
         kind: "replay",
         availableCredits: 9,
         draft: { promptVersion: 1 },
+        reservedAt: now,
       },
     );
     await assert.rejects(

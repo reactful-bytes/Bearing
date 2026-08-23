@@ -206,7 +206,12 @@ export const runFirestoreAiCreditTransaction: AiCreditTransactionRunner =
 
 export type AiCreditReservationResult =
   | { kind: "reserved"; availableCredits: number }
-  | { kind: "replay"; availableCredits: number; draft: unknown };
+  | {
+      kind: "replay";
+      availableCredits: number;
+      draft: unknown;
+      reservedAt: Date;
+    };
 
 function bootstrapGrantId(userId: string): string {
   return `${encodeURIComponent(userId)}:bootstrap`;
@@ -347,6 +352,7 @@ export async function reserveAiCredit(
           kind: "replay",
           availableCredits: account.availableCredits,
           draft: existingPlan.draft,
+          reservedAt: existingPlan.reservedAt,
         };
       }
       if (
