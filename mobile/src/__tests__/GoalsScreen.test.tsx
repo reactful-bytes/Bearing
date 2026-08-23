@@ -393,7 +393,9 @@ describe('GoalsScreen', () => {
     render(<GoalsScreen />);
 
     fireEvent.press(screen.getByText('New Goal'));
+    expect(screen.getByLabelText('Create Goal modal').props.transparent).toBe(false);
     fireEvent.press(screen.getByLabelText('Continue'));
+    expect(screen.getByLabelText('Create Goal modal').props.transparent).toBe(false);
 
     fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.press(screen.getByLabelText('Continue'));

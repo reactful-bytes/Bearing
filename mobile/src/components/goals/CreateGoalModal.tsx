@@ -441,7 +441,7 @@ export function CreateGoalModal({
 
   return (
     <>
-      <AppModal visible={visible} title="Create Goal" onClose={handleClose}>
+      <AppModal visible={visible} title="Create Goal" onClose={handleClose} fullScreen>
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.stepLabel}>{wizardLabel}</Text>
 
