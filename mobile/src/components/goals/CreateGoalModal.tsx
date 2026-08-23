@@ -467,8 +467,8 @@ export function CreateGoalModal({
               />
 
               <FormField
-                label="Planning context for AI"
-                accessibilityLabel="Planning context for AI"
+                label="Planning context"
+                accessibilityLabel="Planning context"
                 value={description}
                 onChangeText={setDescription}
                 multiline
@@ -477,11 +477,20 @@ export function CreateGoalModal({
               />
 
               <AppCard style={styles.exampleCard}>
-                <Text style={styles.exampleLabel}>What the AI plans from</Text>
+                <Text style={styles.exampleLabel}>Planning details to include</Text>
+                <Text style={styles.exampleText}>Objectives: 2-4 concrete results you want.</Text>
                 <Text style={styles.exampleText}>
-                  Include the results you want, how success will be measured, available time or
-                  resources, important constraints, and any intermediate deadlines. These details
-                  become the basis for every generated milestone and step.
+                  Success measures: how you will track progress.
+                </Text>
+                <Text style={styles.exampleText}>Starting point: what is already in place.</Text>
+                <Text style={styles.exampleText}>
+                  Resources: time, tools, or support available.
+                </Text>
+                <Text style={styles.exampleText}>
+                  Constraints: limits or challenges to plan around.
+                </Text>
+                <Text style={styles.exampleText}>
+                  Timing: intermediate deadlines and the pace for each outcome.
                 </Text>
               </AppCard>
             </View>
@@ -537,10 +546,14 @@ export function CreateGoalModal({
                     />
                   </>
                 ) : (
-                  <Text style={styles.cardBody}>
-                    Generate milestones and ordered steps from your goal details. Nothing is saved
-                    until you review the draft and save the goal.
-                  </Text>
+                  <>
+                    <Text style={styles.exampleLabel}>What the AI plans from</Text>
+                    <Text style={styles.cardBody}>
+                      Your goal outcome, objectives, success measures, starting point, resources,
+                      constraints, and timing guide the generated milestones and ordered steps.
+                      Nothing is saved until you review the draft and save the goal.
+                    </Text>
+                  </>
                 )}
                 <View style={styles.enabledBadge}>
                   <Text style={styles.enabledBadgeText}>Premium Enabled</Text>

@@ -194,7 +194,7 @@ function openAiPlanningStep(): void {
   fireEvent.press(screen.getByLabelText('Continue'));
   fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
   fireEvent.changeText(
-    screen.getByLabelText('Planning context for AI'),
+    screen.getByLabelText('Planning context'),
     'Build endurance safely with three runs per week over eight weeks.',
   );
   fireEvent.press(screen.getByLabelText('Continue'));
@@ -399,13 +399,19 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Continue'));
     expect(screen.getByText('Planning context is required for milestones and steps.')).toBeTruthy();
     fireEvent.changeText(
-      screen.getByLabelText('Planning context for AI'),
+      screen.getByLabelText('Planning context'),
       'Train consistently for eight weeks.',
     );
-    expect(screen.getByText('What the AI plans from')).toBeTruthy();
+    expect(screen.getByText('Planning details to include')).toBeTruthy();
+    expect(screen.getByText('Objectives: 2-4 concrete results you want.')).toBeTruthy();
+    expect(screen.getByText('Success measures: how you will track progress.')).toBeTruthy();
+    expect(screen.getByText('Starting point: what is already in place.')).toBeTruthy();
+    expect(screen.getByText('Resources: time, tools, or support available.')).toBeTruthy();
+    expect(screen.getByText('Constraints: limits or challenges to plan around.')).toBeTruthy();
     expect(
-      screen.getByText(/These details become the basis for every generated milestone and step/),
+      screen.getByText('Timing: intermediate deadlines and the pace for each outcome.'),
     ).toBeTruthy();
+    expect(screen.queryByText('What the AI plans from')).toBeNull();
     expect(screen.queryByLabelText('SMART Specific')).toBeNull();
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.press(screen.getByLabelText('Open goal target month dropdown'));
@@ -485,7 +491,7 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.changeText(
-      screen.getByLabelText('Planning context for AI'),
+      screen.getByLabelText('Planning context'),
       'Train consistently for eight weeks.',
     );
     fireEvent.press(screen.getByLabelText('Continue'));
@@ -562,7 +568,7 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.changeText(
-      screen.getByLabelText('Planning context for AI'),
+      screen.getByLabelText('Planning context'),
       'Train consistently for eight weeks.',
     );
     fireEvent.press(screen.getByLabelText('Continue'));
@@ -571,6 +577,7 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Continue'));
 
     expect(screen.getByText('Build an editable first draft.')).toBeTruthy();
+    expect(screen.getByText('What the AI plans from')).toBeTruthy();
     expect(screen.queryByLabelText('View premium plans for AI goal builder')).toBeNull();
     await waitFor(() => expect(screen.getByText(/AI credits available: 10/)).toBeTruthy());
 
@@ -668,7 +675,7 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.changeText(
-      screen.getByLabelText('Planning context for AI'),
+      screen.getByLabelText('Planning context'),
       'Build endurance safely with three runs per week over eight weeks.',
     );
     fireEvent.press(screen.getByLabelText('Continue'));
@@ -801,7 +808,7 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.changeText(
-      screen.getByLabelText('Planning context for AI'),
+      screen.getByLabelText('Planning context'),
       'Train consistently for eight weeks.',
     );
     fireEvent.press(screen.getByLabelText('Continue'));
