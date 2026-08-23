@@ -84,12 +84,12 @@ M16.1 -> M16.2 -> M16.3 -> M16.4 -> M16.5. M16.6 and M16.7 may proceed after M16
 
 ## M16.6 RevenueCat Accrual Integration
 
-| Ticket | Status      | Deliverable                            | Acceptance                                                                           |
-| ------ | ----------- | -------------------------------------- | ------------------------------------------------------------------------------------ |
-| M16.6a | not-started | Expose canonical paid-period data      | Server lookup returns UID, status, period start, and period end                      |
-| M16.6b | not-started | Reconcile after active webhook updates | Active updates grant due credits; other states preserve without granting             |
-| M16.6c | not-started | Preserve webhook idempotency           | Duplicate receipts and reconciliation cannot double-grant                            |
-| M16.6d | not-started | Cover subscription transitions         | Tests cover renewal, annual accrual, grace, recovery, cancellation, and reactivation |
+| Ticket | Status    | Deliverable                            | Acceptance                                                                           |
+| ------ | --------- | -------------------------------------- | ------------------------------------------------------------------------------------ |
+| M16.6a | completed | Expose canonical paid-period data      | Server lookup returns UID, status, period start, and period end                      |
+| M16.6b | completed | Reconcile after active webhook updates | Active updates grant due credits; other states preserve without granting             |
+| M16.6c | completed | Preserve webhook idempotency           | Duplicate receipts and reconciliation cannot double-grant                            |
+| M16.6d | completed | Cover subscription transitions         | Tests cover renewal, annual accrual, grace, recovery, cancellation, and reactivation |
 
 ## M16.7 Privacy and Rules
 

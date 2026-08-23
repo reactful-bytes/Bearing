@@ -3,6 +3,12 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { getAuth } from "firebase-admin/auth";
 import { Timestamp, getFirestore } from "firebase-admin/firestore";
 
+import {
+  AiCreditAccount,
+  AiCreditSubscription,
+  reconcileAiCredits,
+} from "./aiCredits";
+
 export type RevenueCatSubscriptionStatus =
   "active" | "in_grace_period" | "expired" | "canceled";
 
@@ -45,6 +51,16 @@ export type RevenueCatWebhookResult = {
   status: RevenueCatSubscriptionStatus;
   premiumEntitlementPresent: boolean;
 };
+
+export type CanonicalAiCreditSubscription = AiCreditSubscription & {
+  userId: string;
+};
+
+export type RevenueCatCreditReconciler = (
+  userId: string,
+  subscription: AiCreditSubscription,
+  now: Date,
+) => Promise<AiCreditAccount | null>;
 
 type WebhookRequest = {
   method?: string;
@@ -146,6 +162,17 @@ export function mapRevenueCatSubscription(
     lastValidatedAt: timestamp,
     createdAt: timestamp,
     updatedAt: timestamp,
+  };
+}
+
+export function toAiCreditSubscription(
+  subscription: SubscriptionRecord,
+): CanonicalAiCreditSubscription {
+  return {
+    userId: subscription.userId,
+    status: subscription.status,
+    periodStartAt: subscription.periodStartAt?.toDate() ?? null,
+    periodEndAt: subscription.periodEndAt?.toDate() ?? null,
   };
 }
 
@@ -290,6 +317,7 @@ export async function handleRevenueCatWebhook(
     testStorePlatform: string;
     onVerifiedWebhookEvent?: (body: unknown) => void;
   },
+  reconcileCredits: RevenueCatCreditReconciler = reconcileAiCredits,
 ): Promise<RevenueCatWebhookResult | null> {
   if (
     !verifyRevenueCatWebhook(
@@ -356,6 +384,11 @@ export async function handleRevenueCatWebhook(
       receivedAt: Timestamp.now(),
     });
   });
+  await reconcileCredits(
+    event.appUserId,
+    toAiCreditSubscription(subscription),
+    subscription.updatedAt.toDate(),
+  );
   response.status(200).json({ received: true, ...result });
   return result;
 }
