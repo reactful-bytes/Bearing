@@ -650,6 +650,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
           ? 'Bearing account data and local account settings were permanently deleted.'
           : 'Bearing account data was deleted. Clear this app’s local data in device settings to remove remaining local preferences.',
       );
+      await onPressSignOut();
     } catch (deletionError) {
       setDeleteError(
         deletionError instanceof Error

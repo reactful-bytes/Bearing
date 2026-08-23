@@ -796,7 +796,8 @@ describe('ProfileScreen', () => {
       },
     });
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    const handleSignOut = jest.fn(() => undefined);
+    render(<ProfileScreen onPressSignOut={handleSignOut} isSignOutPending={false} />);
     fireEvent.press(screen.getByLabelText('Delete account'));
     fireEvent.changeText(screen.getByLabelText('Account deletion current password'), 'hunter2!');
     fireEvent.changeText(screen.getByLabelText('Account deletion confirmation'), 'DELETE');
@@ -808,6 +809,7 @@ describe('ProfileScreen', () => {
     expect(cleanupLinkedCalendarCopies).toHaveBeenCalledWith('user-1');
     expect(deleteCurrentUserAccount).toHaveBeenCalled();
     expect(purgeLocalAccountData).toHaveBeenCalledWith('user-1');
+    expect(handleSignOut).toHaveBeenCalledTimes(1);
   });
 
   it('reauthenticates a Google-only account before deletion and revokes native access', async () => {

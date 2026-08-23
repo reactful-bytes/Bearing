@@ -18,6 +18,7 @@ const config: ExpoConfig = {
     'expo-dev-client',
     'expo-asset',
     'expo-audio',
+    'expo-splash-screen',
     'expo-sharing',
     'expo-web-browser',
     ['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosUrlScheme }],
