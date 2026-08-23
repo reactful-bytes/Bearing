@@ -52,14 +52,14 @@ M16.1 -> M16.2 -> M16.3 -> M16.4 -> M16.5. M16.6 and M16.7 may proceed after M16
 
 ## M16.3 Atomic Credit Reconciliation
 
-| Ticket | Status      | Deliverable                               | Acceptance                                                                                    |
-| ------ | ----------- | ----------------------------------------- | --------------------------------------------------------------------------------------------- |
-| M16.3a | not-started | Add the Firestore credit repository       | Transactions preserve non-negative integer totals in `aiCreditAccounts/{uid}`                 |
-| M16.3b | not-started | Bootstrap active accounts                 | A missing active account receives exactly 10 credits without historical backfill              |
-| M16.3c | not-started | Reconcile active anniversaries            | Each due anniversary adds exactly 10 and advances the cursor atomically                       |
-| M16.3d | not-started | Add deterministic grant receipts          | Repeated and concurrent reconciliation cannot double-grant                                    |
-| M16.3e | not-started | Enforce inactive and grace accrual policy | Non-active states receive no grants and retain their balances                                 |
-| M16.3f | not-started | Cover reconciliation behavior             | Tests prove bootstrap, rollover, catch-up, idempotency, grace, cancellation, and reactivation |
+| Ticket | Status    | Deliverable                               | Acceptance                                                                                    |
+| ------ | --------- | ----------------------------------------- | --------------------------------------------------------------------------------------------- |
+| M16.3a | completed | Add the Firestore credit repository       | Transactions preserve non-negative integer totals in `aiCreditAccounts/{uid}`                 |
+| M16.3b | completed | Bootstrap active accounts                 | A missing active account receives exactly 10 credits without historical backfill              |
+| M16.3c | completed | Reconcile active anniversaries            | Each due anniversary adds exactly 10 and advances the cursor atomically                       |
+| M16.3d | completed | Add deterministic grant receipts          | Repeated and concurrent reconciliation cannot double-grant                                    |
+| M16.3e | completed | Enforce inactive and grace accrual policy | Non-active states receive no grants and retain their balances                                 |
+| M16.3f | completed | Cover reconciliation behavior             | Tests prove bootstrap, rollover, catch-up, idempotency, grace, cancellation, and reactivation |
 
 ## M16.4 Authenticated Credit Status
 

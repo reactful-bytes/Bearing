@@ -1,3 +1,5 @@
+import { Timestamp, getFirestore } from "firebase-admin/firestore";
+
 export const AI_CREDITS_PER_BILLING_MONTH = 10;
 export const AI_RESERVATION_LEASE_MS = 2 * 60 * 1000;
 export const AI_PLAN_TTL_MS = 24 * 60 * 60 * 1000;
@@ -52,8 +54,194 @@ export type AiCreditStatus = {
   nextGrantAt: string | null;
 };
 
+export type AiCreditTransaction = {
+  getAccount: () => Promise<AiCreditAccount | null>;
+  hasGrant: (grantId: string) => Promise<boolean>;
+  setAccount: (account: AiCreditAccount) => void;
+  setGrant: (grantId: string, grant: AiCreditGrant) => void;
+};
+
+export type AiCreditTransactionRunner = <T>(
+  userId: string,
+  operation: (transaction: AiCreditTransaction) => Promise<T>,
+) => Promise<T>;
+
 function isValidDate(value: Date): boolean {
   return !Number.isNaN(value.getTime());
+}
+
+function isNonNegativeInteger(value: number): boolean {
+  return Number.isInteger(value) && value >= 0;
+}
+
+function assertValidAccount(account: AiCreditAccount): void {
+  if (
+    !account.userId ||
+    !isNonNegativeInteger(account.availableCredits) ||
+    !isNonNegativeInteger(account.reservedCredits) ||
+    !isNonNegativeInteger(account.totalGranted) ||
+    !isNonNegativeInteger(account.totalConsumed) ||
+    account.availableCredits +
+      account.reservedCredits +
+      account.totalConsumed !==
+      account.totalGranted ||
+    !isValidDate(account.accrualStartedAt) ||
+    !isValidDate(account.lastGrantedBillingAt) ||
+    !isValidDate(account.createdAt) ||
+    !isValidDate(account.updatedAt)
+  ) {
+    throw new Error("AI credit account is invalid.");
+  }
+}
+
+function dateFromStoredValue(value: unknown): Date | null {
+  if (value instanceof Date) return value;
+  if (value instanceof Timestamp) return value.toDate();
+  return null;
+}
+
+function numberFromStoredValue(value: unknown): number {
+  return typeof value === "number" ? value : Number.NaN;
+}
+
+function accountFromStoredValue(value: unknown): AiCreditAccount {
+  const record = (value ?? {}) as Record<string, unknown>;
+  const account: AiCreditAccount = {
+    userId: typeof record.userId === "string" ? record.userId : "",
+    availableCredits: numberFromStoredValue(record.availableCredits),
+    reservedCredits: numberFromStoredValue(record.reservedCredits),
+    totalGranted: numberFromStoredValue(record.totalGranted),
+    totalConsumed: numberFromStoredValue(record.totalConsumed),
+    accrualStartedAt:
+      dateFromStoredValue(record.accrualStartedAt) ?? new Date(NaN),
+    lastGrantedBillingAt:
+      dateFromStoredValue(record.lastGrantedBillingAt) ?? new Date(NaN),
+    activeReservationId:
+      typeof record.activeReservationId === "string"
+        ? record.activeReservationId
+        : null,
+    reservationExpiresAt: dateFromStoredValue(record.reservationExpiresAt),
+    createdAt: dateFromStoredValue(record.createdAt) ?? new Date(NaN),
+    updatedAt: dateFromStoredValue(record.updatedAt) ?? new Date(NaN),
+  };
+  assertValidAccount(account);
+  return account;
+}
+
+export const runFirestoreAiCreditTransaction: AiCreditTransactionRunner =
+  async (userId, operation) => {
+    const db = getFirestore();
+    const accountRef = db.doc(`aiCreditAccounts/${userId}`);
+
+    return db.runTransaction(async (firestoreTransaction) =>
+      operation({
+        getAccount: async () => {
+          const snapshot = await firestoreTransaction.get(accountRef);
+          return snapshot.exists
+            ? accountFromStoredValue(snapshot.data())
+            : null;
+        },
+        hasGrant: async (grantId) =>
+          (await firestoreTransaction.get(db.doc(`aiCreditGrants/${grantId}`)))
+            .exists,
+        setAccount: (account) => firestoreTransaction.set(accountRef, account),
+        setGrant: (grantId, grant) =>
+          firestoreTransaction.set(db.doc(`aiCreditGrants/${grantId}`), grant),
+      }),
+    );
+  };
+
+function bootstrapGrantId(userId: string): string {
+  return `${encodeURIComponent(userId)}:bootstrap`;
+}
+
+function billingGrantId(userId: string, billingAt: Date): string {
+  return `${encodeURIComponent(userId)}:${billingAt.getTime()}`;
+}
+
+export async function reconcileAiCredits(
+  userId: string,
+  subscription: AiCreditSubscription,
+  now = new Date(),
+  runTransaction: AiCreditTransactionRunner = runFirestoreAiCreditTransaction,
+): Promise<AiCreditAccount | null> {
+  return runTransaction(userId, async (transaction) => {
+    const existing = await transaction.getAccount();
+    if (existing) {
+      assertValidAccount(existing);
+      if (existing.userId !== userId) {
+        throw new Error("AI credit account owner is invalid.");
+      }
+    }
+
+    if (subscription.status !== "active") return existing;
+
+    if (!existing) {
+      const lastGrantedBillingAt = getLatestBillingAnniversary(
+        subscription.periodStartAt,
+        subscription.periodEndAt,
+        now,
+      );
+      const account: AiCreditAccount = {
+        userId,
+        availableCredits: AI_CREDITS_PER_BILLING_MONTH,
+        reservedCredits: 0,
+        totalGranted: AI_CREDITS_PER_BILLING_MONTH,
+        totalConsumed: 0,
+        accrualStartedAt: now,
+        lastGrantedBillingAt,
+        activeReservationId: null,
+        reservationExpiresAt: null,
+        createdAt: now,
+        updatedAt: now,
+      };
+      transaction.setAccount(account);
+      transaction.setGrant(bootstrapGrantId(userId), {
+        userId,
+        amount: AI_CREDITS_PER_BILLING_MONTH,
+        billingAt: lastGrantedBillingAt,
+        createdAt: now,
+      });
+      return account;
+    }
+
+    const due = getDueBillingAnniversaries(
+      subscription.periodStartAt,
+      subscription.periodEndAt,
+      existing.lastGrantedBillingAt,
+      now,
+    );
+    const missing = (
+      await Promise.all(
+        due.map(async (billingAt) => ({
+          billingAt,
+          exists: await transaction.hasGrant(billingGrantId(userId, billingAt)),
+        })),
+      )
+    ).filter(({ exists }) => !exists);
+
+    if (due.length === 0) return existing;
+
+    const granted = missing.length * AI_CREDITS_PER_BILLING_MONTH;
+    const account: AiCreditAccount = {
+      ...existing,
+      availableCredits: existing.availableCredits + granted,
+      totalGranted: existing.totalGranted + granted,
+      lastGrantedBillingAt: due.at(-1)!,
+      updatedAt: now,
+    };
+    assertValidAccount(account);
+    transaction.setAccount(account);
+    for (const { billingAt } of missing) {
+      transaction.setGrant(billingGrantId(userId, billingAt), {
+        userId,
+        amount: AI_CREDITS_PER_BILLING_MONTH,
+        billingAt,
+        createdAt: now,
+      });
+    }
+    return account;
+  });
 }
 
 function daysInUtcMonth(year: number, month: number): number {
