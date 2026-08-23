@@ -43,12 +43,12 @@ M16.1 -> M16.2 -> M16.3 -> M16.4 -> M16.5. M16.6 and M16.7 may proceed after M16
 
 ## M16.2 Credit Contract and Billing Arithmetic
 
-| Ticket | Status      | Deliverable                                                 | Acceptance                                                                   |
-| ------ | ----------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| M16.2a | not-started | Define credit account, grant, reservation, and status types | Fields, integer invariants, states, constants, and responses are explicit    |
-| M16.2b | not-started | Implement UTC billing anniversaries                         | Anniversaries preserve the purchase day and clamp to month end               |
-| M16.2c | not-started | Compute due paid-period anniversaries                       | Only dates after the last grant and before `now`/period end are returned     |
-| M16.2d | not-started | Cover billing arithmetic                                    | Tests cover days 1 and 28-31, leap years, annual catch-up, and invalid dates |
+| Ticket | Status    | Deliverable                                                 | Acceptance                                                                   |
+| ------ | --------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| M16.2a | completed | Define credit account, grant, reservation, and status types | Fields, integer invariants, states, constants, and responses are explicit    |
+| M16.2b | completed | Implement UTC billing anniversaries                         | Anniversaries preserve the purchase day and clamp to month end               |
+| M16.2c | completed | Compute due paid-period anniversaries                       | Only dates after the last grant and before `now`/period end are returned     |
+| M16.2d | completed | Cover billing arithmetic                                    | Tests cover days 1 and 28-31, leap years, annual catch-up, and invalid dates |
 
 ## M16.3 Atomic Credit Reconciliation
 
