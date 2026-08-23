@@ -8,12 +8,17 @@ import {
 import { UserDataDeleter, UserDataReader } from "./privacy";
 import { deleteRevenueCatCustomer } from "./revenueCat";
 
-const OWNED_COLLECTIONS = [
+export const OWNED_COLLECTIONS = [
   "events",
   "goals",
   "goalSteps",
   "notes",
   "tasks",
+] as const;
+
+export const AI_CREDIT_QUERY_COLLECTIONS = [
+  "aiCreditGrants",
+  "aiPlans",
 ] as const;
 
 function toPortableValue(value: unknown): unknown {
@@ -47,15 +52,22 @@ function portableDocument(id: string, data: DocumentData): unknown {
 
 export const readUserDataAdmin: UserDataReader = async (userId) => {
   const db = getFirestore();
-  const [profile, subscription, ...collectionSnapshots] = await Promise.all([
-    db.doc(`users/${userId}`).get(),
-    db.doc(`subscriptions/${userId}`).get(),
-    ...OWNED_COLLECTIONS.map((collectionName) =>
-      db.collection(collectionName).where("userId", "==", userId).get(),
-    ),
-  ]);
+  const [profile, subscription, aiCreditAccount, ...collectionSnapshots] =
+    await Promise.all([
+      db.doc(`users/${userId}`).get(),
+      db.doc(`subscriptions/${userId}`).get(),
+      db.doc(`aiCreditAccounts/${userId}`).get(),
+      ...[...OWNED_COLLECTIONS, ...AI_CREDIT_QUERY_COLLECTIONS].map(
+        (collectionName) =>
+          db.collection(collectionName).where("userId", "==", userId).get(),
+      ),
+    ]);
+  const queryCollections = [
+    ...OWNED_COLLECTIONS,
+    ...AI_CREDIT_QUERY_COLLECTIONS,
+  ];
   const records = Object.fromEntries(
-    OWNED_COLLECTIONS.map((collectionName, index) => [
+    queryCollections.map((collectionName, index) => [
       collectionName,
       collectionSnapshots[index].docs.map((document) =>
         portableDocument(document.id, document.data()),
@@ -71,6 +83,11 @@ export const readUserDataAdmin: UserDataReader = async (userId) => {
     subscription: subscription.exists
       ? portableDocument(subscription.id, subscription.data() ?? {})
       : null,
+    aiCreditAccount: aiCreditAccount.exists
+      ? portableDocument(aiCreditAccount.id, aiCreditAccount.data() ?? {})
+      : null,
+    aiCreditGrants: records.aiCreditGrants ?? [],
+    aiPlans: records.aiPlans ?? [],
     events: records.events ?? [],
     goals: records.goals ?? [],
     goalSteps: records.goalSteps ?? [],
@@ -83,8 +100,9 @@ async function deleteLocalUserData(userId: string): Promise<void> {
   const db = getFirestore();
   const writer = db.bulkWriter();
   const snapshots = await Promise.all(
-    OWNED_COLLECTIONS.map((collectionName) =>
-      db.collection(collectionName).where("userId", "==", userId).get(),
+    [...OWNED_COLLECTIONS, ...AI_CREDIT_QUERY_COLLECTIONS].map(
+      (collectionName) =>
+        db.collection(collectionName).where("userId", "==", userId).get(),
     ),
   );
 
@@ -93,6 +111,7 @@ async function deleteLocalUserData(userId: string): Promise<void> {
   });
   writer.delete(db.doc(`users/${userId}`));
   writer.delete(db.doc(`subscriptions/${userId}`));
+  writer.delete(db.doc(`aiCreditAccounts/${userId}`));
   await writer.close();
   await getAuth().deleteUser(userId);
 }

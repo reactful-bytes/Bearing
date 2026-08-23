@@ -72,6 +72,18 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /aiCreditAccounts/{userId} {
+      allow read, write: if false;
+    }
+
+    match /aiCreditGrants/{grantId} {
+      allow read, write: if false;
+    }
+
+    match /aiPlans/{planId} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

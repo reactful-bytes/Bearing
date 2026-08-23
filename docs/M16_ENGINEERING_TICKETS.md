@@ -93,12 +93,12 @@ M16.1 -> M16.2 -> M16.3 -> M16.4 -> M16.5. M16.6 and M16.7 may proceed after M16
 
 ## M16.7 Privacy and Rules
 
-| Ticket | Status      | Deliverable                      | Acceptance                                                                            |
-| ------ | ----------- | -------------------------------- | ------------------------------------------------------------------------------------- |
-| M16.7a | not-started | Export caller AI credit data     | Export includes only the caller's account, grants, and temporary plans                |
-| M16.7b | not-started | Delete caller AI credit data     | Account, grants, and plans are removed before Auth deletion; other users remain       |
-| M16.7c | not-started | Add explicit server-only rules   | Clients cannot read or write quota authority collections                              |
-| M16.7d | not-started | Cover privacy and rule isolation | Tests prove forged targets and owner/other-user direct access cannot escape isolation |
+| Ticket | Status    | Deliverable                      | Acceptance                                                                            |
+| ------ | --------- | -------------------------------- | ------------------------------------------------------------------------------------- |
+| M16.7a | completed | Export caller AI credit data     | Export includes only the caller's account, grants, and temporary plans                |
+| M16.7b | completed | Delete caller AI credit data     | Account, grants, and plans are removed before Auth deletion; other users remain       |
+| M16.7c | completed | Add explicit server-only rules   | Clients cannot read or write quota authority collections                              |
+| M16.7d | completed | Cover privacy and rule isolation | Tests prove forged targets and owner/other-user direct access cannot escape isolation |
 
 ## M16.8 Shared Native and Web Client
 

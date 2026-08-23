@@ -1,9 +1,19 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { deleteUserDataWithProcessorCleanup } from "./privacyAdmin";
+import {
+  AI_CREDIT_QUERY_COLLECTIONS,
+  deleteUserDataWithProcessorCleanup,
+} from "./privacyAdmin";
 
 describe("admin privacy deletion", () => {
+  it("includes grants and temporary plans in caller-scoped lifecycle queries", () => {
+    assert.deepEqual(AI_CREDIT_QUERY_COLLECTIONS, [
+      "aiCreditGrants",
+      "aiPlans",
+    ]);
+  });
+
   it("deletes processor data before local account data", async () => {
     const operations: string[] = [];
 
