@@ -505,6 +505,33 @@ describe('GoalsScreen', () => {
     expect(screen.getByText('Continue on Free Plan')).toBeTruthy();
   });
 
+  it('shows clear progress while generating an AI draft', async () => {
+    (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
+      entitlement: { status: 'active' } as never,
+      uiState: 'ready',
+      error: null,
+    });
+    mockEmptyGoals();
+    (
+      generateAiGoalPlanDraft as jest.MockedFunction<typeof generateAiGoalPlanDraft>
+    ).mockImplementation(() => new Promise(() => undefined));
+
+    render(<GoalsScreen />);
+    openAiPlanningStep();
+    await waitFor(() => expect(screen.getByText(/AI credits available: 10/)).toBeTruthy());
+
+    fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
+
+    expect(screen.getByRole('progressbar', { name: 'Generating AI goal plan' })).toBeTruthy();
+    expect(screen.getByText('Creating your draft...')).toBeTruthy();
+    expect(
+      screen.getByText('Building milestones and steps usually takes a few seconds.'),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Generate AI goal plan' }).props.accessibilityState,
+    ).toEqual({ busy: true, disabled: true });
+  });
+
   it('generates an editable AI draft before saving for premium users', async () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
     const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<

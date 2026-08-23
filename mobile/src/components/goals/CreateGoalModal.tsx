@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { randomUUID } from 'expo-crypto';
 
 import { AppCard } from '../ui/AppCard';
@@ -581,6 +581,22 @@ export function CreateGoalModal({
                   <Text style={styles.errorText}>{aiCreditStatusError}</Text>
                 ) : null}
                 {aiError ? <Text style={styles.errorText}>{aiError}</Text> : null}
+                {aiGenerating ? (
+                  <View
+                    style={styles.generationStatus}
+                    accessible
+                    accessibilityRole="progressbar"
+                    accessibilityLabel="Generating AI goal plan"
+                  >
+                    <ActivityIndicator color={colors.brand} />
+                    <View style={styles.generationStatusCopy}>
+                      <Text style={styles.generationStatusTitle}>Creating your draft...</Text>
+                      <Text style={styles.generationStatusText}>
+                        Building milestones and steps usually takes a few seconds.
+                      </Text>
+                    </View>
+                  </View>
+                ) : null}
                 <AppButton
                   label={aiDraft ? 'Regenerate Draft' : 'Generate Draft'}
                   accessibilityLabel={aiDraft ? 'Regenerate AI goal plan' : 'Generate AI goal plan'}
@@ -826,6 +842,24 @@ const styles = StyleSheet.create({
     ...typography.helper,
     color: colors.textSecondary,
     lineHeight: 20,
+  },
+  generationStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  generationStatusCopy: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  generationStatusTitle: {
+    ...typography.button,
+    color: colors.text,
+  },
+  generationStatusText: {
+    ...typography.helper,
+    color: colors.textSecondary,
   },
   confirmationContent: {
     gap: spacing.md,
