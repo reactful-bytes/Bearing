@@ -607,6 +607,7 @@ describe('GoalsScreen', () => {
 
     expect(screen.getByText('Build an editable first draft.')).toBeTruthy();
     expect(screen.getByText('What the AI plans from')).toBeTruthy();
+    expect(screen.queryByText('Premium Enabled')).toBeNull();
     expect(screen.queryByLabelText('View premium plans for AI goal builder')).toBeNull();
     await waitFor(() => expect(screen.getByText(/AI credits available: 10/)).toBeTruthy());
 

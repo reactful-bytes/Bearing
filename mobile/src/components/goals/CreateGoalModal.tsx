@@ -555,9 +555,6 @@ export function CreateGoalModal({
                     </Text>
                   </>
                 )}
-                <View style={styles.enabledBadge}>
-                  <Text style={styles.enabledBadgeText}>Premium Enabled</Text>
-                </View>
                 {aiCreditsLoading ? (
                   <Text style={styles.cardBody}>Checking AI credits...</Text>
                 ) : null}
@@ -877,20 +874,6 @@ const styles = StyleSheet.create({
   disabledBadgeText: {
     ...typography.helper,
     color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  enabledBadge: {
-    alignSelf: 'flex-start',
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceBrand,
-    borderWidth: 1,
-    borderColor: colors.brand,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  enabledBadgeText: {
-    ...typography.helper,
-    color: colors.brand,
     fontWeight: '600',
   },
   milestoneFields: {
