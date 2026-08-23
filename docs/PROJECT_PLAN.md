@@ -224,7 +224,101 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M15.4   | completed | Preserve explicit web capability boundaries       | Device calendars and purchases remain unavailable; store-specific cancellation links are available  |
 | M15.5   | completed | Document web development and deployment options   | Detailed manual and GitHub Actions tradeoffs added without Firebase Hosting or domain configuration |
 | M15.6   | completed | Validate responsive web and retained mobile flows | Automated checks pass and signed-in desktop visual refinements are accepted                         |
-| M15.7   | completed | Stabilize pull request lint and test validation    | Modal close interaction and date-sensitive goal wizard coverage now pass the complete mobile gate    |
+| M15.7   | completed | Stabilize pull request lint and test validation   | Modal close interaction and date-sensitive goal wizard coverage now pass the complete mobile gate   |
+
+### M16 - Authenticated AI Usage Credits
+
+| Task ID | Status      | Description                                   | Notes                                                        |
+| ------- | ----------- | --------------------------------------------- | ------------------------------------------------------------ |
+| M16.1   | not-started | Restore authenticated callable boundary       | Auth-only caller identity; App Check deferred to M17         |
+| M16.1a  | not-started | Add Auth-only caller guard                    | Reject missing Auth and return only authenticated UID        |
+| M16.1b  | not-started | Remove callable App Check enforcement         | Preserve RevenueCat webhook verification                     |
+| M16.1c  | not-started | Migrate protected handlers                    | No handler trusts payload UID                                |
+| M16.1d  | not-started | Test caller isolation                         | Forged UID and unauthenticated cases                         |
+| M16.2   | not-started | Define credit contract and billing arithmetic | Ten-credit billing-anniversary grants                        |
+| M16.2a  | not-started | Define credit types and invariants            | Account, grant, reservation, and status contracts            |
+| M16.2b  | not-started | Implement UTC billing anniversaries           | Preserve/clamp purchase day                                  |
+| M16.2c  | not-started | Compute due paid-period anniversaries         | Bound by cursor, now, and period end                         |
+| M16.2d  | not-started | Test billing arithmetic                       | Month-end, leap-year, annual, invalid fixtures               |
+| M16.3   | not-started | Add atomic credit reconciliation              | Durable rolling balance                                      |
+| M16.3a  | not-started | Add Firestore credit repository               | Transactional non-negative integer totals                    |
+| M16.3b  | not-started | Bootstrap active accounts                     | Exactly 10 credits; no historical backfill                   |
+| M16.3c  | not-started | Reconcile active anniversaries                | Ten credits per due anniversary                              |
+| M16.3d  | not-started | Add deterministic grant receipts              | Duplicate/concurrent calls cannot double-grant               |
+| M16.3e  | not-started | Enforce non-active accrual policy             | Preserve balances without granting                           |
+| M16.3f  | not-started | Test reconciliation                           | Rollover, idempotency, grace, cancellation, reactivation     |
+| M16.4   | not-started | Add authenticated credit status               | Eligibility, balance, next anniversary                       |
+| M16.4a  | not-started | Implement status handler                      | Derive UID and reconcile                                     |
+| M16.4b  | not-started | Export status callable                        | Shared `us-central1` callable                                |
+| M16.4c  | not-started | Test status states                            | Authorization and eligibility matrix                         |
+| M16.5   | not-started | Meter AI generation idempotently              | Reserve, finalize, refund, retry                             |
+| M16.5a  | not-started | Add request IDs and fingerprints              | Old-client compatibility; no raw prompt record               |
+| M16.5b  | not-started | Reserve one credit                            | Reject zero and concurrent generation                        |
+| M16.5c  | not-started | Finalize successful generation                | Consume exactly one credit                                   |
+| M16.5d  | not-started | Refund failed generation                      | Restore provider/validation failures                         |
+| M16.5e  | not-started | Recover expired reservations                  | Refund stale lease once                                      |
+| M16.5f  | not-started | Make retries idempotent                       | Matching replay is free; mismatch rejected                   |
+| M16.5g  | not-started | Add temporary plan expiry                     | 24-hour TTL field                                            |
+| M16.5h  | not-started | Test generation accounting                    | Success, zero, concurrency, refund, lease, replay, isolation |
+| M16.6   | not-started | Integrate RevenueCat accrual                  | Canonical paid periods                                       |
+| M16.6a  | not-started | Expose canonical paid-period data             | Server UID/status/start/end                                  |
+| M16.6b  | not-started | Reconcile active webhook updates              | Other states preserve without grant                          |
+| M16.6c  | not-started | Preserve webhook idempotency                  | No duplicate grants                                          |
+| M16.6d  | not-started | Test subscription transitions                 | Renewal, grace, recovery, cancellation, reactivation         |
+| M16.7   | not-started | Complete privacy and Firestore rules          | Caller-only lifecycle; server-owned quota                    |
+| M16.7a  | not-started | Export caller AI credit data                  | Account, grants, temporary plans                             |
+| M16.7b  | not-started | Delete caller AI credit data                  | Other users untouched                                        |
+| M16.7c  | not-started | Add explicit server-only rules                | No direct client quota access                                |
+| M16.7d  | not-started | Test privacy and rule isolation               | Forged and cross-user cases                                  |
+| M16.8   | not-started | Add shared native and web credit UX           | One JS SDK and quota policy                                  |
+| M16.8a  | not-started | Add shared credit/request types               | Status, anniversary, ID, balance, errors                     |
+| M16.8b  | not-started | Add credit-status service                     | Shared callable transport                                    |
+| M16.8c  | not-started | Add stable request-ID lifecycle               | Reuse only unknown network retries                           |
+| M16.8d  | not-started | Display credit status                         | Loading, balance, next grant, zero                           |
+| M16.8e  | not-started | Map quota and concurrency errors              | Specific recovery copy                                       |
+| M16.8f  | not-started | Refresh balance after generation              | Success/refund consistency                                   |
+| M16.8g  | not-started | Test client behavior                          | Balance, retry, errors, manual fallback                      |
+| M16.8h  | not-started | Validate web parity                           | Static build and authenticated smoke                         |
+| M16.9   | not-started | Complete observability, docs, and rollout     | Operations and staging evidence                              |
+| M16.9a  | not-started | Add quota-safe events                         | No prompts, drafts, tokens, or keys                          |
+| M16.9b  | not-started | Reconcile architecture/privacy docs           | Auth/quota/App Check deferral current                        |
+| M16.9c  | not-started | Deploy Functions before clients               | Compatible quota enforcement                                 |
+| M16.9d  | not-started | Configure Firestore TTL                       | Temporary plans only                                         |
+| M16.9e  | not-started | Run staging native/web acceptance             | Full ownership/quota/privacy matrix                          |
+
+### M17 - Cross-Platform App Check Defense In Depth
+
+| Task ID | Status      | Description                        | Notes                                            |
+| ------- | ----------- | ---------------------------------- | ------------------------------------------------ |
+| M17.1   | not-started | Approve architecture and rollout   | Explicit authorization required                  |
+| M17.1a  | not-started | Verify current compatibility       | Expo/RN/Firebase/plugins/build impact            |
+| M17.1b  | not-started | Select native migration boundary   | Native adapters plus web JS SDK                  |
+| M17.1c  | not-started | Define rollout and rollback        | Tokens before enforcement                        |
+| M17.2   | not-started | Add web App Check                  | reCAPTCHA Enterprise and debug flow              |
+| M17.2a  | not-started | Register web provider              | Production domain/key registration               |
+| M17.2b  | not-started | Add web initializer                | Runs before protected services                   |
+| M17.2c  | not-started | Add localhost/CI debug flow        | Tokens outside source                            |
+| M17.2d  | not-started | Validate web tokens                | Valid production/debug requests                  |
+| M17.3   | not-started | Add native Firebase and App Check  | Rebuilt clients preserve behavior                |
+| M17.3a  | not-started | Add native Firebase config         | Files/plugins/build properties                   |
+| M17.3b  | not-started | Add native App Check initializer   | Debug/Apple/Android providers                    |
+| M17.3c  | not-started | Migrate native Auth                | Identity lifecycle parity                        |
+| M17.3d  | not-started | Migrate native Functions           | Callable/quota parity                            |
+| M17.3e  | not-started | Preserve web adapters              | No native imports in web                         |
+| M17.3f  | not-started | Rebuild development clients        | Valid debug tokens                               |
+| M17.4   | not-started | Configure production providers     | Apple and Play validation                        |
+| M17.4a  | not-started | Configure Apple attestation        | Signed-device success                            |
+| M17.4b  | not-started | Configure Play Integrity           | Play-distributed success                         |
+| M17.4c  | not-started | Separate debug/release credentials | No production debug token                        |
+| M17.5   | not-started | Stage enforcement                  | Metrics before rejection                         |
+| M17.5a  | not-started | Ship token-capable clients         | Enforcement remains off                          |
+| M17.5b  | not-started | Review acceptance metrics          | Approved valid-token threshold                   |
+| M17.5c  | not-started | Restore server enforcement         | Gate passes first                                |
+| M17.5d  | not-started | Validate rejection and rollback    | Official pass; unregistered fail; rollback works |
+| M17.6   | not-started | Complete docs and release evidence | Runbooks and matrix                              |
+| M17.6a  | not-started | Update security/build/web runbooks | Current procedures                               |
+| M17.6b  | not-started | Run native/web release matrix      | All supported/debug/old/unregistered cases       |
+| M17.6c  | not-started | Record residual risk               | Limitations and ownership                        |
 
 ## Update Rules
 
@@ -238,6 +332,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 | Date       | Task ID          | Validation                                                                    | Result         | Notes                                                                                                                                                                                                                                                                                                                                                                   |
 | ---------- | ---------------- | ----------------------------------------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-08-22 | M16/M17          | AI credits and App Check milestone decomposition                              | completed      | Approved Auth-only caller ownership, non-expiring billing-anniversary AI credits, native/web parity, ticket-sized implementation sequence, and separately deferred App Check hardening are documented in the roadmap and engineering-ticket files                                                                                                                       |
 | 2026-07-17 | M0.1             | Custom agent created and project plan initialized                             | completed      | Initial setup complete                                                                                                                                                                                                                                                                                                                                                  |
 | 2026-07-17 | M0.2             | Product brief document created                                                | completed      | docs/PRODUCT_BRIEF.md                                                                                                                                                                                                                                                                                                                                                   |
 | 2026-07-17 | M0.3             | Roadmap document created                                                      | completed      | docs/ROADMAP.md                                                                                                                                                                                                                                                                                                                                                         |
@@ -313,4 +408,4 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | 2026-08-18 | M15.6            | Automated web implementation validation                                       | manual-handoff | M15 focused tests, typecheck, lint, static web export, Expo Doctor 21/21, dependency check, and HTTP 200 runtime pass. Full Jest is 221/223 with unrelated existing EventForm label-case and past-date Goals fixture failures; signed-in viewport acceptance remains owner-run                                                                                          |
 | 2026-08-18 | M15.6            | Desktop web visual refinement validation                                      | manual-handoff | Narrower desktop rail, shared week header/timeline geometry, centered week controls, and top-right Today action pass 20 focused tests, typecheck, lint, static web export, and HTTP 200 on port 8083; signed-in visual acceptance remains owner-run                                                                                                                     |
 | 2026-08-18 | M15.6            | Signed-in desktop visual acceptance                                           | completed      | User accepted the narrower navigation rail, aligned week grid, centered week controls, and relocated Today action                                                                                                                                                                                                                                                       |
-| 2026-08-18 | M15.7            | Pull request lint and test stabilization                                      | completed      | EventForm modal interaction now targets the visible Done action; the manual goal wizard uses a deterministic July 2026 clock; lint, format check, and all 40 suites with 224 tests pass                                                                                                                    |
+| 2026-08-18 | M15.7            | Pull request lint and test stabilization                                      | completed      | EventForm modal interaction now targets the visible Done action; the manual goal wizard uses a deterministic July 2026 clock; lint, format check, and all 40 suites with 224 tests pass                                                                                                                                                                                 |

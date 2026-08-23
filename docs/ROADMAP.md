@@ -178,6 +178,31 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M15.5   | completed | Document development and deployment options    | Runbook covers local web startup plus manual and GitHub Actions tradeoffs without deploying        |
 | M15.6   | completed | Validate responsive web and retained mobile UX | Automated checks pass and signed-in desktop visual refinements are accepted                        |
 
+### M16 - Authenticated AI Usage Credits
+
+| Task ID | Status      | Description                                        | Exit Criteria                                                                                     |
+| ------- | ----------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| M16.1   | not-started | Restore the authenticated callable boundary        | Native/web callers use Firebase Auth; forged UIDs and unauthenticated requests cannot cross users |
+| M16.2   | not-started | Define credits and billing-anniversary math        | UTC month-end/leap-year anniversary fixtures pass                                                 |
+| M16.3   | not-started | Add atomic rolling credit reconciliation           | Initial and monthly grants roll over without duplicate/concurrent over-crediting                  |
+| M16.4   | not-started | Add authenticated AI credit status                 | Caller receives eligibility, available credits, and next anniversary                              |
+| M16.5   | not-started | Meter AI generation idempotently                   | Successful drafts consume one credit; failures refund; retries and concurrency cannot double-use  |
+| M16.6   | not-started | Integrate RevenueCat paid periods                  | Active renewals accrue; grace/inactive states preserve balances without grants                    |
+| M16.7   | not-started | Complete credit privacy and authorization          | Export/deletion remain caller-scoped and quota collections remain server-owned                    |
+| M16.8   | not-started | Add shared native and web credit UX                | Both platforms show and enforce the same balance, errors, retries, and manual fallback            |
+| M16.9   | not-started | Complete observability, documentation, and rollout | Safe operations, TTL, deployment, and native/web staging evidence are recorded                    |
+
+### M17 - Cross-Platform App Check Defense In Depth
+
+| Task ID | Status      | Description                                | Exit Criteria                                                                               |
+| ------- | ----------- | ------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| M17.1   | not-started | Approve App Check architecture and rollout | Current compatibility, migration boundary, rollout, and rollback are explicit               |
+| M17.2   | not-started | Add web App Check                          | Production web and registered debug clients send valid tokens                               |
+| M17.3   | not-started | Add native Firebase and App Check          | Rebuilt Android/iOS clients preserve Auth, Functions, privacy, and M16 quota behavior       |
+| M17.4   | not-started | Configure production attestation providers | Apple attestation and Play Integrity pass signed-device/distribution checks                 |
+| M17.5   | not-started | Stage server enforcement                   | Metrics prove supported clients before enforcement; rejection and rollback are demonstrated |
+| M17.6   | not-started | Complete runbooks and release evidence     | Native/web/debug/old/unregistered client matrix and residual-risk review are recorded       |
+
 ## Dependency Order Summary
 
 1. M0 Product definition
@@ -193,6 +218,8 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 11. M13 Staged rollout and operations
 12. M14 Google authentication and release-project validation
 13. M15 Desktop web experience and deployment planning
+14. M16 Authenticated AI usage credits after M8, M11, and M15
+15. M17 App Check defense in depth after a stable M16 rollout; M17 does not block M16
 
 ## Validation Gates Per Milestone
 
@@ -203,7 +230,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ## Immediate Next Steps
 
-1. Run native M6.13, M9.1, M10.1, M10.3, M10.4, and M14.5 acceptance on installed release candidates.
-2. Execute M11 store/RevenueCat setup, deployment, sandbox, and regional pricing handoffs.
-3. Link EAS, sign candidates, assemble store packages, run beta cycles, and complete legal approval.
-4. Execute M9.3-M9.6 and M13 owner handoffs, then record rollout and launch evidence.
+1. Execute M16.1, then M16.2-M16.3; keep every leaf ticket current in the engineering tickets and project plan.
+2. Complete M16.4-M16.8, deploy quota-enforced Functions before clients, and run native/web staging acceptance.
+3. Do not start M17 until explicitly authorized after a stable M16 rollout.
+4. Continue native M6.13, M9.1, M10.1, M10.3, M10.4, M11, M12-M14 owner handoffs in parallel.
