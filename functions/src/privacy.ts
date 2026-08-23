@@ -1,6 +1,9 @@
 import { HttpsError } from "firebase-functions/v2/https";
 
-import { CallableIdentityRequest, requireVerifiedCaller } from "./security";
+import {
+  CallableIdentityRequest,
+  requireAuthenticatedCaller,
+} from "./security";
 
 const MAX_AUTH_AGE_SECONDS = 5 * 60;
 
@@ -26,7 +29,7 @@ export async function exportUserData(
   readUserData: UserDataReader,
   now: Date = new Date(),
 ): Promise<UserDataExport> {
-  const caller = requireVerifiedCaller(request);
+  const caller = requireAuthenticatedCaller(request);
   const data = await readUserData(caller.uid);
 
   return {
@@ -41,7 +44,7 @@ export async function deleteUserAccount(
   deleteUserData: UserDataDeleter,
   now: Date = new Date(),
 ): Promise<{ deleted: true }> {
-  const caller = requireVerifiedCaller(request);
+  const caller = requireAuthenticatedCaller(request);
   const authTime = request.auth?.token?.auth_time;
   const nowSeconds = Math.floor(now.getTime() / 1_000);
 

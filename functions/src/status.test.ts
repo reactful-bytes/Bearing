@@ -7,7 +7,6 @@ describe("getBackendStatus", () => {
   it("returns only non-sensitive service state to verified callers", () => {
     assert.deepEqual(
       getBackendStatus({
-        app: { appId: "bearing-app" },
         auth: { uid: "user-1" },
       }),
       { authenticated: true, status: "ok" },

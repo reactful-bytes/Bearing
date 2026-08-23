@@ -82,7 +82,6 @@ export const revenueCatWebhook = onRequest(
 
 export const backendStatus = onCall(
   {
-    enforceAppCheck: true,
     timeoutSeconds: 15,
   },
   getBackendStatus,
@@ -90,7 +89,6 @@ export const backendStatus = onCall(
 
 export const recordTelemetryEvent = onCall(
   {
-    enforceAppCheck: true,
     timeoutSeconds: 10,
   },
   (request) =>
@@ -101,7 +99,6 @@ export const recordTelemetryEvent = onCall(
 
 export const generateGoalPlanDraft = onCall(
   {
-    enforceAppCheck: true,
     timeoutSeconds: 45,
   },
   (request) =>
@@ -113,7 +110,6 @@ export const generateGoalPlanDraft = onCall(
 
 export const exportUserData = onCall(
   {
-    enforceAppCheck: true,
     timeoutSeconds: 60,
   },
   (request) => exportUserDataHandler(request, readUserDataAdmin),
@@ -121,7 +117,6 @@ export const exportUserData = onCall(
 
 export const deleteUserAccount = onCall(
   {
-    enforceAppCheck: true,
     timeoutSeconds: 120,
   },
   async (request) => {

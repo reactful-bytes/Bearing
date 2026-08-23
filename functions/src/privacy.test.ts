@@ -7,7 +7,6 @@ import { deleteUserAccount, exportUserData } from "./privacy";
 
 const now = new Date("2026-07-31T12:00:00.000Z");
 const verifiedRequest = {
-  app: { appId: "bearing-app" },
   auth: {
     uid: "user-1",
     token: { auth_time: Math.floor(now.getTime() / 1_000) - 60 },

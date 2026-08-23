@@ -3,32 +3,23 @@ import { describe, it } from "node:test";
 
 import { HttpsError } from "firebase-functions/v2/https";
 
-import { requireVerifiedCaller } from "./security";
+import { requireAuthenticatedCaller } from "./security";
 
-describe("requireVerifiedCaller", () => {
-  it("returns the authenticated user and verified app identities", () => {
+describe("requireAuthenticatedCaller", () => {
+  it("returns only the authenticated user identity", () => {
     assert.deepEqual(
-      requireVerifiedCaller({
-        app: { appId: "bearing-app" },
+      requireAuthenticatedCaller({
         auth: { uid: "user-1" },
       }),
-      { appId: "bearing-app", uid: "user-1" },
+      { uid: "user-1" },
     );
   });
 
   it("rejects unauthenticated requests", () => {
     assert.throws(
-      () => requireVerifiedCaller({ app: { appId: "bearing-app" } }),
+      () => requireAuthenticatedCaller({}),
       (error: unknown) =>
         error instanceof HttpsError && error.code === "unauthenticated",
-    );
-  });
-
-  it("rejects requests without App Check", () => {
-    assert.throws(
-      () => requireVerifiedCaller({ auth: { uid: "user-1" } }),
-      (error: unknown) =>
-        error instanceof HttpsError && error.code === "failed-precondition",
     );
   });
 });

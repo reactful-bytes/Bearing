@@ -182,7 +182,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 | Task ID | Status      | Description                                        | Exit Criteria                                                                                     |
 | ------- | ----------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| M16.1   | not-started | Restore the authenticated callable boundary        | Native/web callers use Firebase Auth; forged UIDs and unauthenticated requests cannot cross users |
+| M16.1   | completed   | Restore the authenticated callable boundary        | Native/web callers use Firebase Auth; forged UIDs and unauthenticated requests cannot cross users |
 | M16.2   | not-started | Define credits and billing-anniversary math        | UTC month-end/leap-year anniversary fixtures pass                                                 |
 | M16.3   | not-started | Add atomic rolling credit reconciliation           | Initial and monthly grants roll over without duplicate/concurrent over-crediting                  |
 | M16.4   | not-started | Add authenticated AI credit status                 | Caller receives eligibility, available credits, and next anniversary                              |

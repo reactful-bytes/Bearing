@@ -1,6 +1,9 @@
 import { HttpsError } from "firebase-functions/v2/https";
 
-import { CallableIdentityRequest, requireVerifiedCaller } from "./security";
+import {
+  CallableIdentityRequest,
+  requireAuthenticatedCaller,
+} from "./security";
 
 export type TelemetryEvent = {
   schemaVersion: 1;
@@ -175,7 +178,7 @@ export async function recordTelemetryEvent(
   request: TelemetryRequest,
   writeEvent: TelemetryWriter,
 ): Promise<{ recorded: true }> {
-  requireVerifiedCaller(request);
+  requireAuthenticatedCaller(request);
   await writeEvent(parseTelemetryEvent(request.data));
   return { recorded: true };
 }

@@ -1,4 +1,7 @@
-import { CallableIdentityRequest, requireVerifiedCaller } from "./security";
+import {
+  CallableIdentityRequest,
+  requireAuthenticatedCaller,
+} from "./security";
 
 export type BackendStatus = {
   authenticated: true;
@@ -8,7 +11,7 @@ export type BackendStatus = {
 export function getBackendStatus(
   request: CallableIdentityRequest,
 ): BackendStatus {
-  requireVerifiedCaller(request);
+  requireAuthenticatedCaller(request);
 
   return {
     authenticated: true,

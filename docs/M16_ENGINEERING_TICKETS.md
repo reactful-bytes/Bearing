@@ -34,12 +34,12 @@ M16.1 -> M16.2 -> M16.3 -> M16.4 -> M16.5. M16.6 and M16.7 may proceed after M16
 
 ## M16.1 Authenticated Callable Boundary
 
-| Ticket | Status      | Deliverable                                                | Acceptance                                                                               |
-| ------ | ----------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| M16.1a | not-started | Replace the App Check caller guard with an Auth-only guard | Missing Auth is rejected and the guard returns only `request.auth.uid`                   |
-| M16.1b | not-started | Remove callable App Check enforcement                      | Protected callables omit `enforceAppCheck`; RevenueCat webhook verification is unchanged |
-| M16.1c | not-started | Migrate protected handlers to Auth identity                | Status, telemetry, entitlement, AI, export, and deletion use only the authenticated UID  |
-| M16.1d | not-started | Prove caller ownership and unauthenticated rejection       | Tests show forged payload UIDs are ignored and unauthenticated calls fail                |
+| Ticket | Status    | Deliverable                                                | Acceptance                                                                               |
+| ------ | --------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| M16.1a | completed | Replace the App Check caller guard with an Auth-only guard | Missing Auth is rejected and the guard returns only `request.auth.uid`                   |
+| M16.1b | completed | Remove callable App Check enforcement                      | Protected callables omit `enforceAppCheck`; RevenueCat webhook verification is unchanged |
+| M16.1c | completed | Migrate protected handlers to Auth identity                | Status, telemetry, entitlement, AI, export, and deletion use only the authenticated UID  |
+| M16.1d | completed | Prove caller ownership and unauthenticated rejection       | Tests show forged payload UIDs are ignored and unauthenticated calls fail                |
 
 ## M16.2 Credit Contract and Billing Arithmetic
 

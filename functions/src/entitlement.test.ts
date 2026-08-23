@@ -10,7 +10,6 @@ import {
 } from "./entitlement";
 
 const verifiedRequest = {
-  app: { appId: "bearing-app" },
   auth: { uid: "user-1" },
 };
 
@@ -26,7 +25,6 @@ describe("requirePremiumCaller", () => {
     );
 
     assert.deepEqual(caller, {
-      appId: "bearing-app",
       uid: "user-1",
       subscriptionStatus: "active",
     });

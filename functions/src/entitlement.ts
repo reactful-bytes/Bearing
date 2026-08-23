@@ -2,15 +2,15 @@ import { getFirestore } from "firebase-admin/firestore";
 import { HttpsError } from "firebase-functions/v2/https";
 
 import {
+  AuthenticatedCaller,
   CallableIdentityRequest,
-  VerifiedCaller,
-  requireVerifiedCaller,
+  requireAuthenticatedCaller,
 } from "./security";
 
 export type SubscriptionStatus =
   "active" | "in_grace_period" | "expired" | "canceled";
 
-export type PremiumCaller = VerifiedCaller & {
+export type PremiumCaller = AuthenticatedCaller & {
   subscriptionStatus: "active" | "in_grace_period";
 };
 
@@ -44,7 +44,7 @@ export async function requirePremiumCaller(
   request: CallableIdentityRequest,
   lookup: EntitlementLookup = loadSubscriptionStatus,
 ): Promise<PremiumCaller> {
-  const caller = requireVerifiedCaller(request);
+  const caller = requireAuthenticatedCaller(request);
   const subscriptionStatus = await lookup(caller.uid);
 
   if (

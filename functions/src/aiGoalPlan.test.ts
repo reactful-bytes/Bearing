@@ -11,7 +11,6 @@ import {
 } from "./aiGoalPlan";
 
 const request = {
-  app: { appId: "bearing-app" },
   auth: { uid: "user-1" },
   data: {
     title: "Run a 10k",
@@ -83,6 +82,24 @@ describe("AI goal plan", () => {
     );
 
     assert.deepEqual(draft, { promptVersion: 1, ...validDraft });
+  });
+
+  it("authorizes the authenticated caller instead of a payload user ID", async () => {
+    let lookedUpUserId = "";
+
+    await generateGoalPlanDraft(
+      {
+        ...request,
+        data: { ...request.data, userId: "other-user" },
+      },
+      async () => validDraft,
+      async (userId) => {
+        lookedUpUserId = userId;
+        return "active";
+      },
+    );
+
+    assert.equal(lookedUpUserId, "user-1");
   });
 
   it("does not invoke the provider for a free caller", async () => {
