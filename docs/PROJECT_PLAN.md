@@ -270,15 +270,15 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M16.7b  | completed   | Delete caller AI credit data                  | Other users untouched                                        |
 | M16.7c  | completed   | Add explicit server-only rules                | No direct client quota access                                |
 | M16.7d  | completed   | Test privacy and rule isolation               | Forged and cross-user cases                                  |
-| M16.8   | not-started | Add shared native and web credit UX           | One JS SDK and quota policy                                  |
-| M16.8a  | not-started | Add shared credit/request types               | Status, anniversary, ID, balance, errors                     |
-| M16.8b  | not-started | Add credit-status service                     | Shared callable transport                                    |
-| M16.8c  | not-started | Add stable request-ID lifecycle               | Reuse only unknown network retries                           |
-| M16.8d  | not-started | Display credit status                         | Loading, balance, next grant, zero                           |
-| M16.8e  | not-started | Map quota and concurrency errors              | Specific recovery copy                                       |
-| M16.8f  | not-started | Refresh balance after generation              | Success/refund consistency                                   |
-| M16.8g  | not-started | Test client behavior                          | Balance, retry, errors, manual fallback                      |
-| M16.8h  | not-started | Validate web parity                           | Static build and authenticated smoke                         |
+| M16.8   | in-progress | Add shared native and web credit UX           | One JS SDK and quota policy                                  |
+| M16.8a  | completed   | Add shared credit/request types               | Status, anniversary, ID, balance, errors                     |
+| M16.8b  | completed   | Add credit-status service                     | Shared callable transport                                    |
+| M16.8c  | completed   | Add stable request-ID lifecycle               | Reuse only unknown network retries                           |
+| M16.8d  | completed   | Display credit status                         | Loading, balance, next grant, zero                           |
+| M16.8e  | completed   | Map quota and concurrency errors              | Specific recovery copy                                       |
+| M16.8f  | completed   | Refresh balance after generation              | Success/refund consistency                                   |
+| M16.8g  | completed   | Test client behavior                          | Balance, retry, errors, manual fallback                      |
+| M16.8h  | in-progress | Validate web parity                           | Static build and authenticated smoke                         |
 | M16.9   | not-started | Complete observability, docs, and rollout     | Operations and staging evidence                              |
 | M16.9a  | not-started | Add quota-safe events                         | No prompts, drafts, tokens, or keys                          |
 | M16.9b  | not-started | Reconcile architecture/privacy docs           | Auth/quota/App Check deferral current                        |
@@ -332,6 +332,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 | Date       | Task ID          | Validation                                                                               | Result         | Notes                                                                                                                                                                                                                                                                                                                                                                   |
 | ---------- | ---------------- | ---------------------------------------------------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-08-22 | M16.8a-M16.8g    | Mobile lint/typecheck, 20 focused tests, full 237-test suite, and static web export      | completed      | Shared native/web callable types, status loading, stable UUID retries, balance/next-grant/zero states, returned-balance refresh, quota/concurrency copy, and manual fallback pass; M16.8h remains active pending authenticated post-deployment browser smoke                                                                                                            |
 | 2026-08-22 | M16.7            | Functions quality, mobile lint, privacy suites, and `npm --prefix mobile run test:rules` | completed      | Caller-scoped export/deletion includes account, grants, and plans; all seventeen emulator tests pass, including owner and other-user read/write denial for every server-owned credit collection                                                                                                                                                                         |
 | 2026-08-22 | M16.6            | `npm --prefix functions run quality`; explicit RevenueCat and credit suites              | completed      | Canonical user/status/paid-period conversion and post-commit reconciliation pass active, annual renewal, grace, recovery, expiration, cancellation, reactivation, and deterministic idempotency fixtures                                                                                                                                                                |
 | 2026-08-22 | M16.5            | `npm --prefix functions run quality`; explicit compiled credit/status/generation suites  | completed      | Forty-two focused tests pass for success-only charging, zero balance, concurrency, refunds, stale leases, matching replay, mismatch rejection, old-client UUIDs, 24-hour expiry, and user isolation                                                                                                                                                                     |

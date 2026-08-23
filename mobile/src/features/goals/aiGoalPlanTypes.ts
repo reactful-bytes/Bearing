@@ -4,6 +4,13 @@ export type AiGoalPlanInput = {
   title: string;
   description: string;
   targetDate: string;
+  requestId?: string;
+};
+
+export type AiCreditStatus = {
+  eligible: boolean;
+  availableCredits: number;
+  nextGrantAt: string | null;
 };
 
 export type AiGoalMilestone = {
@@ -22,4 +29,6 @@ export type AiGoalPlanDraft = {
     targetDate: string;
   }[];
   timelineSummary: string;
+  requestId?: string;
+  availableCredits?: number;
 };

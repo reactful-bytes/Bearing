@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { randomUUID } from 'expo-crypto';
 
 import { AppCard } from '../ui/AppCard';
 import { AppButton } from '../ui/AppButton';
@@ -21,10 +22,12 @@ import {
 import { colors, radii, spacing, typography } from '../../design/tokens';
 import {
   AiGoalMilestone,
+  AiCreditStatus,
   AiGoalPlanDraft,
   AiGoalPlanInput,
 } from '../../features/goals/aiGoalPlanTypes';
 import { CreateGoalInput, CreateGoalStepInput } from '../../features/goals/goalTypes';
+import { getAiPlanningErrorCode } from '../../services/firebase/firebaseAiGoalPlans';
 
 type CreateGoalModalProps = {
   visible: boolean;
@@ -34,6 +37,7 @@ type CreateGoalModalProps = {
   isPremiumStatusResolved: boolean;
   onOpenPremiumPaywall: () => void;
   onGenerateAiPlan: (input: AiGoalPlanInput) => Promise<AiGoalPlanDraft>;
+  onLoadAiCreditStatus: () => Promise<AiCreditStatus>;
 };
 
 type DraftGoalStep = CreateGoalStepInput & {
@@ -91,6 +95,7 @@ export function CreateGoalModal({
   isPremiumStatusResolved,
   onOpenPremiumPaywall,
   onGenerateAiPlan,
+  onLoadAiCreditStatus,
 }: CreateGoalModalProps) {
   const today = useMemo(() => new Date(), []);
   const [wizardIndex, setWizardIndex] = useState(0);
@@ -107,12 +112,40 @@ export function CreateGoalModal({
   const [aiMilestones, setAiMilestones] = useState<AiGoalMilestone[]>([]);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [aiCreditStatus, setAiCreditStatus] = useState<AiCreditStatus | null>(null);
+  const [aiCreditsLoading, setAiCreditsLoading] = useState(false);
+  const [aiCreditStatusError, setAiCreditStatusError] = useState<string | null>(null);
+  const aiRequestId = useRef<string | null>(null);
 
   const canGoBack = wizardIndex > 0;
   const wizardLabel = useMemo(
     () => `Step ${wizardIndex + 1} of ${WIZARD_TITLES.length}: ${WIZARD_TITLES[wizardIndex]}`,
     [wizardIndex],
   );
+
+  useEffect(() => {
+    if (!visible || wizardIndex !== 3 || !isPremiumStatusResolved || !hasPremiumAccess) {
+      return;
+    }
+
+    let active = true;
+    setAiCreditsLoading(true);
+    setAiCreditStatusError(null);
+    void onLoadAiCreditStatus()
+      .then((status) => {
+        if (active) setAiCreditStatus(status);
+      })
+      .catch(() => {
+        if (active) setAiCreditStatusError('AI credit balance is unavailable right now.');
+      })
+      .finally(() => {
+        if (active) setAiCreditsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [hasPremiumAccess, isPremiumStatusResolved, onLoadAiCreditStatus, visible, wizardIndex]);
 
   function resetForm(): void {
     setWizardIndex(0);
@@ -127,6 +160,10 @@ export function CreateGoalModal({
     setAiMilestones([]);
     setAiGenerating(false);
     setAiError(null);
+    setAiCreditStatus(null);
+    setAiCreditsLoading(false);
+    setAiCreditStatusError(null);
+    aiRequestId.current = null;
   }
 
   function handleClose(): void {
@@ -159,11 +196,20 @@ export function CreateGoalModal({
     setAiError(null);
 
     try {
+      aiRequestId.current ??= randomUUID();
       const draft = await onGenerateAiPlan({
         title: title.trim(),
         description: description.trim(),
         targetDate: formatAiTargetDate(goalDateParts),
+        requestId: aiRequestId.current,
       });
+
+      aiRequestId.current = null;
+      if (typeof draft.availableCredits === 'number') {
+        setAiCreditStatus((current) =>
+          current ? { ...current, availableCredits: draft.availableCredits! } : current,
+        );
+      }
 
       setAiDraft(draft);
       setAiMilestones(draft.milestones);
@@ -181,8 +227,26 @@ export function CreateGoalModal({
           };
         }),
       );
-    } catch {
-      setAiError('AI planning is unavailable right now. Try again or continue manually.');
+    } catch (generationError) {
+      const code = getAiPlanningErrorCode(generationError);
+      if (code === 'resource-exhausted') {
+        aiRequestId.current = null;
+        setAiError('No AI planning credits remain. Continue manually or wait for your next grant.');
+      } else if (code === 'aborted') {
+        setAiError('AI planning is already in progress. Try again shortly.');
+      } else if (code === 'invalid-argument') {
+        aiRequestId.current = null;
+        setAiError('AI planning could not reuse this request. Try again.');
+      } else {
+        if (code === 'internal') aiRequestId.current = null;
+        setAiError('AI planning is unavailable right now. Try again or continue manually.');
+      }
+
+      try {
+        setAiCreditStatus(await onLoadAiCreditStatus());
+      } catch {
+        setAiCreditStatusError('AI credit balance is unavailable right now.');
+      }
     } finally {
       setAiGenerating(false);
     }
@@ -449,6 +513,28 @@ export function CreateGoalModal({
               <View style={styles.enabledBadge}>
                 <Text style={styles.enabledBadgeText}>Premium Enabled</Text>
               </View>
+              {aiCreditsLoading ? (
+                <Text style={styles.cardBody}>Checking AI credits...</Text>
+              ) : null}
+              {aiCreditStatus ? (
+                <Text style={styles.cardBody}>
+                  AI credits available: {aiCreditStatus.availableCredits}
+                  {aiCreditStatus.nextGrantAt
+                    ? ` | Next grant ${new Date(aiCreditStatus.nextGrantAt).toLocaleDateString(
+                        undefined,
+                        { timeZone: 'UTC' },
+                      )}`
+                    : ''}
+                </Text>
+              ) : null}
+              {aiCreditStatus?.availableCredits === 0 && !aiError ? (
+                <Text style={styles.errorText}>
+                  No AI credits remain. Continue manually or wait for your next grant.
+                </Text>
+              ) : null}
+              {aiCreditStatusError ? (
+                <Text style={styles.errorText}>{aiCreditStatusError}</Text>
+              ) : null}
               {aiError ? <Text style={styles.errorText}>{aiError}</Text> : null}
               <AppButton
                 label={aiDraft ? 'Regenerate Draft' : 'Generate Draft'}
@@ -456,6 +542,11 @@ export function CreateGoalModal({
                 onPress={handleGenerateAiPlan}
                 loading={aiGenerating}
                 loadingLabel="Generating..."
+                disabled={
+                  aiCreditsLoading ||
+                  aiCreditStatus?.availableCredits === 0 ||
+                  aiCreditStatus?.eligible === false
+                }
               />
             </AppCard>
           ) : (

@@ -9,7 +9,14 @@ import { useUserProfile } from '../features/profile/useUserProfile';
 import { UserProfileRecord } from '../features/profile/profileTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
-import { generateAiGoalPlanDraft } from '../services/firebase/firebaseAiGoalPlans';
+import {
+  generateAiGoalPlanDraft,
+  getAiCreditStatus,
+} from '../services/firebase/firebaseAiGoalPlans';
+
+jest.mock('expo-crypto', () => ({
+  randomUUID: jest.fn(() => '123e4567-e89b-42d3-a456-426614174000'),
+}));
 
 jest.mock('../features/goals/useGoals', () => ({
   useGoals: jest.fn(),
@@ -33,6 +40,10 @@ jest.mock('../features/premium/usePremiumEntitlement', () => ({
 
 jest.mock('../services/firebase/firebaseAiGoalPlans', () => ({
   generateAiGoalPlanDraft: jest.fn(),
+  getAiCreditStatus: jest.fn(),
+  getAiPlanningErrorCode: jest.fn(
+    (error: { code?: string }) => error?.code?.replace('functions/', '') ?? null,
+  ),
 }));
 
 jest.mock('../services/firebase/firebaseEvents', () => ({
@@ -159,6 +170,33 @@ function makeOrderedGoal(): GoalWithSteps {
   });
 }
 
+function mockEmptyGoals(): void {
+  (useGoals as jest.MockedFunction<typeof useGoals>).mockReturnValue({
+    goals: [],
+    uiState: 'empty',
+    createGoal: async () => undefined,
+    updateGoal: async () => undefined,
+    markGoalCompleted: async () => undefined,
+    createStep: async () => undefined,
+    deleteStep: async () => undefined,
+    updateStep: async () => undefined,
+    reorderSteps: async () => undefined,
+    retry: jest.fn(),
+  });
+  (useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>).mockReturnValue({
+    events: [],
+    uiState: 'idle',
+  });
+}
+
+function openAiPlanningStep(): void {
+  fireEvent.press(screen.getByText('New Goal'));
+  fireEvent.press(screen.getByLabelText('Continue'));
+  fireEvent.changeText(screen.getByLabelText('Goal name'), 'Run a 10k');
+  fireEvent.press(screen.getByLabelText('Continue'));
+  fireEvent.press(screen.getByLabelText('Continue'));
+}
+
 describe('GoalsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -167,6 +205,11 @@ describe('GoalsScreen', () => {
       entitlement: null,
       uiState: 'ready',
       error: null,
+    });
+    (getAiCreditStatus as jest.MockedFunction<typeof getAiCreditStatus>).mockResolvedValue({
+      eligible: true,
+      availableCredits: 10,
+      nextGrantAt: '2027-01-01T00:00:00.000Z',
     });
     (useCalendarPublication as jest.MockedFunction<typeof useCalendarPublication>).mockReturnValue({
       publicationCalendarTitle: null,
@@ -498,6 +541,8 @@ describe('GoalsScreen', () => {
         },
       ],
       timelineSummary: 'Build consistency before increasing distance.',
+      requestId: '123e4567-e89b-42d3-a456-426614174000',
+      availableCredits: 9,
     });
 
     render(<GoalsScreen />);
@@ -514,12 +559,14 @@ describe('GoalsScreen', () => {
 
     expect(screen.getByText('Build an editable first draft.')).toBeTruthy();
     expect(screen.queryByLabelText('View premium plans for AI goal builder')).toBeNull();
+    await waitFor(() => expect(screen.getByText(/AI credits available: 10/)).toBeTruthy());
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
     });
 
     await waitFor(() => expect(screen.getByText('Review your AI draft.')).toBeTruthy());
+    expect(screen.getByText(/AI credits available: 9/)).toBeTruthy();
     expect(mockedGenerateAiGoalPlanDraft).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Run a 10k',
@@ -590,6 +637,8 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.press(screen.getByLabelText('Continue'));
 
+    await waitFor(() => expect(screen.getByText(/AI credits available: 10/)).toBeTruthy());
+
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
     });
@@ -599,8 +648,91 @@ describe('GoalsScreen', () => {
         screen.getByText('AI planning is unavailable right now. Try again or continue manually.'),
       ).toBeTruthy(),
     );
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
+    });
+    const generationCalls = (
+      generateAiGoalPlanDraft as jest.MockedFunction<typeof generateAiGoalPlanDraft>
+    ).mock.calls;
+    expect(generationCalls[0][0].requestId).toBe(generationCalls[1][0].requestId);
     fireEvent.press(screen.getByLabelText('Continue'));
     expect(screen.getByLabelText('Draft step 1 name')).toBeTruthy();
+  });
+
+  it('disables AI generation at zero credits without blocking manual planning', async () => {
+    (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
+      entitlement: { status: 'active' } as never,
+      uiState: 'ready',
+      error: null,
+    });
+    (getAiCreditStatus as jest.MockedFunction<typeof getAiCreditStatus>).mockResolvedValue({
+      eligible: true,
+      availableCredits: 0,
+      nextGrantAt: '2027-01-01T00:00:00.000Z',
+    });
+    mockEmptyGoals();
+
+    render(<GoalsScreen />);
+    openAiPlanningStep();
+
+    await waitFor(() => expect(screen.getByText(/AI credits available: 0/)).toBeTruthy());
+    expect(screen.getByLabelText('Generate AI goal plan').props.accessibilityState.disabled).toBe(
+      true,
+    );
+    fireEvent.press(screen.getByLabelText('Continue'));
+    expect(screen.getByLabelText('Draft step 1 name')).toBeTruthy();
+  });
+
+  it('refreshes the balance and explains backend credit exhaustion', async () => {
+    (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
+      entitlement: { status: 'active' } as never,
+      uiState: 'ready',
+      error: null,
+    });
+    (getAiCreditStatus as jest.MockedFunction<typeof getAiCreditStatus>)
+      .mockResolvedValueOnce({ eligible: true, availableCredits: 1, nextGrantAt: null })
+      .mockResolvedValueOnce({ eligible: true, availableCredits: 0, nextGrantAt: null });
+    (
+      generateAiGoalPlanDraft as jest.MockedFunction<typeof generateAiGoalPlanDraft>
+    ).mockRejectedValue({ code: 'functions/resource-exhausted' });
+    mockEmptyGoals();
+
+    render(<GoalsScreen />);
+    openAiPlanningStep();
+    await waitFor(() => expect(screen.getByText(/AI credits available: 1/)).toBeTruthy());
+    fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          'No AI planning credits remain. Continue manually or wait for your next grant.',
+        ),
+      ).toBeTruthy(),
+    );
+    expect(screen.getByText(/AI credits available: 0/)).toBeTruthy();
+  });
+
+  it('shows a specific message when another generation is active', async () => {
+    (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
+      entitlement: { status: 'active' } as never,
+      uiState: 'ready',
+      error: null,
+    });
+    (
+      generateAiGoalPlanDraft as jest.MockedFunction<typeof generateAiGoalPlanDraft>
+    ).mockRejectedValue({ code: 'functions/aborted' });
+    mockEmptyGoals();
+
+    render(<GoalsScreen />);
+    openAiPlanningStep();
+    await waitFor(() => expect(screen.getByText(/AI credits available: 10/)).toBeTruthy());
+    fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('AI planning is already in progress. Try again shortly.'),
+      ).toBeTruthy(),
+    );
   });
 
   it('limits year choices to the present or future and rejects a non-future target date', () => {

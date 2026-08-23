@@ -104,14 +104,14 @@ M16.1 -> M16.2 -> M16.3 -> M16.4 -> M16.5. M16.6 and M16.7 may proceed after M16
 
 | Ticket | Status      | Deliverable                     | Acceptance                                                                                  |
 | ------ | ----------- | ------------------------------- | ------------------------------------------------------------------------------------------- |
-| M16.8a | not-started | Add shared credit/request types | Types cover status, anniversary, request ID, balance, and errors                            |
-| M16.8b | not-started | Add the credit-status service   | Shared JS SDK calls `getAiCreditStatus` in `us-central1`                                    |
-| M16.8c | not-started | Add stable request-ID lifecycle | Unknown network retries reuse an ID; definitive outcomes create a new ID                    |
-| M16.8d | not-started | Display credit status           | AI Planning shows loading, balance, next grant, and zero state without blocking manual work |
-| M16.8e | not-started | Map quota/concurrency errors    | Exhaustion and active generation receive specific messages                                  |
-| M16.8f | not-started | Update balance after generation | Success uses returned balance; refunded failures refresh status                             |
-| M16.8g | not-started | Cover client behavior           | Jest covers balance, decrement, rollover, zero, refund, retry, concurrency, and fallback    |
-| M16.8h | not-started | Validate web parity             | Static web build and authenticated browser flow use the same quota policy                   |
+| M16.8a | completed   | Add shared credit/request types | Types cover status, anniversary, request ID, balance, and errors                            |
+| M16.8b | completed   | Add the credit-status service   | Shared JS SDK calls `getAiCreditStatus` in `us-central1`                                    |
+| M16.8c | completed   | Add stable request-ID lifecycle | Unknown network retries reuse an ID; definitive outcomes create a new ID                    |
+| M16.8d | completed   | Display credit status           | AI Planning shows loading, balance, next grant, and zero state without blocking manual work |
+| M16.8e | completed   | Map quota/concurrency errors    | Exhaustion and active generation receive specific messages                                  |
+| M16.8f | completed   | Update balance after generation | Success uses returned balance; refunded failures refresh status                             |
+| M16.8g | completed   | Cover client behavior           | Jest covers balance, decrement, rollover, zero, refund, retry, concurrency, and fallback    |
+| M16.8h | in-progress | Validate web parity             | Static web build and authenticated browser flow use the same quota policy                   |
 
 ## M16.9 Observability, Documentation, and Rollout
 
