@@ -30,7 +30,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M1.2    | completed      | Configure Firebase project, auth, env management | Firebase init/auth bootstrap and env strategy validated in development                                                                        |
 | M1.3    | completed      | Add lint, formatter, tests, and CI baseline      | CI validates lint and tests on PR                                                                                                             |
 | M1.4    | completed      | Set up navigation shell with bottom tabs         | Calendar, Goals, Notes, Profile tabs routable                                                                                                 |
-| M1.5    | in-progress    | Restore reproducible engineering baseline        | Node 24/npm 11 fresh install and every required quality command pass locally and in CI                                                        |
+| M1.5    | in-progress    | Restore reproducible engineering baseline        | Node 24/npm 11 fresh install, local Android SDK discovery, and every required quality command pass locally and in CI                           |
 | M1.6    | manual-handoff | Add shared Firebase Functions foundation         | Repository and CI conventions pass; owner deploys and invokes authenticated staging services                                                  |
 
 ### M2 - Design System and UX Foundation
