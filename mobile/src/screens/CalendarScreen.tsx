@@ -569,6 +569,7 @@ export function CalendarScreen({
         visible={focusModeVisible}
         events={mergedFocusEvents}
         preferredEventId={preferredFocusEventId}
+        timerSoundId={profile?.alarmSoundId}
         onClose={handleCloseFocusMode}
         onSaveIdeaDump={handleSaveIdeaDump}
       />

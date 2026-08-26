@@ -22,3 +22,19 @@ jest.mock('@react-native-community/datetimepicker', () => {
     },
   };
 });
+
+jest.mock('expo-audio', () => ({
+  setAudioModeAsync: jest.fn(async () => undefined),
+  useAudioPlayer: jest.fn(() => ({
+    loop: false,
+    pause: jest.fn(),
+    play: jest.fn(),
+    replace: jest.fn(),
+    seekTo: jest.fn(async () => undefined),
+  })),
+  useAudioPlayerStatus: jest.fn(() => ({
+    didJustFinish: false,
+    error: null,
+    playing: false,
+  })),
+}));
