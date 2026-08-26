@@ -84,6 +84,19 @@ describe('calendarReconciliation hashing and conflicts', () => {
     expect(decoratedHash).toBe(baseHash);
     expect(canonicalCalendarFieldHash(fields({ title: 'Changed' }))).not.toBe(baseHash);
     expect(canonicalCalendarFieldHash(fields({ allDay: true }))).not.toBe(baseHash);
+    expect(
+      canonicalCalendarFieldHash(
+        fields({
+          recurrenceRule: {
+            frequency: 'weekly',
+            interval: 1,
+            endAt: null,
+            occurrenceCount: null,
+            weekdays: ['monday', 'wednesday'],
+          },
+        }),
+      ),
+    ).not.toBe(baseHash);
   });
 
   it('dedupes unchanged and independently equal linked copies', () => {

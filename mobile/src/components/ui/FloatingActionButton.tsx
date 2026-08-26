@@ -5,6 +5,7 @@ import { componentTokens, radii, spacing, typography } from '../../design/tokens
 type FloatingActionButtonProps = {
   label?: string;
   accessibilityLabel?: string;
+  showIcon?: boolean;
   onPress: () => void;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -14,6 +15,7 @@ type FloatingActionButtonProps = {
 export function FloatingActionButton({
   label,
   accessibilityLabel,
+  showIcon = false,
   onPress,
   disabled = false,
   style,
@@ -32,7 +34,7 @@ export function FloatingActionButton({
         style,
       ]}
     >
-      <Text style={styles.icon}>+</Text>
+      {showIcon ? <Text style={styles.icon}>+</Text> : null}
       {label ? (
         <Text style={[styles.label, labelColor ? { color: labelColor } : null]}>{label}</Text>
       ) : null}

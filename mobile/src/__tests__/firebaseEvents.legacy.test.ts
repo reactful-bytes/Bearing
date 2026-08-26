@@ -80,4 +80,28 @@ describe('firebaseEvents legacy decoding', () => {
     });
     expect(decoded.publication).not.toHaveProperty('nativeEventId');
   });
+
+  it('decodes valid custom weekdays in calendar order', () => {
+    const at = new Date(2026, 7, 3, 9);
+    const decoded = decodeCalendarEventData('custom-recurrence', {
+      userId: 'user-1',
+      title: 'Custom recurrence',
+      description: '',
+      startAt: timestamp(at),
+      endAt: timestamp(new Date(2026, 7, 3, 10)),
+      timezone: 'UTC',
+      recurrenceRule: {
+        frequency: 'weekly',
+        interval: 1,
+        endAt: null,
+        occurrenceCount: null,
+        weekdays: ['saturday', 'invalid', 'monday', 'monday'],
+      },
+      status: 'scheduled',
+      createdAt: timestamp(at),
+      updatedAt: timestamp(at),
+    });
+
+    expect(decoded.recurrenceRule?.weekdays).toEqual(['monday', 'saturday']);
+  });
 });

@@ -10,7 +10,10 @@ import {
   CreateEventInput,
   createUnpublishedMetadata,
 } from '../features/calendar/calendarTypes';
-import { DeviceCalendarAdapter } from '../services/calendar/deviceCalendarAdapter';
+import {
+  CUSTOM_WEEKDAY_RECURRENCE_UNSUPPORTED_MESSAGE,
+  DeviceCalendarAdapter,
+} from '../services/calendar/deviceCalendarAdapter';
 import { canonicalCalendarFieldHash } from '../features/calendar/calendarReconciliation';
 
 jest.mock('../services/firebase/firebaseEvents', () => ({
@@ -27,6 +30,8 @@ jest.mock('../services/calendar/deviceCalendarSettings', () => ({
 }));
 
 jest.mock('../services/calendar/deviceCalendarAdapter', () => ({
+  CUSTOM_WEEKDAY_RECURRENCE_UNSUPPORTED_MESSAGE:
+    'Custom weekday recurrence is unavailable for Android device calendars. Keep this event in Bearing or choose Weekly.',
   deviceCalendarAdapter: {},
 }));
 
@@ -158,6 +163,25 @@ describe('calendarPublicationService', () => {
       'user-1',
       'bearing-1',
       expect.objectContaining({ status: 'failed', retryable: true }),
+    );
+  });
+
+  it('preserves the actionable Android custom recurrence publication error', async () => {
+    const adapter = makeAdapter();
+    (adapter.createEvent as jest.MockedFunction<typeof adapter.createEvent>).mockRejectedValue(
+      new Error(CUSTOM_WEEKDAY_RECURRENCE_UNSUPPORTED_MESSAGE),
+    );
+    const dependencies = makeDependencies(adapter);
+    const service = createCalendarPublicationService(dependencies);
+
+    await expect(service.createEvent('user-1', input, { publishToDevice: true })).resolves.toEqual({
+      eventId: 'bearing-1',
+      status: 'failed',
+    });
+    expect(dependencies.updatePublication).toHaveBeenLastCalledWith(
+      'user-1',
+      'bearing-1',
+      expect.objectContaining({ lastError: CUSTOM_WEEKDAY_RECURRENCE_UNSUPPORTED_MESSAGE }),
     );
   });
 
@@ -376,6 +400,54 @@ describe('calendarPublicationService', () => {
       expect.objectContaining({ title: 'Bearing changed' }),
     );
     expect(dependencies.updateBearingEvent).not.toHaveBeenCalled();
+  });
+
+  it('preserves the Android custom recurrence error when editing a linked event', async () => {
+    const adapter = makeAdapter();
+    (adapter.updateEvent as jest.MockedFunction<typeof adapter.updateEvent>).mockRejectedValue(
+      new Error(CUSTOM_WEEKDAY_RECURRENCE_UNSUPPORTED_MESSAGE),
+    );
+    const dependencies = makeDependencies(adapter);
+    (dependencies.loadSettings as jest.MockedFunction<typeof dependencies.loadSettings>).mockResolvedValue({
+      selectedCalendarIds: ['work'],
+      defaultCalendarId: 'work',
+      linkCache: {
+        'bearing-1': {
+          calendarId: 'work',
+          eventId: 'native-1',
+          updatedAt: startAt.toISOString(),
+        },
+      },
+    });
+    const service = createCalendarPublicationService(dependencies);
+    const event = bearingEvent({
+      publication: {
+        status: 'published',
+        markerId: '0123456789abcdef0123456789abcdef',
+        commonHash: 'h1-0123456789abcdef',
+        lastError: null,
+        retryable: false,
+        deletionIntent: false,
+      },
+    });
+    const recurrenceRule = {
+      frequency: 'weekly' as const,
+      interval: 1,
+      endAt: null,
+      occurrenceCount: null,
+      weekdays: ['monday', 'wednesday', 'saturday'] as const,
+    };
+
+    await expect(
+      service.updateEvent('user-1', event, {
+        recurrenceRule: { ...recurrenceRule, weekdays: [...recurrenceRule.weekdays] },
+      }),
+    ).resolves.toBe('failed');
+    expect(dependencies.updatePublication).toHaveBeenLastCalledWith(
+      'user-1',
+      'bearing-1',
+      expect.objectContaining({ lastError: CUSTOM_WEEKDAY_RECURRENCE_UNSUPPORTED_MESSAGE }),
+    );
   });
 
   it('applies the device version when both linked copies changed', async () => {

@@ -1,6 +1,8 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
+import { CreateEventInput } from '../features/calendar/calendarTypes';
 import {
+  CUSTOM_WEEKDAY_RECURRENCE_UNSUPPORTED_MESSAGE,
   DeviceCalendarModule,
   createDeviceCalendarAdapter,
 } from '../services/calendar/deviceCalendarAdapter';
@@ -95,11 +97,9 @@ describe('deviceCalendarAdapter', () => {
   it('uses calendar and event object methods for mutations', async () => {
     const module = makeModule();
     const adapter = createDeviceCalendarAdapter(async () => module, 'android');
-    const input = {
+    const input: CreateEventInput = {
       title: 'Planning',
       description: 'Weekly planning',
-      startDate: new Date(2026, 6, 31, 9),
-      endDate: new Date(2026, 6, 31, 10),
       startAt: new Date(2026, 6, 31, 9),
       endAt: new Date(2026, 6, 31, 10),
       timezone: 'America/New_York',
@@ -110,6 +110,7 @@ describe('deviceCalendarAdapter', () => {
         interval: 2,
         endAt: null,
         occurrenceCount: 4,
+        weekdays: [],
       },
       alarms: [{ absoluteAt: null, relativeOffsetMinutes: -15 }],
       availability: 'tentative' as const,
@@ -143,6 +144,42 @@ describe('deviceCalendarAdapter', () => {
       url: 'https://example.com/plan',
     });
     expect(adapter.capabilities.recurringEventMutationScopes).toEqual([]);
+  });
+
+  it('maps custom weekdays on iOS and rejects them on Android before native access', async () => {
+    const module = makeModule();
+    const input: CreateEventInput = {
+      title: 'Custom planning',
+      description: '',
+      startAt: new Date(2026, 7, 3, 9),
+      endAt: new Date(2026, 7, 3, 10),
+      timezone: 'UTC',
+      recurrenceRule: {
+        frequency: 'weekly' as const,
+        interval: 1,
+        endAt: null,
+        occurrenceCount: null,
+        weekdays: ['monday', 'wednesday', 'saturday'],
+      },
+    };
+    const iosAdapter = createDeviceCalendarAdapter(async () => module, 'ios');
+
+    await iosAdapter.createEvent('calendar-1', input);
+    const calendar = await module.ExpoCalendar.get('calendar-1');
+    expect(calendar.createEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recurrenceRule: expect.objectContaining({
+          daysOfTheWeek: [{ dayOfTheWeek: 2 }, { dayOfTheWeek: 4 }, { dayOfTheWeek: 7 }],
+        }),
+      }),
+    );
+
+    const androidModuleLoader = jest.fn(async () => makeModule());
+    const androidAdapter = createDeviceCalendarAdapter(androidModuleLoader, 'android');
+    await expect(androidAdapter.createEvent('calendar-1', input)).rejects.toThrow(
+      CUSTOM_WEEKDAY_RECURRENCE_UNSUPPORTED_MESSAGE,
+    );
+    expect(androidModuleLoader).not.toHaveBeenCalled();
   });
 
   it('distinguishes found, confirmed missing, and unavailable event lookups', async () => {

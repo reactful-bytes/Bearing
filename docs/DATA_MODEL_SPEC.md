@@ -111,6 +111,11 @@ Fields:
 - isAllDay: boolean
 - location: string | null
 - recurrenceRule: map | null
+  - frequency: enum (daily, weekly, monthly, yearly)
+  - interval: number
+  - endAt: timestamp | null
+  - occurrenceCount: number | null
+  - weekdays: array of enum (sunday through saturday); used only with weekly frequency
 - alarms: array
 - availability: enum (busy, free, tentative, unavailable) | null
 - url: string | null

@@ -49,6 +49,7 @@ function canonicalValue(fields: ReconciliationEventFields): string {
           frequency: fields.recurrenceRule.frequency,
           interval: fields.recurrenceRule.interval,
           occurrenceCount: fields.recurrenceRule.occurrenceCount,
+          weekdays: fields.recurrenceRule.weekdays,
         }
       : null,
     startAt: fields.startAt.toISOString(),

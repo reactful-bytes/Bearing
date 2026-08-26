@@ -89,6 +89,7 @@ describe('icsInterop', () => {
           interval: 2,
           endAt: null,
           occurrenceCount: 4,
+          weekdays: ['monday', 'wednesday', 'saturday'],
         },
         alarms: [{ absoluteAt: null, relativeOffsetMinutes: -15 }],
         availability: 'free',
@@ -101,7 +102,7 @@ describe('icsInterop', () => {
     expect(icsContent).toContain('SUMMARY:Plan\\, review\\; repeat');
     expect(icsContent).toContain('DESCRIPTION:Bring \\\\ notes\\nand decisions.');
     expect(icsContent).toContain('LOCATION:Room 1\\, East');
-    expect(icsContent).toContain('RRULE:FREQ=WEEKLY;INTERVAL=2;COUNT=4');
+    expect(icsContent).toContain('RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE,SA;COUNT=4');
     expect(icsContent).toContain('TRANSP:TRANSPARENT');
     expect(icsContent).toContain('URL:https://example.com/planning');
     expect(icsContent).toContain('BEGIN:VALARM\r\nACTION:DISPLAY');
@@ -119,6 +120,7 @@ describe('icsInterop', () => {
           interval: 1,
           endAt: new Date('2028-07-05T03:59:00.000Z'),
           occurrenceCount: null,
+          weekdays: [],
         },
         alarms: [{ absoluteAt: new Date('2026-07-03T13:00:00.000Z'), relativeOffsetMinutes: null }],
       }),

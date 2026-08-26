@@ -2,9 +2,11 @@ import {
   CalendarPublicationMetadata,
   CalendarPublicationStatus,
   CalendarEvent,
+  EVENT_WEEKDAYS,
   EventAlarm,
   EventAvailability,
   EventRecurrenceRule,
+  EventWeekday,
   EventStatus,
   createUnpublishedMetadata,
 } from './calendarTypes';
@@ -23,6 +25,9 @@ function decodeRecurrenceRule(value: unknown): EventRecurrenceRule | null {
   if (!value || typeof value !== 'object') return null;
   const rule = value as Partial<EventRecurrenceRule> & { endAt?: unknown };
   if (!['daily', 'weekly', 'monthly', 'yearly'].includes(rule.frequency ?? '')) return null;
+  const weekdays = Array.isArray(rule.weekdays)
+    ? EVENT_WEEKDAYS.filter((weekday) => rule.weekdays?.includes(weekday as EventWeekday))
+    : [];
 
   return {
     frequency: rule.frequency as EventRecurrenceRule['frequency'],
@@ -32,6 +37,7 @@ function decodeRecurrenceRule(value: unknown): EventRecurrenceRule | null {
       typeof rule.occurrenceCount === 'number' && rule.occurrenceCount > 0
         ? rule.occurrenceCount
         : null,
+    weekdays: rule.frequency === 'weekly' ? weekdays : [],
   };
 }
 

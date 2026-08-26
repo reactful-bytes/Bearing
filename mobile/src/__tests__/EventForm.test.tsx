@@ -82,6 +82,75 @@ describe('EventForm', () => {
     });
   });
 
+  it('selects custom recurrence weekdays and submits them in weekday order', async () => {
+    const onSave = jest.fn(async () => undefined);
+    render(
+      <EventForm
+        active
+        initialDate={new Date('2026-08-03T09:00:00.000Z')}
+        initialValues={{ timezone: 'UTC' }}
+        onSave={onSave}
+      />,
+    );
+
+    fireEvent.changeText(screen.getByLabelText('Event title'), 'Custom schedule');
+    fireEvent.press(screen.getByLabelText('Show advanced event fields'));
+    expect(screen.queryByLabelText('Repeat on Monday')).toBeNull();
+
+    fireEvent.press(screen.getByText('Custom'));
+    expect(screen.getByLabelText('Repeat on Monday').props.accessibilityState.selected).toBe(true);
+    fireEvent.press(screen.getByLabelText('Repeat on Wednesday'));
+    fireEvent.press(screen.getByLabelText('Repeat on Saturday'));
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Save event'));
+    });
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recurrenceRule: expect.objectContaining({
+          frequency: 'weekly',
+          weekdays: ['monday', 'wednesday', 'saturday'],
+        }),
+      }),
+      { publishToDevice: false },
+    );
+  });
+
+  it('restores custom weekday selections when editing', () => {
+    render(
+      <EventForm
+        active
+        initialDate={new Date('2026-08-03T09:00:00.000Z')}
+        initialValues={{
+          timezone: 'UTC',
+          recurrenceRule: {
+            frequency: 'weekly',
+            interval: 1,
+            endAt: null,
+            occurrenceCount: null,
+            weekdays: ['monday', 'wednesday', 'saturday'],
+          },
+        }}
+        onSave={jest.fn(async () => undefined)}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText('Show advanced event fields'));
+
+    expect(screen.getByRole('button', { name: 'Custom' }).props.accessibilityState.selected).toBe(
+      true,
+    );
+    expect(screen.getByLabelText('Repeat on Monday').props.accessibilityState.selected).toBe(true);
+    expect(screen.getByLabelText('Repeat on Tuesday').props.accessibilityState.selected).toBe(false);
+    expect(screen.getByLabelText('Repeat on Wednesday').props.accessibilityState.selected).toBe(
+      true,
+    );
+    expect(screen.getByLabelText('Repeat on Saturday').props.accessibilityState.selected).toBe(
+      true,
+    );
+  });
+
   it('uses date and time picker selections with the chosen 24-hour display', async () => {
     const onSave = jest.fn(async () => undefined);
     render(
