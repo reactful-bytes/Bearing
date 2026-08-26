@@ -1,6 +1,12 @@
-import { CreateEventInput, EventAvailability, EventRecurrenceFrequency } from './calendarTypes';
+import {
+  CreateEventInput,
+  EVENT_WEEKDAYS,
+  EventAvailability,
+  EventRecurrenceFrequency,
+  EventWeekday,
+} from './calendarTypes';
 
-export type EventFormRecurrenceFrequency = 'none' | EventRecurrenceFrequency;
+export type EventFormRecurrenceFrequency = 'none' | EventRecurrenceFrequency | 'custom';
 
 export type CalendarEventFormValues = {
   title: string;
@@ -16,6 +22,7 @@ export type CalendarEventFormValues = {
   recurrenceInterval: string;
   recurrenceEndDate: string;
   recurrenceOccurrenceCount: string;
+  recurrenceWeekdays: EventWeekday[];
   firstAlertTiming: string;
   secondAlertTiming: string;
   availability: EventAvailability;
@@ -205,7 +212,11 @@ export function buildCalendarEventFormValues(
     allDay: initialValues?.allDay ?? false,
     timezone,
     location: initialValues?.location ?? '',
-    recurrenceFrequency: initialValues?.recurrenceRule?.frequency ?? 'none',
+    recurrenceFrequency:
+      initialValues?.recurrenceRule?.frequency === 'weekly' &&
+      initialValues.recurrenceRule.weekdays.length > 0
+        ? 'custom'
+        : (initialValues?.recurrenceRule?.frequency ?? 'none'),
     recurrenceInterval: String(initialValues?.recurrenceRule?.interval ?? 1),
     recurrenceEndDate: initialValues?.recurrenceRule?.endAt
       ? toEventDateString(initialValues.recurrenceRule.endAt, timezone)
@@ -213,6 +224,7 @@ export function buildCalendarEventFormValues(
     recurrenceOccurrenceCount: initialValues?.recurrenceRule?.occurrenceCount
       ? String(initialValues.recurrenceRule.occurrenceCount)
       : '',
+    recurrenceWeekdays: initialValues?.recurrenceRule?.weekdays ?? [],
     firstAlertTiming: alertTimings[0] ?? 'none',
     secondAlertTiming: alertTimings[1] ?? 'none',
     availability: initialValues?.availability ?? 'busy',
@@ -252,6 +264,13 @@ export function parseCalendarEventForm(
 
   let recurrenceRule: CreateEventInput['recurrenceRule'] = null;
   if (values.recurrenceFrequency !== 'none') {
+    const recurrenceWeekdays = EVENT_WEEKDAYS.filter((weekday) =>
+      values.recurrenceWeekdays.includes(weekday),
+    );
+    if (values.recurrenceFrequency === 'custom' && recurrenceWeekdays.length === 0) {
+      errors.push('Choose at least one day for custom recurrence.');
+    }
+
     const interval = parsePositiveInteger(values.recurrenceInterval);
     if (!interval || interval > MAX_RECURRENCE_INTERVAL) {
       errors.push(`Recurrence interval must be between 1 and ${MAX_RECURRENCE_INTERVAL}.`);
@@ -283,10 +302,11 @@ export function parseCalendarEventForm(
 
     if (interval) {
       recurrenceRule = {
-        frequency: values.recurrenceFrequency,
+        frequency: values.recurrenceFrequency === 'custom' ? 'weekly' : values.recurrenceFrequency,
         interval,
         endAt: recurrenceEndAt,
         occurrenceCount,
+        weekdays: values.recurrenceFrequency === 'custom' ? recurrenceWeekdays : [],
       };
     }
   }

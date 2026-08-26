@@ -1,5 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 import {
+  Alert,
+  AppState,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -15,16 +18,42 @@ import { FormField } from '../ui/FormField';
 import { radii, spacing, typography } from '../../design/tokens';
 import { CalendarDisplayEvent } from '../../features/calendar/calendarTypes';
 import { CreateNoteInput } from '../../features/notes/noteTypes';
+import {
+  DEFAULT_TIMER_SOUND_ID,
+  ensureProfileSoundPreviewUri,
+} from '../../features/profile/profileSounds';
+import {
+  androidFocusDndService,
+  FocusDndService,
+} from '../../services/focus/androidFocusDndService';
 
 type FocusModeOverlayProps = {
   visible: boolean;
   events: CalendarDisplayEvent[];
   preferredEventId?: string | null;
+  timerSoundId?: string;
   onClose: () => void;
   onSaveIdeaDump: (input: CreateNoteInput) => Promise<void>;
+  dndService?: FocusDndService;
 };
 
 const HOLD_TO_EXIT_MS = 3000;
+
+function findActiveEvent(
+  events: CalendarDisplayEvent[],
+  preferredEventId: string | null,
+  now: Date,
+): CalendarDisplayEvent | null {
+  const preferredEvent = preferredEventId
+    ? (events.find(
+        (event) => event.id === preferredEventId && now >= event.startAt && now < event.endAt,
+      ) ?? null)
+    : null;
+
+  return (
+    preferredEvent ?? events.find((event) => now >= event.startAt && now < event.endAt) ?? null
+  );
+}
 
 function formatDuration(ms: number): string {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -39,17 +68,97 @@ export function FocusModeOverlay({
   visible,
   events,
   preferredEventId = null,
+  timerSoundId = DEFAULT_TIMER_SOUND_ID,
   onClose,
   onSaveIdeaDump,
+  dndService = androidFocusDndService,
 }: FocusModeOverlayProps) {
   const [now, setNow] = useState<Date>(new Date());
   const [ideaBody, setIdeaBody] = useState('');
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [holdProgress, setHoldProgress] = useState(0);
+  const timerPlayer = useAudioPlayer(null);
+  const timerPlayerRef = useRef(timerPlayer);
 
   const holdTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const trackedEventRef = useRef<CalendarDisplayEvent | null>(null);
+  const timerCompletionHandledRef = useRef(false);
+
+  const stopTimerSound = useCallback((): void => {
+    timerPlayerRef.current.loop = false;
+    timerPlayerRef.current.pause();
+    void timerPlayerRef.current.seekTo(0).catch((error: unknown) => {
+      console.error('Failed to rewind timer sound:', error);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!visible || !dndService.isAvailable) {
+      return;
+    }
+
+    let disposed = false;
+
+    async function activatePriorityMode(showAccessPrompt: boolean): Promise<void> {
+      try {
+        const hasAccess = await dndService.hasPolicyAccess();
+        if (disposed) return;
+
+        if (hasAccess) {
+          await dndService.beginPriorityMode();
+          return;
+        }
+
+        if (showAccessPrompt) {
+          Alert.alert(
+            'Allow Do Not Disturb access?',
+            'Bearing can use Android priority-only Do Not Disturb during Focus Mode. Focus Mode will still work if you decline.',
+            [
+              { text: 'Not now', style: 'cancel' },
+              {
+                text: 'Open Settings',
+                onPress: () => {
+                  void dndService.openPolicyAccessSettings().catch(() => {
+                    Alert.alert(
+                      'Unable to open Settings',
+                      'Open Android Settings and allow Bearing under Do Not Disturb access.',
+                    );
+                  });
+                },
+              },
+            ],
+          );
+        }
+      } catch {
+        if (!disposed) {
+          Alert.alert(
+            'Do Not Disturb unavailable',
+            'Focus Mode is still active, but Android priority-only Do Not Disturb could not be enabled.',
+          );
+        }
+      }
+    }
+
+    void activatePriorityMode(true);
+    const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        void activatePriorityMode(false);
+      }
+    });
+
+    return () => {
+      disposed = true;
+      appStateSubscription.remove();
+      void dndService.endPriorityMode().catch(() => {
+        Alert.alert(
+          'Check Do Not Disturb',
+          'Bearing could not restore Android Do Not Disturb. Check the current setting before continuing.',
+        );
+      });
+    };
+  }, [dndService, visible]);
 
   useEffect(() => {
     if (!visible) {
@@ -71,11 +180,62 @@ export function FocusModeOverlay({
       setIdeaBody('');
       setSaveError(null);
       setHoldProgress(0);
+      trackedEventRef.current = null;
+      timerCompletionHandledRef.current = false;
     }
   }, [visible]);
 
   useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    const activeEvent = findActiveEvent(events, preferredEventId, now);
+    if (activeEvent) {
+      trackedEventRef.current = activeEvent;
+    }
+
+    const trackedEvent = trackedEventRef.current;
+    if (
+      !trackedEvent ||
+      timerCompletionHandledRef.current ||
+      now.getTime() < trackedEvent.endAt.getTime()
+    ) {
+      return;
+    }
+
+    timerCompletionHandledRef.current = true;
+    onClose();
+
+    void (async () => {
+      try {
+        const [soundUri] = await Promise.all([
+          ensureProfileSoundPreviewUri(timerSoundId),
+          setAudioModeAsync({
+            playsInSilentMode: true,
+            interruptionMode: 'doNotMix',
+          }),
+        ]);
+
+        timerPlayerRef.current.loop = true;
+        timerPlayerRef.current.replace(soundUri);
+        timerPlayerRef.current.play();
+      } catch (error) {
+        console.error('Failed to play timer sound:', error);
+      }
+
+      Alert.alert(`${trackedEvent.title} block finished`, undefined, [
+        { text: 'OK', onPress: stopTimerSound },
+      ]);
+    })();
+  }, [events, now, onClose, preferredEventId, stopTimerSound, timerSoundId, visible]);
+
+  useEffect(() => {
+    const player = timerPlayerRef.current;
+
     return () => {
+      player.loop = false;
+      player.pause();
       if (holdTimeoutRef.current) {
         clearTimeout(holdTimeoutRef.current);
       }
@@ -86,13 +246,7 @@ export function FocusModeOverlay({
   }, []);
 
   const focusSummary = useMemo(() => {
-    const preferredEvent = preferredEventId
-      ? (events.find(
-          (event) => event.id === preferredEventId && now >= event.startAt && now < event.endAt,
-        ) ?? null)
-      : null;
-    const activeEvent =
-      preferredEvent ?? events.find((event) => now >= event.startAt && now < event.endAt) ?? null;
+    const activeEvent = findActiveEvent(events, preferredEventId, now);
     const nextEvent = activeEvent ? null : (events.find((event) => event.startAt > now) ?? null);
 
     if (activeEvent) {

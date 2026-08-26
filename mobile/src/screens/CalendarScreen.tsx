@@ -534,10 +534,12 @@ export function CalendarScreen({
         <FloatingActionButton
           label="Focus"
           labelColor="#153748"
+          showIcon={false}
           onPress={handlePressFocusMode}
           style={styles.secondaryFab}
         />
         <FloatingActionButton
+          label="Add"
           onPress={handlePressAddEvent}
           disabled={uiState === 'loading'}
           style={styles.primaryFab}
@@ -567,6 +569,7 @@ export function CalendarScreen({
         visible={focusModeVisible}
         events={mergedFocusEvents}
         preferredEventId={preferredFocusEventId}
+        timerSoundId={profile?.alarmSoundId}
         onClose={handleCloseFocusMode}
         onSaveIdeaDump={handleSaveIdeaDump}
       />
@@ -692,6 +695,7 @@ const styles = StyleSheet.create({
   },
   primaryFab: {
     alignSelf: 'flex-end',
+    backgroundColor: colors.textPrimary,
   },
   secondaryFab: {
     alignSelf: 'flex-end',

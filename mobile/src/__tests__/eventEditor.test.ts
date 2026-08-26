@@ -57,6 +57,7 @@ describe('event editor validation', () => {
         frequency: 'weekly',
         interval: 2,
         occurrenceCount: 4,
+        weekdays: [],
       },
       alarms: [
         { absoluteAt: null, relativeOffsetMinutes: -30 },
@@ -133,5 +134,40 @@ describe('event editor validation', () => {
         'Choose either a recurrence end date or occurrence count, not both.',
       ]),
     );
+  });
+
+  it('builds and restores custom weekday recurrence', () => {
+    const result = parseCalendarEventForm({
+      ...validValues(),
+      recurrenceFrequency: 'custom',
+      recurrenceWeekdays: ['monday', 'wednesday', 'saturday'],
+    });
+
+    expect(result.errors).toEqual([]);
+    expect(result.input?.recurrenceRule).toEqual({
+      frequency: 'weekly',
+      interval: 1,
+      endAt: null,
+      occurrenceCount: null,
+      weekdays: ['monday', 'wednesday', 'saturday'],
+    });
+
+    expect(
+      buildCalendarEventFormValues(new Date('2026-07-31T09:00:00.000Z'), result.input ?? undefined),
+    ).toMatchObject({
+      recurrenceFrequency: 'custom',
+      recurrenceWeekdays: ['monday', 'wednesday', 'saturday'],
+    });
+  });
+
+  it('requires at least one custom recurrence weekday', () => {
+    const result = parseCalendarEventForm({
+      ...validValues(),
+      recurrenceFrequency: 'custom',
+      recurrenceWeekdays: [],
+    });
+
+    expect(result.input).toBeNull();
+    expect(result.errors).toContain('Choose at least one day for custom recurrence.');
   });
 });

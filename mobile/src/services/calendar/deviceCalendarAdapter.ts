@@ -2,6 +2,7 @@ import { Linking, Platform } from 'react-native';
 
 import {
   CreateEventInput,
+  EVENT_WEEKDAYS,
   EventAlarm,
   EventAvailability,
   EventRecurrenceRule,
@@ -37,6 +38,7 @@ type NativeCalendarEvent = {
   recurrenceRule: {
     frequency: string;
     interval?: number;
+    daysOfTheWeek?: { dayOfTheWeek: number; weekNumber?: number }[];
     endDate?: Date | string | null;
     occurrence?: number | null;
   } | null;
@@ -95,6 +97,9 @@ export type DeviceCalendarEventLookupResult =
 
 type ModuleLoader = () => Promise<DeviceCalendarModule>;
 
+export const CUSTOM_WEEKDAY_RECURRENCE_UNSUPPORTED_MESSAGE =
+  'Custom weekday recurrence is unavailable for Android device calendars. Keep this event in Bearing or choose Weekly.';
+
 function normalizePermission(response: CalendarPermissionResponse): DeviceCalendarPermissionState {
   if (response.granted || response.status === 'granted') {
     return 'granted';
@@ -136,11 +141,15 @@ function normalizeRecurrenceRule(
   value: NativeCalendarEvent['recurrenceRule'],
 ): EventRecurrenceRule | null {
   if (!value || !['daily', 'weekly', 'monthly', 'yearly'].includes(value.frequency)) return null;
+  const weekdays = EVENT_WEEKDAYS.filter((_, index) =>
+    value.daysOfTheWeek?.some(({ dayOfTheWeek }) => dayOfTheWeek === index + 1),
+  );
   return {
     frequency: value.frequency as EventRecurrenceRule['frequency'],
     interval: value.interval && value.interval > 0 ? value.interval : 1,
     endAt: value.endDate ? new Date(value.endDate) : null,
     occurrenceCount: value.occurrence && value.occurrence > 0 ? value.occurrence : null,
+    weekdays,
   };
 }
 
@@ -181,12 +190,23 @@ function isConfirmedMissingError(error: unknown): boolean {
 
 function mapRecurrenceRule(
   recurrenceRule: EventRecurrenceRule | null,
+  platform: string,
 ): DeviceCalendarEventInput['recurrenceRule'] {
   if (!recurrenceRule) return null;
+  if (recurrenceRule.weekdays.length > 0 && platform !== 'ios') {
+    throw new Error(CUSTOM_WEEKDAY_RECURRENCE_UNSUPPORTED_MESSAGE);
+  }
 
   return {
     frequency: recurrenceRule.frequency,
     interval: recurrenceRule.interval,
+    ...(recurrenceRule.weekdays.length > 0
+      ? {
+          daysOfTheWeek: recurrenceRule.weekdays.map((weekday) => ({
+            dayOfTheWeek: EVENT_WEEKDAYS.indexOf(weekday) + 1,
+          })),
+        }
+      : {}),
     ...(recurrenceRule.endAt ? { endDate: recurrenceRule.endAt } : {}),
     ...(recurrenceRule.occurrenceCount ? { occurrence: recurrenceRule.occurrenceCount } : {}),
   };
@@ -205,7 +225,10 @@ function mapAvailability(availability: EventAvailability): string {
   return availability === 'not-supported' ? 'notSupported' : availability;
 }
 
-function mapEventFields(fields: CreateEventInput | UpdateEventInput): DeviceCalendarEventUpdate {
+function mapEventFields(
+  fields: CreateEventInput | UpdateEventInput,
+  platform: string,
+): DeviceCalendarEventUpdate {
   const details: DeviceCalendarEventUpdate = {};
   if (fields.title !== undefined) details.title = fields.title;
   if (fields.description !== undefined) details.notes = fields.description || null;
@@ -215,7 +238,7 @@ function mapEventFields(fields: CreateEventInput | UpdateEventInput): DeviceCale
   if (fields.timezone !== undefined) details.timeZone = fields.timezone || null;
   if (fields.location !== undefined) details.location = fields.location || null;
   if (fields.recurrenceRule !== undefined) {
-    details.recurrenceRule = mapRecurrenceRule(fields.recurrenceRule);
+    details.recurrenceRule = mapRecurrenceRule(fields.recurrenceRule, platform);
   }
   if (fields.alarms !== undefined) details.alarms = mapAlarms(fields.alarms);
   if (fields.availability !== undefined) {
@@ -289,11 +312,13 @@ export function createDeviceCalendarAdapter(
       withModule(async (module) =>
         (await module.listEvents(calendarIds, startDate, endDate)).map(normalizeEvent),
       ),
-    createEvent: (calendarId, input) =>
-      withModule(async (module) => {
+    async createEvent(calendarId, input) {
+      const fields = mapEventFields(input, platform);
+      return withModule(async (module) => {
         const calendar = await module.ExpoCalendar.get(calendarId);
-        return normalizeEvent(await calendar.createEvent(mapEventFields(input)));
-      }),
+        return normalizeEvent(await calendar.createEvent(fields));
+      });
+    },
     async lookupEvent(eventId) {
       if (!isSupportedPlatform) {
         return {
@@ -313,11 +338,13 @@ export function createDeviceCalendarAdapter(
         return { status: 'unavailable', error: asError(error) };
       }
     },
-    updateEvent: (eventId, fields) =>
-      withModule(async (module) => {
+    async updateEvent(eventId, fields) {
+      const mappedFields = mapEventFields(fields, platform);
+      return withModule(async (module) => {
         const event = await module.ExpoCalendarEvent.get(eventId);
-        await event.update(mapEventFields(fields));
-      }),
+        await event.update(mappedFields);
+      });
+    },
     deleteEvent: (eventId) =>
       withModule(async (module) => {
         const event = await module.ExpoCalendarEvent.get(eventId);

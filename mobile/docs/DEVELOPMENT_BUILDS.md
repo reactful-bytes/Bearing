@@ -74,3 +74,16 @@ Record platform, OS version, build profile, signing identity, Firebase project, 
 Record the OS version, device or simulator model, permission result, and discovered writable/read-only
 calendar types. Full CRUD, recurrence, refresh, Focus Mode, fallback, and two-device reconciliation
 remain in the M6.13 acceptance matrix.
+
+## Android Focus Mode Do Not Disturb Smoke Test
+
+1. Install a development build on an Android device and open Focus Mode.
+2. Choose **Open Settings**, grant Bearing Do Not Disturb access, and return to the app.
+3. Confirm Android enters priority-only Do Not Disturb while Focus Mode remains open.
+4. Exit Focus Mode with the hold control and confirm Bearing restores the prior Do Not Disturb state.
+5. Repeat with Do Not Disturb already enabled and confirm Bearing does not disable a pre-existing state.
+6. Revoke access and confirm Focus Mode still works without changing Android Do Not Disturb.
+7. Confirm iOS Focus Mode behavior remains unchanged and does not request system Focus access.
+
+Record the Android version, device model, prior Do Not Disturb state, grant result, active state,
+restored state, and outcome.

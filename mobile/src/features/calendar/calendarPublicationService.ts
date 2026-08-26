@@ -15,6 +15,7 @@ import {
 } from './calendarTypes';
 import { DeviceCalendarEventRecord, DeviceCalendarLink } from './deviceCalendarTypes';
 import {
+  CUSTOM_WEEKDAY_RECURRENCE_UNSUPPORTED_MESSAGE,
   DeviceCalendarAdapter,
   deviceCalendarAdapter,
 } from '../../services/calendar/deviceCalendarAdapter';
@@ -50,6 +51,12 @@ export type CalendarPublicationDependencies = {
 
 const PUBLICATION_ERROR = 'Device publication failed. Retry from event details.';
 const DELETION_ERROR = 'The linked device copy could not be deleted. Retry from event details.';
+
+function publicationErrorMessage(error: unknown): string {
+  return error instanceof Error && error.message === CUSTOM_WEEKDAY_RECURRENCE_UNSUPPORTED_MESSAGE
+    ? error.message
+    : PUBLICATION_ERROR;
+}
 
 const defaultDependencies: CalendarPublicationDependencies = {
   adapter: deviceCalendarAdapter,
@@ -138,10 +145,11 @@ async function markFailure(
   eventId: string,
   deletionIntent: boolean,
   dependencies: CalendarPublicationDependencies,
+  lastError = deletionIntent ? DELETION_ERROR : PUBLICATION_ERROR,
 ): Promise<void> {
   await dependencies.updatePublication(userId, eventId, {
     status: 'failed',
-    lastError: deletionIntent ? DELETION_ERROR : PUBLICATION_ERROR,
+    lastError,
     retryable: true,
     deletionIntent,
   });
@@ -207,8 +215,8 @@ async function publishExisting(
       deletionIntent: false,
     });
     return { eventId, status: 'published' };
-  } catch {
-    await markFailure(userId, eventId, false, dependencies);
+  } catch (error) {
+    await markFailure(userId, eventId, false, dependencies, publicationErrorMessage(error));
     return { eventId, status: 'failed' };
   }
 }
@@ -336,8 +344,8 @@ export function createCalendarPublicationService(
           retryable: false,
           deletionIntent: false,
         });
-      } catch {
-        await markFailure(userId, event.id, false, dependencies);
+      } catch (error) {
+        await markFailure(userId, event.id, false, dependencies, publicationErrorMessage(error));
       }
     },
 
@@ -438,8 +446,8 @@ export function createCalendarPublicationService(
           retryable: false,
         });
         return 'published';
-      } catch {
-        await markFailure(userId, event.id, false, dependencies);
+      } catch (error) {
+        await markFailure(userId, event.id, false, dependencies, publicationErrorMessage(error));
         return 'failed';
       }
     },

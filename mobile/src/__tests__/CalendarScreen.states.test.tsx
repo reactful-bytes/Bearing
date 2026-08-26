@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { CalendarScreen } from '../screens/CalendarScreen';
+import { colors } from '../design/tokens';
 import { CalendarEvent, createUnpublishedMetadata } from '../features/calendar/calendarTypes';
 
 jest.mock('../features/profile/useUserProfile', () => ({
@@ -87,7 +88,11 @@ describe('CalendarScreen interaction states', () => {
     expect(screen.getByText('Month')).toBeTruthy();
     expect(screen.getByLabelText('Previous day')).toBeTruthy();
     expect(screen.getByLabelText('Next day')).toBeTruthy();
-    expect(screen.getByText('Focus')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Focus' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add' })).toHaveStyle({
+      backgroundColor: colors.textPrimary,
+    });
+    expect(screen.queryByText('+')).toBeNull();
   });
 
   it('renders loading state in the timeline area', () => {
@@ -158,10 +163,9 @@ describe('CalendarScreen interaction states', () => {
     expect(screen.queryByTestId('month-carousel')).toBeNull();
   });
 
-  it('Add Event FAB is disabled in loading state', () => {
+  it('Add FAB is disabled in loading state', () => {
     render(<CalendarScreen stateOverride="loading" />);
-    const fabButtons = screen.getAllByRole('button');
-    const addEventFab = fabButtons[fabButtons.length - 1]; // Last button is Add Event FAB
+    const addEventFab = screen.getByRole('button', { name: 'Add' });
     expect(addEventFab.props.accessibilityState.disabled).toBe(true);
   });
 });

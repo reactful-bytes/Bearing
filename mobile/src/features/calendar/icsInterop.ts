@@ -114,10 +114,22 @@ function appendAlarm(lines: string[], alarm: EventAlarm, eventTitle: string): vo
 function appendRecurrence(lines: string[], event: BearingEvent): void {
   if (!event.recurrenceRule) return;
 
+  const weekdayCodes = {
+    sunday: 'SU',
+    monday: 'MO',
+    tuesday: 'TU',
+    wednesday: 'WE',
+    thursday: 'TH',
+    friday: 'FR',
+    saturday: 'SA',
+  } as const;
   const values = [
     `FREQ=${event.recurrenceRule.frequency.toUpperCase()}`,
     `INTERVAL=${event.recurrenceRule.interval}`,
   ];
+  if (event.recurrenceRule.weekdays.length > 0) {
+    values.push(`BYDAY=${event.recurrenceRule.weekdays.map((day) => weekdayCodes[day]).join(',')}`);
+  }
   if (event.recurrenceRule.occurrenceCount) {
     values.push(`COUNT=${event.recurrenceRule.occurrenceCount}`);
   } else if (event.recurrenceRule.endAt) {

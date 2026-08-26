@@ -48,6 +48,7 @@ export type DeviceCalendarEventInput = {
   recurrenceRule?: {
     frequency: string;
     interval: number;
+    daysOfTheWeek?: { dayOfTheWeek: number }[];
     endDate?: Date;
     occurrence?: number;
   } | null;

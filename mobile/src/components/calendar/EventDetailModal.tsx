@@ -167,6 +167,10 @@ export function EventDetailModal({
             </View>
           ) : null}
 
+          {event.ownership === 'bearing' && event.publication.lastError ? (
+            <Text style={styles.errorText}>{event.publication.lastError}</Text>
+          ) : null}
+
           {event.ownership === 'bearing' &&
           event.publication.retryable &&
           !event.publication.deletionIntent &&

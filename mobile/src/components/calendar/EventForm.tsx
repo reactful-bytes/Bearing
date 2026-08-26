@@ -8,7 +8,9 @@ import { colors, radii, spacing, typography } from '../../design/tokens';
 import {
   CreateEventInput,
   CreateEventOptions,
+  EVENT_WEEKDAYS,
   EventAvailability,
+  EventWeekday,
 } from '../../features/calendar/calendarTypes';
 import {
   CalendarEventFormValues,
@@ -33,9 +35,20 @@ const RECURRENCE_OPTIONS: { label: string; value: EventFormRecurrenceFrequency }
   { label: 'None', value: 'none' },
   { label: 'Daily', value: 'daily' },
   { label: 'Weekly', value: 'weekly' },
+  { label: 'Custom', value: 'custom' },
   { label: 'Monthly', value: 'monthly' },
   { label: 'Yearly', value: 'yearly' },
 ];
+
+const WEEKDAY_LABELS: Record<EventWeekday, { short: string; full: string }> = {
+  sunday: { short: 'Sun', full: 'Sunday' },
+  monday: { short: 'Mon', full: 'Monday' },
+  tuesday: { short: 'Tue', full: 'Tuesday' },
+  wednesday: { short: 'Wed', full: 'Wednesday' },
+  thursday: { short: 'Thu', full: 'Thursday' },
+  friday: { short: 'Fri', full: 'Friday' },
+  saturday: { short: 'Sat', full: 'Saturday' },
+};
 
 const AVAILABILITY_OPTIONS: { label: string; value: EventAvailability }[] = [
   { label: 'Busy', value: 'busy' },
@@ -124,6 +137,32 @@ export function EventForm({
   function handleAlertTimingChange(selector: AlertSelector, timing: string): void {
     updateValue(selector === 'first' ? 'firstAlertTiming' : 'secondAlertTiming', timing);
     setActiveAlertSelector(null);
+  }
+
+  function handleRecurrenceFrequencyChange(frequency: EventFormRecurrenceFrequency): void {
+    setValues((current) => {
+      if (frequency !== 'custom' || current.recurrenceWeekdays.length > 0) {
+        return { ...current, recurrenceFrequency: frequency };
+      }
+
+      const startDayIndex = new Date(`${current.startDate}T00:00:00Z`).getUTCDay();
+      return {
+        ...current,
+        recurrenceFrequency: frequency,
+        recurrenceWeekdays: [EVENT_WEEKDAYS[startDayIndex]],
+      };
+    });
+  }
+
+  function handleWeekdayChange(weekday: EventWeekday): void {
+    setValues((current) => ({
+      ...current,
+      recurrenceWeekdays: current.recurrenceWeekdays.includes(weekday)
+        ? current.recurrenceWeekdays.filter((candidate) => candidate !== weekday)
+        : EVENT_WEEKDAYS.filter(
+            (candidate) => candidate === weekday || current.recurrenceWeekdays.includes(candidate),
+          ),
+    }));
   }
 
   async function handleSave(): Promise<void> {
@@ -301,7 +340,7 @@ export function EventForm({
                   key={option.value}
                   accessibilityRole="button"
                   accessibilityState={{ selected: values.recurrenceFrequency === option.value }}
-                  onPress={() => updateValue('recurrenceFrequency', option.value)}
+                  onPress={() => handleRecurrenceFrequencyChange(option.value)}
                   style={[
                     styles.option,
                     values.recurrenceFrequency === option.value ? styles.optionSelected : null,
@@ -321,6 +360,37 @@ export function EventForm({
               ))}
             </View>
           </View>
+
+          {values.recurrenceFrequency === 'custom' ? (
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Repeat on</Text>
+              <View style={styles.weekdayRow}>
+                {EVENT_WEEKDAYS.map((weekday) => {
+                  const selected = values.recurrenceWeekdays.includes(weekday);
+                  return (
+                    <Pressable
+                      key={weekday}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Repeat on ${WEEKDAY_LABELS[weekday].full}`}
+                      accessibilityState={{ selected }}
+                      onPress={() => handleWeekdayChange(weekday)}
+                      style={({ pressed }) => [
+                        styles.weekdayOption,
+                        selected ? styles.optionSelected : null,
+                        pressed ? styles.pressed : null,
+                      ]}
+                    >
+                      <Text
+                        style={[styles.optionText, selected ? styles.optionTextSelected : null]}
+                      >
+                        {WEEKDAY_LABELS[weekday].short}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          ) : null}
 
           {values.recurrenceFrequency !== 'none' ? (
             <>
@@ -609,6 +679,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+  },
+  weekdayRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  weekdayOption: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surface,
   },
   option: {
     borderWidth: 1,

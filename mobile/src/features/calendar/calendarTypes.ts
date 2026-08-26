@@ -1,12 +1,25 @@
 export type EventStatus = 'scheduled' | 'completed' | 'canceled';
 export type EventAvailability = 'busy' | 'free' | 'tentative' | 'unavailable' | 'not-supported';
 export type EventRecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type EventWeekday =
+  'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday';
+
+export const EVENT_WEEKDAYS: readonly EventWeekday[] = [
+  'sunday',
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+];
 
 export type EventRecurrenceRule = {
   frequency: EventRecurrenceFrequency;
   interval: number;
   endAt: Date | null;
   occurrenceCount: number | null;
+  weekdays: EventWeekday[];
 };
 
 export type EventAlarm = {
