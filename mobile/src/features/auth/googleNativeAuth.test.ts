@@ -51,4 +51,14 @@ describe('Google native authentication', () => {
       'Google Sign-In is not configured for Android',
     );
   });
+
+  it('explains an Android OAuth package or signing certificate mismatch', async () => {
+    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = 'web.apps.googleusercontent.com';
+    const client = createClient();
+    client.signIn.mockRejectedValueOnce(Object.assign(new Error('DEVELOPER_ERROR'), { code: '10' }));
+
+    await expect(acquireNativeGoogleTokens(client as never)).rejects.toThrow(
+      'Register package com.reactfulbytes.bearing and this build’s SHA-1/SHA-256 certificate fingerprints',
+    );
+  });
 });

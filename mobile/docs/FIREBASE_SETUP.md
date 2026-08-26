@@ -37,6 +37,21 @@ This guide wires the Bearing mobile app to Firebase Authentication for local dev
 6. Treat these client IDs as public configuration, but keep environment-specific values out of committed `.env` files.
 7. Rebuild native clients after changing OAuth, signing, package, bundle, scheme, or config-plugin settings.
 
+The Android native SDK uses `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` to request the ID token, but Google
+still requires an Android OAuth client in the same project that exactly matches the installed app's
+package and signing certificate. From `mobile/`, inspect the local build identity with:
+
+```sh
+./android/gradlew -p android signingReport
+```
+
+Under `:app:signingReport`, add both the SHA-1 and SHA-256 values for every certificate that can sign
+the app. Local development, EAS builds, and Google Play App Signing can use different certificates.
+Native error code `10` (`DEVELOPER_ERROR`) means that no Android OAuth client matches the package and
+certificate of the installed build, or that the configured web client belongs to a different Google
+project. OAuth console changes can take several minutes to propagate; uninstall and rebuild the
+development client after correcting them.
+
 ## 5) Create local environment file
 
 1. In `mobile/`, copy `.env.example` to `.env`.

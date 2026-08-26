@@ -51,7 +51,7 @@ regenerate it with `npm run prebuild:clean` before rebuilding.
 ## Google Authentication Smoke Test
 
 1. Confirm the Firebase project has Google enabled and one account per email address selected.
-2. Confirm the Android signing SHA-1/SHA-256 or iOS bundle OAuth client matches the installed build.
+2. Run `./android/gradlew -p android signingReport` and confirm the `:app` SHA-1/SHA-256 and package `com.reactfulbytes.bearing` match an Android OAuth client in the same project as `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`.
 3. Launch the signed-out screen and complete Google Sign-In.
 4. Record the Firebase UID, sign out, sign back in, and confirm the same UID and Bearing data return.
 5. From Profile, add Google to a disposable password account and confirm both providers return the same UID.
