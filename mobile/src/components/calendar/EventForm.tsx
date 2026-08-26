@@ -160,8 +160,7 @@ export function EventForm({
       recurrenceWeekdays: current.recurrenceWeekdays.includes(weekday)
         ? current.recurrenceWeekdays.filter((candidate) => candidate !== weekday)
         : EVENT_WEEKDAYS.filter(
-            (candidate) =>
-              candidate === weekday || current.recurrenceWeekdays.includes(candidate),
+            (candidate) => candidate === weekday || current.recurrenceWeekdays.includes(candidate),
           ),
     }));
   }
@@ -381,7 +380,9 @@ export function EventForm({
                         pressed ? styles.pressed : null,
                       ]}
                     >
-                      <Text style={[styles.optionText, selected ? styles.optionTextSelected : null]}>
+                      <Text
+                        style={[styles.optionText, selected ? styles.optionTextSelected : null]}
+                      >
                         {WEEKDAY_LABELS[weekday].short}
                       </Text>
                     </Pressable>

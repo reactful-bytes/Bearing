@@ -142,7 +142,9 @@ describe('EventForm', () => {
       true,
     );
     expect(screen.getByLabelText('Repeat on Monday').props.accessibilityState.selected).toBe(true);
-    expect(screen.getByLabelText('Repeat on Tuesday').props.accessibilityState.selected).toBe(false);
+    expect(screen.getByLabelText('Repeat on Tuesday').props.accessibilityState.selected).toBe(
+      false,
+    );
     expect(screen.getByLabelText('Repeat on Wednesday').props.accessibilityState.selected).toBe(
       true,
     );

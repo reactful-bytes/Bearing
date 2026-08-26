@@ -15,6 +15,7 @@ const config: ExpoConfig = {
   icon: './assets/icon.png',
   userInterfaceStyle: 'light',
   plugins: [
+    './plugins/withAndroidDnd',
     'expo-dev-client',
     'expo-asset',
     'expo-audio',
@@ -36,7 +37,11 @@ const config: ExpoConfig = {
   },
   android: {
     package: 'com.reactfulbytes.bearing',
-    permissions: ['android.permission.READ_CALENDAR', 'android.permission.WRITE_CALENDAR'],
+    permissions: [
+      'android.permission.ACCESS_NOTIFICATION_POLICY',
+      'android.permission.READ_CALENDAR',
+      'android.permission.WRITE_CALENDAR',
+    ],
     adaptiveIcon: {
       foregroundImage: './assets/android-icon-foreground.png',
       backgroundImage: './assets/android-icon-background.png',

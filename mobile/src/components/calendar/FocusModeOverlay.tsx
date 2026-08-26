@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
+  AppState,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -15,6 +17,10 @@ import { FormField } from '../ui/FormField';
 import { radii, spacing, typography } from '../../design/tokens';
 import { CalendarDisplayEvent } from '../../features/calendar/calendarTypes';
 import { CreateNoteInput } from '../../features/notes/noteTypes';
+import {
+  androidFocusDndService,
+  FocusDndService,
+} from '../../services/focus/androidFocusDndService';
 
 type FocusModeOverlayProps = {
   visible: boolean;
@@ -22,6 +28,7 @@ type FocusModeOverlayProps = {
   preferredEventId?: string | null;
   onClose: () => void;
   onSaveIdeaDump: (input: CreateNoteInput) => Promise<void>;
+  dndService?: FocusDndService;
 };
 
 const HOLD_TO_EXIT_MS = 3000;
@@ -41,6 +48,7 @@ export function FocusModeOverlay({
   preferredEventId = null,
   onClose,
   onSaveIdeaDump,
+  dndService = androidFocusDndService,
 }: FocusModeOverlayProps) {
   const [now, setNow] = useState<Date>(new Date());
   const [ideaBody, setIdeaBody] = useState('');
@@ -50,6 +58,72 @@ export function FocusModeOverlay({
 
   const holdTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (!visible || !dndService.isAvailable) {
+      return;
+    }
+
+    let disposed = false;
+
+    async function activatePriorityMode(showAccessPrompt: boolean): Promise<void> {
+      try {
+        const hasAccess = await dndService.hasPolicyAccess();
+        if (disposed) return;
+
+        if (hasAccess) {
+          await dndService.beginPriorityMode();
+          return;
+        }
+
+        if (showAccessPrompt) {
+          Alert.alert(
+            'Allow Do Not Disturb access?',
+            'Bearing can use Android priority-only Do Not Disturb during Focus Mode. Focus Mode will still work if you decline.',
+            [
+              { text: 'Not now', style: 'cancel' },
+              {
+                text: 'Open Settings',
+                onPress: () => {
+                  void dndService.openPolicyAccessSettings().catch(() => {
+                    Alert.alert(
+                      'Unable to open Settings',
+                      'Open Android Settings and allow Bearing under Do Not Disturb access.',
+                    );
+                  });
+                },
+              },
+            ],
+          );
+        }
+      } catch {
+        if (!disposed) {
+          Alert.alert(
+            'Do Not Disturb unavailable',
+            'Focus Mode is still active, but Android priority-only Do Not Disturb could not be enabled.',
+          );
+        }
+      }
+    }
+
+    void activatePriorityMode(true);
+    const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        void activatePriorityMode(false);
+      }
+    });
+
+    return () => {
+      disposed = true;
+      appStateSubscription.remove();
+      void dndService.endPriorityMode().catch(() => {
+        Alert.alert(
+          'Check Do Not Disturb',
+          'Bearing could not restore Android Do Not Disturb. Check the current setting before continuing.',
+        );
+      });
+    };
+  }, [dndService, visible]);
 
   useEffect(() => {
     if (!visible) {

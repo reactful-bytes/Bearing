@@ -216,13 +216,7 @@ async function publishExisting(
     });
     return { eventId, status: 'published' };
   } catch (error) {
-    await markFailure(
-      userId,
-      eventId,
-      false,
-      dependencies,
-      publicationErrorMessage(error),
-    );
+    await markFailure(userId, eventId, false, dependencies, publicationErrorMessage(error));
     return { eventId, status: 'failed' };
   }
 }
@@ -351,13 +345,7 @@ export function createCalendarPublicationService(
           deletionIntent: false,
         });
       } catch (error) {
-        await markFailure(
-          userId,
-          event.id,
-          false,
-          dependencies,
-          publicationErrorMessage(error),
-        );
+        await markFailure(userId, event.id, false, dependencies, publicationErrorMessage(error));
       }
     },
 
@@ -459,13 +447,7 @@ export function createCalendarPublicationService(
         });
         return 'published';
       } catch (error) {
-        await markFailure(
-          userId,
-          event.id,
-          false,
-          dependencies,
-          publicationErrorMessage(error),
-        );
+        await markFailure(userId, event.id, false, dependencies, publicationErrorMessage(error));
         return 'failed';
       }
     },

@@ -408,7 +408,9 @@ describe('calendarPublicationService', () => {
       new Error(CUSTOM_WEEKDAY_RECURRENCE_UNSUPPORTED_MESSAGE),
     );
     const dependencies = makeDependencies(adapter);
-    (dependencies.loadSettings as jest.MockedFunction<typeof dependencies.loadSettings>).mockResolvedValue({
+    (
+      dependencies.loadSettings as jest.MockedFunction<typeof dependencies.loadSettings>
+    ).mockResolvedValue({
       selectedCalendarIds: ['work'],
       defaultCalendarId: 'work',
       linkCache: {

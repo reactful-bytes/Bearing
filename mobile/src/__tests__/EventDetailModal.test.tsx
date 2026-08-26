@@ -162,7 +162,7 @@ describe('EventDetailModal', () => {
     );
 
     expect(screen.getByText('Needs attention')).toBeTruthy();
-  expect(screen.getByText('Device publication failed.')).toBeTruthy();
+    expect(screen.getByText('Device publication failed.')).toBeTruthy();
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Retry device publication'));
     });
