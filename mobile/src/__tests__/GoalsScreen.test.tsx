@@ -421,10 +421,10 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Select goal target day 01'));
     fireEvent.press(screen.getByLabelText('Open goal target year dropdown'));
     fireEvent.press(screen.getByLabelText('Select goal target year 2026'));
-    expect(screen.queryByText('Unlock AI goal builder with Premium.')).toBeNull();
+    expect(screen.queryByText('Unlock AI goal builder with Bearing 360.')).toBeNull();
     fireEvent.press(screen.getByLabelText('Continue'));
-    expect(screen.getByText('Unlock AI goal builder with Premium.')).toBeTruthy();
-    expect(screen.getByText('View Premium Plans')).toBeTruthy();
+    expect(screen.getByText('Unlock AI goal builder with Bearing 360.')).toBeTruthy();
+    expect(screen.getByText('View Bearing 360 Plans')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Draft step 1 name'), 'Buy running shoes');
     fireEvent.changeText(
@@ -499,9 +499,9 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Open goal target year dropdown'));
     fireEvent.press(screen.getByLabelText('Select goal target year 2027'));
     fireEvent.press(screen.getByLabelText('Continue'));
-    fireEvent.press(screen.getByLabelText('View premium plans for AI goal builder'));
+    fireEvent.press(screen.getByLabelText('View Bearing 360 plans for AI goal builder'));
 
-    expect(screen.getByText('Bearing Premium')).toBeTruthy();
+    expect(screen.getByText('Bearing 360')).toBeTruthy();
     expect(screen.getByText('Unlock AI goal planning.')).toBeTruthy();
     expect(screen.getByText('Continue on Free Plan')).toBeTruthy();
   });
@@ -609,8 +609,8 @@ describe('GoalsScreen', () => {
 
     expect(screen.getByText('Build an editable first draft.')).toBeTruthy();
     expect(screen.getByText('What the AI plans from')).toBeTruthy();
-    expect(screen.queryByText('Premium Enabled')).toBeNull();
-    expect(screen.queryByLabelText('View premium plans for AI goal builder')).toBeNull();
+    expect(screen.queryByText('Bearing 360 Enabled')).toBeNull();
+    expect(screen.queryByLabelText('View Bearing 360 plans for AI goal builder')).toBeNull();
     await waitFor(() => expect(screen.getByText(/AI credits available: 10/)).toBeTruthy());
 
     await act(async () => {
@@ -782,7 +782,7 @@ describe('GoalsScreen', () => {
     await waitFor(() =>
       expect(
         screen.getByText(
-          'No AI planning credits remain. Continue manually or wait for your next grant.',
+          'No AI planning credits remain. Continue manually or get more AI credits.',
         ),
       ).toBeTruthy(),
     );

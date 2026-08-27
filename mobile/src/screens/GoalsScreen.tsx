@@ -321,6 +321,7 @@ export function GoalsScreen() {
         onOpenPremiumPaywall={() => setPremiumPaywallFeature('ai_goal_builder')}
         onGenerateAiPlan={generateAiGoalPlanDraft}
         onLoadAiCreditStatus={getAiCreditStatus}
+        creditPackUserId={!isAnonymous ? (authUser?.uid ?? null) : null}
       />
 
       <PremiumPaywallModal

@@ -21,6 +21,10 @@ type PremiumPaywallModalProps = {
   onClose: () => void;
 };
 
+function getBrandedPlanName(plan: PremiumPlan): string {
+  return /\bbearing 360\b/i.test(plan.title) ? plan.title : `${plan.title} Bearing 360`;
+}
+
 export function PremiumPaywallModal({
   visible,
   feature,
@@ -87,7 +91,7 @@ export function PremiumPaywallModal({
           confirmationPlan === null &&
           transactionPlan === null
         }
-        title="Bearing Premium"
+        title="Bearing 360"
         onClose={onClose}
         fullScreen
       >
@@ -100,7 +104,7 @@ export function PremiumPaywallModal({
             </View>
 
             <AppCard style={styles.highlightsCard}>
-              <Text style={styles.sectionTitle}>Included with Premium</Text>
+              <Text style={styles.sectionTitle}>Included with Bearing 360</Text>
               <View style={styles.highlightList}>
                 {copy.highlights.map((highlight) => (
                   <View key={highlight} style={styles.highlightRow}>
@@ -120,7 +124,7 @@ export function PremiumPaywallModal({
                   <Pressable
                     key={plan.packageIdentifier}
                     accessibilityRole="radio"
-                    accessibilityLabel={`Select ${plan.title} Premium plan`}
+                    accessibilityLabel={`Select ${getBrandedPlanName(plan)} plan`}
                     accessibilityState={{
                       selected: isSelected,
                       disabled: purchase.pendingAction !== null,
@@ -156,6 +160,18 @@ export function PremiumPaywallModal({
                             </Text>
                           </View>
                         ) : null}
+                        {plan.creditAmount !== null ? (
+                          <Text style={styles.planMeta}>
+                            Includes {plan.creditAmount} AI planning{' '}
+                            {plan.creditAmount === 1 ? 'credit' : 'credits'} per grant
+                          </Text>
+                        ) : null}
+                        {plan.trialCreditAmount !== null ? (
+                          <Text style={styles.planMeta}>
+                            Trial includes {plan.trialCreditAmount} AI planning{' '}
+                            {plan.trialCreditAmount === 1 ? 'credit' : 'credits'}
+                          </Text>
+                        ) : null}
                       </View>
                       <View style={styles.planPriceBlock}>
                         <Text style={styles.planPrice}>
@@ -172,7 +188,9 @@ export function PremiumPaywallModal({
             <AppButton
               label="Continue"
               accessibilityLabel={
-                selectedPlan ? `Continue with ${selectedPlan.title} Premium plan` : 'Select a plan'
+                selectedPlan
+                  ? `Continue with ${getBrandedPlanName(selectedPlan)} plan`
+                  : 'Select a plan'
               }
               onPress={() => selectedPlan && setConfirmationPlan(selectedPlan)}
               disabled={isPurchaseDisabled}
@@ -181,7 +199,7 @@ export function PremiumPaywallModal({
             {purchase.availability !== 'available' && !isAnonymous ? (
               <Text style={styles.accountNote}>
                 {purchase.availability === 'web'
-                  ? 'Premium checkout is available in the iOS and Android apps.'
+                  ? 'Bearing 360 checkout is available in the iOS and Android apps.'
                   : purchase.availability === 'expo_go'
                     ? 'Use an installed development build to test real store purchases.'
                     : 'Store billing is not configured in this build.'}
@@ -190,8 +208,8 @@ export function PremiumPaywallModal({
 
             {isAnonymous ? (
               <Text style={styles.accountNote}>
-                Secure this anonymous session before purchasing so Premium can be restored across
-                devices.
+                Secure this anonymous session before purchasing so Bearing 360 can be restored
+                across devices.
               </Text>
             ) : null}
 
@@ -200,7 +218,7 @@ export function PremiumPaywallModal({
             <AppButton
               label="Restore Purchases"
               variant="secondary"
-              accessibilityLabel="Restore Premium purchases"
+              accessibilityLabel="Restore Bearing 360 purchases"
               onPress={() => void purchase.restore()}
               loading={purchase.pendingAction === 'restore'}
               loadingLabel="Restoring..."
@@ -238,7 +256,7 @@ export function PremiumPaywallModal({
 
             <AppButton
               label="Continue on Free Plan"
-              accessibilityLabel="Close premium paywall"
+              accessibilityLabel="Close Bearing 360 plans"
               onPress={onClose}
             />
           </>
@@ -250,7 +268,7 @@ export function PremiumPaywallModal({
       />
       <AppModal
         visible={confirmationPlan !== null}
-        title="Confirm Premium"
+        title="Confirm Bearing 360"
         closeLabel="Back"
         onClose={() => {
           if (!purchase.pendingAction) setConfirmationPlan(null);
@@ -285,7 +303,7 @@ export function PremiumPaywallModal({
             </Text>
             <AppButton
               label="Continue to Store"
-              accessibilityLabel={`Continue to the store for ${confirmationPlan.title} Premium`}
+              accessibilityLabel={`Continue to the store for ${getBrandedPlanName(confirmationPlan)}`}
               onPress={() => void confirmPurchase()}
               loading={purchase.pendingAction === confirmationPlan.packageIdentifier}
               loadingLabel="Opening store..."
@@ -294,7 +312,7 @@ export function PremiumPaywallModal({
             <AppButton
               label="Choose Another Plan"
               variant="secondary"
-              accessibilityLabel="Return to Premium plan selection"
+              accessibilityLabel="Return to Bearing 360 plan selection"
               onPress={() => setConfirmationPlan(null)}
               disabled={purchase.pendingAction !== null}
             />
@@ -303,7 +321,7 @@ export function PremiumPaywallModal({
       </AppModal>
       <AppModal
         visible={transactionPlan !== null}
-        title={isPurchaseInProgress ? 'Completing Purchase' : 'Premium Update'}
+        title={isPurchaseInProgress ? 'Completing Purchase' : 'Bearing 360 Update'}
         onClose={() => {
           if (!isPurchaseInProgress) setTransactionPlan(null);
         }}
@@ -324,13 +342,13 @@ export function PremiumPaywallModal({
               <View style={styles.purchaseState}>
                 <View style={styles.progressIndicator}>
                   <ActivityIndicator
-                    accessibilityLabel="Activating Premium purchase"
+                    accessibilityLabel="Activating Bearing 360 purchase"
                     color={colors.brand}
                     size="large"
                   />
                 </View>
                 <Text style={styles.purchaseStateTitle}>
-                  {purchase.awaitingActivation ? 'Activating Premium' : 'Confirming purchase'}
+                  {purchase.awaitingActivation ? 'Activating Bearing 360' : 'Confirming purchase'}
                 </Text>
                 <Text style={styles.purchaseStateDescription}>
                   {purchase.awaitingActivation
@@ -352,8 +370,8 @@ export function PremiumPaywallModal({
                   {purchase.error
                     ? 'Purchase not completed'
                     : hasPremiumAccess
-                      ? `${transactionPlan.title} Premium is active`
-                      : 'Premium activation is still syncing'}
+                      ? `${getBrandedPlanName(transactionPlan)} is active`
+                      : 'Bearing 360 activation is still syncing'}
                 </Text>
                 <Text style={styles.purchaseStateDescription}>
                   {purchase.error ?? purchase.feedback}
@@ -361,7 +379,7 @@ export function PremiumPaywallModal({
                 <AppButton
                   label={purchase.error ? 'Choose Another Plan' : 'Done'}
                   accessibilityLabel={
-                    purchase.error ? 'Choose another Premium plan' : 'Close Premium'
+                    purchase.error ? 'Choose another Bearing 360 plan' : 'Close Bearing 360'
                   }
                   onPress={() => {
                     if (purchase.error) {

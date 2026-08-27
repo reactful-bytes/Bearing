@@ -5,6 +5,7 @@ import { randomUUID } from 'expo-crypto';
 import { AppCard } from '../ui/AppCard';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
+import { CreditPackPurchaseModal } from '../premium/CreditPackPurchaseModal';
 import { FormField } from '../ui/FormField';
 import {
   GoalDateField,
@@ -38,6 +39,7 @@ type CreateGoalModalProps = {
   onOpenPremiumPaywall: () => void;
   onGenerateAiPlan: (input: AiGoalPlanInput) => Promise<AiGoalPlanDraft>;
   onLoadAiCreditStatus: () => Promise<AiCreditStatus>;
+  creditPackUserId: string | null;
 };
 
 type DraftGoalStep = CreateGoalStepInput & {
@@ -115,6 +117,7 @@ export function CreateGoalModal({
   onOpenPremiumPaywall,
   onGenerateAiPlan,
   onLoadAiCreditStatus,
+  creditPackUserId,
 }: CreateGoalModalProps) {
   const today = useMemo(() => new Date(), []);
   const [wizardIndex, setWizardIndex] = useState(0);
@@ -135,6 +138,7 @@ export function CreateGoalModal({
   const [aiCreditStatus, setAiCreditStatus] = useState<AiCreditStatus | null>(null);
   const [aiCreditsLoading, setAiCreditsLoading] = useState(false);
   const [aiCreditStatusError, setAiCreditStatusError] = useState<string | null>(null);
+  const [creditPackVisible, setCreditPackVisible] = useState(false);
   const aiRequestId = useRef<string | null>(null);
 
   const canGoBack = wizardIndex > 0;
@@ -151,6 +155,7 @@ export function CreateGoalModal({
     let active = true;
     setAiCreditsLoading(true);
     setAiCreditStatusError(null);
+    setCreditPackVisible(false);
     void onLoadAiCreditStatus()
       .then((status) => {
         if (active) setAiCreditStatus(status);
@@ -254,7 +259,7 @@ export function CreateGoalModal({
       const code = getAiPlanningErrorCode(generationError);
       if (code === 'resource-exhausted') {
         aiRequestId.current = null;
-        setAiError('No AI planning credits remain. Continue manually or wait for your next grant.');
+        setAiError('No AI planning credits remain. Continue manually or get more AI credits.');
       } else if (code === 'aborted') {
         setAiError('AI planning is already in progress. Try again shortly.');
       } else if (code === 'invalid-argument') {
@@ -462,7 +467,12 @@ export function CreateGoalModal({
 
   return (
     <>
-      <AppModal visible={visible} title="Create Goal" onClose={handleClose} fullScreen>
+      <AppModal
+        visible={visible && !creditPackVisible}
+        title="Create Goal"
+        onClose={handleClose}
+        fullScreen
+      >
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.stepLabel}>{wizardLabel}</Text>
 
@@ -520,7 +530,7 @@ export function CreateGoalModal({
           {wizardIndex === 3 ? (
             !isPremiumStatusResolved ? (
               <AppCard style={styles.card}>
-                <Text style={styles.cardTitle}>Checking premium access...</Text>
+                <Text style={styles.cardTitle}>Checking Bearing 360 access...</Text>
                 <Text style={styles.cardBody}>
                   Bearing is confirming whether AI goal planning should be unlocked for this
                   account.
@@ -627,20 +637,28 @@ export function CreateGoalModal({
                     aiCreditStatus?.eligible === false
                   }
                 />
+                {creditPackUserId ? (
+                  <AppButton
+                    label="Get More AI Credits"
+                    variant="secondary"
+                    accessibilityLabel="Get more AI credits from AI planning"
+                    onPress={() => setCreditPackVisible(true)}
+                  />
+                ) : null}
               </AppCard>
             ) : (
               <AppCard style={styles.card}>
-                <Text style={styles.cardTitle}>Unlock AI goal builder with Premium.</Text>
+                <Text style={styles.cardTitle}>Unlock AI goal builder with Bearing 360.</Text>
                 <Text style={styles.cardBody}>
-                  Bearing Premium will open AI-generated milestones and steps here once the service
-                  integration ships. You can keep building the goal manually right now.
+                  Bearing 360 opens AI-generated milestones and steps here. You can keep building
+                  the goal manually right now.
                 </Text>
                 <View style={styles.disabledBadge}>
-                  <Text style={styles.disabledBadgeText}>Premium Required</Text>
+                  <Text style={styles.disabledBadgeText}>Bearing 360 Required</Text>
                 </View>
                 <AppButton
-                  label="View Premium Plans"
-                  accessibilityLabel="View premium plans for AI goal builder"
+                  label="View Bearing 360 Plans"
+                  accessibilityLabel="View Bearing 360 plans for AI goal builder"
                   onPress={onOpenPremiumPaywall}
                 />
               </AppCard>
@@ -811,6 +829,17 @@ export function CreateGoalModal({
           />
         </View>
       </AppModal>
+      <CreditPackPurchaseModal
+        visible={creditPackVisible}
+        userId={creditPackUserId}
+        enabled={hasPremiumAccess && creditPackUserId !== null}
+        source="ai_planning"
+        currentBalance={aiCreditStatus?.availableCredits ?? null}
+        onBalanceUpdated={(availableCredits) =>
+          setAiCreditStatus({ eligible: true, availableCredits })
+        }
+        onClose={() => setCreditPackVisible(false)}
+      />
     </>
   );
 }

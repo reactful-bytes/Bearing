@@ -15,10 +15,7 @@ let configuredWebClientId: string | null = null;
 
 function isDeveloperConfigurationError(error: unknown): boolean {
   return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    String(error.code) === '10'
+    typeof error === 'object' && error !== null && 'code' in error && String(error.code) === '10'
   );
 }
 

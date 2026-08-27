@@ -173,6 +173,62 @@ describe("telemetry callable", () => {
     );
   });
 
+  it("accepts categorical credit-pack events without store metadata", async () => {
+    const events = [
+      {
+        schemaVersion: 1 as const,
+        name: "premium_credit_pack_viewed" as const,
+        properties: { source: "profile" },
+      },
+      {
+        schemaVersion: 1 as const,
+        name: "premium_credit_pack_purchase_started" as const,
+        properties: { source: "ai_planning" },
+      },
+      {
+        schemaVersion: 1 as const,
+        name: "premium_credit_pack_purchase_result" as const,
+        properties: { source: "profile", outcome: "sync_failure" },
+      },
+      {
+        schemaVersion: 1 as const,
+        name: "premium_credit_pack_balance_refresh_result" as const,
+        properties: { source: "ai_planning", outcome: "success" },
+      },
+    ];
+    const writtenEvents: TelemetryEvent[] = [];
+
+    for (const data of events) {
+      await recordTelemetryEvent({ ...verifiedRequest, data }, (event) => {
+        writtenEvents.push(event);
+      });
+    }
+
+    assert.deepEqual(writtenEvents, events);
+  });
+
+  it("rejects store metadata from credit-pack telemetry", async () => {
+    await assert.rejects(
+      recordTelemetryEvent(
+        {
+          ...verifiedRequest,
+          data: {
+            schemaVersion: 1,
+            name: "premium_credit_pack_purchase_result",
+            properties: {
+              source: "profile",
+              outcome: "success",
+              productId: "private-store-product",
+            },
+          },
+        },
+        () => undefined,
+      ),
+      (error: unknown) =>
+        error instanceof HttpsError && error.code === "invalid-argument",
+    );
+  });
+
   it("rejects customer-facing text as a premium purchase period", async () => {
     await assert.rejects(
       recordTelemetryEvent(

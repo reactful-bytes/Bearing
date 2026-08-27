@@ -39,6 +39,20 @@ export type TelemetryEventProperties = {
     source: 'purchase' | 'restore';
     outcome: 'success' | 'delayed';
   };
+  premium_credit_pack_viewed: {
+    source: 'ai_planning' | 'profile';
+  };
+  premium_credit_pack_purchase_started: {
+    source: 'ai_planning' | 'profile';
+  };
+  premium_credit_pack_purchase_result: {
+    source: 'ai_planning' | 'profile';
+    outcome: 'success' | 'cancelled' | 'failure' | 'sync_failure';
+  };
+  premium_credit_pack_balance_refresh_result: {
+    source: 'ai_planning' | 'profile';
+    outcome: 'success' | 'failure';
+  };
 };
 
 export type TelemetryEventName = keyof TelemetryEventProperties;
@@ -166,6 +180,27 @@ export function buildTelemetryPayload(name: unknown, properties: unknown): Telem
       if (
         !isOneOf(properties.source, ['purchase', 'restore']) ||
         !isOneOf(properties.outcome, ['success', 'delayed'])
+      )
+        return null;
+      break;
+    case 'premium_credit_pack_viewed':
+    case 'premium_credit_pack_purchase_started':
+      if (!hasExactKeys(properties, ['source'])) return null;
+      if (!isOneOf(properties.source, ['ai_planning', 'profile'])) return null;
+      break;
+    case 'premium_credit_pack_purchase_result':
+      if (!hasExactKeys(properties, ['outcome', 'source'])) return null;
+      if (
+        !isOneOf(properties.source, ['ai_planning', 'profile']) ||
+        !isOneOf(properties.outcome, ['success', 'cancelled', 'failure', 'sync_failure'])
+      )
+        return null;
+      break;
+    case 'premium_credit_pack_balance_refresh_result':
+      if (!hasExactKeys(properties, ['outcome', 'source'])) return null;
+      if (
+        !isOneOf(properties.source, ['ai_planning', 'profile']) ||
+        !isOneOf(properties.outcome, ['success', 'failure'])
       )
         return null;
       break;

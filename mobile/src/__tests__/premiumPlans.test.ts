@@ -1,6 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { normalizePremiumPlans, StorePackageSummary } from '../features/premium/premiumPlans';
+import {
+  normalizeCreditPacks,
+  normalizePremiumPlans,
+  StorePackageSummary,
+} from '../features/premium/premiumPlans';
 
 function makePackage(
   packageType: string,
@@ -12,6 +16,7 @@ function makePackage(
     identifier: `$rc_${packageType.toLowerCase()}`,
     packageType,
     product: {
+      identifier: `bearing_${packageType.toLowerCase()}`,
       title: `${packageType} Premium`,
       productType: subscriptionPeriod ? 'AUTO_RENEWABLE_SUBSCRIPTION' : 'NON_CONSUMABLE',
       priceString,
@@ -23,6 +28,50 @@ function makePackage(
 }
 
 describe('premium plans', () => {
+  it('builds credit packs only when the dedicated offering product has a server grant', () => {
+    expect(
+      normalizeCreditPacks(
+        [makePackage('CUSTOM', null, '$4.99'), makePackage('LIFETIME', null, '$8.99')],
+        [
+          {
+            storeProductId: 'bearing_custom',
+            amount: 5,
+            trialAmount: null,
+            currencyCode: 'AIC',
+          },
+        ],
+      ),
+    ).toEqual([
+      {
+        packageIdentifier: '$rc_custom',
+        amount: 5,
+        currencyCode: 'AIC',
+        priceText: '$4.99',
+      },
+    ]);
+  });
+
+  it('joins server grants to packages by store product identifier without a numeric fallback', () => {
+    const monthlyPackage = makePackage('MONTHLY', 'P1M', '$7.99');
+    const annualPackage = makePackage('ANNUAL', 'P1Y', '$59.99');
+
+    expect(
+      normalizePremiumPlans(
+        [monthlyPackage, annualPackage],
+        [
+          {
+            storeProductId: 'bearing_monthly',
+            amount: 8,
+            trialAmount: 2,
+          },
+        ],
+      ),
+    ).toEqual([
+      expect.objectContaining({ creditAmount: 8, trialCreditAmount: 2 }),
+      expect.objectContaining({ creditAmount: null, trialCreditAmount: null }),
+    ]);
+  });
+
   it('normalizes every RevenueCat offering package in its supplied display order', () => {
     const plans = normalizePremiumPlans([
       makePackage('ANNUAL', 'P1Y', '$59.99', '$5.00'),
@@ -34,7 +83,7 @@ describe('premium plans', () => {
     expect(plans).toEqual([
       expect.objectContaining({
         telemetryPlanType: 'ANNUAL',
-        title: 'ANNUAL Premium',
+        title: 'ANNUAL Bearing 360',
         priceText: '$59.99',
         priceSuffixText: '/yr',
         annualMonthlyBreakdownText: 'Only $5.00/mo',
@@ -74,7 +123,7 @@ describe('premium plans', () => {
     expect(normalizePremiumPlans([storePackage])[0]).toEqual(
       expect.objectContaining({
         telemetryPlanType: 'CUSTOM',
-        title: 'Premium Flex',
+        title: 'Bearing 360 Flex',
         priceText: '$12.99',
         priceSuffixText: null,
         isAutoRenewing: true,

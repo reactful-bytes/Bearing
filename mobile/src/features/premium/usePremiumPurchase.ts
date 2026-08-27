@@ -56,7 +56,7 @@ export function usePremiumPurchase(
         source: activationSource,
         outcome: 'success',
       });
-      setFeedback('Premium is active on this account.');
+      setFeedback('Bearing 360 is active on this account.');
       setActivationSource(null);
       return;
     }
@@ -66,7 +66,7 @@ export function usePremiumPurchase(
         source: activationSource,
         outcome: 'delayed',
       });
-      setFeedback('The store accepted the request. Premium activation is still syncing.');
+      setFeedback('The store accepted the request. Bearing 360 activation is still syncing.');
       setActivationSource(null);
     }, 15_000);
     return () => clearTimeout(timeout);
@@ -84,7 +84,7 @@ export function usePremiumPurchase(
       outcome: result,
     });
     if (result === 'success') {
-      setFeedback('Purchase accepted. Activating Premium...');
+      setFeedback('Purchase accepted. Activating Bearing 360...');
       setActivationSource('purchase');
     } else if (result === 'cancelled') {
       setError('The purchase was canceled. Choose a plan when you are ready.');
@@ -102,7 +102,7 @@ export function usePremiumPurchase(
     const result = await restorePremiumPurchases(userId);
     void recordTelemetryEvent('premium_restore_result', { outcome: result });
     if (result === 'success') {
-      setFeedback('Restore completed. Checking Premium access...');
+      setFeedback('Restore completed. Checking Bearing 360 access...');
       setActivationSource('restore');
     } else {
       setError('Purchases could not be restored. Check the store account and try again.');

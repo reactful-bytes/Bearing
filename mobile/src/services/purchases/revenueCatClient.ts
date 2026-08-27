@@ -2,16 +2,20 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Linking, Platform } from 'react-native';
 import type { PurchasesPackage } from 'react-native-purchases';
 
-import { normalizePremiumPlans } from '../../features/premium/premiumPlans';
+import { normalizeCreditPacks, normalizePremiumPlans } from '../../features/premium/premiumPlans';
 import { SubscriptionPlatform } from '../../features/premium/premiumTypes';
 import {
+  CreditPack,
+  CreditPackPurchaseResult,
   PremiumPlan,
   PremiumPurchaseAvailability,
   PremiumPurchaseResult,
 } from '../../features/premium/purchaseTypes';
+import { getRevenueCatProductGrantCatalog } from '../firebase/firebaseRevenueCatCatalog';
 
 let configuredUserId: string | null = null;
-let packagesByIdentifier = new Map<string, PurchasesPackage>();
+let premiumPackagesByIdentifier = new Map<string, PurchasesPackage>();
+let creditPackPackagesByIdentifier = new Map<string, PurchasesPackage>();
 
 function getApiKey(): string | null {
   const key =
@@ -48,14 +52,31 @@ async function getConfiguredPurchases(userId: string) {
 
 export async function loadPremiumPlans(userId: string): Promise<PremiumPlan[]> {
   const Purchases = await getConfiguredPurchases(userId);
-  const offering = (await Purchases.getOfferings()).current;
-  packagesByIdentifier = new Map(
+  const [offerings, productGrants] = await Promise.all([
+    Purchases.getOfferings(),
+    getRevenueCatProductGrantCatalog(),
+  ]);
+  const offering = offerings.current;
+  premiumPackagesByIdentifier = new Map(
     (offering?.availablePackages ?? []).map((storePackage) => [
       storePackage.identifier,
       storePackage,
     ]),
   );
-  return normalizePremiumPlans(offering?.availablePackages ?? []);
+  return normalizePremiumPlans(offering?.availablePackages ?? [], productGrants);
+}
+
+export async function loadCreditPacks(userId: string): Promise<CreditPack[]> {
+  const Purchases = await getConfiguredPurchases(userId);
+  const [offerings, productGrants] = await Promise.all([
+    Purchases.getOfferings(),
+    getRevenueCatProductGrantCatalog(),
+  ]);
+  const packages = offerings.all.credit_packs?.availablePackages ?? [];
+  creditPackPackagesByIdentifier = new Map(
+    packages.map((storePackage) => [storePackage.identifier, storePackage]),
+  );
+  return normalizeCreditPacks(packages, productGrants);
 }
 
 export async function purchasePremiumPlan(
@@ -63,7 +84,7 @@ export async function purchasePremiumPlan(
   packageIdentifier: string,
 ): Promise<PremiumPurchaseResult> {
   const Purchases = await getConfiguredPurchases(userId);
-  const storePackage = packagesByIdentifier.get(packageIdentifier);
+  const storePackage = premiumPackagesByIdentifier.get(packageIdentifier);
   if (!storePackage) throw new Error('This subscription plan is no longer available.');
 
   try {
@@ -75,6 +96,32 @@ export async function purchasePremiumPlan(
     )
       ? 'cancelled'
       : 'failure';
+  }
+}
+
+export async function purchaseCreditPack(
+  userId: string,
+  packageIdentifier: string,
+): Promise<CreditPackPurchaseResult> {
+  const Purchases = await getConfiguredPurchases(userId);
+  const storePackage = creditPackPackagesByIdentifier.get(packageIdentifier);
+  if (!storePackage) throw new Error('This credit pack is no longer available.');
+
+  try {
+    await Purchases.purchasePackage(storePackage);
+  } catch (error) {
+    return Boolean(
+      error && typeof error === 'object' && 'userCancelled' in error && error.userCancelled,
+    )
+      ? 'cancelled'
+      : 'failure';
+  }
+
+  try {
+    await Purchases.syncPurchases();
+    return 'success';
+  } catch {
+    return 'sync_failure';
   }
 }
 

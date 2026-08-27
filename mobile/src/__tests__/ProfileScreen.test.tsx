@@ -35,6 +35,7 @@ import {
   exportCurrentUserData,
 } from '../services/firebase/firebasePrivacy';
 import { showPremiumSubscriptionManagement } from '../services/purchases/revenueCatClient';
+import { getAiCreditStatus } from '../services/firebase/firebaseAiGoalPlans';
 
 jest.setTimeout(10000);
 
@@ -73,7 +74,12 @@ jest.mock('../features/premium/usePremiumEntitlement', () => ({
 }));
 
 jest.mock('../services/purchases/revenueCatClient', () => ({
+  getPremiumPurchaseAvailability: jest.fn(() => 'web'),
   showPremiumSubscriptionManagement: jest.fn(),
+}));
+
+jest.mock('../services/firebase/firebaseAiGoalPlans', () => ({
+  getAiCreditStatus: jest.fn(),
 }));
 
 jest.mock('../features/calendar/icsFileInterop', () => ({
@@ -307,6 +313,10 @@ describe('ProfileScreen', () => {
     (
       deleteCurrentUserAccount as jest.MockedFunction<typeof deleteCurrentUserAccount>
     ).mockResolvedValue();
+    (getAiCreditStatus as jest.MockedFunction<typeof getAiCreditStatus>).mockResolvedValue({
+      eligible: true,
+      availableCredits: 7,
+    });
   });
 
   it('retries after the profile subscription fails', () => {
@@ -402,7 +412,7 @@ describe('ProfileScreen', () => {
     });
     render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
     await act(async () => {
-      fireEvent.press(screen.getByText('Premium access'));
+      fireEvent.press(screen.getByText('Bearing 360 access'));
     });
 
     expect(
@@ -410,6 +420,24 @@ describe('ProfileScreen', () => {
     ).toBeTruthy();
     expect(showPremiumSubscriptionManagement).toHaveBeenCalledWith('user-1', 'web');
     expect(screen.getByLabelText('Save account settings')).toBeTruthy();
+  });
+
+  it('shows the authoritative balance and credit-pack guidance for active members', async () => {
+    mockProfileHooks();
+    (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
+      entitlement: { status: 'active' } as never,
+      uiState: 'ready',
+      error: null,
+    });
+
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+
+    await waitFor(() => expect(screen.getByText('7 available')).toBeTruthy());
+    fireEvent.press(screen.getByText('AI planning credits'));
+    expect(screen.getByRole('header', { name: 'Get AI Credits' })).toBeTruthy();
+    expect(
+      screen.getByText('AI credit packs are available in the iOS and Android apps.'),
+    ).toBeTruthy();
   });
 
   it('explains that RevenueCat Test Store purchases cannot be managed', async () => {
@@ -434,7 +462,7 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
     await act(async () => {
-      fireEvent.press(screen.getByText('Premium access'));
+      fireEvent.press(screen.getByText('Bearing 360 access'));
     });
 
     expect(
@@ -653,7 +681,7 @@ describe('ProfileScreen', () => {
       fireEvent.press(screen.getByLabelText('Allow device calendar access'));
     });
     expect(requestPermission).toHaveBeenCalled();
-    expect(screen.queryByText('Bearing Premium')).toBeNull();
+    expect(screen.queryByText('Bearing 360')).toBeNull();
   });
 
   it('updates visible and writable default device calendars', async () => {

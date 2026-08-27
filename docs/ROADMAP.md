@@ -205,15 +205,15 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M18 - RevenueCat Virtual Currency Foundation
 
-| Task ID | Status      | Description                                  | Exit Criteria                                                                                 |
-| ------- | ----------- | -------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| M18.1   | completed   | Establish milestone tracking                 | M18-M21 roadmap, project plan, tickets, dependencies, and update protocol agree               |
-| M18.2   | manual-handoff | Configure dashboard-owned virtual currency | Paid, trial, and future pack grants require owner console evidence                            |
-| M18.3   | completed   | Provision V2 access and parameters           | Separate least-privilege V2 parameters are wired; owner provisions values                      |
-| M18.4   | completed   | Add V2 balance reads                         | Backend returns validated RevenueCat balances for authenticated customers                      |
-| M18.5   | completed   | Add V2 debit and refund transactions         | One-unit adjustments are idempotent and safely retryable                                       |
-| M18.6   | completed   | Add dynamic product-grant catalog            | Client-safe product grants come from RevenueCat configuration                                  |
-| M18.7   | completed   | Validate the V2 foundation                   | Adapter, callable, cache, error, security, and redaction coverage pass                          |
+| Task ID | Status      | Description                                  | Exit Criteria                                                                                         |
+| ------- | ----------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| M18.1   | completed   | Establish milestone tracking                 | M18-M21 roadmap, project plan, tickets, dependencies, and update protocol agree                       |
+| M18.2   | manual-handoff | Configure dashboard-owned virtual currency | Paid, trial, and future pack grants require owner console evidence                                  |
+| M18.3   | completed   | Provision V2 access and parameters           | Separate least-privilege V2 parameters are wired; owner provisions values                             |
+| M18.4   | completed   | Add V2 balance reads                         | Backend returns validated RevenueCat balances for authenticated customers                             |
+| M18.5   | completed   | Add V2 debit and refund transactions         | One-unit adjustments are idempotent and safely retryable                                              |
+| M18.6   | completed   | Add dynamic product-grant catalog            | Client-safe product grants come from RevenueCat configuration                                         |
+| M18.7   | completed   | Validate the V2 foundation                   | Adapter, callable, cache, error, security, and redaction coverage pass                                |
 
 ### M19 - Authoritative Spending and Ledger Removal
 
@@ -233,16 +233,16 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 | Task ID | Status      | Description                              | Exit Criteria                                                                                   |
 | ------- | ----------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| M20.1   | not-started | Add mobile grant-catalog transport       | SDK packages join to safe server-derived RevenueCat grants                                       |
-| M20.2   | not-started | Rename customer-facing Premium copy      | Users see Bearing 360 while stable technical identifiers remain                                  |
-| M20.3   | not-started | Show dynamic subscription grants         | Paywall uses configured paid and trial amounts without fallback constants                        |
-| M20.4   | not-started | Use authoritative balance UI             | Balance refreshes after purchases/generation and next-grant assumptions are gone                  |
-| M20.5   | not-started | Add credit-pack offering client          | Consumables load independently from `credit_packs`                                                |
-| M20.6   | not-started | Build credit-pack purchase flow          | Dynamic packs support confirmation, outcomes, sync, and balance refresh                           |
-| M20.7   | not-started | Add AI Planning pack entry               | Eligible members can buy credits from the planning workflow                                      |
-| M20.8   | not-started | Add Profile pack entry                   | Profile exposes balance, packs, and accurate unsupported states                                   |
-| M20.9   | not-started | Add strict pack telemetry                | Bounded events exclude sensitive and store-specific identifiers                                  |
-| M20.10  | not-started | Validate mobile experience               | Focused/full tests and all static mobile gates pass                                               |
+| M20.1   | completed | Add mobile grant-catalog transport       | SDK packages join to safe server-derived RevenueCat grants                                       |
+| M20.2   | completed | Rename customer-facing Premium copy      | Users see Bearing 360 while stable technical identifiers remain                                  |
+| M20.3   | completed | Show dynamic subscription grants         | Paywall uses configured paid and trial amounts without fallback constants                        |
+| M20.4   | completed | Use authoritative balance UI             | Balance refreshes after purchases/generation and next-grant assumptions are gone                  |
+| M20.5   | completed | Add credit-pack offering client          | Consumables load independently from `credit_packs`                                                |
+| M20.6   | completed | Build credit-pack purchase flow          | Dynamic packs support confirmation, outcomes, sync, and balance refresh                           |
+| M20.7   | completed | Add AI Planning pack entry               | Eligible members can buy credits from the planning workflow                                      |
+| M20.8   | completed | Add Profile pack entry                   | Profile exposes balance, packs, and accurate unsupported states                                   |
+| M20.9   | completed | Add strict pack telemetry                | Bounded events exclude sensitive and store-specific identifiers                                  |
+| M20.10  | completed | Validate mobile experience               | Focused/full tests and all static mobile gates pass                                               |
 
 ### M21 - Privacy, Cleanup, Documentation, and Release
 
@@ -252,7 +252,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M21.2   | not-started | Replace rules, TTL, and staging data         | New state is server-only and obsolete state has no active policy or data                        |
 | M21.3   | not-started | Reconcile architecture and operations docs   | Active documentation matches RevenueCat authority                                               |
 | M21.4   | not-started | Reconcile monetization and legal docs        | Bearing 360, grants, trials, packs, locks, and refunds are current                               |
-| M21.5   | not-started | Complete console setup                       | RevenueCat and store evidence is recorded                                                       |
+| M21.5   | manual-handoff | Complete console setup                  | RevenueCat, store, and native purchase evidence is recorded                                     |
 | M21.6   | not-started | Run failure and security acceptance          | Exactly-once, ownership, privacy, redaction, and rules behavior pass                             |
 | M21.7   | not-started | Run release acceptance and close tracking    | Native/web evidence passes and all milestone trackers agree                                     |
 

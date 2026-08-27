@@ -1,9 +1,10 @@
-import { PremiumPlan } from './purchaseTypes';
+import { CreditPack, PremiumPlan } from './purchaseTypes';
 
 export type StorePackageSummary = {
   identifier: string;
   packageType: string;
   product: {
+    identifier: string;
     title: string;
     productType: string;
     priceString: string;
@@ -16,6 +17,13 @@ export type StorePackageSummary = {
       periodNumberOfUnits: number;
     } | null;
   };
+};
+
+export type ProductGrantSummary = {
+  storeProductId: string;
+  currencyCode?: string;
+  amount: number;
+  trialAmount: number | null;
 };
 
 type PlanPeriodDetails = {
@@ -89,7 +97,7 @@ function getPlanPeriodDetails(storePackage: StorePackageSummary): PlanPeriodDeta
 
   if (storePackage.product.productType === 'AUTO_RENEWABLE_SUBSCRIPTION') {
     return {
-      fallbackTitle: 'Premium',
+      fallbackTitle: 'Bearing 360',
       priceSuffixText: null,
       isAutoRenewing: true,
       isOneTimePurchase: false,
@@ -97,7 +105,7 @@ function getPlanPeriodDetails(storePackage: StorePackageSummary): PlanPeriodDeta
   }
 
   return {
-    fallbackTitle: 'Premium',
+    fallbackTitle: 'Bearing 360',
     priceSuffixText: null,
     isAutoRenewing: false,
     isOneTimePurchase: false,
@@ -129,15 +137,24 @@ function getCustomerFacingPlanTitle(
   const title = storePackage.product.title.trim();
   const isTechnicalTitle =
     /^P\d+[DWMY]$/i.test(title) || title.startsWith('$rc_') || title.includes('_');
-  return title && !isTechnicalTitle ? title : fallbackTitle;
+  return title && !isTechnicalTitle ? title.replace(/\bpremium\b/gi, 'Bearing 360') : fallbackTitle;
 }
 
-export function normalizePremiumPlans(packages: StorePackageSummary[]): PremiumPlan[] {
+export function normalizePremiumPlans(
+  packages: StorePackageSummary[],
+  productGrants: ProductGrantSummary[] = [],
+): PremiumPlan[] {
+  const grantsByStoreProductId = new Map(
+    productGrants.map((grant) => [grant.storeProductId, grant]),
+  );
   return packages.map((storePackage): PremiumPlan => {
     const periodDetails = getPlanPeriodDetails(storePackage);
+    const productGrant = grantsByStoreProductId.get(storePackage.product.identifier);
     return {
       packageIdentifier: storePackage.identifier,
       telemetryPlanType: storePackage.packageType,
+      creditAmount: productGrant?.amount ?? null,
+      trialCreditAmount: productGrant?.trialAmount ?? null,
       title: getCustomerFacingPlanTitle(storePackage, periodDetails.fallbackTitle),
       priceText: storePackage.product.priceString,
       priceSuffixText: periodDetails.priceSuffixText,
@@ -148,5 +165,28 @@ export function normalizePremiumPlans(packages: StorePackageSummary[]): PremiumP
       isAutoRenewing: periodDetails.isAutoRenewing,
       isOneTimePurchase: periodDetails.isOneTimePurchase,
     };
+  });
+}
+
+export function normalizeCreditPacks(
+  packages: StorePackageSummary[],
+  productGrants: ProductGrantSummary[],
+): CreditPack[] {
+  const grantsByStoreProductId = new Map(
+    productGrants.map((grant) => [grant.storeProductId, grant]),
+  );
+
+  return packages.flatMap((storePackage) => {
+    const productGrant = grantsByStoreProductId.get(storePackage.product.identifier);
+    if (!productGrant) return [];
+
+    return [
+      {
+        packageIdentifier: storePackage.identifier,
+        amount: productGrant.amount,
+        currencyCode: productGrant.currencyCode ?? '',
+        priceText: storePackage.product.priceString,
+      },
+    ];
   });
 }

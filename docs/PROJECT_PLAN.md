@@ -351,18 +351,18 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 ### M20 - Bearing 360 and Credit Pack Experience
 
-| Task ID | Status      | Description                         | Notes                                             |
-| ------- | ----------- | ----------------------------------- | ------------------------------------------------- |
-| M20.1   | not-started | Add grant-catalog client            | Join store packages to server-derived grants      |
-| M20.2   | not-started | Rename customer-facing Premium copy | Bearing 360 display; technical identifiers remain |
-| M20.3   | not-started | Show dynamic subscription grants    | No numeric fallback                               |
-| M20.4   | not-started | Use authoritative balance UI        | Refresh after purchase/generation                 |
-| M20.5   | not-started | Add credit-pack offering client     | Dedicated consumable offering                     |
-| M20.6   | not-started | Build pack purchase flow            | Confirm, purchase, sync, and refresh              |
-| M20.7   | not-started | Add AI Planning pack entry          | Available to secured active/grace members         |
-| M20.8   | not-started | Add Profile pack entry              | Balance and unsupported-state behavior            |
-| M20.9   | not-started | Add strict pack telemetry           | No sensitive/store identifiers                    |
-| M20.10  | not-started | Validate mobile experience          | Jest and all static mobile gates                  |
+| Task ID | Status    | Description                         | Notes                                             |
+| ------- | --------- | ----------------------------------- | ------------------------------------------------- |
+| M20.1   | completed | Add grant-catalog client            | Join store packages to server-derived grants      |
+| M20.2   | completed | Rename customer-facing Premium copy | Bearing 360 display; technical identifiers remain |
+| M20.3   | completed | Show dynamic subscription grants    | No numeric fallback                               |
+| M20.4   | completed | Use authoritative balance UI        | Refresh after purchase/generation                 |
+| M20.5   | completed | Add credit-pack offering client     | Dedicated consumable offering                     |
+| M20.6   | completed | Build pack purchase flow            | Confirm, purchase, sync, and refresh              |
+| M20.7   | completed | Add AI Planning pack entry          | Available to secured active/grace members         |
+| M20.8   | completed | Add Profile pack entry              | Balance and unsupported-state behavior            |
+| M20.9   | completed | Add strict pack telemetry           | No sensitive/store identifiers                    |
+| M20.10  | completed | Validate mobile experience          | Jest and all static mobile gates                  |
 
 ### M21 - Privacy, Cleanup, Documentation, and Release
 
@@ -372,7 +372,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M21.2   | not-started | Replace rules, TTL, and staging data       | Remove obsolete active policy/data                     |
 | M21.3   | not-started | Reconcile architecture and operations docs | RevenueCat authority is current                        |
 | M21.4   | not-started | Reconcile monetization and legal docs      | Bearing 360, trials, packs, and refunds                |
-| M21.5   | not-started | Complete console setup                     | Owner records RevenueCat/store evidence                |
+| M21.5   | manual-handoff | Complete console setup                  | Owner records RevenueCat/store/native purchase evidence |
 | M21.6   | not-started | Run failure and security acceptance        | Exactly-once, auth, privacy, rules, redaction          |
 | M21.7   | not-started | Run release acceptance and close tracking  | Native/web matrix and dynamic reconfiguration evidence |
 
@@ -388,6 +388,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 | Date       | Task ID          | Validation                                                                               | Result         | Notes                                                                                                                                                                                                                                                                                                                                                                        |
 | ---------- | ---------------- | ---------------------------------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-08-27 | M20.1-M20.10     | Focused/full mobile; static/web; Functions quality and all compiled tests; rules         | completed      | Mobile focused 10 suites/94 tests and full 46 suites/273 tests pass; typecheck, lint, format, and web export pass; Functions quality and explicit 12 suites/67 tests pass; 16 rules tests pass; RevenueCat/store/native purchase evidence remains M21.5 manual-handoff                                                                                                          |
 | 2026-08-26 | M19.9            | Functions quality; 65 explicit compiled tests; mobile typecheck; 16 rules tests          | completed      | Full migration gate passes; package test discovery is shallow, so every compiled `*.test.js` file was also run explicitly                                                                                                                                                                                                                                                    |
 | 2026-08-26 | M19.8            | Active/generated symbol scans and clean Functions rebuild                                | completed      | Legacy account/grant/plan collections, billing math, source/tests, imports, and generated artifacts are absent                                                                                                                                                                                                                                                               |
 | 2026-08-26 | M19.7            | Focused RevenueCat reconciliation suite                                                  | completed      | Webhook retains V1 subscriber projection and idempotent receipts with no credit reconciliation side effect                                                                                                                                                                                                                                                                   |

@@ -87,7 +87,7 @@ export const LEGAL_DOCUMENTS: Record<LegalDocumentId, LegalDocument> = {
       },
       {
         heading: 'Subscriptions',
-        body: 'Bearing Premium may be offered through auto-renewing store subscriptions and one-time purchases. The live localized product title, price, billing period, any introductory terms, and included features are shown before purchase. No trial is planned for launch. Apple or Google processes payment and controls cancellation and refund requests. Purchases can be restored to the secured Bearing account. Deleting Bearing does not by itself cancel a store subscription.',
+        body: 'Bearing 360 may be offered through auto-renewing store subscriptions. AI credit packs are one-time consumable purchases available to eligible members. The live localized price, billing period, configured AI credit grant, and any trial or introductory terms are shown before purchase. Apple or Google processes payment and controls cancellation and refund requests. Subscriptions can be restored to the secured Bearing account. Deleting Bearing does not by itself cancel a store subscription.',
       },
       {
         heading: 'Availability and changes',

@@ -11,19 +11,19 @@ type PremiumPaywallCopy = {
 
 const PREMIUM_PAYWALL_COPY: Record<PremiumFeature, PremiumPaywallCopy> = {
   premium_overview: {
-    badge: 'Premium Preview',
-    headline: 'Plan bigger with Bearing Premium.',
-    body: 'Premium unlocks the AI goal builder assistant while core device calendar access remains free.',
+    badge: 'Bearing 360',
+    headline: 'Plan bigger with Bearing 360.',
+    body: 'Bearing 360 unlocks the AI goal builder assistant while core device calendar access remains free.',
     highlights: [
       'Generate editable milestone and step drafts before saving a goal.',
       'Keep device calendar access available on the free plan.',
-      'Use one premium entitlement across iPhone and Android after live billing is connected.',
+      'Use one Bearing 360 membership across iPhone and Android.',
     ],
   },
   ai_goal_builder: {
-    badge: 'Premium Required',
+    badge: 'Bearing 360 Required',
     headline: 'Unlock AI goal planning.',
-    body: 'Use Premium to generate milestone and step drafts for a goal before saving it. Manual planning stays available today.',
+    body: 'Use Bearing 360 to generate milestone and step drafts for a goal before saving it. Manual planning stays available today.',
     highlights: [
       'Turn one goal into editable milestones and ordered next steps.',
       'Review AI output before anything is written to your saved goals.',

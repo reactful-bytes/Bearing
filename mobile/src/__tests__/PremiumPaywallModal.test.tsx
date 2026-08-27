@@ -16,6 +16,8 @@ jest.mock('../services/telemetry/telemetry', () => ({
 const monthlyPlan: PremiumPlan = {
   packageIdentifier: '$rc_monthly',
   telemetryPlanType: 'MONTHLY',
+  creditAmount: 10,
+  trialCreditAmount: 1,
   title: 'Monthly',
   priceText: '$7.99',
   priceSuffixText: '/mo',
@@ -28,6 +30,8 @@ const monthlyPlan: PremiumPlan = {
 const annualPlan: PremiumPlan = {
   packageIdentifier: '$rc_annual',
   telemetryPlanType: 'ANNUAL',
+  creditAmount: null,
+  trialCreditAmount: null,
   title: 'Yearly',
   priceText: '$59.99',
   priceSuffixText: '/yr',
@@ -64,19 +68,21 @@ describe('PremiumPaywallModal', () => {
     );
 
     expect(
-      screen.getByRole('radio', { name: 'Select Monthly Premium plan', selected: true }),
+      screen.getByRole('radio', { name: 'Select Monthly Bearing 360 plan', selected: true }),
     ).toBeTruthy();
     expect(screen.getByText('$7.99/mo')).toBeTruthy();
+    expect(screen.getByText('Includes 10 AI planning credits per grant')).toBeTruthy();
+    expect(screen.getByText('Trial includes 1 AI planning credit')).toBeTruthy();
     expect(screen.queryByText('Choose Monthly')).toBeNull();
 
-    fireEvent.press(screen.getByRole('radio', { name: 'Select Yearly Premium plan' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Select Yearly Bearing 360 plan' }));
     expect(
-      screen.getByRole('radio', { name: 'Select Yearly Premium plan', selected: true }),
+      screen.getByRole('radio', { name: 'Select Yearly Bearing 360 plan', selected: true }),
     ).toBeTruthy();
 
-    fireEvent.press(screen.getByRole('button', { name: 'Continue with Yearly Premium plan' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Continue with Yearly Bearing 360 plan' }));
 
-    expect(screen.getByRole('header', { name: 'Confirm Premium' })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Confirm Bearing 360' })).toBeTruthy();
     expect(screen.getByText('Yearly')).toBeTruthy();
     expect(screen.getByText('$59.99/yr')).toBeTruthy();
     expect(screen.getByText('Only $5.00/mo')).toBeTruthy();
@@ -85,7 +91,7 @@ describe('PremiumPaywallModal', () => {
 
     await act(async () => {
       fireEvent.press(
-        screen.getByRole('button', { name: 'Continue to the store for Yearly Premium' }),
+        screen.getByRole('button', { name: 'Continue to the store for Yearly Bearing 360' }),
       );
     });
 
@@ -117,9 +123,9 @@ describe('PremiumPaywallModal', () => {
       />,
     );
 
-    fireEvent.press(screen.getByRole('button', { name: 'Continue with Monthly Premium plan' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Continue with Monthly Bearing 360 plan' }));
     fireEvent.press(
-      screen.getByRole('button', { name: 'Continue to the store for Monthly Premium' }),
+      screen.getByRole('button', { name: 'Continue to the store for Monthly Bearing 360' }),
     );
 
     jest.mocked(usePremiumPurchase).mockReturnValue({
@@ -144,8 +150,8 @@ describe('PremiumPaywallModal', () => {
       />,
     );
 
-    expect(screen.getByText('Activating Premium')).toBeTruthy();
-    expect(screen.queryByRole('radio', { name: 'Select Monthly Premium plan' })).toBeNull();
+    expect(screen.getByText('Activating Bearing 360')).toBeTruthy();
+    expect(screen.queryByRole('radio', { name: 'Select Monthly Bearing 360 plan' })).toBeNull();
     expect(screen.getByText('Selected plan')).toBeTruthy();
     expect(screen.getByText('$7.99/mo')).toBeTruthy();
 
@@ -156,7 +162,7 @@ describe('PremiumPaywallModal', () => {
       pendingAction: null,
       awaitingActivation: false,
       error: null,
-      feedback: 'Premium is active on this account.',
+      feedback: 'Bearing 360 is active on this account.',
       purchase: jest.fn(async () => undefined),
       restore: jest.fn(async () => undefined),
     });
@@ -171,9 +177,9 @@ describe('PremiumPaywallModal', () => {
       />,
     );
 
-    expect(screen.getByText('Monthly Premium is active')).toBeTruthy();
-    expect(screen.getByText('Premium is active on this account.')).toBeTruthy();
-    fireEvent.press(screen.getByRole('button', { name: 'Close Premium' }));
+    expect(screen.getByText('Monthly Bearing 360 is active')).toBeTruthy();
+    expect(screen.getByText('Bearing 360 is active on this account.')).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Close Bearing 360' }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -201,9 +207,9 @@ describe('PremiumPaywallModal', () => {
       />,
     );
 
-    fireEvent.press(screen.getByRole('button', { name: 'Continue with Monthly Premium plan' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Continue with Monthly Bearing 360 plan' }));
     fireEvent.press(
-      screen.getByRole('button', { name: 'Continue to the store for Monthly Premium' }),
+      screen.getByRole('button', { name: 'Continue to the store for Monthly Bearing 360' }),
     );
 
     jest.mocked(usePremiumPurchase).mockReturnValue({
@@ -228,7 +234,7 @@ describe('PremiumPaywallModal', () => {
       />,
     );
 
-    expect(screen.getByText('Activating Premium')).toBeTruthy();
+    expect(screen.getByText('Activating Bearing 360')).toBeTruthy();
     expect(screen.queryByText('Purchase not completed')).toBeNull();
   });
 
@@ -240,7 +246,7 @@ describe('PremiumPaywallModal', () => {
       pendingAction: null,
       awaitingActivation: false,
       error: null,
-      feedback: 'Premium is active on this account.',
+      feedback: 'Bearing 360 is active on this account.',
       purchase: jest.fn(async () => undefined),
       restore: jest.fn(async () => undefined),
     });
@@ -256,7 +262,42 @@ describe('PremiumPaywallModal', () => {
       />,
     );
 
-    expect(screen.getByRole('radio', { name: 'Select Monthly Premium plan' })).toBeTruthy();
-    expect(screen.queryByText('Premium is active on this account.')).toBeNull();
+    expect(screen.getByRole('radio', { name: 'Select Monthly Bearing 360 plan' })).toBeTruthy();
+    expect(screen.queryByText('Bearing 360 is active on this account.')).toBeNull();
+  });
+
+  it('does not repeat the brand when the store cadence is unknown', () => {
+    const unknownCadencePlan: PremiumPlan = {
+      ...monthlyPlan,
+      packageIdentifier: 'custom-plan',
+      telemetryPlanType: 'CUSTOM',
+      title: 'Bearing 360',
+      priceSuffixText: null,
+    };
+    jest.mocked(usePremiumPurchase).mockReturnValue({
+      availability: 'available',
+      plans: [unknownCadencePlan],
+      loading: false,
+      pendingAction: null,
+      awaitingActivation: false,
+      error: null,
+      feedback: null,
+      purchase: jest.fn(async () => undefined),
+      restore: jest.fn(async () => undefined),
+    });
+
+    render(
+      <PremiumPaywallModal
+        visible
+        feature="premium_overview"
+        userId="user-1"
+        isAnonymous={false}
+        hasPremiumAccess={false}
+        onClose={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('radio', { name: 'Select Bearing 360 plan' })).toBeTruthy();
+    expect(screen.queryByLabelText(/Bearing 360 Bearing 360/)).toBeNull();
   });
 });

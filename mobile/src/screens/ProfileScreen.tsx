@@ -16,6 +16,7 @@ import { GoogleAuthButton } from '../components/auth/GoogleAuthButton';
 import { AppModal } from '../components/ui/AppModal';
 import { FormField } from '../components/ui/FormField';
 import { PremiumPaywallModal } from '../components/premium/PremiumPaywallModal';
+import { CreditPackPurchaseModal } from '../components/premium/CreditPackPurchaseModal';
 import { ProfileSelectionModal } from '../components/profile/ProfileSelectionModal';
 import { LegalDocumentModal } from '../components/profile/LegalDocumentModal';
 import { SoundPickerModal } from '../components/profile/SoundPickerModal';
@@ -70,6 +71,7 @@ import {
   TimeFormat,
 } from '../features/profile/timeFormat';
 import { listUserEvents } from '../services/firebase/firebaseEvents';
+import { getAiCreditStatus } from '../services/firebase/firebaseAiGoalPlans';
 import { reauthenticateCurrentUser } from '../services/firebase/firebaseAuthActions';
 import {
   deleteCurrentUserAccount,
@@ -137,6 +139,10 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   const [premiumPaywallFeature, setPremiumPaywallFeature] = useState<PremiumFeature | null>(null);
   const [premiumManagementPending, setPremiumManagementPending] = useState(false);
   const [premiumManagementError, setPremiumManagementError] = useState<string | null>(null);
+  const [creditPackVisible, setCreditPackVisible] = useState(false);
+  const [aiCreditBalance, setAiCreditBalance] = useState<number | null>(null);
+  const [aiCreditBalanceLoading, setAiCreditBalanceLoading] = useState(false);
+  const [aiCreditBalanceError, setAiCreditBalanceError] = useState<string | null>(null);
   const [icsModalVisible, setIcsModalVisible] = useState(false);
   const [icsPending, setIcsPending] = useState(false);
   const [icsError, setIcsError] = useState<string | null>(null);
@@ -166,6 +172,32 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
     setTimeFormat(profile.timeFormat);
     setLinkDisplayName((current) => current || profile.displayName);
   }, [profile]);
+
+  useEffect(() => {
+    if (!authUser || isAnonymous || !hasPremiumAccess) {
+      setAiCreditBalance(null);
+      setAiCreditBalanceError(null);
+      return;
+    }
+
+    let current = true;
+    setAiCreditBalanceLoading(true);
+    setAiCreditBalanceError(null);
+    void getAiCreditStatus()
+      .then((status) => {
+        if (current) setAiCreditBalance(status.availableCredits);
+      })
+      .catch(() => {
+        if (current) setAiCreditBalanceError('AI credit balance is unavailable right now.');
+      })
+      .finally(() => {
+        if (current) setAiCreditBalanceLoading(false);
+      });
+
+    return () => {
+      current = false;
+    };
+  }, [authUser, hasPremiumAccess, isAnonymous]);
 
   async function handleSaveAccountSettings(): Promise<void> {
     if (!profile) {
@@ -406,14 +438,14 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
 
   function getPremiumAccessDescription(): string {
     if (hasPremiumAccess) {
-      return 'Premium is active for AI goal builder access. Billing and cancellation are managed by the store account used to subscribe.';
+      return 'Bearing 360 is active for AI goal builder access. Billing and cancellation are managed by the store account used to subscribe.';
     }
 
     if (entitlement?.status === 'canceled' || entitlement?.status === 'expired') {
-      return 'Premium access is not active. Rejoin or restore purchases to unlock AI goal planning.';
+      return 'Bearing 360 access is not active. Rejoin or restore purchases to unlock AI goal planning.';
     }
 
-    return 'AI goal builder access is reserved for Bearing Premium. Device calendar access remains free.';
+    return 'AI goal builder access is reserved for Bearing 360. Device calendar access remains free.';
   }
 
   async function handlePremiumAction(): Promise<void> {
@@ -950,7 +982,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
               <SectionHeading title="Plan" description="Review your current Bearing access." />
               <ListItem
                 onPress={() => void handlePremiumAction()}
-                title="Premium access"
+                title="Bearing 360 access"
                 description={getPremiumAccessDescription()}
                 trailingText={
                   premiumManagementPending
@@ -961,6 +993,21 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
                 }
                 disabled={premiumManagementPending}
               />
+              {hasPremiumAccess && authUser && !isAnonymous ? (
+                <ListItem
+                  onPress={() => setCreditPackVisible(true)}
+                  title="AI planning credits"
+                  description={
+                    aiCreditBalanceLoading
+                      ? 'Checking your current balance...'
+                      : (aiCreditBalanceError ??
+                        (aiCreditBalance === null
+                          ? 'Current balance unavailable.'
+                          : `${aiCreditBalance} available`))
+                  }
+                  trailingText="Get more"
+                />
+              ) : null}
               {premiumManagementError ? (
                 <Text style={styles.errorText}>{premiumManagementError}</Text>
               ) : null}
@@ -1078,6 +1125,16 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
         isAnonymous={isAnonymous}
         hasPremiumAccess={hasPremiumAccess}
         onClose={closePremiumPaywall}
+      />
+
+      <CreditPackPurchaseModal
+        visible={creditPackVisible}
+        userId={!isAnonymous ? (authUser?.uid ?? null) : null}
+        enabled={hasPremiumAccess && !isAnonymous}
+        source="profile"
+        currentBalance={aiCreditBalance}
+        onBalanceUpdated={setAiCreditBalance}
+        onClose={() => setCreditPackVisible(false)}
       />
 
       <LegalDocumentModal

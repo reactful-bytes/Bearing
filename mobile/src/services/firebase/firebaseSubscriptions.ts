@@ -85,7 +85,7 @@ export function subscribeToPremiumEntitlement(
       onNext(snapshot.exists() ? docToPremiumEntitlement(snapshot) : null);
     },
     (firestoreError) => {
-      onError(new Error('Failed to load premium access.', { cause: firestoreError }));
+      onError(new Error('Failed to load Bearing 360 access.', { cause: firestoreError }));
     },
   );
 }

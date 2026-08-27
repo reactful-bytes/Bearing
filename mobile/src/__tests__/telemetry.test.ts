@@ -110,6 +110,47 @@ describe('telemetry privacy boundary', () => {
     ).toBeNull();
   });
 
+  it('accepts only the exact credit-pack event names and allowlisted properties', () => {
+    expect(buildTelemetryPayload('premium_credit_pack_viewed', { source: 'profile' })).toEqual({
+      schemaVersion: 1,
+      name: 'premium_credit_pack_viewed',
+      properties: { source: 'profile' },
+    });
+    expect(
+      buildTelemetryPayload('premium_credit_pack_purchase_started', { source: 'ai_planning' }),
+    ).not.toBeNull();
+    expect(
+      buildTelemetryPayload('premium_credit_pack_purchase_result', {
+        source: 'profile',
+        outcome: 'sync_failure',
+      }),
+    ).not.toBeNull();
+    expect(
+      buildTelemetryPayload('premium_credit_pack_balance_refresh_result', {
+        source: 'ai_planning',
+        outcome: 'success',
+      }),
+    ).not.toBeNull();
+    expect(buildTelemetryPayload('premium_credit_pack_purchase', { source: 'profile' })).toBeNull();
+  });
+
+  it.each([
+    ['productId', 'bearing_credits_5'],
+    ['packageId', 'credits_5'],
+    ['title', 'Five planning credits'],
+    ['price', '$4.99'],
+    ['customerId', 'revenue-cat-user'],
+    ['message', 'customer supplied free text'],
+  ])('rejects credit-pack telemetry containing %s', (field, value) => {
+    expect(
+      buildTelemetryPayload('premium_credit_pack_purchase_result', {
+        source: 'profile',
+        outcome: 'success',
+        [field]: value,
+      }),
+    ).toBeNull();
+  });
+
   it('contains transport failures without disrupting the user workflow', async () => {
     const storage = createStorage('enabled');
     const transport = jest.fn(async () => {
