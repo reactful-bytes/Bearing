@@ -6,10 +6,13 @@ import { setGlobalOptions } from "firebase-functions/v2/options";
 
 import { getBackendStatus } from "./status";
 import {
-  firestoreGoalPlanMeter,
+  createRevenueCatGoalPlanCreditService,
   generateGoalPlanDraft as generateGoalPlanDraftHandler,
 } from "./aiGoalPlan";
-import { getAiCreditStatus as getAiCreditStatusHandler } from "./aiCreditStatus";
+import {
+  createRevenueCatAiCreditBalanceLookup,
+  getAiCreditStatus as getAiCreditStatusHandler,
+} from "./aiCreditStatus";
 import { createGeminiGoalPlanGenerator } from "./geminiGoalPlan";
 import {
   deleteUserAccount as deleteUserAccountHandler,
@@ -21,6 +24,11 @@ import {
   handleRevenueCatWebhook,
   redactRevenueCatWebhookBody,
 } from "./revenueCat";
+import {
+  createRevenueCatProductGrantCatalog,
+  getRevenueCatProductGrantCatalog as getRevenueCatProductGrantCatalogHandler,
+} from "./revenueCatCatalog";
+import { RevenueCatV2Config } from "./revenueCatV2";
 
 initializeApp();
 
@@ -31,6 +39,12 @@ setGlobalOptions({
 
 const geminiApiKey = defineString("GEMINI_API_KEY");
 const revenueCatApiKey = defineString("REVENUECAT_SECRET_API_KEY");
+const revenueCatV2ApiKey = defineString("REVENUECAT_V2_SECRET_API_KEY");
+const revenueCatProjectId = defineString("REVENUECAT_PROJECT_ID");
+const revenueCatVirtualCurrencyCode = defineString(
+  "REVENUECAT_AI_CURRENCY_CODE",
+  { default: "AIC" },
+);
 const revenueCatWebhookAuthorization = defineString(
   "REVENUECAT_WEBHOOK_AUTHORIZATION",
 );
@@ -49,6 +63,18 @@ const revenueCatTestStorePlatform = defineString(
   "REVENUECAT_TEST_STORE_PLATFORM",
   { default: "web" },
 );
+
+function revenueCatV2Config(): RevenueCatV2Config {
+  return {
+    apiKey: revenueCatV2ApiKey.value(),
+    projectId: revenueCatProjectId.value(),
+    currencyCode: revenueCatVirtualCurrencyCode.value(),
+  };
+}
+
+let loadRevenueCatProductGrantCatalog:
+  | (() => Promise<import("./revenueCatCatalog").RevenueCatProductGrant[]>)
+  | null = null;
 
 export const revenueCatWebhook = onRequest(
   {
@@ -105,7 +131,25 @@ export const getAiCreditStatus = onCall(
   {
     timeoutSeconds: 15,
   },
-  (request) => getAiCreditStatusHandler(request),
+  (request) =>
+    getAiCreditStatusHandler(
+      request,
+      createRevenueCatAiCreditBalanceLookup(revenueCatV2Config()),
+    ),
+);
+
+export const getRevenueCatProductGrantCatalog = onCall(
+  {
+    timeoutSeconds: 15,
+  },
+  (request) => {
+    loadRevenueCatProductGrantCatalog ??=
+      createRevenueCatProductGrantCatalog(revenueCatV2Config());
+    return getRevenueCatProductGrantCatalogHandler(
+      request,
+      loadRevenueCatProductGrantCatalog,
+    );
+  },
 );
 
 export const generateGoalPlanDraft = onCall(
@@ -117,7 +161,7 @@ export const generateGoalPlanDraft = onCall(
       request,
       createGeminiGoalPlanGenerator(geminiApiKey.value()),
       undefined,
-      firestoreGoalPlanMeter,
+      createRevenueCatGoalPlanCreditService(revenueCatV2Config()),
     ),
 );
 

@@ -8,15 +8,15 @@ Spend and refund one RevenueCat virtual-currency unit around AI generation while
 
 | Ticket | Status      | Deliverable                                  | Acceptance                                                                                       |
 | ------ | ----------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| M19.1  | not-started | Add minimal operation persistence            | Operations and per-user locks store no authoritative balance or grant history                    |
-| M19.2  | not-started | Coordinate one idempotent debit              | Debit state is durable before the V2 call and ambiguous outcomes resume with the same key         |
-| M19.3  | not-started | Finalize and replay successful plans         | Valid drafts complete and replay without another debit or generation                              |
-| M19.4  | not-started | Refund and recover interrupted operations    | Failed generation refunds once and stale operations converge safely                               |
-| M19.5  | not-started | Rewire AI generation                         | Active/grace authorization, debit-before-generation, refund, and request-ID behavior pass          |
-| M19.6  | not-started | Replace credit status behavior               | Live RevenueCat balance is returned and `nextGrantAt` is removed                                  |
-| M19.7  | not-started | Remove webhook-driven credit accrual         | Subscription reconciliation remains while every local credit-reconciliation path is gone          |
-| M19.8  | not-started | Delete the Firestore ledger completely       | Account/grant modules, tests, math, imports, generated output, and runtime references are absent    |
-| M19.9  | not-started | Prove the backend migration                  | Concurrency, replay, zero, retries, refunds, recovery, authorization, and quality gates pass        |
+| M19.1  | completed | Add minimal operation persistence            | Operations and per-user locks store no authoritative balance or grant history                    |
+| M19.2  | completed | Coordinate one idempotent debit              | Debit state is durable before the V2 call and ambiguous outcomes resume with the same key         |
+| M19.3  | completed | Finalize and replay successful plans         | Valid drafts complete and replay without another debit or generation                              |
+| M19.4  | completed | Refund and recover interrupted operations    | Failed generation refunds once and stale operations converge safely                               |
+| M19.5  | completed | Rewire AI generation                         | Active/grace authorization, debit-before-generation, refund, and request-ID behavior pass          |
+| M19.6  | completed | Replace credit status behavior               | Live RevenueCat balance is returned and `nextGrantAt` is removed                                  |
+| M19.7  | completed | Remove webhook-driven credit accrual         | Subscription reconciliation remains while every local credit-reconciliation path is gone          |
+| M19.8  | completed | Delete the Firestore ledger completely       | Account/grant modules, tests, math, imports, generated output, and runtime references are absent    |
+| M19.9  | completed | Prove the backend migration                  | Concurrency, replay, zero, retries, refunds, recovery, authorization, and quality gates pass        |
 
 ## Execution Order
 

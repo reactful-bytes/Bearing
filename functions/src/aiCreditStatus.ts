@@ -1,26 +1,33 @@
 import { Timestamp, getFirestore } from "firebase-admin/firestore";
 
 import {
-  AiCreditAccount,
-  AiCreditStatus,
-  AiCreditSubscription,
-  getNextBillingAnniversary,
-  reconcileAiCredits,
-} from "./aiCredits";
+  RevenueCatV2Config,
+  getRevenueCatVirtualCurrencyBalance,
+} from "./revenueCatV2";
 import {
   CallableIdentityRequest,
   requireAuthenticatedCaller,
 } from "./security";
 
+type AiCreditSubscriptionStatus =
+  "active" | "in_grace_period" | "expired" | "canceled";
+
+export type AiCreditSubscription = {
+  status: AiCreditSubscriptionStatus | null;
+  periodStartAt: Date | null;
+  periodEndAt: Date | null;
+};
+
+export type AiCreditStatus = {
+  eligible: boolean;
+  availableCredits: number;
+};
+
 export type AiCreditSubscriptionLookup = (
   userId: string,
 ) => Promise<AiCreditSubscription>;
 
-export type AiCreditReconciler = (
-  userId: string,
-  subscription: AiCreditSubscription,
-  now: Date,
-) => Promise<AiCreditAccount | null>;
+export type AiCreditBalanceLookup = (userId: string) => Promise<number>;
 
 const SUBSCRIPTION_STATUSES = new Set([
   "active",
@@ -51,29 +58,27 @@ export async function loadAiCreditSubscription(
 
 export async function getAiCreditStatus(
   request: CallableIdentityRequest,
+  balanceLookup: AiCreditBalanceLookup,
   lookup: AiCreditSubscriptionLookup = loadAiCreditSubscription,
-  reconcile: AiCreditReconciler = (userId, subscription, now) =>
-    reconcileAiCredits(userId, subscription, now),
-  now = new Date(),
 ): Promise<AiCreditStatus> {
   const caller = requireAuthenticatedCaller(request);
-  const subscription = await lookup(caller.uid);
-  const account = await reconcile(caller.uid, subscription, now);
+  const [subscription, availableCredits] = await Promise.all([
+    lookup(caller.uid),
+    balanceLookup(caller.uid),
+  ]);
   const eligible =
     subscription.status === "active" ||
     subscription.status === "in_grace_period";
-  const nextGrant =
-    subscription.status === "active" && account
-      ? getNextBillingAnniversary(
-          subscription.periodStartAt,
-          subscription.periodEndAt,
-          account.lastGrantedBillingAt,
-        )
-      : null;
 
   return {
     eligible,
-    availableCredits: account?.availableCredits ?? 0,
-    nextGrantAt: nextGrant?.toISOString() ?? null,
+    availableCredits,
   };
+}
+
+export function createRevenueCatAiCreditBalanceLookup(
+  config: RevenueCatV2Config,
+): AiCreditBalanceLookup {
+  return async (userId) =>
+    (await getRevenueCatVirtualCurrencyBalance(userId, config)).balance;
 }

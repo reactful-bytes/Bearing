@@ -12,15 +12,15 @@ Make RevenueCat Virtual Currencies the only AI-credit grant and balance authorit
 
 ## Tickets
 
-| Ticket | Status      | Deliverable                              | Acceptance                                                                                         |
-| ------ | ----------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| M18.1  | completed   | Establish milestone tracking             | M18-M21 ticket files, roadmap entries, project-plan entries, dependencies, and update rules agree |
-| M18.2  | not-started | Configure the `AIC` virtual currency     | Non-expiring currency uses dashboard-selected paid grants and a separately configured trial grant |
-| M18.3  | in-progress | Provision V2 access and parameters       | Separate least-privilege V2 key, project ID, and configurable currency code are documented/wired  |
-| M18.4  | not-started | Add the V2 balance adapter               | Authenticated UID balance reads validate non-negative integers and do not cache customer balances  |
-| M18.5  | not-started | Add the V2 transaction adapter           | One-unit debit/refund supports idempotency and typed retry/exhaustion errors                       |
-| M18.6  | not-started | Add the dynamic product-grant catalog    | Product grants join to store IDs and expose only safe client fields without fallback amounts       |
-| M18.7  | not-started | Validate the V2 foundation               | Parsing, errors, retries, pagination, caching, joins, auth, and redaction tests pass                |
+| Ticket | Status         | Deliverable                           | Acceptance                                                                                        |
+| ------ | -------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| M18.1  | completed      | Establish milestone tracking          | M18-M21 ticket files, roadmap entries, project-plan entries, dependencies, and update rules agree |
+| M18.2  | manual-handoff | Configure the `AIC` virtual currency  | Owner must configure and record non-expiring paid/trial grants in RevenueCat                      |
+| M18.3  | completed      | Provision V2 access and parameters    | Separate V2 key, project ID, and configurable currency code are wired and documented              |
+| M18.4  | completed      | Add the V2 balance adapter            | Authenticated UID balance reads validate non-negative integers and do not cache customer balances |
+| M18.5  | completed      | Add the V2 transaction adapter        | One-unit debit/refund supports idempotency and typed retry/exhaustion errors                      |
+| M18.6  | completed      | Add the dynamic product-grant catalog | Product grants join to store IDs and expose only safe client fields without fallback amounts      |
+| M18.7  | completed      | Validate the V2 foundation            | Parsing, errors, retries, pagination, caching, joins, auth, and redaction tests pass              |
 
 ## Execution Order
 

@@ -582,17 +582,11 @@ export function CreateGoalModal({
                 {aiCreditStatus ? (
                   <Text style={styles.cardBody}>
                     AI credits available: {aiCreditStatus.availableCredits}
-                    {aiCreditStatus.nextGrantAt
-                      ? ` | Next grant ${new Date(aiCreditStatus.nextGrantAt).toLocaleDateString(
-                          undefined,
-                          { timeZone: 'UTC' },
-                        )}`
-                      : ''}
                   </Text>
                 ) : null}
                 {aiCreditStatus?.availableCredits === 0 && !aiError ? (
                   <Text style={styles.errorText}>
-                    No AI credits remain. Continue manually or wait for your next grant.
+                    No AI credits remain. Continue manually or check your plan balance later.
                   </Text>
                 ) : null}
                 {aiCreditStatusError ? (

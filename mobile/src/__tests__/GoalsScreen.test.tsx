@@ -213,7 +213,6 @@ describe('GoalsScreen', () => {
     (getAiCreditStatus as jest.MockedFunction<typeof getAiCreditStatus>).mockResolvedValue({
       eligible: true,
       availableCredits: 10,
-      nextGrantAt: '2027-01-01T00:00:00.000Z',
     });
     (useCalendarPublication as jest.MockedFunction<typeof useCalendarPublication>).mockReturnValue({
       publicationCalendarTitle: null,
@@ -747,7 +746,6 @@ describe('GoalsScreen', () => {
     (getAiCreditStatus as jest.MockedFunction<typeof getAiCreditStatus>).mockResolvedValue({
       eligible: true,
       availableCredits: 0,
-      nextGrantAt: '2027-01-01T00:00:00.000Z',
     });
     mockEmptyGoals();
 
@@ -769,8 +767,8 @@ describe('GoalsScreen', () => {
       error: null,
     });
     (getAiCreditStatus as jest.MockedFunction<typeof getAiCreditStatus>)
-      .mockResolvedValueOnce({ eligible: true, availableCredits: 1, nextGrantAt: null })
-      .mockResolvedValueOnce({ eligible: true, availableCredits: 0, nextGrantAt: null });
+      .mockResolvedValueOnce({ eligible: true, availableCredits: 1 })
+      .mockResolvedValueOnce({ eligible: true, availableCredits: 0 });
     (
       generateAiGoalPlanDraft as jest.MockedFunction<typeof generateAiGoalPlanDraft>
     ).mockRejectedValue({ code: 'functions/resource-exhausted' });

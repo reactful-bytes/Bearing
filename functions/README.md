@@ -43,18 +43,39 @@ Every client callable must:
 or invoking it in staging requires an authenticated Firebase CLI session and an App Check-enabled
 client.
 
-## RevenueCat Reconciliation
+## RevenueCat APIs
 
 `revenueCatWebhook` validates the configured Authorization header and timestamped raw-body HMAC,
 then fetches the canonical RevenueCat subscriber by Firebase UID. It writes the server-owned
 `subscriptions/{uid}` record and an idempotent webhook receipt in one transaction. The account
 deletion callable removes the RevenueCat customer before Firestore and Firebase Authentication.
+V1 is used only for that subscriber lookup and customer deletion.
+
+RevenueCat V2 is the sole AI-credit balance, debit, refund, and product-grant authority. Configure
+the non-expiring virtual currency and all paid, trial, and pack grant amounts in RevenueCat; no
+grant amount belongs in Functions configuration or source. Create a separate least-privilege V2
+secret key that can read customer virtual-currency balances and project products/product grants,
+and can create customer virtual-currency transactions.
 
 Required managed secrets:
 
 - `REVENUECAT_SECRET_API_KEY`
 - `REVENUECAT_WEBHOOK_AUTHORIZATION`
 - `REVENUECAT_WEBHOOK_SIGNING_SECRET`
+- `REVENUECAT_V2_SECRET_API_KEY` (separate V2 key; never reuse the V1 key)
+- `REVENUECAT_PROJECT_ID`
+- `REVENUECAT_AI_CURRENCY_CODE` (defaults to `AIC`)
+
+The deployed V2 integration expects balance lists with `items`, product pagination in `next_page`,
+product fields `id` and `store_identifier`, virtual-currency `product_grants` with `product_id` and
+`amount`, and transaction bodies using `adjustments`. Confirm the nested `product_grants` schema
+against a non-production response before production deployment because the rendered API reference
+does not expose those nested fields in its static text.
+
+Configure Firestore TTL on `aiCreditOperations.expiresAt` and remove the retired
+`aiPlans.expiresAt` TTL policy after deployment. Operation documents carry a 24-hour expiry value;
+locks are deleted during normal completion/recovery and may be removed operationally after their
+`leaseExpiresAt` has passed.
 
 Use separate non-production and production values. See `../docs/MONETIZATION_RELEASE.md` for console
 configuration, deployment order, restore policy, and sandbox evidence.

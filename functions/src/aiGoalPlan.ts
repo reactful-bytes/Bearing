@@ -3,14 +3,15 @@ import { createHash, randomUUID } from "node:crypto";
 import { HttpsError } from "firebase-functions/v2/https";
 
 import {
-  AiCreditReservationResult,
-  finalizeAiCredit,
-  reconcileAiCredits,
-  refundAiCredit,
-  reserveAiCredit,
-} from "./aiCredits";
-import { loadAiCreditSubscription } from "./aiCreditStatus";
+  AiCreditOperationResult,
+  runAiCreditOperation,
+} from "./aiCreditOperations";
 import { EntitlementLookup, requirePremiumCaller } from "./entitlement";
+import {
+  RevenueCatV2Config,
+  createRevenueCatVirtualCurrencyTransaction,
+  getRevenueCatVirtualCurrencyBalance,
+} from "./revenueCatV2";
 import { CallableIdentityRequest } from "./security";
 
 const MAX_TITLE_LENGTH = 120;
@@ -63,32 +64,50 @@ export type MeteredGoalPlanDraft = GoalPlanDraft & {
   availableCredits: number;
 };
 
-export type GoalPlanMeter = {
-  prepare: (userId: string, now: Date) => Promise<void>;
-  reserve: (
+export type GoalPlanCreditService = {
+  run: (
     userId: string,
     requestId: string,
     inputFingerprint: string,
+    generate: () => Promise<GoalPlanDraft>,
     now: Date,
-  ) => Promise<AiCreditReservationResult>;
-  finalize: (
-    userId: string,
-    requestId: string,
-    draft: GoalPlanDraft,
-    now: Date,
-  ) => Promise<number>;
-  refund: (userId: string, requestId: string, now: Date) => Promise<void>;
+  ) => Promise<AiCreditOperationResult<GoalPlanDraft>>;
+  getBalance: (userId: string) => Promise<number>;
 };
 
-export const firestoreGoalPlanMeter: GoalPlanMeter = {
-  prepare: async (userId, now) => {
-    const subscription = await loadAiCreditSubscription(userId);
-    await reconcileAiCredits(userId, subscription, now);
-  },
-  reserve: reserveAiCredit,
-  finalize: finalizeAiCredit,
-  refund: refundAiCredit,
-};
+export function createRevenueCatGoalPlanCreditService(
+  config: RevenueCatV2Config,
+): GoalPlanCreditService {
+  return {
+    run: (userId, requestId, inputFingerprint, generate, now) =>
+      runAiCreditOperation(
+        userId,
+        requestId,
+        inputFingerprint,
+        generate,
+        {
+          debit: (targetUserId, idempotencyKey) =>
+            createRevenueCatVirtualCurrencyTransaction(
+              targetUserId,
+              "debit",
+              idempotencyKey,
+              config,
+            ),
+          refund: (targetUserId, idempotencyKey) =>
+            createRevenueCatVirtualCurrencyTransaction(
+              targetUserId,
+              "refund",
+              idempotencyKey,
+              config,
+            ),
+        },
+        undefined,
+        now,
+      ),
+    getBalance: async (userId) =>
+      (await getRevenueCatVirtualCurrencyBalance(userId, config)).balance,
+  };
+}
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -271,7 +290,7 @@ export async function generateGoalPlanDraft(
   request: GoalPlanRequest,
   generator: GoalPlanGenerator,
   entitlementLookup?: EntitlementLookup,
-  meter?: GoalPlanMeter,
+  creditService?: GoalPlanCreditService,
   now = new Date(),
 ): Promise<GoalPlanDraft | MeteredGoalPlanDraft> {
   const caller = await requirePremiumCaller(request, entitlementLookup);
@@ -283,7 +302,7 @@ export async function generateGoalPlanDraft(
       "Goal target date must be in the future.",
     );
   }
-  if (!meter) {
+  if (!creditService) {
     try {
       return validateGoalPlanDraft(
         await generator({ ...input, planningStartDate }),
@@ -300,41 +319,31 @@ export async function generateGoalPlanDraft(
 
   const requestId = getRequestId(request.data);
   const fingerprint = fingerprintGoalPlanInput(input);
-  await meter.prepare(caller.uid, now);
-  const reservation = await meter.reserve(
-    caller.uid,
-    requestId,
-    fingerprint,
-    now,
-  );
-  if (reservation.kind === "replay") {
+  try {
+    const result = await creditService.run(
+      caller.uid,
+      requestId,
+      fingerprint,
+      async () =>
+        validateGoalPlanDraft(
+          await generator({ ...input, planningStartDate }),
+          input.targetDate,
+          planningStartDate,
+        ),
+      now,
+    );
     const draft = validateGoalPlanDraft(
-      reservation.draft,
+      result.draft,
       input.targetDate,
-      formatUtcDate(reservation.reservedAt),
+      planningStartDate,
     );
     return {
       ...draft,
       requestId,
-      availableCredits: reservation.availableCredits,
+      availableCredits: await creditService.getBalance(caller.uid),
     };
-  }
-
-  try {
-    const draft = validateGoalPlanDraft(
-      await generator({ ...input, planningStartDate }),
-      input.targetDate,
-      planningStartDate,
-    );
-    const availableCredits = await meter.finalize(
-      caller.uid,
-      requestId,
-      draft,
-      now,
-    );
-    return { ...draft, requestId, availableCredits };
-  } catch {
-    await meter.refund(caller.uid, requestId, now);
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
     throw new HttpsError(
       "internal",
       "A goal plan could not be generated. Try again or continue manually.",

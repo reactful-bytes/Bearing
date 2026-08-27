@@ -19,7 +19,7 @@ const PROJECT_ID = 'bearing-rules-test';
 const OWNER_ID = 'owner-user';
 const OTHER_ID = 'other-user';
 const OWNED_COLLECTIONS = ['events', 'notes', 'goals', 'goalSteps', 'tasks'];
-const AI_CREDIT_COLLECTIONS = ['aiCreditAccounts', 'aiCreditGrants', 'aiPlans'];
+const AI_CREDIT_COLLECTIONS = ['aiCreditOperations', 'aiCreditLocks'];
 
 let testEnvironment;
 
@@ -127,17 +127,17 @@ describe('Firestore ownership rules', () => {
     async (collectionName) => {
       await seedDocument(collectionName, 'credit-record', {
         userId: OWNER_ID,
-        availableCredits: 10,
+        state: 'debit_pending',
       });
 
       for (const userId of [OWNER_ID, OTHER_ID]) {
         const recordRef = doc(firestoreFor(userId), collectionName, 'credit-record');
         await assertFails(getDoc(recordRef));
-        await assertFails(updateDoc(recordRef, { availableCredits: 100 }));
+        await assertFails(updateDoc(recordRef, { state: 'completed' }));
         await assertFails(
           setDoc(doc(firestoreFor(userId), collectionName, `${userId}-forged`), {
             userId,
-            availableCredits: 100,
+            state: 'completed',
           }),
         );
       }

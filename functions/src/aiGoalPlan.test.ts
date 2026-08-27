@@ -4,19 +4,22 @@ import { describe, it } from "node:test";
 import { HttpsError } from "firebase-functions/v2/https";
 
 import {
-  GoalPlanMeter,
+  GoalPlanCreditService,
   GoalPlanDraft,
   generateGoalPlanDraft,
   parseGoalPlanInput,
   validateGoalPlanDraft,
 } from "./aiGoalPlan";
 
-function meter(overrides: Partial<GoalPlanMeter> = {}): GoalPlanMeter {
+function creditService(
+  overrides: Partial<GoalPlanCreditService> = {},
+): GoalPlanCreditService {
   return {
-    prepare: async () => undefined,
-    reserve: async () => ({ kind: "reserved", availableCredits: 9 }),
-    finalize: async () => 9,
-    refund: async () => undefined,
+    run: async (_userId, _requestId, _fingerprint, generate) => ({
+      kind: "completed",
+      draft: await generate(),
+    }),
+    getBalance: async () => 9,
     ...overrides,
   };
 }
@@ -124,9 +127,10 @@ describe("AI goal plan", () => {
           return validDraft;
         },
         async () => "active",
-        meter({
-          prepare: async () => {
+        creditService({
+          run: async () => {
             prepared = true;
+            throw new Error("unexpected");
           },
         }),
         new Date("2027-01-01T00:00:00Z"),
@@ -208,10 +212,10 @@ describe("AI goal plan", () => {
       { ...request, data: { ...request.data, requestId } },
       async () => validDraft,
       async () => "active",
-      meter({
-        finalize: async () => {
+      creditService({
+        run: async (_userId, _requestId, _fingerprint, generate) => {
           finalized = true;
-          return 9;
+          return { kind: "completed", draft: await generate() };
         },
       }),
     );
@@ -238,9 +242,15 @@ describe("AI goal plan", () => {
         },
         async () => ({ ...validDraft, steps: [] }),
         async () => "active",
-        meter({
-          refund: async () => {
-            refunded = true;
+        creditService({
+          run: async (_userId, _requestId, _fingerprint, generate) => {
+            try {
+              await generate();
+            } catch {
+              refunded = true;
+              throw new Error("provider output invalid");
+            }
+            throw new Error("unexpected");
           },
         }),
       ),
@@ -256,10 +266,10 @@ describe("AI goal plan", () => {
       request,
       async () => validDraft,
       async () => "active",
-      meter({
-        reserve: async (_userId, requestId) => {
+      creditService({
+        run: async (_userId, requestId, _fingerprint, generate) => {
           generatedRequestId = requestId;
-          return { kind: "reserved", availableCredits: 9 };
+          return { kind: "completed", draft: await generate() };
         },
       }),
     );
@@ -289,13 +299,12 @@ describe("AI goal plan", () => {
         return validDraft;
       },
       async () => "active",
-      meter({
-        reserve: async () => ({
+      creditService({
+        run: async () => ({
           kind: "replay",
-          availableCredits: 8,
-          draft: validDraft,
-          reservedAt: new Date("2027-01-01T23:30:00Z"),
+          draft: { promptVersion: 1, ...validDraft },
         }),
+        getBalance: async () => 8,
       }),
     );
 

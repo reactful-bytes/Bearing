@@ -7,11 +7,8 @@ import {
 } from "./privacyAdmin";
 
 describe("admin privacy deletion", () => {
-  it("includes grants and temporary plans in caller-scoped lifecycle queries", () => {
-    assert.deepEqual(AI_CREDIT_QUERY_COLLECTIONS, [
-      "aiCreditGrants",
-      "aiPlans",
-    ]);
+  it("includes temporary credit operations in caller-scoped lifecycle queries", () => {
+    assert.deepEqual(AI_CREDIT_QUERY_COLLECTIONS, ["aiCreditOperations"]);
   });
 
   it("deletes processor data before local account data", async () => {

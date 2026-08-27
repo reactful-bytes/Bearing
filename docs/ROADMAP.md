@@ -208,26 +208,26 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | Task ID | Status      | Description                                  | Exit Criteria                                                                                 |
 | ------- | ----------- | -------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | M18.1   | completed   | Establish milestone tracking                 | M18-M21 roadmap, project plan, tickets, dependencies, and update protocol agree               |
-| M18.2   | not-started | Configure dashboard-owned virtual currency   | Paid, trial, and future pack grants require no runtime amount constant                         |
-| M18.3   | in-progress | Provision V2 access and parameters           | Separate least-privilege V2 credentials and project/currency identifiers are ready             |
-| M18.4   | not-started | Add V2 balance reads                         | Backend returns validated RevenueCat balances for authenticated customers                      |
-| M18.5   | not-started | Add V2 debit and refund transactions         | One-unit adjustments are idempotent and safely retryable                                       |
-| M18.6   | not-started | Add dynamic product-grant catalog            | Client-safe subscription and pack grants come from RevenueCat configuration                    |
-| M18.7   | not-started | Validate the V2 foundation                   | Adapter, callable, cache, error, security, and redaction coverage pass                          |
+| M18.2   | manual-handoff | Configure dashboard-owned virtual currency | Paid, trial, and future pack grants require owner console evidence                            |
+| M18.3   | completed   | Provision V2 access and parameters           | Separate least-privilege V2 parameters are wired; owner provisions values                      |
+| M18.4   | completed   | Add V2 balance reads                         | Backend returns validated RevenueCat balances for authenticated customers                      |
+| M18.5   | completed   | Add V2 debit and refund transactions         | One-unit adjustments are idempotent and safely retryable                                       |
+| M18.6   | completed   | Add dynamic product-grant catalog            | Client-safe product grants come from RevenueCat configuration                                  |
+| M18.7   | completed   | Validate the V2 foundation                   | Adapter, callable, cache, error, security, and redaction coverage pass                          |
 
 ### M19 - Authoritative Spending and Ledger Removal
 
 | Task ID | Status      | Description                              | Exit Criteria                                                                                   |
 | ------- | ----------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| M19.1   | not-started | Add minimal operation persistence        | Firestore retains operation, lock, and replay state but no balances or grant history             |
-| M19.2   | not-started | Coordinate idempotent debit              | Debit intent survives retries and ambiguity without duplicate spending                           |
-| M19.3   | not-started | Finalize and replay successful plans     | Valid plans complete and matching retries are free                                               |
-| M19.4   | not-started | Refund and recover interrupted work      | Failures and stale operations converge to one refund                                             |
-| M19.5   | not-started | Rewire metered generation                | Entitlement-gated AI generation uses RevenueCat one-unit spending                                |
-| M19.6   | not-started | Replace status with live balance         | Status reports RevenueCat balance and no fabricated next-grant date                               |
-| M19.7   | not-started | Remove webhook credit accrual            | Subscription projection remains with no local grant side effect                                  |
-| M19.8   | not-started | Delete the Firestore ledger completely   | Obsolete modules, tests, collections, math, and generated artifacts are absent                    |
-| M19.9   | not-started | Validate backend migration               | Concurrency, replay, retry, refund, lockout, security, and quality gates pass                      |
+| M19.1   | completed | Add minimal operation persistence        | Firestore retains operation, lock, and replay state but no balances or grant history             |
+| M19.2   | completed | Coordinate idempotent debit              | Debit intent survives retries and ambiguity without duplicate spending                           |
+| M19.3   | completed | Finalize and replay successful plans     | Valid plans complete and matching retries are free                                               |
+| M19.4   | completed | Refund and recover interrupted work      | Failures and stale operations converge to one refund                                             |
+| M19.5   | completed | Rewire metered generation                | Entitlement-gated AI generation uses RevenueCat one-unit spending                                |
+| M19.6   | completed | Replace status with live balance         | Status reports RevenueCat balance and no fabricated next-grant date                               |
+| M19.7   | completed | Remove webhook credit accrual            | Subscription projection remains with no local grant side effect                                  |
+| M19.8   | completed | Delete the Firestore ledger completely   | Obsolete modules, tests, collections, math, and generated artifacts are absent                    |
+| M19.9   | completed | Validate backend migration               | Concurrency, replay, retry, refund, lockout, security, and quality gates pass                      |
 
 ### M20 - Bearing 360 and Credit Pack Experience
 

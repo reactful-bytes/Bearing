@@ -10,7 +10,6 @@ export type AiGoalPlanInput = {
 export type AiCreditStatus = {
   eligible: boolean;
   availableCredits: number;
-  nextGrantAt: string | null;
 };
 
 export type AiGoalMilestone = {

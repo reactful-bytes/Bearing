@@ -8,46 +8,10 @@ import {
   mapRevenueCatSubscription,
   parseRevenueCatWebhookEvent,
   redactRevenueCatWebhookBody,
-  toAiCreditSubscription,
   verifyRevenueCatWebhook,
 } from "./revenueCat";
 
 describe("RevenueCat reconciliation", () => {
-  for (const status of [
-    "active",
-    "in_grace_period",
-    "expired",
-    "canceled",
-  ] as const) {
-    it(`exposes the canonical ${status} paid period for credit reconciliation`, () => {
-      const record = mapRevenueCatSubscription(
-        "user-1",
-        {
-          entitlements: {
-            premium: {
-              product_identifier: "bearing_premium_annual",
-              purchase_date: "2026-01-31T00:00:00Z",
-              expires_date: "2027-01-31T00:00:00Z",
-            },
-          },
-        },
-        new Date("2026-02-01T00:00:00Z"),
-      );
-      const canonical = toAiCreditSubscription({ ...record, status });
-
-      assert.equal(canonical.userId, "user-1");
-      assert.equal(canonical.status, status);
-      assert.equal(
-        canonical.periodStartAt?.toISOString(),
-        "2026-01-31T00:00:00.000Z",
-      );
-      assert.equal(
-        canonical.periodEndAt?.toISOString(),
-        "2027-01-31T00:00:00.000Z",
-      );
-    });
-  }
-
   it("keeps canceled paid-through access active without auto renewal", () => {
     const record = mapRevenueCatSubscription(
       "user-1",

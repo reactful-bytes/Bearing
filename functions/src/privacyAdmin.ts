@@ -6,6 +6,7 @@ import {
 } from "firebase-admin/firestore";
 
 import { UserDataDeleter, UserDataReader } from "./privacy";
+import { getAiCreditLockId } from "./aiCreditOperations";
 import { deleteRevenueCatCustomer } from "./revenueCat";
 
 export const OWNED_COLLECTIONS = [
@@ -16,10 +17,7 @@ export const OWNED_COLLECTIONS = [
   "tasks",
 ] as const;
 
-export const AI_CREDIT_QUERY_COLLECTIONS = [
-  "aiCreditGrants",
-  "aiPlans",
-] as const;
+export const AI_CREDIT_QUERY_COLLECTIONS = ["aiCreditOperations"] as const;
 
 function toPortableValue(value: unknown): unknown {
   if (value instanceof Timestamp) {
@@ -52,11 +50,11 @@ function portableDocument(id: string, data: DocumentData): unknown {
 
 export const readUserDataAdmin: UserDataReader = async (userId) => {
   const db = getFirestore();
-  const [profile, subscription, aiCreditAccount, ...collectionSnapshots] =
+  const [profile, subscription, aiCreditLock, ...collectionSnapshots] =
     await Promise.all([
       db.doc(`users/${userId}`).get(),
       db.doc(`subscriptions/${userId}`).get(),
-      db.doc(`aiCreditAccounts/${userId}`).get(),
+      db.doc(`aiCreditLocks/${getAiCreditLockId(userId)}`).get(),
       ...[...OWNED_COLLECTIONS, ...AI_CREDIT_QUERY_COLLECTIONS].map(
         (collectionName) =>
           db.collection(collectionName).where("userId", "==", userId).get(),
@@ -83,11 +81,10 @@ export const readUserDataAdmin: UserDataReader = async (userId) => {
     subscription: subscription.exists
       ? portableDocument(subscription.id, subscription.data() ?? {})
       : null,
-    aiCreditAccount: aiCreditAccount.exists
-      ? portableDocument(aiCreditAccount.id, aiCreditAccount.data() ?? {})
+    aiCreditLock: aiCreditLock.exists
+      ? portableDocument(aiCreditLock.id, aiCreditLock.data() ?? {})
       : null,
-    aiCreditGrants: records.aiCreditGrants ?? [],
-    aiPlans: records.aiPlans ?? [],
+    aiCreditOperations: records.aiCreditOperations ?? [],
     events: records.events ?? [],
     goals: records.goals ?? [],
     goalSteps: records.goalSteps ?? [],
@@ -111,7 +108,7 @@ async function deleteLocalUserData(userId: string): Promise<void> {
   });
   writer.delete(db.doc(`users/${userId}`));
   writer.delete(db.doc(`subscriptions/${userId}`));
-  writer.delete(db.doc(`aiCreditAccounts/${userId}`));
+  writer.delete(db.doc(`aiCreditLocks/${getAiCreditLockId(userId)}`));
   await writer.close();
   await getAuth().deleteUser(userId);
 }

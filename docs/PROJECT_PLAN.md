@@ -325,56 +325,56 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 ### M18 - RevenueCat Virtual Currency Foundation
 
-| Task ID | Status      | Description                           | Notes                                                                    |
-| ------- | ----------- | ------------------------------------- | ------------------------------------------------------------------------ |
-| M18.1   | completed   | Establish milestone tracking          | M18-M21 ticket documents and planning indexes validated                  |
-| M18.2   | not-started | Configure `AIC` virtual currency      | Dashboard owns paid, trial, and pack grant amounts                       |
-| M18.3   | in-progress | Provision V2 access and parameters    | Wiring separate V2 key, project ID, and currency code                     |
-| M18.4   | not-started | Add V2 balance adapter                | Live, validated, uncached customer balances                              |
-| M18.5   | not-started | Add V2 transaction adapter            | Idempotent one-unit debit and refund                                     |
-| M18.6   | not-started | Add dynamic grant catalog             | Safe product joins with no grant fallback                                |
-| M18.7   | not-started | Validate V2 foundation                | Focused adapter/callable/security tests and Functions quality            |
+| Task ID | Status         | Description                        | Notes                                                                   |
+| ------- | -------------- | ---------------------------------- | ----------------------------------------------------------------------- |
+| M18.1   | completed      | Establish milestone tracking       | M18-M21 ticket documents and planning indexes validated                 |
+| M18.2   | manual-handoff | Configure `AIC` virtual currency   | Owner records RevenueCat dashboard configuration evidence               |
+| M18.3   | completed      | Provision V2 access and parameters | Separate V2 secret and project/currency parameters documented and wired |
+| M18.4   | completed      | Add V2 balance adapter             | Live, validated, uncached customer balances                             |
+| M18.5   | completed      | Add V2 transaction adapter         | Idempotent one-unit debit and refund                                    |
+| M18.6   | completed      | Add dynamic grant catalog          | Safe product joins with no grant fallback                               |
+| M18.7   | completed      | Validate V2 foundation             | Focused adapter/callable/security tests and Functions quality pass      |
 
 ### M19 - Authoritative Spending and Ledger Removal
 
-| Task ID | Status      | Description                              | Notes                                                                     |
-| ------- | ----------- | ---------------------------------------- | ------------------------------------------------------------------------- |
-| M19.1   | not-started | Add operation persistence                | Operation/lock/replay state only                                           |
-| M19.2   | not-started | Coordinate idempotent debit              | Durable intent and exact key reuse                                         |
-| M19.3   | not-started | Finalize and replay plans                | Completed drafts replay free                                               |
-| M19.4   | not-started | Refund and recover interrupted work      | Stale and ambiguous operations converge                                    |
-| M19.5   | not-started | Rewire metered generation                | RevenueCat spends one unit around Gemini                                   |
-| M19.6   | not-started | Replace status with live balance         | Remove `nextGrantAt`                                                       |
-| M19.7   | not-started | Remove webhook credit accrual            | Subscription projection only                                               |
-| M19.8   | not-started | Delete Firestore ledger                  | Remove obsolete source, tests, collections, math, and generated output      |
-| M19.9   | not-started | Validate backend migration               | Focused failure/concurrency/security tests and quality pass                 |
+| Task ID | Status    | Description                         | Notes                                                                   |
+| ------- | --------- | ----------------------------------- | ----------------------------------------------------------------------- |
+| M19.1   | completed | Add operation persistence           | Operation/lock/replay state only                                        |
+| M19.2   | completed | Coordinate idempotent debit         | Durable intent and exact key reuse                                      |
+| M19.3   | completed | Finalize and replay plans           | Completed drafts replay free                                            |
+| M19.4   | completed | Refund and recover interrupted work | Stale and ambiguous operations converge                                 |
+| M19.5   | completed | Rewire metered generation           | RevenueCat spends one unit around Gemini                                |
+| M19.6   | completed | Replace status with live balance    | `nextGrantAt` removed                                                   |
+| M19.7   | completed | Remove webhook credit accrual       | Subscription projection only                                            |
+| M19.8   | completed | Delete Firestore ledger             | Obsolete source, tests, collections, math, and generated output removed |
+| M19.9   | completed | Validate backend migration          | Focused failure/concurrency/security tests and quality pass             |
 
 ### M20 - Bearing 360 and Credit Pack Experience
 
-| Task ID | Status      | Description                              | Notes                                                                    |
-| ------- | ----------- | ---------------------------------------- | ------------------------------------------------------------------------ |
-| M20.1   | not-started | Add grant-catalog client                 | Join store packages to server-derived grants                             |
-| M20.2   | not-started | Rename customer-facing Premium copy      | Bearing 360 display; technical identifiers remain                         |
-| M20.3   | not-started | Show dynamic subscription grants         | No numeric fallback                                                       |
-| M20.4   | not-started | Use authoritative balance UI             | Refresh after purchase/generation                                         |
-| M20.5   | not-started | Add credit-pack offering client          | Dedicated consumable offering                                             |
-| M20.6   | not-started | Build pack purchase flow                 | Confirm, purchase, sync, and refresh                                       |
-| M20.7   | not-started | Add AI Planning pack entry               | Available to secured active/grace members                                 |
-| M20.8   | not-started | Add Profile pack entry                   | Balance and unsupported-state behavior                                    |
-| M20.9   | not-started | Add strict pack telemetry                | No sensitive/store identifiers                                            |
-| M20.10  | not-started | Validate mobile experience               | Jest and all static mobile gates                                           |
+| Task ID | Status      | Description                         | Notes                                             |
+| ------- | ----------- | ----------------------------------- | ------------------------------------------------- |
+| M20.1   | not-started | Add grant-catalog client            | Join store packages to server-derived grants      |
+| M20.2   | not-started | Rename customer-facing Premium copy | Bearing 360 display; technical identifiers remain |
+| M20.3   | not-started | Show dynamic subscription grants    | No numeric fallback                               |
+| M20.4   | not-started | Use authoritative balance UI        | Refresh after purchase/generation                 |
+| M20.5   | not-started | Add credit-pack offering client     | Dedicated consumable offering                     |
+| M20.6   | not-started | Build pack purchase flow            | Confirm, purchase, sync, and refresh              |
+| M20.7   | not-started | Add AI Planning pack entry          | Available to secured active/grace members         |
+| M20.8   | not-started | Add Profile pack entry              | Balance and unsupported-state behavior            |
+| M20.9   | not-started | Add strict pack telemetry           | No sensitive/store identifiers                    |
+| M20.10  | not-started | Validate mobile experience          | Jest and all static mobile gates                  |
 
 ### M21 - Privacy, Cleanup, Documentation, and Release
 
-| Task ID | Status      | Description                                  | Notes                                                                    |
-| ------- | ----------- | -------------------------------------------- | ------------------------------------------------------------------------ |
-| M21.1   | not-started | Update privacy export and deletion           | Live RevenueCat balance plus local operations                             |
-| M21.2   | not-started | Replace rules, TTL, and staging data         | Remove obsolete active policy/data                                        |
-| M21.3   | not-started | Reconcile architecture and operations docs   | RevenueCat authority is current                                            |
-| M21.4   | not-started | Reconcile monetization and legal docs        | Bearing 360, trials, packs, and refunds                                    |
-| M21.5   | not-started | Complete console setup                       | Owner records RevenueCat/store evidence                                    |
-| M21.6   | not-started | Run failure and security acceptance          | Exactly-once, auth, privacy, rules, redaction                               |
-| M21.7   | not-started | Run release acceptance and close tracking    | Native/web matrix and dynamic reconfiguration evidence                     |
+| Task ID | Status      | Description                                | Notes                                                  |
+| ------- | ----------- | ------------------------------------------ | ------------------------------------------------------ |
+| M21.1   | not-started | Update privacy export and deletion         | Live RevenueCat balance plus local operations          |
+| M21.2   | not-started | Replace rules, TTL, and staging data       | Remove obsolete active policy/data                     |
+| M21.3   | not-started | Reconcile architecture and operations docs | RevenueCat authority is current                        |
+| M21.4   | not-started | Reconcile monetization and legal docs      | Bearing 360, trials, packs, and refunds                |
+| M21.5   | not-started | Complete console setup                     | Owner records RevenueCat/store evidence                |
+| M21.6   | not-started | Run failure and security acceptance        | Exactly-once, auth, privacy, rules, redaction          |
+| M21.7   | not-started | Run release acceptance and close tracking  | Native/web matrix and dynamic reconfiguration evidence |
 
 ## Update Rules
 
@@ -388,8 +388,23 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 | Date       | Task ID          | Validation                                                                               | Result         | Notes                                                                                                                                                                                                                                                                                                                                                                        |
 | ---------- | ---------------- | ---------------------------------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-08-26 | M18.1            | `git diff --check`; milestone/ticket structural search; editor diagnostics               | completed      | M18-M21 ticket documents, roadmap entries, project-plan entries, dependencies, and per-ticket tracking protocol are present and error-free                                                                                                                                                                                                                                    |
-| 2026-08-26 | M18.1            | RevenueCat virtual-currency milestone decomposition                                      | in-progress    | Creating M18-M21 leaf-ticket trackers, roadmap dependencies, and per-ticket validation protocol before implementation                                                                                                                                                                                                                                                         |
+| 2026-08-26 | M19.9            | Functions quality; 65 explicit compiled tests; mobile typecheck; 16 rules tests          | completed      | Full migration gate passes; package test discovery is shallow, so every compiled `*.test.js` file was also run explicitly                                                                                                                                                                                                                                                    |
+| 2026-08-26 | M19.8            | Active/generated symbol scans and clean Functions rebuild                                | completed      | Legacy account/grant/plan collections, billing math, source/tests, imports, and generated artifacts are absent                                                                                                                                                                                                                                                               |
+| 2026-08-26 | M19.7            | Focused RevenueCat reconciliation suite                                                  | completed      | Webhook retains V1 subscriber projection and idempotent receipts with no credit reconciliation side effect                                                                                                                                                                                                                                                                   |
+| 2026-08-26 | M19.6            | Focused status tests and mobile Goals suite/typecheck                                    | completed      | Authenticated status returns the uncached RevenueCat balance and eligibility without `nextGrantAt`                                                                                                                                                                                                                                                                           |
+| 2026-08-26 | M19.5            | Focused AI goal-plan and entitlement tests                                               | completed      | Active/grace callers debit before generation, failures refund, replay is free, and request IDs remain compatible                                                                                                                                                                                                                                                             |
+| 2026-08-26 | M19.4            | Six coordinator recovery tests                                                           | completed      | Generation failure, stale debit, and ambiguous refund converge with one stable refund key                                                                                                                                                                                                                                                                                    |
+| 2026-08-26 | M19.3            | Coordinator completion/replay tests                                                      | completed      | Valid drafts persist for 24 hours and matching retries do not debit or generate again                                                                                                                                                                                                                                                                                        |
+| 2026-08-26 | M19.2            | Coordinator intent/ambiguity tests                                                       | completed      | Debit intent precedes network I/O and retry reuses the exact SHA-256 key                                                                                                                                                                                                                                                                                                     |
+| 2026-08-26 | M19.1            | Coordinator persistence/concurrency tests and server-only rules                          | completed      | `aiCreditOperations` and hashed-UID `aiCreditLocks` retain only temporary operation/lock/replay state                                                                                                                                                                                                                                                                        |
+| 2026-08-26 | M18.7            | 47 focused V2/migration tests; Functions quality; redaction and source scans             | completed      | Parsing, typed failures, auth, pagination, cache, joins, and no-production-grant-constant checks pass                                                                                                                                                                                                                                                                        |
+| 2026-08-26 | M18.6            | Four focused catalog tests                                                               | completed      | Official `product_ids`, `amount`, `trial_amount`, and expiry fields join to paginated products; five-minute fresh and fifteen-minute stale-on-error cache pass                                                                                                                                                                                                               |
+| 2026-08-26 | M18.5            | Five focused V2 adapter tests                                                            | completed      | One-unit debit/refund, idempotency header, 422 exhaustion, and retryable transport/status failures pass                                                                                                                                                                                                                                                                      |
+| 2026-08-26 | M18.4            | Six focused V2 adapter tests                                                             | completed      | Customer balance calls are uncached; confirmed missing customers return zero; duplicate, negative, fractional, and malformed balances are rejected                                                                                                                                                                                                                           |
+| 2026-08-26 | M18.3            | Functions build and parameter/configuration review                                       | completed      | Separate V2 key, project ID, and configurable currency code use the repository's string-parameter deployment convention; owner provisioning remains console work                                                                                                                                                                                                             |
+| 2026-08-26 | M18.2            | RevenueCat dashboard configuration                                                       | manual-handoff | Owner must create/configure non-expiring `AIC`, paid/trial grants, and record evidence; no grant amount is encoded in production source                                                                                                                                                                                                                                      |
+| 2026-08-26 | M18.1            | `git diff --check`; milestone/ticket structural search; editor diagnostics               | completed      | M18-M21 ticket documents, roadmap entries, project-plan entries, dependencies, and per-ticket tracking protocol are present and error-free                                                                                                                                                                                                                                   |
+| 2026-08-26 | M18.1            | RevenueCat virtual-currency milestone decomposition                                      | in-progress    | Creating M18-M21 leaf-ticket trackers, roadmap dependencies, and per-ticket validation protocol before implementation                                                                                                                                                                                                                                                        |
 | 2026-08-25 | M3.6             | Focus Mode timer completion behavior and validation                                      | completed      | Focus Mode exits once at the active event end, the selected profile timer sound loops, the exact event-name alert appears, and OK disables looping, pauses, and rewinds; 3 focused tests, typecheck, warning-free lint, and touched-file formatting pass                                                                                                                     |
 | 2026-08-25 | M3.5             | Repository quality recheck after formatting repair                                       | completed      | Mobile typecheck, lint, formatting, and all 44 suites/250 tests pass; Functions typecheck, lint, formatting, build, and compiled Node tests pass                                                                                                                                                                                                                             |
 | 2026-08-25 | M3.5             | Android priority-only Do Not Disturb device acceptance                                   | completed      | Owner manually verified Notification Policy Access, Focus Mode priority-only activation, and prior-state restoration on a physical Android device; iOS behavior remains unchanged                                                                                                                                                                                            |
