@@ -323,6 +323,59 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M17.6b  | not-started | Run native/web release matrix      | All supported/debug/old/unregistered cases       |
 | M17.6c  | not-started | Record residual risk               | Limitations and ownership                        |
 
+### M18 - RevenueCat Virtual Currency Foundation
+
+| Task ID | Status      | Description                           | Notes                                                                    |
+| ------- | ----------- | ------------------------------------- | ------------------------------------------------------------------------ |
+| M18.1   | completed   | Establish milestone tracking          | M18-M21 ticket documents and planning indexes validated                  |
+| M18.2   | not-started | Configure `AIC` virtual currency      | Dashboard owns paid, trial, and pack grant amounts                       |
+| M18.3   | in-progress | Provision V2 access and parameters    | Wiring separate V2 key, project ID, and currency code                     |
+| M18.4   | not-started | Add V2 balance adapter                | Live, validated, uncached customer balances                              |
+| M18.5   | not-started | Add V2 transaction adapter            | Idempotent one-unit debit and refund                                     |
+| M18.6   | not-started | Add dynamic grant catalog             | Safe product joins with no grant fallback                                |
+| M18.7   | not-started | Validate V2 foundation                | Focused adapter/callable/security tests and Functions quality            |
+
+### M19 - Authoritative Spending and Ledger Removal
+
+| Task ID | Status      | Description                              | Notes                                                                     |
+| ------- | ----------- | ---------------------------------------- | ------------------------------------------------------------------------- |
+| M19.1   | not-started | Add operation persistence                | Operation/lock/replay state only                                           |
+| M19.2   | not-started | Coordinate idempotent debit              | Durable intent and exact key reuse                                         |
+| M19.3   | not-started | Finalize and replay plans                | Completed drafts replay free                                               |
+| M19.4   | not-started | Refund and recover interrupted work      | Stale and ambiguous operations converge                                    |
+| M19.5   | not-started | Rewire metered generation                | RevenueCat spends one unit around Gemini                                   |
+| M19.6   | not-started | Replace status with live balance         | Remove `nextGrantAt`                                                       |
+| M19.7   | not-started | Remove webhook credit accrual            | Subscription projection only                                               |
+| M19.8   | not-started | Delete Firestore ledger                  | Remove obsolete source, tests, collections, math, and generated output      |
+| M19.9   | not-started | Validate backend migration               | Focused failure/concurrency/security tests and quality pass                 |
+
+### M20 - Bearing 360 and Credit Pack Experience
+
+| Task ID | Status      | Description                              | Notes                                                                    |
+| ------- | ----------- | ---------------------------------------- | ------------------------------------------------------------------------ |
+| M20.1   | not-started | Add grant-catalog client                 | Join store packages to server-derived grants                             |
+| M20.2   | not-started | Rename customer-facing Premium copy      | Bearing 360 display; technical identifiers remain                         |
+| M20.3   | not-started | Show dynamic subscription grants         | No numeric fallback                                                       |
+| M20.4   | not-started | Use authoritative balance UI             | Refresh after purchase/generation                                         |
+| M20.5   | not-started | Add credit-pack offering client          | Dedicated consumable offering                                             |
+| M20.6   | not-started | Build pack purchase flow                 | Confirm, purchase, sync, and refresh                                       |
+| M20.7   | not-started | Add AI Planning pack entry               | Available to secured active/grace members                                 |
+| M20.8   | not-started | Add Profile pack entry                   | Balance and unsupported-state behavior                                    |
+| M20.9   | not-started | Add strict pack telemetry                | No sensitive/store identifiers                                            |
+| M20.10  | not-started | Validate mobile experience               | Jest and all static mobile gates                                           |
+
+### M21 - Privacy, Cleanup, Documentation, and Release
+
+| Task ID | Status      | Description                                  | Notes                                                                    |
+| ------- | ----------- | -------------------------------------------- | ------------------------------------------------------------------------ |
+| M21.1   | not-started | Update privacy export and deletion           | Live RevenueCat balance plus local operations                             |
+| M21.2   | not-started | Replace rules, TTL, and staging data         | Remove obsolete active policy/data                                        |
+| M21.3   | not-started | Reconcile architecture and operations docs   | RevenueCat authority is current                                            |
+| M21.4   | not-started | Reconcile monetization and legal docs        | Bearing 360, trials, packs, and refunds                                    |
+| M21.5   | not-started | Complete console setup                       | Owner records RevenueCat/store evidence                                    |
+| M21.6   | not-started | Run failure and security acceptance          | Exactly-once, auth, privacy, rules, redaction                               |
+| M21.7   | not-started | Run release acceptance and close tracking    | Native/web matrix and dynamic reconfiguration evidence                     |
+
 ## Update Rules
 
 - Read this file before starting a task.
@@ -335,6 +388,8 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 | Date       | Task ID          | Validation                                                                               | Result         | Notes                                                                                                                                                                                                                                                                                                                                                                        |
 | ---------- | ---------------- | ---------------------------------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-08-26 | M18.1            | `git diff --check`; milestone/ticket structural search; editor diagnostics               | completed      | M18-M21 ticket documents, roadmap entries, project-plan entries, dependencies, and per-ticket tracking protocol are present and error-free                                                                                                                                                                                                                                    |
+| 2026-08-26 | M18.1            | RevenueCat virtual-currency milestone decomposition                                      | in-progress    | Creating M18-M21 leaf-ticket trackers, roadmap dependencies, and per-ticket validation protocol before implementation                                                                                                                                                                                                                                                         |
 | 2026-08-25 | M3.6             | Focus Mode timer completion behavior and validation                                      | completed      | Focus Mode exits once at the active event end, the selected profile timer sound loops, the exact event-name alert appears, and OK disables looping, pauses, and rewinds; 3 focused tests, typecheck, warning-free lint, and touched-file formatting pass                                                                                                                     |
 | 2026-08-25 | M3.5             | Repository quality recheck after formatting repair                                       | completed      | Mobile typecheck, lint, formatting, and all 44 suites/250 tests pass; Functions typecheck, lint, formatting, build, and compiled Node tests pass                                                                                                                                                                                                                             |
 | 2026-08-25 | M3.5             | Android priority-only Do Not Disturb device acceptance                                   | completed      | Owner manually verified Notification Policy Access, Focus Mode priority-only activation, and prior-state restoration on a physical Android device; iOS behavior remains unchanged                                                                                                                                                                                            |
