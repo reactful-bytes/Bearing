@@ -230,7 +230,7 @@ Notes:
 - Retention must cover RevenueCat's documented retry window and the approved operational audit
   period, then be enforced by an owner-configured lifecycle process.
 
-### aiPlans
+### aiCreditOperations
 
 Document ID: encoded userId plus request UUID
 
@@ -239,58 +239,41 @@ Fields:
 - userId: string
 - requestId: UUID string
 - inputFingerprint: SHA-256 string
-- state: enum (reserved, completed, refunded)
-- reservedAt: timestamp
-- leaseExpiresAt: timestamp
-- completedAt: timestamp or null
+- state: enum (`debit_pending`, `debited`, `refund_pending`, `refunded`, `completed`)
+- attempt: non-negative integer
+- debitIdempotencyKey: SHA-256 string
+- refundIdempotencyKey: SHA-256 string
+- returnedBalance: non-negative integer or null
 - draft: validated generated draft or null
+- createdAt: timestamp
+- updatedAt: timestamp
 - expiresAt: timestamp
 
 Notes:
 
-- Server-only temporary reservation and retry record. Raw goal input is not stored.
-- Successful validated output supports idempotent replay without another charge.
-- Firestore TTL targets `expiresAt` 24 hours after reservation.
+- Server-only temporary coordination and replay state. Raw goal input is not stored.
+- Successful validated output supports idempotent replay without another debit or generation.
+- RevenueCat V2 is the sole balance, grant, and transaction authority; this collection is not a
+  ledger or grant history.
+- Firestore TTL targets `expiresAt`, which is set 24 hours after operation creation.
 
-### aiCreditAccounts
+### aiCreditLocks
 
-Document ID: userId
+Document ID: SHA-256-derived identifier for the Firebase UID
 
 Fields:
 
 - userId: string
-- availableCredits: non-negative integer
-- reservedCredits: non-negative integer
-- totalGranted: non-negative integer
-- totalConsumed: non-negative integer
-- accrualStartedAt: timestamp
-- lastGrantedBillingAt: timestamp
-- activeReservationId: string or null
-- reservationExpiresAt: timestamp or null
+- operationId: string
+- leaseExpiresAt: timestamp
 - createdAt: timestamp
 - updatedAt: timestamp
 
 Notes:
 
-- Server-only rolling balance; clients use authenticated callables for status and generation.
-- Available, reserved, and consumed totals must equal total granted.
-- Credits do not expire and balances remain stored across Premium lapses.
-
-### aiCreditGrants
-
-Document ID: deterministic user/bootstrap or user/billing-anniversary receipt
-
-Fields:
-
-- userId: string
-- amount: positive integer
-- billingAt: timestamp
-- createdAt: timestamp
-
-Notes:
-
-- Server-only idempotency receipt for rollout bootstrap and billing-anniversary grants.
-- Grant history remains until account deletion.
+- Server-only per-user coordination state. It is not balance state and contains no grant history.
+- The lock is deleted on operation completion, confirmed refund/non-debit recovery, or account
+  deletion. `leaseExpiresAt` allows stale-operation recovery; it is not a grant or credit expiry.
 
 ## Suggested Firestore Security Rules (High Level)
 
@@ -324,8 +307,9 @@ Notes:
 
 ## AI Draft Retention
 
-- Goal-plan request metadata and successful validated drafts may remain in server-only `aiPlans`
-  for up to 24 hours to support reservations and idempotent retries. Failed records contain no draft.
+- Goal-plan request metadata and successful validated drafts may remain in server-only
+  `aiCreditOperations` for up to 24 hours to support coordination and idempotent retries. Failed
+  records contain no draft.
 - Approved generated fields are stored only as editable goal, milestone, and step records.
 - Provider request handling and retention must be verified in the release processor review.
 

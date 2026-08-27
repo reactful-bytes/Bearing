@@ -1,5 +1,9 @@
 # M16 Authenticated AI Usage Credits Engineering Tickets
 
+> Historical delivery record: M19 superseded this local-ledger architecture with RevenueCat V2
+> balance/grant/transaction authority and temporary Firestore operation/lock state. The completed
+> M16 tickets below are preserved as historical validation evidence, not current design guidance.
+
 ## Scope
 
 Keep the shared Firebase JavaScript SDK on Android, iOS, and web. Remove the unusable App Check requirement, retain Firebase Auth as the authoritative caller identity, ensure every privileged operation targets only `request.auth.uid`, and enforce a server-owned rolling AI-credit balance.

@@ -40,7 +40,7 @@ Map user flows for all five tabs, modal transitions, and key branch points so im
 3. Wizard sequence:
    - SMART education
    - Goal input
-   - Premium AI branch or manual branch
+   - Bearing 360 AI branch or manual branch
    - Completion date (manual path)
    - Step creation
    - Finish
@@ -98,7 +98,9 @@ Map user flows for all five tabs, modal transitions, and key branch points so im
    - Select visible device calendars
    - Choose one writable default calendar
    - Export account data as JSON or Bearing events as ICS
-   - Manage premium AI access
+   - Review Bearing 360 status and live AI-credit balance
+   - Open subscription purchase/restore/management on supported native builds
+   - Buy consumable credit packs from `credit_packs` when active or in grace period
 
 ## Modal and Transition Graph
 
@@ -119,7 +121,7 @@ flowchart TD
    K --> H
 
    F --> L[Create Goal Wizard]
-   L --> M{Premium + Use AI?}
+   L --> M{Bearing 360 + Use AI?}
    M -->|Yes| N[AI Plan Step]
    M -->|No| O[Manual Date Step]
    N --> P[Step Creation]
@@ -151,12 +153,15 @@ flowchart TD
    I --> AH[Tips and Wisdom Modal]
    AH --> AI[Refresh Tip]
    I --> AJ[Sound Settings]
-   I --> AK[Premium and Subscription]
+   I --> AK[Bearing 360 and AI Credits]
    I --> AL[Device Calendar Settings]
    AL --> AM{Calendar Permission?}
    AM -->|Granted| AN[Select Visible and Default Calendars]
    AM -->|Denied or Blocked| AO[Continue Bearing Only or Open Settings]
    I --> AP[JSON or ICS Export]
+   AK --> AQ{Native checkout supported?}
+   AQ -->|Installed iOS or Android build| AR[Subscription or Credit Pack Checkout]
+   AQ -->|Web or Expo Go| AS[Native App Required State]
 ```
 
 ## Route and State Planning Notes
@@ -180,6 +185,9 @@ flowchart TD
 - Partial Firestore/native publication and deletion failures.
 - Starting a task immediately while another event is already active.
 - Deleting notes created from Idea Dump without breaking source references.
+- Zero-credit AI Planning entry into the pack flow for eligible Bearing 360 users.
+- Store cancellation, accepted-but-syncing, failure, and refreshed-balance outcomes.
+- Web and Expo Go never expose an actionable subscription or pack checkout control.
 
 ## Test Coverage Targets (Behavior-Oriented)
 

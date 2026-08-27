@@ -50,6 +50,7 @@ duplicate or edit a separate console-only copy. The policy:
 - requires both existing and incoming ownership on updates, preventing ownership transfer;
 - allows users to update only client-owned profile preference fields;
 - keeps premium entitlement fields and subscriptions server-owned; and
+- explicitly denies client access to `aiCreditOperations` and `aiCreditLocks`; and
 - denies every unknown collection by default.
 
 Deploy from the repository root:
@@ -189,6 +190,8 @@ You do not need to manually create collections in advance. Firestore will create
 - `tasks`
 - `users`
 - `subscriptions`
+- `aiCreditOperations` (server-only, temporary)
+- `aiCreditLocks` (server-only, temporary)
 
 ## 8. Common Failures And Fixes
 
@@ -250,11 +253,92 @@ Fix:
 - Keep writes user-scoped in client code and enforce that again in rules.
 - Add server-owned write paths through Cloud Functions for premium billing, AI usage, exports, and account deletion only.
 
-## 10. Recommended Order For You Right Now
+## 10. M21 TTL And Non-Production Cleanup Handoff
 
-1. Enable Firestore database.
-2. Publish the security rules above.
-3. Create the `events` composite index.
-4. Optionally pre-create the two `notes` indexes.
-5. Sign in and verify M3.2 event CRUD against live Firestore.
-6. Move into M3.3 implementation and live validation.
+These commands are owner-operated. Their presence is repository evidence only and does not claim
+that any Firebase or Google Cloud console change has run.
+
+Set and verify the project boundary first. Never use the production project as `NONPROD_PROJECT`:
+
+```bash
+export NONPROD_PROJECT="replace-with-staging-project-id"
+export PRODUCTION_PROJECT="replace-with-production-project-id"
+export NONPROD_BACKUP_URI="gs://replace-with-backup-bucket/bearing-ledger-retirement-$(date -u +%Y%m%dT%H%M%SZ)"
+test -n "$NONPROD_PROJECT" && test -n "$PRODUCTION_PROJECT"
+test "$NONPROD_PROJECT" != "$PRODUCTION_PROJECT"
+test "${NONPROD_PROJECT#replace-with-}" = "$NONPROD_PROJECT"
+test "${PRODUCTION_PROJECT#replace-with-}" = "$PRODUCTION_PROJECT"
+test "${NONPROD_BACKUP_URI#gs://replace-with-}" = "$NONPROD_BACKUP_URI"
+gcloud config get-value project
+firebase use
+```
+
+Record before counts using Application Default Credentials that can read only the non-production
+project:
+
+```bash
+cd functions
+GOOGLE_CLOUD_PROJECT="$NONPROD_PROJECT" node - <<'NODE'
+const { initializeApp } = require("firebase-admin/app");
+const { getFirestore } = require("firebase-admin/firestore");
+initializeApp({ projectId: process.env.GOOGLE_CLOUD_PROJECT });
+const db = getFirestore();
+Promise.all(["aiPlans", "aiCreditAccounts", "aiCreditGrants"].map(async (name) => {
+   const result = await db.collection(name).count().get();
+   console.log(name, result.data().count);
+})).catch((error) => { console.error(error); process.exitCode = 1; });
+NODE
+cd ..
+```
+
+Create the replacement TTL policy, verify it, then remove the retired policy:
+
+```bash
+gcloud firestore fields ttls update expiresAt \
+   --collection-group=aiCreditOperations \
+   --enable-ttl \
+   --project="$PRODUCTION_PROJECT"
+gcloud firestore fields ttls list --project="$PRODUCTION_PROJECT"
+gcloud firestore fields ttls update expiresAt \
+   --collection-group=aiPlans \
+   --disable-ttl \
+   --project="$PRODUCTION_PROJECT"
+gcloud firestore fields ttls list --project="$PRODUCTION_PROJECT"
+```
+
+Wait for the `aiCreditOperations.expiresAt` policy to report enabled and confirm the `aiPlans`
+policy is absent before continuing. Save command output with project IDs and timestamps, but no
+credentials or document contents.
+
+Create and record a named non-production backup after the before counts. Do not continue unless the
+export succeeds:
+
+```bash
+gcloud firestore export "$NONPROD_BACKUP_URI" \
+   --collection-ids=aiPlans,aiCreditAccounts,aiCreditGrants \
+   --project="$NONPROD_PROJECT"
+```
+
+Delete only the retired non-production data after that export reports success:
+
+```bash
+cd mobile
+npx firebase firestore:delete aiPlans --recursive --force --project="$NONPROD_PROJECT"
+npx firebase firestore:delete aiCreditAccounts --recursive --force --project="$NONPROD_PROJECT"
+npx firebase firestore:delete aiCreditGrants --recursive --force --project="$NONPROD_PROJECT"
+cd ..
+```
+
+Rerun the count command and require all three after counts to be zero. Record the backup path,
+before/after counts, operator, UTC timestamps, and project IDs. Do not delete these collections in
+production as part of this handoff; production cleanup requires a separately approved change and
+backup. `aiCreditLocks.leaseExpiresAt` is a recovery lease, not a TTL target or balance field;
+Functions delete locks on operation completion, confirmed recovery, and account deletion.
+
+## 11. Current Owner Order
+
+1. Verify server-only rules for `aiCreditOperations` and `aiCreditLocks` are deployed.
+2. Enable and verify `aiCreditOperations.expiresAt` TTL before disabling the retired policy.
+3. Record non-production retired-collection counts and complete the named export.
+4. Delete retired non-production collections and record zero after-counts.
+5. Attach project-scoped command output to the M21 release evidence without credentials or document contents.

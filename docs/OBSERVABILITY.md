@@ -74,11 +74,10 @@ resource.labels.service_name="deleteuseraccount"
 jsonPayload.message="account_deletion_result"
 ```
 
-AI credit accounting emits consent-independent `ai_credit_operation` records from
-`generateGoalPlanDraft`, `getAiCreditStatus`, and RevenueCat reconciliation. Allowed fields are
-`operation` (`grant`, `reserve`, `finalize`, or `refund`), fixed `outcome`, and numeric `credits`.
-These records must not add UID, request ID, fingerprint, prompt, draft, product ID, token, or raw
-error fields.
+AI-credit reliability logging covers V2 balance reads, one-unit debits/refunds, and temporary
+operation recovery. RevenueCat remains the balance, grant, and transaction authority. Logs must
+not add UID, request ID, idempotency key, fingerprint, prompt, draft, product ID, token, provider
+body, or raw error fields.
 
 ## Dashboards
 
@@ -101,7 +100,7 @@ Reliability dashboard:
 2. Function instance count, cold starts, and max-instance saturation.
 3. AI outcome failures and `generateGoalPlanDraft` latency.
 4. Firestore read/write/error metrics and quota utilization.
-5. AI credit grant/reserve/finalize/refund outcomes, exhaustion, and stale-lease recovery.
+5. AI-credit debit/refund outcomes, exhaustion, and stale-operation/lock recovery.
 6. Backup workflow recency and billing-budget status.
 7. Account deletion success rate from the server operational event.
 8. RevenueCat webhook 4xx/5xx, latency, and duplicate-delivery trend.
@@ -144,7 +143,7 @@ Optional telemetry is consent-dependent. Never alert on an absence or decline of
 ## Activation Handoff
 
 Repository implementation is complete when mobile and Functions tests pass. The release owner must
-still deploy Functions, configure AI plan TTL, create log-based metrics, dashboards, budget alerts,
+still deploy Functions, migrate TTL to `aiCreditOperations.expiresAt`, create log-based metrics, dashboards, budget alerts,
 and notification channels in staging first, then production. App Check remains deferred to M17 and
 must not be enforced before coordinated native/web token acceptance. Record screenshots or exported
 policies plus one synthetic alert delivery in the release evidence folder. Credentials and live

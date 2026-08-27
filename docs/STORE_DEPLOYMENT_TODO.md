@@ -34,18 +34,18 @@ Detailed acceptance criteria remain in `LEGAL_RELEASE_CHECKLIST.md`, `MONETIZATI
       before creating preview or production builds. Use the latest development build on
       representative iOS and Android devices.
 - [ ] **Manual - Both:** Walk through the complete user experience together: first launch,
-      authentication, Calendar, Focus Mode, Goals, Tasks, Notes, Profile, device calendars, Premium,
+      authentication, Calendar, Focus Mode, Goals, Tasks, Notes, Profile, device calendars, Bearing 360,
       AI planning, export, account deletion, support, privacy, and error/recovery states.
 - [ ] **Manual - Both:** Review the UI, navigation, copy, feature scope, accessibility, store-facing
       claims, and overall product experience. Record what should remain, change, or be removed before
       release.
 - [ ] **Manual - Both:** Log every bug, usability problem, visual issue, missing state, and company
       concern with severity, owner, expected outcome, and due date.
-- [ ] **Manual - Both:** Decide and record company-owned launch choices, including Premium features,
+- [ ] **Manual - Both:** Decide and record company-owned launch choices, including Bearing 360 features,
       monthly and annual pricing, trial/intro strategy, launch markets, supported devices, iPad
       support, brand/listing direction, support commitments, and accepted product limitations.
-- [ ] **Manual - Both:** Approve or replace the proposed USD 7.99 monthly, USD 59.99 annual, no-trial
-      pricing and the one-purchase/one-Bearing-account restore-transfer policy.
+- [ ] **Manual - Both:** Approve localized pricing, trial/intro terms, remotely configured grants,
+      and the one-purchase/one-Bearing-account restore-transfer policy.
 
 ### UI Fixes
 
@@ -179,7 +179,8 @@ manifest review, commit SHA, and lockfile hashes.
       approved platform providers; validate tokens before enabling enforcement.
 - [ ] **Manual - Both:** Set production Functions environment values for `GEMINI_API_KEY`,
       `REVENUECAT_SECRET_API_KEY`, `REVENUECAT_WEBHOOK_AUTHORIZATION`, and
-      `REVENUECAT_WEBHOOK_SIGNING_SECRET` in the ignored deployment environment. Use separate
+      `REVENUECAT_WEBHOOK_SIGNING_SECRET`, plus separate V2 key/project/currency parameters, in the
+      ignored deployment environment. Use separate
       staging and production values and migrate to managed secrets only as a separately reviewed
       change.
 - [ ] **Programmatic - Both:** Deploy reviewed Firestore rules, indexes, and Functions from the
@@ -207,14 +208,19 @@ dashboard/alert proof, budget policy, latest backup, and restore-drill report.
 
 - [ ] **Manual - Apple:** Create monthly and annual auto-renewing subscriptions using
       `bearing_premium_monthly` and `bearing_premium_annual`, place them in the approved subscription
-      group, add review/localization details, and set prices with no trial or intro offer.
+      group, add review/localization details, and configure approved prices and trial/intro terms.
 - [ ] **Manual - Google:** Create matching subscriptions/base plans using the same product IDs, set
-      prices and availability, and add no trial or introductory offer.
+      prices, availability, and approved trial/intro terms.
 - [ ] **Manual - Both:** Export and approve regional price matrices, taxes, proceeds, annual
       discount, local disclosure requirements, and launch-market availability.
 - [ ] **Manual - Both:** Connect both store apps to one RevenueCat project; create entitlement
       `premium`, current offering `default`, and monthly/annual packages attached to matching
       products.
+- [ ] **Manual - Both:** Create active `AIC`, configure approved non-expiring paid and trial grants,
+      and create `credit_packs` with consumable products and non-expiring grants. Record amounts only
+      in restricted release evidence, not runtime source or this checklist.
+- [ ] **Manual - Both:** Provision a separate least-privilege V2 key and verify project/currency
+      parameters. Keep V1 limited to subscriber reconciliation and customer deletion.
 - [ ] **Manual - Both:** Configure and approve RevenueCat purchase-transfer behavior and document
       support handling for ownership collisions.
 - [ ] **Manual - Both:** Add `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY` and
@@ -223,7 +229,8 @@ dashboard/alert proof, budget policy, latest backup, and restore-drill report.
       signing secret, and all production event types after Functions secrets and deployment exist.
 - [ ] **Manual - Both:** Execute every row in the sandbox acceptance matrix in
       `MONETIZATION_RELEASE.md`, including purchase, cancellation, restore/transfer, billing issue,
-      expiration/refund, delayed and duplicate webhook, and account deletion.
+      expiration/refund, credit packs, one-credit AI debit/refund, delayed and duplicate webhook,
+      dynamic grant change without deployment, and account deletion.
 - [ ] **Programmatic - Both:** Fix incorrect localized-price, disclosure, purchase, restore,
       entitlement, webhook, or deletion behavior found in sandbox; rerun focused tests and the full
       quality gate before rebuilding.
@@ -253,7 +260,7 @@ and Android preview artifacts, checksums, and source/build mapping.
 ## 9. Complete Native Acceptance and Beta
 
 - [ ] **Manual - Both:** Run critical Maestro journeys on installed builds with disposable accounts:
-      authentication, manual goals, task conversion, listener recovery, premium gating, export, and
+      authentication, manual goals, task conversion, listener recovery, Bearing 360 gating, export, and
       deletion.
 - [ ] **Manual - Both:** Complete M6.13 calendar permission, discovery, CRUD, recurrence, refresh,
       Focus Mode, Bearing-only fallback, linked publication, deletion, interruption, and two-device
@@ -286,7 +293,7 @@ disposition, vitals, and release-candidate approval.
 - [ ] **Manual - Both:** Build signed production candidates with the `production` EAS profile from
       the exact approved commit; record immutable iOS build number and Android version code.
 - [ ] **Manual - Both:** Verify production environment, legal copy, public URLs, permissions,
-      products, App Check, purchases, restore, export, deletion, support, and telemetry consent in
+      products, App Check, subscriptions, credit packs, restore, export, deletion, support, and telemetry consent in
       the exact production artifacts.
 - [ ] **Manual - Both:** Record artifact checksums and tag accepted source with marketing version
       plus platform build identifiers under the repository's approved Git process.
@@ -303,7 +310,7 @@ go/no-go record.
       URL, Privacy URL, Terms URL, deletion URL, contact details, copyright, and release notes from
       `RELEASE_HANDOFF.md`.
 - [ ] **Manual - Both:** Validate icons on required masks/backgrounds; capture clean screenshots of
-      Calendar day/month, Goals, Tasks, Focus Mode, Notes, and Premium without user data, draft copy,
+      Calendar day/month, Goals, Tasks, Focus Mode, Notes, and Bearing 360 without user data, draft copy,
       debug UI, or account identifiers.
 - [ ] **Manual - Apple:** Upload required iPhone and, if supported, iPad screenshots; complete age
       rating, App Privacy, review contact, demo instructions, encryption/export compliance, content
@@ -312,7 +319,7 @@ go/no-go record.
       complete Data Safety, app access, ads, content rating, target audience, account deletion, and
       other applicable policy declarations.
 - [ ] **Manual - Both:** Verify calendar and AI disclosures, localized subscription price/period,
-      auto-renewal, Premium features, cancellation/refund ownership, restore, and legal links in both
+      auto-renewal, Bearing 360 features, cancellation/refund ownership, restore, pack rules, and legal links in both
       the listing and signed paywall.
 - [ ] **Manual - Both:** Have product, legal/privacy, billing, and release owners preview and approve
       each localized listing exactly as reviewers and customers will see it.
@@ -329,7 +336,7 @@ cross-functional approval.
       report/policy warnings, promote the exact artifact to production, and submit with a staged
       rollout percentage.
 - [ ] **Manual - Both:** Provide accurate reviewer instructions and a disposable secured account
-      that can exercise calendar-denied fallback, Premium paywall, AI, restore, export, and account
+      that can exercise calendar-denied fallback, Bearing 360 paywall, AI, packs, restore, export, and account
       deletion without exposing production user data.
 - [ ] **Manual - Both:** Monitor review messages daily. Answer factually, preserve correspondence,
       and route privacy, billing, security, or legal questions to the named owner.

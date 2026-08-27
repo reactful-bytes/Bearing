@@ -7,7 +7,7 @@ must not contain native calendar provider OAuth, sync, or mirroring code.
 
 - Development and CI: Node 24 LTS/npm 11.
 - Compatibility CI: Node 22.
-- Firebase deployment: `nodejs22`, the newest runtime Firebase currently supports.
+- Firebase deployment: `nodejs24` as configured in `firebase.json`.
 
 ## Commands
 
@@ -30,18 +30,12 @@ npx firebase emulators:start --config ../firebase.json --project bearing-functio
 
 ## Callable Convention
 
-Every client callable must:
+Every protected client callable must use the v2 `onCall` API, require Firebase Auth, derive the
+target UID from `request.auth.uid`, validate request payloads, return sanitized `HttpsError`
+failures, and read private configuration only on the server. App Check remains deferred to M17 and
+must not be partially enforced.
 
-1. use the v2 `onCall` API;
-2. set `enforceAppCheck: true`;
-3. call `requireVerifiedCaller` before processing data;
-4. validate all request payloads;
-5. return `HttpsError` failures without sensitive details; and
-6. read secrets only from managed server configuration.
-
-`backendStatus` is the minimal convention probe. It returns no user or environment data. Deploying
-or invoking it in staging requires an authenticated Firebase CLI session and an App Check-enabled
-client.
+`backendStatus` is the minimal convention probe. It returns no user or environment data.
 
 ## RevenueCat APIs
 
@@ -74,8 +68,8 @@ does not expose those nested fields in its static text.
 
 Configure Firestore TTL on `aiCreditOperations.expiresAt` and remove the retired
 `aiPlans.expiresAt` TTL policy after deployment. Operation documents carry a 24-hour expiry value;
-locks are deleted during normal completion/recovery and may be removed operationally after their
-`leaseExpiresAt` has passed.
+locks are deleted during normal completion/recovery and account deletion. `leaseExpiresAt` supports
+recovery and is not balance state or a grant-expiry field.
 
 Use separate non-production and production values. See `../docs/MONETIZATION_RELEASE.md` for console
 configuration, deployment order, restore policy, and sandbox evidence.

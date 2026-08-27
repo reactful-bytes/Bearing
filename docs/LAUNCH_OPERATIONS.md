@@ -21,13 +21,13 @@ backup plus the operator's daily check. Apple release controls may not expose id
 use the closest supported phased-release stage and record the actual audience.
 
 At each gate record version/builds, start/end time, install/update count, crash and ANR metrics,
-callable 5xx/p95, purchase and activation outcomes, RevenueCat webhook failures, AI failures,
+callable 5xx/p95, purchase/pack and activation outcomes, RevenueCat webhook failures, AI failures,
 Firestore quota, backup recency, cloud spend, support volume, privacy requests, known incidents, and
 the named advance/hold/rollback decision.
 
 Halt immediately for any of these conditions:
 
-- confirmed cross-account access, secret exposure, unauthorized Premium access, data loss, or
+- confirmed cross-account access, secret exposure, unauthorized Bearing 360 access, data loss, or
   deletion of the wrong account;
 - any severity-1 incident or an unresolved severity-2 incident affecting a core path;
 - callable 5xx above 5% for 10 minutes with at least 20 requests;
@@ -49,7 +49,8 @@ other remains healthy.
 - [ ] Review Cloud Run request count, 5xx, p95, saturation, App Check rejection, and Firestore quota.
 - [ ] Reconcile purchase starts/results, activation delay, restore results, RevenueCat webhook
       delivery, and a sample of canonical subscription documents without copying identifiers.
-- [ ] Review AI outcome failures, latency, quota, safety reports, and Gemini cost.
+- [ ] Review AI outcome failures, latency, quota, safety reports, Gemini cost, V2 debit/refund
+      failures, live-balance errors, stale operation recovery, and credit-pack outcomes.
 - [ ] Confirm latest backup, workflow result, retention, and absence of unresolved restore alerts.
 - [ ] Review cloud budget, store proceeds anomalies, and unexpected instance growth.
 - [ ] Triage support volume, ratings, subscription issues, privacy requests, and accessibility reports.
@@ -109,6 +110,10 @@ it only under the approved compliance schedule.
    access and that deleting Bearing does not cancel the store subscription.
 5. For restore ownership conflicts, follow the approved one-purchase/one-Bearing-account transfer
    policy and document the decision without exposing another account's identity.
+6. Use RevenueCat V2 for balance/grant/transaction investigation. V1 is limited to subscriber
+   reconciliation and customer deletion; never repair a balance by writing Firestore state.
+7. Credit packs are consumable and non-transferable. Do not promise Restore, cash redemption, or a
+   locally invented grant. Apple/Google and RevenueCat reconciliation control refund outcomes.
 
 ## Support Runbook
 
@@ -126,7 +131,7 @@ Complete the same template at day 7 and day 30:
 Review date and participants:
 Versions and rollout stages covered:
 Reliability, crashes, ANRs, latency, and quota:
-Premium funnel, activation delay, restores, refunds, and revenue:
+Bearing 360 funnel, packs, activation delay, restores, refunds, and revenue:
 AI success, latency, safety, and cost:
 Backup/restore health and security/privacy events:
 Support volume, ratings, feedback themes, and accessibility:

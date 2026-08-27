@@ -46,10 +46,14 @@ drafts, not legal advice.
       webhook in staging and production.
 - [ ] Show live localized price, billing period, trial/intro terms, auto-renewal, and included features
       before purchase.
+- [ ] Verify Bearing 360 naming, remotely configured non-expiring subscription/trial grants,
+      `credit_packs` consumables, one-credit generation debit/refund, and non-transferability copy.
 - [ ] Link approved Privacy and Terms from the paywall.
 - [ ] State that store settings control cancellation/refunds and account deletion does not cancel.
 - [ ] Verify Apple and Google subscription disclosures in sandbox and signed release builds.
-- [ ] Approve the regional monthly/annual pricing matrix and no-trial launch strategy.
+- [ ] Approve the regional monthly/annual pricing matrix and current trial/intro strategy.
+- [ ] Verify web and Expo Go explain that native checkout is unavailable without exposing a broken
+      subscription or credit-pack action.
 
 ## Privacy Request Procedure
 
@@ -59,8 +63,9 @@ drafts, not legal advice.
 3. Verify identity proportionately through the authenticated account or approved support process.
 4. Direct self-service export/deletion through Profile when possible; use server procedures only
    with documented authorization.
-5. Account for Firestore, Auth, local settings, linked calendar copies, logs, backups, and billing
-   authority. Explain data that cannot be reached or must be retained by law.
+5. Account for Firestore, Auth, RevenueCat balances/transactions and customer deletion, local
+   settings, linked calendar copies, logs, backups, and store billing authority. Explain data that
+   cannot be reached or must be retained by law.
 6. Confirm completion through the verified channel and retain only the minimum compliance record.
 7. Escalate missed deadlines, child requests, regulator contacts, security incidents, or disputed
    identity to the named privacy owner and legal reviewer.

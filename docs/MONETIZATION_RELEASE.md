@@ -9,21 +9,23 @@ release-owner handoffs.
 
 ## Launch Contract
 
-| Setting                 | Launch value                                 |
-| ----------------------- | -------------------------------------------- |
-| RevenueCat entitlement  | `premium` (configured by `REVENUECAT_ENTITLEMENT_IDENTIFIER`) |
-| RevenueCat offering     | `default`, set as current                    |
-| Monthly product ID      | `bearing_premium_monthly`                    |
-| Annual product ID       | `bearing_premium_annual`                     |
-| Monthly reference price | USD 7.99                                     |
-| Annual reference price  | USD 59.99                                    |
-| Trial/intro offer       | None at launch                               |
-| iOS app ID              | `com.reactfulbytes.bearing`                  |
-| Android app ID          | `com.reactfulbytes.bearing`                  |
-| Entitlement authority   | Firestore `subscriptions/{firebaseUid}` only |
+| Setting                    | Launch value                                                       |
+| -------------------------- | ------------------------------------------------------------------ |
+| Customer name              | Bearing 360                                                        |
+| RevenueCat entitlement     | `premium` (stable internal identifier)                             |
+| Subscription offering      | `default`, set as current                                          |
+| Credit-pack offering       | `credit_packs`                                                     |
+| Monthly product ID         | `bearing_premium_monthly`                                          |
+| Annual product ID          | `bearing_premium_annual`                                           |
+| Price and trial terms      | Current localized StoreKit/Play Billing values                     |
+| Credit grants and balances | RevenueCat V2 virtual-currency configuration and customer balances |
+| iOS app ID                 | `com.reactfulbytes.bearing`                                        |
+| Android app ID             | `com.reactfulbytes.bearing`                                        |
+| Feature entitlement        | Firestore `subscriptions/{firebaseUid}` read model                 |
 
-Store-localized price and billing period always override reference-price copy in the app. Do not
-hard-code either price into the purchase UI.
+Store-localized price, billing period, and introductory terms are the only customer-facing source.
+Subscription, trial, and pack grant amounts come from RevenueCat's V2 product-grant catalog. Do not
+hard-code prices or grant amounts in source, docs, or the purchase UI.
 
 ## Authority Flow
 
@@ -34,9 +36,11 @@ hard-code either price into the purchase UI.
 5. The Function validates authorization, raw-body HMAC, and timestamp, then fetches the canonical
    subscriber from RevenueCat instead of trusting the event type.
 6. The Function writes the UID-keyed subscription and an idempotent event receipt. Only `active`
-   and `in_grace_period` unlock Premium.
+   and `in_grace_period` unlock Bearing 360.
 7. The client waits for the Firestore listener to activate; RevenueCat `CustomerInfo` never grants
    app access directly.
+8. RevenueCat V2 is the sole balance, grant, debit, and refund authority. One AI generation costs
+   one credit; a failed generation is refunded with a distinct deterministic transaction key.
 
 Cancellation keeps access through the paid-through date with `autoRenew: false`. Billing issues map
 to grace-period access while RevenueCat reports an active entitlement. Expired or missing
@@ -46,19 +50,26 @@ entitlements fail closed.
 
 - [ ] Create the matching auto-renewing monthly and annual products in App Store Connect.
 - [ ] Create the matching base plans/subscriptions in Google Play Console.
-- [ ] Set USD reference prices to 7.99 monthly and 59.99 annual; do not add a trial or intro offer.
+- [ ] Configure approved localized prices and trial/intro terms in each store; record the rendered
+      terms without copying them into runtime source.
 - [ ] Connect both store apps to one RevenueCat project.
 - [ ] Create entitlement `premium` and attach both products. If it is renamed, set
       `REVENUECAT_ENTITLEMENT_IDENTIFIER` to the new identifier before deploying; the default is
       `premium`.
 - [ ] Create offering `default`, make it current, and add monthly and annual packages.
+- [ ] Create active virtual currency `AIC`; configure approved non-expiring paid and trial grants
+      remotely for the applicable products without placing amounts or an assumed cadence in source.
+- [ ] Create offering `credit_packs`; attach only approved consumable products with non-expiring
+      `AIC` grants. Packs are non-transferable, member-only, and have no Restore action.
 - [ ] Configure RevenueCat restore behavior to transfer a purchase to the currently authenticated
       Firebase UID. Record and approve the collision/support policy before enabling production.
 - [ ] Add the iOS and Android public SDK keys to the corresponding EAS environments as
       `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY` and `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY`.
 - [ ] Set `REVENUECAT_SECRET_API_KEY`, `REVENUECAT_WEBHOOK_AUTHORIZATION`,
-      `REVENUECAT_WEBHOOK_SIGNING_SECRET`, and (when different from `premium`)
-      `REVENUECAT_ENTITLEMENT_IDENTIFIER` as Firebase Functions parameters.
+      `REVENUECAT_WEBHOOK_SIGNING_SECRET`, `REVENUECAT_V2_SECRET_API_KEY`,
+      `REVENUECAT_PROJECT_ID`, `REVENUECAT_AI_CURRENCY_CODE`, and (when different from `premium`)
+      `REVENUECAT_ENTITLEMENT_IDENTIFIER` as Firebase Functions parameters. Keep V1 and V2 keys
+      separate and grant the V2 key only required customer-currency transaction and catalog reads.
 - [ ] Set `REVENUECAT_TEST_STORE_PLATFORM=android` while validating Android RevenueCat Test Store
       purchases. This setting applies only to RevenueCat `TEST_STORE` events, which do not identify
       an App Store or Play Store platform; use `ios` for isolated iOS Test Store validation, or
@@ -95,29 +106,34 @@ Record build ID, store account, Firebase UID suffix, timestamp, expected state, 
 screenshots, RevenueCat event ID, and Firestore result for every row. Use disposable accounts and
 redact tokens and receipts.
 
-| Platform | Scenario                   | Required observation                                                        | Status |
-| -------- | -------------------------- | --------------------------------------------------------------------------- | ------ |
-| iOS      | Monthly purchase           | Store success, webhook receipt, active UID entitlement                      | [ ]    |
-| iOS      | Annual purchase            | Localized annual terms and active UID entitlement                           | [ ]    |
-| iOS      | Cancel renewal             | Access remains through paid-through date; auto-renew false                  | [ ]    |
-| iOS      | Restore on second install  | Approved UID transfer and Firestore activation                              | [ ]    |
-| Android  | Monthly purchase           | Store success, webhook receipt, active UID entitlement                      | [ ]    |
-| Android  | Annual purchase            | Localized annual terms and active UID entitlement                           | [ ]    |
-| Android  | Cancel renewal             | Access remains through paid-through date; auto-renew false                  | [ ]    |
-| Android  | Restore on second install  | Approved UID transfer and Firestore activation                              | [ ]    |
-| Both     | User cancels checkout      | No entitlement; cancellation telemetry only                                 | [ ]    |
-| Both     | Billing issue/grace period | Premium remains available only while canonical entitlement is active        | [ ]    |
-| Both     | Expiration/refund          | Premium fails closed after canonical reconciliation                         | [ ]    |
-| Both     | Delayed webhook            | UI reports delayed activation and later recovers without repurchase         | [ ]    |
-| Both     | Duplicate webhook          | One receipt and stable subscription state                                   | [ ]    |
-| Both     | Account deletion           | RevenueCat customer removed; store subscription still independently managed | [ ]    |
+| Platform    | Scenario                   | Required observation                                                        | Status |
+| ----------- | -------------------------- | --------------------------------------------------------------------------- | ------ |
+| iOS         | Monthly purchase/trial     | Localized terms, webhook, entitlement, configured grant, live balance       | [ ]    |
+| iOS         | Annual purchase/trial      | Localized terms, webhook, entitlement, configured grant, live balance       | [ ]    |
+| iOS         | Credit-pack purchase       | Consumable checkout, configured grant, refreshed balance, no Restore        | [ ]    |
+| iOS         | Cancel renewal             | Access remains through paid-through date; auto-renew false                  | [ ]    |
+| iOS         | Restore on second install  | Approved UID transfer and Firestore activation                              | [ ]    |
+| Android     | Monthly purchase/trial     | Localized terms, webhook, entitlement, configured grant, live balance       | [ ]    |
+| Android     | Annual purchase/trial      | Localized terms, webhook, entitlement, configured grant, live balance       | [ ]    |
+| Android     | Credit-pack purchase       | Consumable checkout, configured grant, refreshed balance, no Restore        | [ ]    |
+| Android     | Cancel renewal             | Access remains through paid-through date; auto-renew false                  | [ ]    |
+| Android     | Restore on second install  | Approved UID transfer and Firestore activation                              | [ ]    |
+| Both        | User cancels checkout      | No entitlement; cancellation telemetry only                                 | [ ]    |
+| Both        | Billing issue/grace period | Bearing 360 remains available only while canonical entitlement is active    | [ ]    |
+| Both        | Expiration/refund          | Bearing 360 fails closed after canonical reconciliation                     | [ ]    |
+| Both        | AI success/failure         | Success debits one credit; failed generation refunds one credit once        | [ ]    |
+| Both        | Grant config change        | Future grant/catalog copy changes without an app or Functions deployment    | [ ]    |
+| Web/Expo Go | Unsupported checkout       | Clear native-app guidance; no broken subscription or pack purchase action   | [ ]    |
+| Both        | Delayed webhook            | UI reports delayed activation and later recovers without repurchase         | [ ]    |
+| Both        | Duplicate webhook          | One receipt and stable subscription state                                   | [ ]    |
+| Both        | Account deletion           | RevenueCat customer removed; store subscription still independently managed | [ ]    |
 
 ## Regional Pricing Approval
 
 Export Apple and Google price matrices and attach them to release evidence. For every launch market,
-record currency, monthly price, annual price, annual discount, tax treatment, proceeds, local
-subscription disclosure requirements, reviewer, and approval date. Confirm the annual discount is
-intentional and that no store-created intro offer appears in the live product response.
+record currency, monthly price, annual price, annual discount, tax treatment, proceeds, current
+trial/intro terms, local subscription disclosure requirements, reviewer, and approval date. Confirm
+the live product response and signed UI match the approved store configuration.
 
 M11.1-M11.3 remain manual handoffs until the console checklist, both-platform sandbox matrix, and
 regional pricing approval have named evidence.

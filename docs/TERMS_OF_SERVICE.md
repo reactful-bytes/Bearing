@@ -2,7 +2,7 @@
 
 **Draft for owner and legal review. Not approved for publication.**
 
-Effective date: July 31, 2026
+Effective date: August 27, 2026
 
 Release placeholders that must be replaced before publication:
 
@@ -10,7 +10,7 @@ Release placeholders that must be replaced before publication:
 - Support email and public terms URL: `[REQUIRED]`
 - Minimum age and legal-capacity rules: `[REQUIRED]`
 - Governing law, venue, and regional consumer notices: `[REQUIRED]`
-- Final subscription products, regional prices, no-trial strategy, and included features:
+- Final subscription products, trial terms, regional prices, credit grants, and included features:
   `[OWNER APPROVAL REQUIRED]`
 
 ## Agreement and Eligibility
@@ -54,16 +54,23 @@ and writable-calendar capabilities. Publication and reconciliation are best effo
 responsible for reviewing dates, timezones, recurrence, alarms, destinations, and linked copies.
 Apple, Google, Firebase, Gemini, and other third-party services have separate terms.
 
-## Premium Subscriptions
+## Bearing 360 Subscriptions And AI Credits
 
-Bearing Premium is planned as monthly and annual auto-renewing subscriptions with USD reference
-prices of 7.99 and 59.99 and no launch trial. The live store-localized product, price, currency,
-billing period, any introductory terms, renewal behavior, and included features are displayed before
-purchase. Store subscriptions may renew automatically unless canceled through the Apple or Google
-account settings before the renewal date. The applicable store processes payment and controls
-cancellation and refund requests, subject to mandatory law. Deleting the app or Bearing account
-does not itself cancel a store subscription. Purchases can be restored to the secured Bearing
-account under the approved one-purchase/one-account transfer policy.
+Bearing 360 is offered through monthly and annual auto-renewing subscriptions. The live
+store-localized product, price, currency, billing period, trial or introductory terms, renewal
+behavior, and included features are displayed before purchase. RevenueCat remotely configures the
+AI-credit grants associated with eligible subscription, trial, and consumable pack products; those
+amounts may change for future grants without an app update.
+
+Each AI plan generation costs one credit. Bearing debits after authorization and refunds that credit
+when generation fails under the implemented recovery rules. Credits and consumable packs are
+non-transferable, have no cash value, are not legal tender, and cannot be sold or exchanged. Credit
+packs are consumable purchases and cannot be restored. Store subscriptions may renew automatically
+unless canceled through Apple or Google account settings. Apple or Google processes payment and,
+with RevenueCat reconciliation, controls cancellation and refund outcomes subject to mandatory law.
+Deleting the app or Bearing account does not cancel a store subscription. Subscription purchases
+can be restored to the secured Bearing account under the approved one-purchase/one-account policy.
+Native checkout is not available on web or in Expo Go.
 
 ## Availability, Changes, and Termination
 

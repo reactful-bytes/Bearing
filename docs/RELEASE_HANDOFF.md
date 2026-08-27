@@ -35,6 +35,61 @@ build number. Tag accepted source with the marketing version and both generated 
 - [ ] Run all repository quality gates before producing production candidates.
 - [ ] Produce signed production candidates from the exact reviewed commit and record checksums.
 
+## M21 RevenueCat, Native, And Firestore Evidence
+
+This section is a manual handoff. Checkboxes and commands are requirements, not evidence that any
+console, store, device, deployment, TTL, or cleanup action has occurred. Store evidence in the
+restricted release location without secrets, full UIDs, receipts, or customer content.
+
+### RevenueCat Configuration
+
+- [ ] Create and activate virtual currency `AIC` in the production RevenueCat project.
+- [ ] Configure approved non-expiring paid and trial grants remotely for monthly and annual
+      products. Record the current values and RevenueCat screenshots privately; do not place grant
+      amounts or an assumed cadence in source or active docs.
+- [ ] Create offering `credit_packs` and attach only approved consumable products with non-expiring
+      `AIC` grants. Verify every pack is non-transferable, has no cash value, and has no Restore path.
+- [ ] Provision `REVENUECAT_V2_SECRET_API_KEY` as a separate least-privilege key for required
+      customer virtual-currency reads/transactions and project currency/product/grant reads. Record
+      key name, project, permissions, and rotation owner, never the key value.
+- [ ] Verify `REVENUECAT_PROJECT_ID` and `REVENUECAT_AI_CURRENCY_CODE` for staging and production.
+- [ ] Keep the V1 key boundary limited to canonical subscriber reconciliation and RevenueCat
+      customer deletion. Do not authorize V1 as balance, grant, or transaction authority.
+- [ ] Configure authenticated webhook URL, authorization, signing secret, and all required purchase,
+      renewal, cancellation, billing issue, expiration, transfer, and refund event delivery.
+
+### Sandbox And Installed Builds
+
+- [ ] Complete the `MONETIZATION_RELEASE.md` sandbox matrix with disposable accounts on iOS and
+      Android, including trial, conversion, renewal behavior, cancellation, refund, restore,
+      entitlement delay, duplicate webhook, and account deletion.
+- [ ] Prove a successful AI generation debits exactly one credit, a generation/provider failure
+      refunds exactly one credit, and request replay does not adjust twice.
+- [ ] Prove each `credit_packs` consumable purchase grants its remotely configured amount, refreshes
+      the live balance, handles cancel/failure/accepted-but-syncing, and offers no Restore action.
+- [ ] Change a paid, trial, or pack grant in RevenueCat non-production configuration and prove future
+      catalog/UI behavior changes without an app or Functions deployment. Restore the approved
+      value and record both observations.
+- [ ] Install and exercise development plus release-candidate builds on physical iOS and Android
+      devices. Record build IDs, OS/device, UTC time, redacted screenshots, store outcome, webhook,
+      entitlement, and live balance evidence.
+- [ ] Verify web and Expo Go show accurate native-checkout-unavailable states with no actionable
+      subscription or pack purchase control.
+
+### TTL And Retired Non-Production Data
+
+- [ ] Follow `FIRESTORE.md` exactly to create `aiCreditOperations.expiresAt` TTL, verify it is
+      enabled, disable the retired TTL, and save project-scoped command output.
+- [ ] In a non-production project only, record a named backup and before counts, delete the three
+      retired collections using the documented commands, rerun counts, and require zero after
+      counts. Record operator, project IDs, UTC timestamps, and backup path.
+- [ ] Confirm `aiCreditLocks.leaseExpiresAt` remains a recovery lease rather than a TTL or balance
+      field; locks are deleted on operation completion/recovery and account deletion.
+
+M21.5 and M21.7 remain `manual-handoff` until this evidence exists. Repository validation cannot
+substitute for RevenueCat/store configuration, physical-device purchases, no-deployment grant
+changes, TTL policy state, or non-production cleanup output.
+
 ## Required Quality Gate
 
 From `mobile/` on Node 24/npm 11:
@@ -62,26 +117,27 @@ Attach command logs, commit SHA, dependency lock hashes, Node/npm versions, and 
 
 ## Store Metadata Source
 
-| Field                      | Candidate copy or action                                                                            |
-| -------------------------- | --------------------------------------------------------------------------------------------------- |
-| App name                   | Bearing                                                                                             |
-| Category                   | Productivity                                                                                        |
-| Subtitle/short description | Plan days, goals, tasks, and notes in one focused workspace.                                        |
-| Promotional line           | Turn plans into scheduled action with goals, tasks, Focus Mode, and optional Premium AI assistance. |
-| Support URL                | `[REQUIRED PUBLIC HTTPS URL]`                                                                       |
-| Privacy URL                | `[REQUIRED PUBLIC HTTPS URL]`                                                                       |
-| Terms URL                  | `[REQUIRED PUBLIC HTTPS URL]`                                                                       |
-| Account deletion URL       | `[REQUIRED PUBLIC HTTPS URL]`                                                                       |
-| Contact email              | `EXPO_PUBLIC_SUPPORT_EMAIL` release value                                                           |
+| Field                      | Candidate copy or action                                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------------------------- |
+| App name                   | Bearing                                                                                                 |
+| Category                   | Productivity                                                                                            |
+| Subtitle/short description | Plan days, goals, tasks, and notes in one focused workspace.                                            |
+| Promotional line           | Turn plans into scheduled action with goals, tasks, Focus Mode, and optional Bearing 360 AI assistance. |
+| Support URL                | `[REQUIRED PUBLIC HTTPS URL]`                                                                           |
+| Privacy URL                | `[REQUIRED PUBLIC HTTPS URL]`                                                                           |
+| Terms URL                  | `[REQUIRED PUBLIC HTTPS URL]`                                                                           |
+| Account deletion URL       | `[REQUIRED PUBLIC HTTPS URL]`                                                                           |
+| Contact email              | `EXPO_PUBLIC_SUPPORT_EMAIL` release value                                                               |
 
 Long description source:
 
 > Bearing brings your calendar, goals, tasks, and notes into one practical planning flow. Schedule
 > Bearing events, view selected device calendars, turn tasks and goal steps into time, use Focus
 > Mode during active events, and capture ideas without leaving the moment. Your Bearing data syncs
-> through your secured account. Optional calendar access stays under your control, and Premium adds
-> an editable AI-assisted goal-planning draft. Subscriptions are available monthly or annually and
-> can be restored or managed through your store account.
+> through your secured account. Optional calendar access stays under your control, and Bearing 360
+> adds editable AI-assisted goal-planning drafts using credits. Subscriptions are available monthly
+> or annually; live localized terms appear before purchase. Supported native builds also offer
+> consumable credit packs, while subscriptions can be restored or managed through your store account.
 
 Do not add unsupported claims such as guaranteed productivity, medical outcomes, anonymous
 analytics, full calendar-provider synchronization, offline-first operation, or cross-platform web
@@ -95,7 +151,7 @@ logos, and splash source under `mobile/assets/`. They are source inputs, not a f
 - [ ] Validate the production icon and adaptive icon on light/dark launchers and required masks.
 - [ ] Export Apple and Google icon assets from the approved source without transparency violations.
 - [ ] Capture current iPhone and Android phone screenshots from signed candidates.
-- [ ] Include Calendar day/month, Goals, Tasks, Focus Mode, Notes, and Premium paywall without user
+- [ ] Include Calendar day/month, Goals, Tasks, Focus Mode, Notes, and Bearing 360 paywall without user
       content, account identifiers, debug chrome, or draft legal placeholders.
 - [ ] Produce required tablet screenshots only if tablet support remains enabled for submission.
 - [ ] Create the Google Play feature graphic and verify safe areas at console preview sizes.

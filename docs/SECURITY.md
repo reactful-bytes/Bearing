@@ -1,13 +1,13 @@
 # Security Baseline
 
-Last reviewed: 2026-08-22
+Last reviewed: 2026-08-27
 
 ## Firestore Authorization
 
 The repository-root `firestore.rules` file is authoritative. It enforces authenticated ownership for
 events, notes, goals, goal steps, and tasks; prevents ownership transfer during updates; limits user
 profile updates to client-owned preferences; keeps premium entitlement and subscription writes
-server-owned; explicitly denies client access to AI credit authority; and denies unknown
+server-owned; explicitly denies client access to `aiCreditOperations` and `aiCreditLocks`; and denies unknown
 collections by default.
 
 Run the authorization suite from `mobile/` with Node 24, npm 11, and Java 21:
@@ -46,10 +46,12 @@ Review these findings during each Expo SDK upgrade. Keep `npx expo install --che
 ## Server Controls
 
 Firebase Functions require Firebase Auth and derive every target user from `request.auth.uid`.
-Premium authorization comes from `subscriptions/{uid}`. AI generation additionally uses
-server-owned rolling credits, one active reservation per user, idempotent request IDs, bounded
-structured output, success-only charging, and sanitized provider failures. Billing reconciliation,
-export, and account deletion use the same Admin SDK ownership boundary.
+Bearing 360 authorization comes from `subscriptions/{uid}`. RevenueCat V2 is the sole AI-credit
+balance, grant, debit, and refund authority. AI generation uses one-unit deterministic adjustments,
+temporary server-only operation/lock state, idempotent request IDs, bounded structured output, and
+sanitized provider failures. RevenueCat V1 remains limited to canonical subscriber reconciliation
+and customer deletion. Export returns the live V2 balance plus caller-owned temporary state;
+deletion removes the RevenueCat customer before local data and Auth.
 
 App Check is not currently enforced. It is deferred to M17 as defense in depth and must not be
 partially enabled until native and web clients can both send valid tokens and rollout metrics have

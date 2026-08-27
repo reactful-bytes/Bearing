@@ -4,13 +4,13 @@
 
 Release acceptance uses a signed or preview build on the agreed mid-tier Android device.
 
-| Metric | Budget |
-| --- | --- |
-| Cold launch to usable Calendar | Under 3 seconds |
-| Tab transition response | Under 300 milliseconds |
-| Calendar day/month scrolling | At least 55 FPS |
-| Long-session memory | No sustained growth during the 20-minute script |
-| Calendar query scope | One visible month per Firestore and device query |
+| Metric                         | Budget                                           |
+| ------------------------------ | ------------------------------------------------ |
+| Cold launch to usable Calendar | Under 3 seconds                                  |
+| Tab transition response        | Under 300 milliseconds                           |
+| Calendar day/month scrolling   | At least 55 FPS                                  |
+| Long-session memory            | No sustained growth during the 20-minute script  |
+| Calendar query scope           | One visible month per Firestore and device query |
 
 ## Repository Controls
 
@@ -20,6 +20,8 @@ Release acceptance uses a signed or preview build on the agreed mid-tier Android
 - Native event requests discard stale overlapping results.
 - The month carousel renders one initial page, batches two pages, and retains a three-window neighborhood.
 - Firestore listeners unsubscribe on unmount, range change, and explicit retry.
+- AI-credit status reads the live RevenueCat V2 balance and is not cached as local Firestore balance
+  state. Product-grant configuration may use the bounded server cache documented in Functions.
 
 Automated tests verify the write-only note action, bounded month-list properties, month-range subscriptions, stale native-result rejection, and listener cleanup.
 

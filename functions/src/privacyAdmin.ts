@@ -8,6 +8,10 @@ import {
 import { UserDataDeleter, UserDataReader } from "./privacy";
 import { getAiCreditLockId } from "./aiCreditOperations";
 import { deleteRevenueCatCustomer } from "./revenueCat";
+import {
+  RevenueCatV2Config,
+  getRevenueCatVirtualCurrencyBalance,
+} from "./revenueCatV2";
 
 export const OWNED_COLLECTIONS = [
   "events",
@@ -48,7 +52,7 @@ function portableDocument(id: string, data: DocumentData): unknown {
   return toPortableValue({ id, ...data });
 }
 
-export const readUserDataAdmin: UserDataReader = async (userId) => {
+const readLocalUserDataAdmin = async (userId: string) => {
   const db = getFirestore();
   const [profile, subscription, aiCreditLock, ...collectionSnapshots] =
     await Promise.all([
@@ -92,6 +96,20 @@ export const readUserDataAdmin: UserDataReader = async (userId) => {
     tasks: records.tasks ?? [],
   };
 };
+
+export function createUserDataAdminReader(
+  config: RevenueCatV2Config,
+  readLocalUserData: typeof readLocalUserDataAdmin = readLocalUserDataAdmin,
+  readBalance: typeof getRevenueCatVirtualCurrencyBalance = getRevenueCatVirtualCurrencyBalance,
+): UserDataReader {
+  return async (userId) => {
+    const [localData, balance] = await Promise.all([
+      readLocalUserData(userId),
+      readBalance(userId, config),
+    ]);
+    return { ...localData, aiCreditBalance: balance.balance };
+  };
+}
 
 async function deleteLocalUserData(userId: string): Promise<void> {
   const db = getFirestore();

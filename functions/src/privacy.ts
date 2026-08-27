@@ -12,6 +12,9 @@ export type UserDataExport = {
   userId: string;
   profile: unknown;
   subscription: unknown;
+  aiCreditBalance: number;
+  aiCreditLock: unknown;
+  aiCreditOperations: unknown[];
   events: unknown[];
   goals: unknown[];
   goalSteps: unknown[];

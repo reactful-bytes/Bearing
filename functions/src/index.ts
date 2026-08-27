@@ -18,7 +18,10 @@ import {
   deleteUserAccount as deleteUserAccountHandler,
   exportUserData as exportUserDataHandler,
 } from "./privacy";
-import { createUserDataAdminDeleter, readUserDataAdmin } from "./privacyAdmin";
+import {
+  createUserDataAdminDeleter,
+  createUserDataAdminReader,
+} from "./privacyAdmin";
 import { recordTelemetryEvent as recordTelemetryEventHandler } from "./telemetry";
 import {
   handleRevenueCatWebhook,
@@ -169,7 +172,11 @@ export const exportUserData = onCall(
   {
     timeoutSeconds: 60,
   },
-  (request) => exportUserDataHandler(request, readUserDataAdmin),
+  (request) =>
+    exportUserDataHandler(
+      request,
+      createUserDataAdminReader(revenueCatV2Config()),
+    ),
 );
 
 export const deleteUserAccount = onCall(

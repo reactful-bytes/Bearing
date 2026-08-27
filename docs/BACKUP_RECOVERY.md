@@ -6,6 +6,9 @@
 - Recovery time objective (RTO): 4 hours after incident declaration.
 - Retention: 30 daily exports, 12 monthly exports, and one pre-migration export per production schema change.
 - Scope: `users`, `events`, `goals`, `goalSteps`, `notes`, `tasks`, and `subscriptions`.
+- RevenueCat V2 balances, grants, and transactions are provider authority and are not recoverable
+  from Firestore exports. Temporary `aiCreditOperations`/`aiCreditLocks` are coordination state,
+  not ledger data, and are excluded from the durable backup objective.
 - Device calendar IDs and linked-copy caches are device-local and are not recoverable from Firestore exports.
 
 ## Required Cloud Setup
@@ -46,7 +49,8 @@ Run quarterly and before the first production release:
 3. Prefer forward repair for isolated documents. Use full import only when the incident commander approves the blast radius.
 4. Restore into staging first, validate, then execute the approved production repair/import.
 5. Reconcile Auth separately; Firestore exports do not contain Firebase Authentication users.
-6. Revalidate subscription authority with the billing source after any entitlement restore.
+6. Revalidate subscription state through RevenueCat V1 and AI-credit balance through RevenueCat V2
+   after any entitlement restore. Never synthesize a local balance or grant history from Firestore.
 7. Publish an incident summary with actual RPO/RTO and prevention actions.
 
 ## Rollback Triggers

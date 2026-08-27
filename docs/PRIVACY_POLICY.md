@@ -2,7 +2,7 @@
 
 **Draft for owner and legal review. Not approved for publication.**
 
-Effective date: July 31, 2026
+Effective date: August 27, 2026
 
 Release placeholders that must be replaced before publication:
 
@@ -28,8 +28,9 @@ User content includes Bearing calendar events, goals, SMART goal fields, milesto
 notes, completion history, links among those records, and accepted AI-assisted plan fields.
 
 Subscription records include platform, product identifier, entitlement state, period dates, and
-server reconciliation timestamps. RevenueCat receives the Firebase UID as its App User ID and
-reconciles Apple and Google purchase state. Bearing does not store full payment-card details.
+server reconciliation timestamps. RevenueCat receives the Firebase UID as its App User ID,
+reconciles Apple and Google purchase state, and is the authority for AI-credit balances, grants,
+debits, and refunds. Bearing does not store full payment-card details or a local credit ledger.
 
 Device-local information includes selected calendar IDs, a writable default calendar ID, opaque
 links to published system-calendar copies, and the account-scoped diagnostics preference. Exported
@@ -68,11 +69,12 @@ copy that is no longer reachable on the device or in an external calendar accoun
 
 For an eligible user who requests AI assistance, Bearing sends the goal title, description, and
 target date through an authenticated Firebase Function to Google Gemini. Bearing validates the
-response and presents an editable draft. A server-owned credit account and grant history record
-usage totals and billing anniversaries. A successful draft may be cached in a temporary retry record
-for up to 24 hours so a repeated request can return without another charge. Failed requests do not
-retain a generated draft. No generated fields become goal content until the user approves and saves
-the plan. Users should avoid including sensitive information that is unnecessary for planning.
+response and presents an editable draft. RevenueCat V2 supplies the live balance and processes the
+one-credit debit or refund. Server-only operation and lock records coordinate retries but are not
+balance or grant state. A successful draft may be cached in an operation record for up to 24 hours
+so a repeated request can return without another charge. Failed requests do not retain a generated
+draft. No generated fields become goal content until the user approves and saves the plan. Users
+should avoid including sensitive information that is unnecessary for planning.
 
 AI output can be inaccurate and is not medical, legal, financial, emergency, or other professional
 advice.
@@ -89,11 +91,11 @@ events to advertising or data-broker systems.
 
 ## Sharing and Processors
 
-Bearing uses Google Firebase for authentication, Firestore, Functions, backups, and
-operational logging; Google Gemini for requested AI generation; RevenueCat for purchase and
-entitlement reconciliation; Apple and Google for distribution and billing; and GitHub for source
-and release automation. The authoritative purpose, data, configuration, retention, and approval
-inventory is in `docs/DATA_PROCESSORS.md`.
+Bearing uses Google Firebase for authentication, Firestore, Functions, backups, and operational
+logging; Google Gemini for requested AI generation; RevenueCat for purchase/entitlement
+reconciliation and AI-credit authority; Apple and Google for distribution, checkout, cancellation,
+and refund handling; and GitHub for source and release automation. The authoritative purpose, data,
+configuration, retention, and approval inventory is in `docs/DATA_PROCESSORS.md`.
 
 Information may also be disclosed when required by law, to protect users or the service, during an
 approved business transaction, or with the user's direction. The operator must publish applicable
@@ -103,8 +105,9 @@ international-transfer mechanisms and processor agreements before launch.
 
 - Active account content remains until the user deletes it or the service applies an approved
   inactivity policy.
-- AI credit balances and grant history remain with the account and do not expire. Temporary AI plan
-  retry records target automatic deletion 24 hours after creation.
+- RevenueCat retains AI-credit balances, grants, and transactions under its approved controls.
+  Temporary Firestore operation records target automatic deletion 24 hours after creation; locks
+  are removed when operations complete or the account is deleted.
 - After recent verification, a successful deletion request removes the RevenueCat customer record,
   active Firestore records, and Firebase Authentication. It does not cancel the separate Apple or
   Google subscription. The current installation then attempts to purge account-scoped calendar
@@ -124,7 +127,9 @@ The release owner must verify actual provider settings match these periods befor
 
 Users can deny or revoke calendar access, disable product diagnostics, export account data as JSON,
 export Bearing events as ICS, edit saved content, and request account deletion from Profile.
-Premium users can restore purchases and open store subscription management from the app.
+Bearing 360 users can restore subscriptions and open store subscription management from supported
+native builds. Consumable credit packs are not restorable. Checkout is unavailable on web and in
+Expo Go.
 Deletion of an email account requires recent password verification. Users may optionally remove
 reachable linked system-calendar copies first. If backend deletion does not complete, the account
 remains available for an idempotent retry. If current-device cleanup fails after server confirmation,
@@ -138,7 +143,7 @@ does not affect earlier lawful processing.
 ## Security and Children
 
 Bearing uses Firebase Authentication, owner-scoped Firestore rules, server-owned entitlements and
-AI credits, least-privilege access, server configuration controls, validation, and encrypted
+AI-credit operation state, least-privilege access, server configuration controls, validation, and encrypted
 provider transport. App Check is planned as future defense in depth after coordinated native and web
 support. No system is completely secure; users should use a unique password and protect their
 device.

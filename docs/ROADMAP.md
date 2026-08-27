@@ -30,7 +30,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M1.2    | completed      | Configure Firebase project, auth, env management | Firebase init/auth bootstrap and env strategy validated in development                                                                        |
 | M1.3    | completed      | Add lint, formatter, tests, and CI baseline      | CI validates lint and tests on PR                                                                                                             |
 | M1.4    | completed      | Set up navigation shell with bottom tabs         | Calendar, Goals, Notes, Profile tabs routable                                                                                                 |
-| M1.5    | in-progress    | Restore reproducible engineering baseline        | Node 24/npm 11 fresh install, local Android SDK discovery, and every required quality command pass locally and in CI                           |
+| M1.5    | in-progress    | Restore reproducible engineering baseline        | Node 24/npm 11 fresh install, local Android SDK discovery, and every required quality command pass locally and in CI                          |
 | M1.6    | manual-handoff | Add shared Firebase Functions foundation         | Repository and CI conventions pass; owner deploys and invokes authenticated staging services                                                  |
 
 ### M2 - Design System and UX Foundation
@@ -205,56 +205,56 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M18 - RevenueCat Virtual Currency Foundation
 
-| Task ID | Status      | Description                                  | Exit Criteria                                                                                         |
-| ------- | ----------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| M18.1   | completed   | Establish milestone tracking                 | M18-M21 roadmap, project plan, tickets, dependencies, and update protocol agree                       |
-| M18.2   | manual-handoff | Configure dashboard-owned virtual currency | Paid, trial, and future pack grants require owner console evidence                                  |
-| M18.3   | completed   | Provision V2 access and parameters           | Separate least-privilege V2 parameters are wired; owner provisions values                             |
-| M18.4   | completed   | Add V2 balance reads                         | Backend returns validated RevenueCat balances for authenticated customers                             |
-| M18.5   | completed   | Add V2 debit and refund transactions         | One-unit adjustments are idempotent and safely retryable                                              |
-| M18.6   | completed   | Add dynamic product-grant catalog            | Client-safe product grants come from RevenueCat configuration                                         |
-| M18.7   | completed   | Validate the V2 foundation                   | Adapter, callable, cache, error, security, and redaction coverage pass                                |
+| Task ID | Status         | Description                                | Exit Criteria                                                                   |
+| ------- | -------------- | ------------------------------------------ | ------------------------------------------------------------------------------- |
+| M18.1   | completed      | Establish milestone tracking               | M18-M21 roadmap, project plan, tickets, dependencies, and update protocol agree |
+| M18.2   | manual-handoff | Configure dashboard-owned virtual currency | Paid, trial, and future pack grants require owner console evidence              |
+| M18.3   | completed      | Provision V2 access and parameters         | Separate least-privilege V2 parameters are wired; owner provisions values       |
+| M18.4   | completed      | Add V2 balance reads                       | Backend returns validated RevenueCat balances for authenticated customers       |
+| M18.5   | completed      | Add V2 debit and refund transactions       | One-unit adjustments are idempotent and safely retryable                        |
+| M18.6   | completed      | Add dynamic product-grant catalog          | Client-safe product grants come from RevenueCat configuration                   |
+| M18.7   | completed      | Validate the V2 foundation                 | Adapter, callable, cache, error, security, and redaction coverage pass          |
 
 ### M19 - Authoritative Spending and Ledger Removal
 
-| Task ID | Status      | Description                              | Exit Criteria                                                                                   |
-| ------- | ----------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| M19.1   | completed | Add minimal operation persistence        | Firestore retains operation, lock, and replay state but no balances or grant history             |
-| M19.2   | completed | Coordinate idempotent debit              | Debit intent survives retries and ambiguity without duplicate spending                           |
-| M19.3   | completed | Finalize and replay successful plans     | Valid plans complete and matching retries are free                                               |
-| M19.4   | completed | Refund and recover interrupted work      | Failures and stale operations converge to one refund                                             |
-| M19.5   | completed | Rewire metered generation                | Entitlement-gated AI generation uses RevenueCat one-unit spending                                |
-| M19.6   | completed | Replace status with live balance         | Status reports RevenueCat balance and no fabricated next-grant date                               |
-| M19.7   | completed | Remove webhook credit accrual            | Subscription projection remains with no local grant side effect                                  |
-| M19.8   | completed | Delete the Firestore ledger completely   | Obsolete modules, tests, collections, math, and generated artifacts are absent                    |
-| M19.9   | completed | Validate backend migration               | Concurrency, replay, retry, refund, lockout, security, and quality gates pass                      |
+| Task ID | Status    | Description                            | Exit Criteria                                                                        |
+| ------- | --------- | -------------------------------------- | ------------------------------------------------------------------------------------ |
+| M19.1   | completed | Add minimal operation persistence      | Firestore retains operation, lock, and replay state but no balances or grant history |
+| M19.2   | completed | Coordinate idempotent debit            | Debit intent survives retries and ambiguity without duplicate spending               |
+| M19.3   | completed | Finalize and replay successful plans   | Valid plans complete and matching retries are free                                   |
+| M19.4   | completed | Refund and recover interrupted work    | Failures and stale operations converge to one refund                                 |
+| M19.5   | completed | Rewire metered generation              | Entitlement-gated AI generation uses RevenueCat one-unit spending                    |
+| M19.6   | completed | Replace status with live balance       | Status reports RevenueCat balance and no fabricated next-grant date                  |
+| M19.7   | completed | Remove webhook credit accrual          | Subscription projection remains with no local grant side effect                      |
+| M19.8   | completed | Delete the Firestore ledger completely | Obsolete modules, tests, collections, math, and generated artifacts are absent       |
+| M19.9   | completed | Validate backend migration             | Concurrency, replay, retry, refund, lockout, security, and quality gates pass        |
 
 ### M20 - Bearing 360 and Credit Pack Experience
 
-| Task ID | Status      | Description                              | Exit Criteria                                                                                   |
-| ------- | ----------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| M20.1   | completed | Add mobile grant-catalog transport       | SDK packages join to safe server-derived RevenueCat grants                                       |
-| M20.2   | completed | Rename customer-facing Premium copy      | Users see Bearing 360 while stable technical identifiers remain                                  |
-| M20.3   | completed | Show dynamic subscription grants         | Paywall uses configured paid and trial amounts without fallback constants                        |
-| M20.4   | completed | Use authoritative balance UI             | Balance refreshes after purchases/generation and next-grant assumptions are gone                  |
-| M20.5   | completed | Add credit-pack offering client          | Consumables load independently from `credit_packs`                                                |
-| M20.6   | completed | Build credit-pack purchase flow          | Dynamic packs support confirmation, outcomes, sync, and balance refresh                           |
-| M20.7   | completed | Add AI Planning pack entry               | Eligible members can buy credits from the planning workflow                                      |
-| M20.8   | completed | Add Profile pack entry                   | Profile exposes balance, packs, and accurate unsupported states                                   |
-| M20.9   | completed | Add strict pack telemetry                | Bounded events exclude sensitive and store-specific identifiers                                  |
-| M20.10  | completed | Validate mobile experience               | Focused/full tests and all static mobile gates pass                                               |
+| Task ID | Status    | Description                         | Exit Criteria                                                                    |
+| ------- | --------- | ----------------------------------- | -------------------------------------------------------------------------------- |
+| M20.1   | completed | Add mobile grant-catalog transport  | SDK packages join to safe server-derived RevenueCat grants                       |
+| M20.2   | completed | Rename customer-facing Premium copy | Users see Bearing 360 while stable technical identifiers remain                  |
+| M20.3   | completed | Show dynamic subscription grants    | Paywall uses configured paid and trial amounts without fallback constants        |
+| M20.4   | completed | Use authoritative balance UI        | Balance refreshes after purchases/generation and next-grant assumptions are gone |
+| M20.5   | completed | Add credit-pack offering client     | Consumables load independently from `credit_packs`                               |
+| M20.6   | completed | Build credit-pack purchase flow     | Dynamic packs support confirmation, outcomes, sync, and balance refresh          |
+| M20.7   | completed | Add AI Planning pack entry          | Eligible members can buy credits from the planning workflow                      |
+| M20.8   | completed | Add Profile pack entry              | Profile exposes balance, packs, and accurate unsupported states                  |
+| M20.9   | completed | Add strict pack telemetry           | Bounded events exclude sensitive and store-specific identifiers                  |
+| M20.10  | completed | Validate mobile experience          | Focused/full tests and all static mobile gates pass                              |
 
 ### M21 - Privacy, Cleanup, Documentation, and Release
 
-| Task ID | Status      | Description                                  | Exit Criteria                                                                                 |
-| ------- | ----------- | -------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| M21.1   | not-started | Update privacy export and deletion           | Live balance and operation records replace retired ledger data                                 |
-| M21.2   | not-started | Replace rules, TTL, and staging data         | New state is server-only and obsolete state has no active policy or data                        |
-| M21.3   | not-started | Reconcile architecture and operations docs   | Active documentation matches RevenueCat authority                                               |
-| M21.4   | not-started | Reconcile monetization and legal docs        | Bearing 360, grants, trials, packs, locks, and refunds are current                               |
-| M21.5   | manual-handoff | Complete console setup                  | RevenueCat, store, and native purchase evidence is recorded                                     |
-| M21.6   | not-started | Run failure and security acceptance          | Exactly-once, ownership, privacy, redaction, and rules behavior pass                             |
-| M21.7   | not-started | Run release acceptance and close tracking    | Native/web evidence passes and all milestone trackers agree                                     |
+| Task ID | Status         | Description                                | Exit Criteria                                                            |
+| ------- | -------------- | ------------------------------------------ | ------------------------------------------------------------------------ |
+| M21.1   | completed      | Update privacy export and deletion         | Live balance and temporary operation/lock export; processor-first delete |
+| M21.2   | completed      | Replace rules, TTL, and staging data       | Repository rules/runbook complete; owner execution evidence remains      |
+| M21.3   | completed      | Reconcile architecture and operations docs | Active documentation matches RevenueCat V2 authority                     |
+| M21.4   | completed      | Reconcile monetization and legal docs      | Bearing 360, dynamic grants, packs, locks, and refunds are current       |
+| M21.5   | manual-handoff | Complete console setup                     | RevenueCat, store, and native purchase evidence is recorded              |
+| M21.6   | completed      | Run failure and security acceptance        | Parent gates and focused privacy/rules acceptance pass                   |
+| M21.7   | manual-handoff | Run release acceptance and close tracking  | Native and no-deployment RevenueCat evidence remains                     |
 
 ## Dependency Order Summary
 
@@ -284,7 +284,6 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ## Immediate Next Steps
 
-1. Execute M18.1, then the V2 foundation; keep every leaf ticket current in its milestone document and project plan.
-2. Continue M19-M21 in dependency order and remove the M16 local ledger only after its RevenueCat replacement passes focused validation.
-3. Keep M17 deferred until explicitly authorized; it does not block the virtual-currency migration.
-4. Continue existing owner handoffs in parallel without weakening the M18-M21 validation gates.
+1. Complete the M21.5/M21.7 owner evidence checklist in `RELEASE_HANDOFF.md`, including RevenueCat/store configuration, installed native purchases, and a no-deployment grant change.
+2. Execute and record the project-guarded TTL migration and retired non-production data cleanup in `FIRESTORE.md`; do not treat repository instructions as console evidence.
+3. Keep M17 deferred until explicitly authorized; it does not block the completed repository portion of the virtual-currency migration.

@@ -72,7 +72,7 @@ Bottom tab navigation with five screens:
 
 1. SMART goal education step (Specific, Measurable, Achievable, Relevant, Time-Bound).
 2. Goal input step.
-3. Optional premium AI setup step to help generate plan and timeline.
+3. Optional Bearing 360 AI setup step to help generate plan and timeline.
 4. Manual path (if AI skipped): completion date input.
 5. Step creation flow.
 6. Finish.
@@ -118,16 +118,21 @@ Bottom tab navigation with five screens:
 - Account management with display name, timezone, and locale.
 - Secure anonymous sessions by linking email/password credentials.
 - Password reset.
-- Upgrade to premium placeholder.
+- View Bearing 360 status, live AI-credit balance, and native purchase options.
 - Grant device calendar permission, select visible calendars, and choose one writable default calendar.
 - Export Bearing account data as JSON and Bearing-owned events as ICS.
 - Tips & Wisdom modal with refreshable random guidance.
 - Alarm and reminder sound settings with preview.
 
-## Premium Scope (Initial)
+## Bearing 360 Scope
 
 - AI-assisted goal setup and plan generation in the goal wizard.
 - Free users can still create goals manually.
+- Each AI generation costs one credit. RevenueCat V2 owns balances and remotely configured
+  subscription, trial, and consumable pack grants.
+- Eligible members can buy non-transferable consumable packs from `credit_packs` in AI Planning and
+  Profile. Localized prices come from the native store.
+- Web and Expo Go show an unsupported native-checkout state; they do not offer a broken purchase path.
 
 ## AI Helper Concept
 
@@ -156,10 +161,10 @@ Bottom tab navigation with five screens:
 - Weekly active users who complete at least one planned step.
 - Focus Mode usage frequency and average session duration.
 - Notes captured from Idea Dump and later processed.
-- Premium conversion rate from goal wizard AI step.
+- Bearing 360 conversion rate from goal wizard AI step.
 
 ## Open Product Questions
 
 - Final behavioral definition for the Step "Starter" field.
 - Degree of visual mimicry versus legal-safe differentiation from Apple Calendar aesthetics.
-- Final launch pricing and trial matrix for premium AI planning.
+- Final launch pricing, trial terms, and remotely configured grant choices for Bearing 360.
