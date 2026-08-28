@@ -193,7 +193,7 @@ export function CreditPackPurchaseModal({
                 <Text style={styles.purchaseStateTitle}>
                   {purchase.error ? 'Purchase not completed' : 'AI credits added'}
                 </Text>
-                <Text style={purchase.error ? styles.error : styles.feedback}>
+                <Text style={styles.purchaseStateDescription}>
                   {purchase.error ?? purchase.feedback}
                 </Text>
                 <AppButton
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceBrand,
   },
   resultMarkFailure: {
-    backgroundColor: colors.dangerSurface,
+    backgroundColor: colors.surfaceMuted,
   },
   resultMarkText: {
     ...typography.screenTitle,
