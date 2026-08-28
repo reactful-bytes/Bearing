@@ -19,7 +19,15 @@ const config: ExpoConfig = {
     'expo-dev-client',
     'expo-asset',
     'expo-audio',
-    'expo-splash-screen',
+    [
+      'expo-splash-screen',
+      {
+        backgroundColor: '#061B3A',
+        image: './assets/logoBlueBackground.png',
+        imageWidth: 220,
+        resizeMode: 'contain',
+      },
+    ],
     'expo-sharing',
     'expo-web-browser',
     ['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosUrlScheme }],
