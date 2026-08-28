@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radii, spacing, typography } from '../../design/tokens';
 import { useCreditPackPurchase } from '../../features/premium/useCreditPackPurchase';
@@ -28,6 +28,7 @@ export function CreditPackPurchaseModal({
 }: CreditPackPurchaseModalProps) {
   const [selectedPack, setSelectedPack] = useState<CreditPack | null>(null);
   const [confirmationPack, setConfirmationPack] = useState<CreditPack | null>(null);
+  const [transactionPack, setTransactionPack] = useState<CreditPack | null>(null);
   const purchase = useCreditPackPurchase(userId, enabled, visible, source, onBalanceUpdated);
 
   useEffect(() => {
@@ -38,6 +39,13 @@ export function CreditPackPurchaseModal({
     );
   }, [purchase.packs]);
 
+  useEffect(() => {
+    if (!visible) {
+      setConfirmationPack(null);
+      setTransactionPack(null);
+    }
+  }, [visible]);
+
   const unsupportedMessage =
     purchase.availability === 'web'
       ? 'AI credit packs are available in the iOS and Android apps.'
@@ -47,10 +55,23 @@ export function CreditPackPurchaseModal({
           ? 'Store billing is not configured in this build.'
           : null;
 
+  async function confirmPurchase(): Promise<void> {
+    if (!confirmationPack) return;
+    setTransactionPack(confirmationPack);
+    setConfirmationPack(null);
+    await purchase.purchase(confirmationPack);
+  }
+
+  const isPurchaseInProgress =
+    transactionPack !== null &&
+    purchase.pendingPackageIdentifier === transactionPack.packageIdentifier;
+  const isPurchaseComplete =
+    transactionPack !== null && (purchase.feedback !== null || purchase.error !== null);
+
   return (
     <>
       <AppModal
-        visible={visible && confirmationPack === null}
+        visible={visible && confirmationPack === null && transactionPack === null}
         title="Get AI Credits"
         onClose={onClose}
       >
@@ -83,7 +104,6 @@ export function CreditPackPurchaseModal({
           })}
           {unsupportedMessage ? <Text style={styles.meta}>{unsupportedMessage}</Text> : null}
           {purchase.error ? <Text style={styles.error}>{purchase.error}</Text> : null}
-          {purchase.feedback ? <Text style={styles.feedback}>{purchase.feedback}</Text> : null}
           <AppButton
             label="Continue"
             accessibilityLabel={
@@ -97,43 +117,97 @@ export function CreditPackPurchaseModal({
         </View>
       </AppModal>
       <AppModal
-        visible={confirmationPack !== null}
-        title="Confirm Credit Pack"
-        closeLabel="Back"
+        visible={confirmationPack !== null || transactionPack !== null}
+        title={transactionPack ? (isPurchaseInProgress ? 'Completing Purchase' : 'Credit Pack Update') : 'Confirm Credit Pack'}
+        closeLabel={transactionPack ? 'Close' : 'Back'}
         onClose={() => {
-          if (!purchase.pendingPackageIdentifier) setConfirmationPack(null);
+          if (transactionPack) {
+            if (!isPurchaseInProgress) setTransactionPack(null);
+          } else if (!purchase.pendingPackageIdentifier) {
+            setConfirmationPack(null);
+          }
         }}
       >
         {confirmationPack ? (
-          <View style={styles.content}>
-            <Text style={styles.confirmation}>
-              Buy {confirmationPack.amount} AI planning{' '}
-              {confirmationPack.amount === 1 ? 'credit' : 'credits'} for{' '}
-              {confirmationPack.priceText}? This is a one-time purchase.
+          <View style={styles.confirmationContent}>
+            <Text style={styles.confirmationIntro}>You are selecting</Text>
+            <View style={styles.confirmationPack}>
+              <View style={styles.confirmationPackDetails}>
+                <Text style={styles.confirmationPackTitle}>
+                  {confirmationPack.amount} AI planning{' '}
+                  {confirmationPack.amount === 1 ? 'credit' : 'credits'}
+                </Text>
+                <Text style={styles.confirmationPackMeta}>One-time credit pack</Text>
+              </View>
+              <Text style={styles.confirmationPackPrice}>{confirmationPack.priceText}</Text>
+            </View>
+            <Text style={styles.confirmationTerms}>
+              This is a one-time purchase and does not renew automatically.
             </Text>
             <AppButton
-              label={purchase.feedback ? 'Done' : 'Buy Credit Pack'}
-              accessibilityLabel={
-                purchase.feedback
-                  ? 'Close credit pack purchase'
-                  : `Buy ${confirmationPack.amount} AI credits for ${confirmationPack.priceText}`
-              }
+              label="Continue to Store"
+              accessibilityLabel={`Continue to the store for ${confirmationPack.amount} AI credits`}
               loading={purchase.pendingPackageIdentifier === confirmationPack.packageIdentifier}
-              loadingLabel="Completing purchase..."
-              onPress={() =>
-                purchase.feedback ? onClose() : void purchase.purchase(confirmationPack)
-              }
+              loadingLabel="Opening store..."
+              onPress={() => void confirmPurchase()}
             />
-            {!purchase.feedback ? (
-              <AppButton
-                label="Cancel"
-                variant="secondary"
-                onPress={() => setConfirmationPack(null)}
-                disabled={purchase.pendingPackageIdentifier !== null}
-              />
+            <AppButton
+              label="Cancel"
+              variant="secondary"
+              onPress={() => setConfirmationPack(null)}
+              disabled={purchase.pendingPackageIdentifier !== null}
+            />
+          </View>
+        ) : null}
+        {transactionPack ? (
+          <View style={styles.content}>
+            <View style={styles.transactionPack}>
+              <Text style={styles.transactionPackLabel}>Selected credit pack</Text>
+              <View style={styles.transactionPackRow}>
+                <Text style={styles.packAmount}>
+                  {transactionPack.amount} AI planning{' '}
+                  {transactionPack.amount === 1 ? 'credit' : 'credits'}
+                </Text>
+                <Text style={styles.packPrice}>{transactionPack.priceText}</Text>
+              </View>
+            </View>
+            {isPurchaseInProgress ? (
+              <View style={styles.purchaseState}>
+                <ActivityIndicator
+                  accessibilityLabel="Completing credit pack purchase"
+                  color={colors.brand}
+                  size="large"
+                />
+                <Text style={styles.purchaseStateTitle}>Confirming purchase</Text>
+                <Text style={styles.purchaseStateDescription}>
+                  Completing your AI credit pack purchase. This can take a moment.
+                </Text>
+              </View>
+            ) : isPurchaseComplete ? (
+              <View style={styles.purchaseState}>
+                <View
+                  style={[styles.resultMark, purchase.error && styles.resultMarkFailure]}
+                >
+                  <Text style={styles.resultMarkText}>{purchase.error ? '!' : '✓'}</Text>
+                </View>
+                <Text style={styles.purchaseStateTitle}>
+                  {purchase.error ? 'Purchase not completed' : 'AI credits added'}
+                </Text>
+                <Text style={purchase.error ? styles.error : styles.feedback}>
+                  {purchase.error ?? purchase.feedback}
+                </Text>
+                <AppButton
+                  label={purchase.error ? 'Choose Another Pack' : 'Done'}
+                  accessibilityLabel={
+                    purchase.error ? 'Choose another credit pack' : 'Close credit pack purchase'
+                  }
+                  onPress={() => {
+                    setTransactionPack(null);
+                    if (!purchase.error) onClose();
+                  }}
+                />
+              </View>
             ) : null}
-            {purchase.error ? <Text style={styles.error}>{purchase.error}</Text> : null}
-            {purchase.feedback ? <Text style={styles.feedback}>{purchase.feedback}</Text> : null}
           </View>
         ) : null}
       </AppModal>
@@ -181,12 +255,91 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textPrimary,
   },
+  confirmationContent: {
+    gap: spacing.lg,
+  },
+  confirmationIntro: {
+    ...typography.helper,
+    color: colors.textSecondary,
+  },
+  confirmationPack: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceMuted,
+    padding: spacing.lg,
+  },
+  confirmationPackDetails: {
+    flex: 1,
+    minWidth: 0,
+    gap: spacing.xs,
+  },
+  confirmationPackTitle: {
+    ...typography.button,
+    color: colors.text,
+  },
+  confirmationPackMeta: {
+    ...typography.helper,
+    color: colors.textSecondary,
+  },
+  confirmationPackPrice: {
+    ...typography.button,
+    color: colors.brand,
+    textAlign: 'right',
+  },
+  confirmationTerms: {
+    ...typography.body,
+    color: colors.textPrimary,
+  },
   error: {
     ...typography.helper,
     color: colors.dangerText,
   },
   feedback: {
     ...typography.helper,
+    color: colors.brand,
+  },
+  transactionPack: {
+    gap: spacing.xs,
+  },
+  transactionPackLabel: {
+    ...typography.helper,
+    color: colors.textSecondary,
+  },
+  transactionPackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  purchaseState: {
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  purchaseStateTitle: {
+    ...typography.button,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  purchaseStateDescription: {
+    ...typography.helper,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  resultMark: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceBrand,
+  },
+  resultMarkFailure: {
+    backgroundColor: colors.dangerSurface,
+  },
+  resultMarkText: {
+    ...typography.screenTitle,
     color: colors.brand,
   },
 });

@@ -8,6 +8,7 @@ import {
 } from '../../services/purchases/revenueCatClient';
 import { recordTelemetryEvent } from '../../services/telemetry/telemetry';
 import { CreditPack, CreditPackSource, PremiumPurchaseAvailability } from './purchaseTypes';
+import { setAiCreditBalance } from './aiCreditBalance';
 
 export function useCreditPackPurchase(
   userId: string | null,
@@ -70,6 +71,7 @@ export function useCreditPackPurchase(
       } else {
         storePurchaseSucceeded = true;
         const status = await getAiCreditStatus();
+        setAiCreditBalance(userId, status.availableCredits);
         onBalanceUpdated(status.availableCredits);
         setFeedback(`${status.availableCredits} AI planning credits available.`);
         void recordTelemetryEvent('premium_credit_pack_balance_refresh_result', {

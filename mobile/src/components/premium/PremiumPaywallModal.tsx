@@ -93,7 +93,6 @@ export function PremiumPaywallModal({
         }
         title="Bearing 360"
         onClose={onClose}
-        fullScreen
       >
         <ScrollView contentContainerStyle={styles.content}>
           <>
@@ -267,11 +266,21 @@ export function PremiumPaywallModal({
         onClose={() => setLegalDocumentId(null)}
       />
       <AppModal
-        visible={confirmationPlan !== null}
-        title="Confirm Bearing 360"
-        closeLabel="Back"
+        visible={confirmationPlan !== null || transactionPlan !== null}
+        title={
+          transactionPlan
+            ? isPurchaseInProgress
+              ? 'Completing Purchase'
+              : 'Bearing 360 Update'
+            : 'Confirm Bearing 360'
+        }
+        closeLabel={transactionPlan ? 'Close' : 'Back'}
         onClose={() => {
-          if (!purchase.pendingAction) setConfirmationPlan(null);
+          if (transactionPlan) {
+            if (!isPurchaseInProgress) setTransactionPlan(null);
+          } else if (!purchase.pendingAction) {
+            setConfirmationPlan(null);
+          }
         }}
       >
         {confirmationPlan ? (
@@ -318,14 +327,6 @@ export function PremiumPaywallModal({
             />
           </View>
         ) : null}
-      </AppModal>
-      <AppModal
-        visible={transactionPlan !== null}
-        title={isPurchaseInProgress ? 'Completing Purchase' : 'Bearing 360 Update'}
-        onClose={() => {
-          if (!isPurchaseInProgress) setTransactionPlan(null);
-        }}
-      >
         {transactionPlan ? (
           <View style={styles.transactionContent}>
             <View style={styles.transactionPlan}>
@@ -400,7 +401,7 @@ export function PremiumPaywallModal({
 
 const styles = StyleSheet.create({
   content: {
-    gap: spacing.lg,
+    gap: spacing.md,
     paddingBottom: spacing['3xl'],
   },
   heroBlock: {
@@ -449,11 +450,12 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   planCard: {
-    borderWidth: 2,
+    minHeight: 56,
+    borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radii.md,
     backgroundColor: colors.surface,
-    padding: spacing.lg,
+    padding: spacing.md,
   },
   planCardSelected: {
     borderColor: colors.brand,
@@ -464,7 +466,7 @@ const styles = StyleSheet.create({
   },
   planHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
   },
@@ -548,22 +550,20 @@ const styles = StyleSheet.create({
   },
   purchaseState: {
     alignItems: 'center',
-    gap: spacing.lg,
-    paddingVertical: spacing.xl,
+    gap: spacing.sm,
   },
   transactionContent: {
-    gap: spacing.xl,
+    gap: spacing.md,
   },
   transactionPlan: {
     gap: spacing.xs,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.brand,
-    backgroundColor: colors.surfaceBrand,
-    padding: spacing.lg,
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceMuted,
+    padding: spacing.md,
   },
   transactionPlanLabel: {
-    ...typography.label,
-    color: colors.brand,
+    ...typography.helper,
+    color: colors.textSecondary,
   },
   transactionPlanRow: {
     flexDirection: 'row',
@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   transactionPlanTitle: {
-    ...typography.title,
+    ...typography.button,
     color: colors.text,
     flex: 1,
   },
@@ -581,17 +581,17 @@ const styles = StyleSheet.create({
     color: colors.brand,
   },
   progressIndicator: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surfaceBrand,
   },
   resultMark: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -606,13 +606,13 @@ const styles = StyleSheet.create({
     color: colors.brand,
   },
   purchaseStateTitle: {
-    ...typography.title,
+    ...typography.button,
     color: colors.text,
     textAlign: 'center',
   },
   purchaseStateDescription: {
-    ...typography.body,
-    color: colors.textPrimary,
+    ...typography.helper,
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   confirmationContent: {

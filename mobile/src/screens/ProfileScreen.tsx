@@ -58,6 +58,11 @@ import {
   PROFILE_TIMEZONE_OPTIONS,
 } from '../features/profile/profileOptions';
 import { PremiumFeature, hasActivePremiumStatus } from '../features/premium/premiumAccess';
+import {
+  clearAiCreditBalance,
+  setAiCreditBalance,
+  useAiCreditBalance,
+} from '../features/premium/aiCreditBalance';
 import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
 import { getProfileSoundOption } from '../features/profile/profileSounds';
 import { getDifferentRandomProfileTip } from '../features/profile/profileTips';
@@ -140,7 +145,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   const [premiumManagementPending, setPremiumManagementPending] = useState(false);
   const [premiumManagementError, setPremiumManagementError] = useState<string | null>(null);
   const [creditPackVisible, setCreditPackVisible] = useState(false);
-  const [aiCreditBalance, setAiCreditBalance] = useState<number | null>(null);
+  const aiCreditBalance = useAiCreditBalance(authUser?.uid ?? null);
   const [aiCreditBalanceLoading, setAiCreditBalanceLoading] = useState(false);
   const [aiCreditBalanceError, setAiCreditBalanceError] = useState<string | null>(null);
   const [icsModalVisible, setIcsModalVisible] = useState(false);
@@ -175,7 +180,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
 
   useEffect(() => {
     if (!authUser || isAnonymous || !hasPremiumAccess) {
-      setAiCreditBalance(null);
+      clearAiCreditBalance();
       setAiCreditBalanceError(null);
       return;
     }
@@ -185,7 +190,7 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
     setAiCreditBalanceError(null);
     void getAiCreditStatus()
       .then((status) => {
-        if (current) setAiCreditBalance(status.availableCredits);
+        if (current) setAiCreditBalance(authUser.uid, status.availableCredits);
       })
       .catch(() => {
         if (current) setAiCreditBalanceError('AI credit balance is unavailable right now.');
@@ -1133,7 +1138,9 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
         enabled={hasPremiumAccess && !isAnonymous}
         source="profile"
         currentBalance={aiCreditBalance}
-        onBalanceUpdated={setAiCreditBalance}
+        onBalanceUpdated={(availableCredits) => {
+          if (authUser) setAiCreditBalance(authUser.uid, availableCredits);
+        }}
         onClose={() => setCreditPackVisible(false)}
       />
 

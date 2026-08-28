@@ -76,22 +76,55 @@ describe('CreditPackPurchaseModal', () => {
     expect(screen.getByText('3 AI planning credits available')).toBeTruthy();
 
     fireEvent.press(screen.getByRole('button', { name: 'Continue with 12 AI credits' }));
-    expect(
-      screen.getByText('Buy 12 AI planning credits for $6.49? This is a one-time purchase.'),
-    ).toBeTruthy();
+    expect(screen.getByText('You are selecting')).toBeTruthy();
+    expect(screen.getByText('One-time credit pack')).toBeTruthy();
+    expect(screen.getByText('This is a one-time purchase and does not renew automatically.'))
+      .toBeTruthy();
 
     await act(async () => {
-      fireEvent.press(screen.getByRole('button', { name: 'Buy 12 AI credits for $6.49' }));
+      fireEvent.press(
+        screen.getByRole('button', { name: 'Continue to the store for 12 AI credits' }),
+      );
     });
 
     expect(purchaseCreditPack).toHaveBeenCalledWith('user-1', 'credits_12');
     expect(getAiCreditStatus).toHaveBeenCalledTimes(1);
     expect(props.onBalanceUpdated).toHaveBeenCalledWith(15);
     expect(screen.getByText('15 AI planning credits available.')).toBeTruthy();
+    expect(screen.getByText('AI credits added')).toBeTruthy();
 
     fireEvent.press(screen.getByRole('button', { name: 'Close credit pack purchase' }));
     expect(props.onClose).toHaveBeenCalledTimes(1);
     expect(purchaseCreditPack).toHaveBeenCalledTimes(1);
+
+    fireEvent.press(screen.getByRole('button', { name: 'Continue with 12 AI credits' }));
+    expect(
+      screen.getByRole('button', { name: 'Continue to the store for 12 AI credits' }),
+    ).toBeTruthy();
+  });
+
+  it('shows the completing state while the store purchase is pending', async () => {
+    let resolvePurchase: (result: 'success') => void = () => undefined;
+    jest.mocked(purchaseCreditPack).mockImplementation(
+      () => new Promise((resolve) => (resolvePurchase = resolve)),
+    );
+    renderModal();
+
+    await screen.findByText('12 AI planning credits');
+    fireEvent.press(screen.getByRole('button', { name: 'Continue with 12 AI credits' }));
+
+    act(() => {
+      fireEvent.press(
+        screen.getByRole('button', { name: 'Continue to the store for 12 AI credits' }),
+      );
+    });
+
+    expect(screen.getByText('Confirming purchase')).toBeTruthy();
+    expect(screen.getByLabelText('Completing credit pack purchase')).toBeTruthy();
+
+    await act(async () => {
+      resolvePurchase('success');
+    });
   });
 
   it('clears the pending state when the purchase client throws', async () => {
@@ -102,12 +135,12 @@ describe('CreditPackPurchaseModal', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Continue with 12 AI credits' }));
 
     await act(async () => {
-      fireEvent.press(screen.getByRole('button', { name: 'Buy 12 AI credits for $6.49' }));
+      fireEvent.press(
+        screen.getByRole('button', { name: 'Continue to the store for 12 AI credits' }),
+      );
     });
 
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Buy 12 AI credits for $6.49' })).not.toBeBusy(),
-    );
+    await waitFor(() => expect(screen.getByText('Purchase not completed')).toBeTruthy());
     expect(
       screen.getByText('Unable to start the credit pack purchase. Please try again.'),
     ).toBeTruthy();
