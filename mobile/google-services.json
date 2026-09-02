@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "49898392394-gmodu3d8s4mjc3lm3ghkh84209etvck8.apps.googleusercontent.com",
+          "client_id": "49898392394-2ocla908clbt13giadhra780rmd58rj8.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.reactfulbytes.bearing",
-            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+            "certificate_hash": "7add963f527e5eb122933f17e8c75cfc8a31c66b"
           }
         },
         {
