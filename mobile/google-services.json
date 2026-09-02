@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "49898392394-gmodu3d8s4mjc3lm3ghkh84209etvck8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.reactfulbytes.bearing",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
           "client_id": "49898392394-l2i9aqd5e3nf7j13biibuepma493bbqj.apps.googleusercontent.com",
           "client_type": 3
         }
