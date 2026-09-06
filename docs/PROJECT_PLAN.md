@@ -378,16 +378,16 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 ### M22 - Theme and Icon Infrastructure
 
-| Task ID | Status         | Description                                     | Notes                                                                                           |
-| ------- | -------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| M22.1   | manual-handoff | Persist design-reference images                 | Original attachment PNGs must be copied into `docs/mockups/`; no workspace binary was available |
-| M22.2   | completed      | Install compatible navigation and icon packages | Added `@expo/vector-icons` 15.0.2 and native-stack 7.18.10 with passing typecheck               |
-| M22.3   | completed      | Define semantic dark and light tokens           | Semantic themes and dark-default compatibility aliases are available                            |
-| M22.4   | completed      | Add persisted theme provider                    | Dark default, persistence, hydration, and provider-free fallback are tested                     |
-| M22.5   | completed      | Add themed stylesheet helper                    | Root and navigation shell create styles from active tokens                                      |
-| M22.6   | completed      | Create icon inventory and assets                | Inventory records vector/static decisions; mockup-informed custom asset review remains possible |
-| M22.7   | completed      | Add typed icon registry and AppIcon             | Semantic registry dispatches vector/static icons with accessible labels                         |
-| M22.8   | in-progress    | Apply theme to app shell                        | Root/status bar/tab shell migrated; legacy static consumers remain for completion               |
+| Task ID | Status      | Description                                     | Notes                                                                             |
+| ------- | ----------- | ----------------------------------------------- | --------------------------------------------------------------------------------- |
+| M22.1   | completed   | Persist design-reference images                 | All three supplied source PNGs are verified under `docs/mockups/`                 |
+| M22.2   | completed   | Install compatible navigation and icon packages | Added `@expo/vector-icons` 15.0.2 and native-stack 7.18.10 with passing typecheck |
+| M22.3   | completed   | Define semantic dark and light tokens           | Semantic themes and dark-default compatibility aliases are available              |
+| M22.4   | completed   | Add persisted theme provider                    | Dark default, persistence, hydration, and provider-free fallback are tested       |
+| M22.5   | completed   | Add themed stylesheet helper                    | Root and navigation shell create styles from active tokens                        |
+| M22.6   | in-progress | Create icon inventory and assets                | Reference review requires transparent Bearing and mountain/flag density assets    |
+| M22.7   | completed   | Add typed icon registry and AppIcon             | Semantic registry dispatches vector/static icons with accessible labels           |
+| M22.8   | in-progress | Apply theme to app shell                        | Root/status bar/tab shell migrated; 45 production dark-alias consumers remain     |
 
 ### M23 - Shared UI Primitives
 

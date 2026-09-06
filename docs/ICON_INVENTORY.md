@@ -26,13 +26,17 @@ MaterialIcons names or image paths.
 
 ## Asset Follow-up
 
-The supplied mockup images were not available as file attachments in the
-workspace during Phase 1. Copy their original PNG binaries into
-`docs/mockups/bearing-ui-overview.png`,
-`docs/mockups/bearing-ui-screen-flows.png`, and
-`docs/mockups/bearing-google-play-feature-graphic.png` before visual approval.
-Use those source images to reassess whether any vector match needs an original
-24/48/72px monochrome alpha-mask asset under `mobile/assets/icons/`.
+The supplied design references are persisted under `docs/mockups/` and have
+been reviewed against this table. The current `bearingMark` source has an
+opaque white background and cannot be used on the dark surfaces shown in the
+references. MaterialIcons also does not match the distinctive Bearing ship or
+mountain-and-flag goal glyph closely enough for feature treatments.
+
+Before M22.6 closes, export approved transparent monochrome 24/48/72px PNG
+assets under `mobile/assets/icons/` for the Bearing mark and goal glyph. Recheck
+the focus reticle, Idea Dump bulb, note, task, timeline, calendar, and profile
+at their documented target sizes after those assets are available; keep a
+MaterialIcons source only where it remains a close visual match.
 
 The official multicolor Google mark is intentionally excluded from this
 registry and remains an authentication-phase requirement.
