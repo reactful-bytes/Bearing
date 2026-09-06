@@ -27,16 +27,20 @@ describe('FoundationGallery', () => {
     );
     expect(screen.getByLabelText('Icon library')).toBeTruthy();
     expect(screen.getByLabelText('Feature artwork')).toBeTruthy();
+    expect(screen.getByLabelText('Icon-library mock extraction')).toBeTruthy();
     Object.keys(icons).forEach((name) => {
       expect(screen.getByLabelText(`${name} icon`)).toBeTruthy();
     });
-    expect(screen.getByText('New Goal')).toBeTruthy();
-    expect(screen.getByText('Session Details')).toBeTruthy();
-    expect(screen.getByText('Imported Calendar')).toBeTruthy();
+    // These labels are shared with the icon-library mock extraction section
+    // below, which intentionally re-lists every mock glyph (including ones
+    // already wired into the semantic registry), so multiple matches exist.
+    expect(screen.getAllByText('New Goal').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Session Details').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Imported Calendar').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Tasks').length).toBeGreaterThan(0);
     expect(screen.getByText('Plan SVG')).toBeTruthy();
     expect(screen.getByText('Goal SVG')).toBeTruthy();
     expect(screen.getByText('Notes SVG')).toBeTruthy();
-    expect(screen.getByText('Tasks')).toBeTruthy();
     expect(screen.getByText('Domain presentation')).toBeTruthy();
     expect(screen.getByText('Navigation')).toBeTruthy();
   });

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { BottomNavigation, BottomNavigationDestination } from '../presentation/BottomNavigation';
 import { CreateSheet } from '../presentation/CreateSheet';
@@ -17,6 +17,7 @@ import { GoalStepRecord, GoalWithSteps } from '../../features/goals/goalTypes';
 import { TaskRecord } from '../../features/tasks/taskTypes';
 import { useTheme } from '../../design/ThemeProvider';
 import { icons } from '../../design/icons';
+import { iconLibraryExtraction } from '../../design/iconLibraryExtraction';
 import type { Theme } from '../../design/tokens';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppCard } from './AppCard';
@@ -217,6 +218,26 @@ export function FoundationGallery() {
           {featureIconNames.map((name) => (
             <View key={name} style={styles.iconCell}>
               <AppIcon name={name} size={30} accessibilityLabel={`${name} icon`} />
+              <Text numberOfLines={1} style={styles.iconLabel}>
+                {formatIconName(name)}
+              </Text>
+            </View>
+          ))}
+        </View>
+        <SectionHeader
+          title="Icon-library mock extraction"
+          description="Every glyph cropped from the icon-library mock, including names not yet wired into the semantic icon registry."
+          variant="uppercase-accent"
+        />
+        <View accessibilityLabel="Icon-library mock extraction" style={styles.iconGrid}>
+          {iconLibraryExtraction.map(({ name, source }) => (
+            <View key={name} style={styles.iconCell}>
+              <Image
+                source={source}
+                resizeMode="contain"
+                style={styles.extractionIcon}
+                accessibilityLabel={`${name} mock icon`}
+              />
               <Text numberOfLines={1} style={styles.iconLabel}>
                 {formatIconName(name)}
               </Text>
@@ -499,6 +520,7 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.textSecondary,
       textAlign: 'center',
     },
+    extractionIcon: { width: 30, height: 30 },
     buttonGrid: { gap: theme.spacing.sm },
     card: { gap: theme.spacing.md },
     cardTitle: { ...theme.typography.cardTitle, color: theme.colors.text },
