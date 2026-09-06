@@ -54,14 +54,14 @@ auth, navigation, or feature-screen redesign begins before it passes.
 
 ## M24 - Reusable Domain Presentation
 
-| Ticket | Status      | Deliverable                         | Acceptance                                                                      |
-| ------ | ----------- | ----------------------------------- | ------------------------------------------------------------------------------- |
-| M24.1  | not-started | Build goal presentation components  | Goal progress, cards, status tabs, timeline, and milestones use fixtures only   |
-| M24.2  | not-started | Build TaskRow                       | Row press and completion toggle are independent and optional context renders    |
-| M24.3  | not-started | Build event presentation components | Event row/card/source chip use caller-provided locale and timezone strings      |
-| M24.4  | not-started | Build BottomNavigation              | Five destinations, Create interception contract, safe areas, and wide rail pass |
-| M24.5  | not-started | Build create-sheet presentation     | Goal, task, note, and event callbacks have no navigation or Firebase dependency |
-| M24.6  | not-started | Test domain components              | Rendering, callbacks, accessibility, geometry, and both themes pass             |
+| Ticket | Status    | Deliverable                         | Acceptance                                                                         |
+| ------ | --------- | ----------------------------------- | ---------------------------------------------------------------------------------- |
+| M24.1  | completed | Build goal presentation components  | Fixture-driven goal progress, cards, status tabs, timeline, and milestones pass    |
+| M24.2  | completed | Build TaskRow                       | Row press and completion toggle are independent; optional context renders          |
+| M24.3  | completed | Build event presentation components | Event row/card/source chip use caller-provided formatted date/time strings         |
+| M24.4  | completed | Build BottomNavigation              | Four content destinations plus Create, safe areas, and wide rail pass              |
+| M24.5  | completed | Build create-sheet presentation     | Goal, task, note, and event callbacks have no navigation or Firebase dependency    |
+| M24.6  | completed | Test domain components              | Rendering, callbacks, accessibility, geometry, dark fallback, and light theme pass |
 
 ## M25 - Foundation Validation
 
@@ -213,3 +213,4 @@ auth, navigation, or feature-screen redesign begins before it passes.
 | 2026-09-05 | M22.1, M22.8        | open    | Reference PNG binaries require attachment handoff; remaining legacy token consumers use compatibility aliases.                                                                               |
 | 2026-09-05 | M22.1, M22.6, M22.8 | passed  | Mockups persisted; six transparent density assets generated; no production dark-alias imports; full Jest, typecheck, and lint pass.                                                          |
 | 2026-09-05 | M23.1-M23.6         | passed  | `npm test -- --runInBand src/components/ui/AppScreen.test.tsx src/components/ui/M23Primitives.test.tsx src/__tests__/uiPrimitives.test.tsx` (20 tests); `npm run typecheck`; `npm run lint`. |
+| 2026-09-05 | M24.1-M24.6         | passed  | `npm test -- --runInBand src/components/presentation/DomainPresentation.test.tsx` (6 tests); `npm run typecheck`; `npm run lint`.                                                            |

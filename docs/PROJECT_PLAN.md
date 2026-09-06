@@ -402,14 +402,14 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 ### M24 - Reusable Domain Presentation
 
-| Task ID | Status      | Description                         | Notes                                                                                   |
-| ------- | ----------- | ----------------------------------- | --------------------------------------------------------------------------------------- |
-| M24.1   | not-started | Build goal presentation components  | Presentation-only components use `GoalWithSteps` fixtures and extracted progress helper |
-| M24.2   | not-started | Build TaskRow                       | Separate row press from completion toggle; optional context must remain optional        |
-| M24.3   | not-started | Build event presentation components | Caller supplies locale and timezone formatting                                          |
-| M24.4   | not-started | Build BottomNavigation              | Support five destinations, raised Create action, safe areas, and wide rail variant      |
-| M24.5   | not-started | Build create-sheet presentation     | Callback-only sheet has no navigation or Firebase imports                               |
-| M24.6   | not-started | Test domain components              | Cover rendering, callbacks, accessibility, fixed geometry, and both themes              |
+| Task ID | Status    | Description                         | Notes                                                                              |
+| ------- | --------- | ----------------------------------- | ---------------------------------------------------------------------------------- |
+| M24.1   | completed | Build goal presentation components  | Fixture-driven `GoalWithSteps` components and extracted progress helper are tested |
+| M24.2   | completed | Build TaskRow                       | Row press and completion toggle are independent; optional context is tested        |
+| M24.3   | completed | Build event presentation components | Caller supplies date/time and timezone strings                                     |
+| M24.4   | completed | Build BottomNavigation              | Four content destinations plus raised Create action, safe areas, and rail pass     |
+| M24.5   | completed | Build create-sheet presentation     | Callback-only sheet has no navigation or Firebase imports                          |
+| M24.6   | completed | Test domain components              | Rendering, callbacks, accessibility, geometry, dark fallback, and light theme pass |
 
 ### M25 - Foundation Validation
 

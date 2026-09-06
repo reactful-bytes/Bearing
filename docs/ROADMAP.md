@@ -282,14 +282,14 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M24 - Reusable Domain Presentation
 
-| Task ID | Status      | Description                         | Exit Criteria                                                                   |
-| ------- | ----------- | ----------------------------------- | ------------------------------------------------------------------------------- |
-| M24.1   | not-started | Build goal presentation components  | Goal progress, cards, status tabs, timeline, and milestones use fixtures only   |
-| M24.2   | not-started | Build TaskRow                       | Row press and completion toggle are independent and optional context renders    |
-| M24.3   | not-started | Build event presentation components | Event row/card/source chip use caller-provided locale and timezone strings      |
-| M24.4   | not-started | Build BottomNavigation              | Five destinations, Create interception contract, safe areas, and wide rail pass |
-| M24.5   | not-started | Build create-sheet presentation     | Goal, task, note, and event callbacks have no navigation or Firebase dependency |
-| M24.6   | not-started | Test domain components              | Rendering, callbacks, accessibility, geometry, and both themes pass             |
+| Task ID | Status    | Description                         | Exit Criteria                                                                      |
+| ------- | --------- | ----------------------------------- | ---------------------------------------------------------------------------------- |
+| M24.1   | completed | Build goal presentation components  | Fixture-driven goal progress, cards, status tabs, timeline, and milestones pass    |
+| M24.2   | completed | Build TaskRow                       | Row press and completion toggle are independent; optional context renders          |
+| M24.3   | completed | Build event presentation components | Event row/card/source chip use caller-provided formatted date/time strings         |
+| M24.4   | completed | Build BottomNavigation              | Four content destinations plus Create, safe areas, and wide rail pass              |
+| M24.5   | completed | Build create-sheet presentation     | Goal, task, note, and event callbacks have no navigation or Firebase dependency    |
+| M24.6   | completed | Test domain components              | Rendering, callbacks, accessibility, geometry, dark fallback, and light theme pass |
 
 ### M25 - Foundation Validation
 
