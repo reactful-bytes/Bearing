@@ -1,14 +1,6 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import {
-  Image,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CalendarScreen } from '../screens/CalendarScreen';
@@ -18,6 +10,8 @@ import { ProfileScreen } from '../screens/ProfileScreen';
 import { TasksScreen } from '../screens/TasksScreen';
 import { useTheme } from '../design/ThemeProvider';
 import { useThemedStyles } from '../design/useThemedStyles';
+import { AppIcon } from '../components/ui/AppIcon';
+import { AppIconName } from '../design/icons';
 import { AppTabParamList } from './navigationTypes';
 
 type AppTabsProps = {
@@ -33,11 +27,12 @@ export function usesDesktopNavigation(platform: string, width: number): boolean 
   return platform === 'web' && width >= DESKTOP_NAVIGATION_BREAKPOINT;
 }
 
-const TAB_ICON_TEXT: Record<Exclude<keyof AppTabParamList, 'Calendar'>, string> = {
-  Goals: 'G',
-  Tasks: 'T',
-  Notes: 'N',
-  Profile: 'P',
+const TAB_ICONS: Record<keyof AppTabParamList, AppIconName> = {
+  Goals: 'goal',
+  Tasks: 'task',
+  Calendar: 'plan',
+  Notes: 'note',
+  Profile: 'profile',
 };
 
 function TabIcon({
@@ -61,16 +56,19 @@ function TabIcon({
           focused ? styles.logoCircleFocused : null,
         ]}
       >
-        <Image source={require('../../assets/logoBlueBackground.png')} style={styles.logoImage} />
+        <AppIcon name={TAB_ICONS[routeName]} size={isDesktop ? 22 : 48} decorative />
       </View>
     );
   }
 
   return (
     <View style={[styles.iconCircle, focused ? styles.iconCircleFocused : null]}>
-      <Text style={[styles.iconText, focused ? styles.iconTextFocused : null]}>
-        {TAB_ICON_TEXT[routeName]}
-      </Text>
+      <AppIcon
+        name={TAB_ICONS[routeName]}
+        size={20}
+        color={focused ? styles.iconTextFocused.color : styles.iconText.color}
+        decorative
+      />
     </View>
   );
 }
@@ -225,9 +223,5 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       width: theme.layout.tabIconSize,
       height: theme.layout.tabIconSize,
       borderRadius: theme.layout.tabIconRadius,
-    },
-    logoImage: {
-      width: '100%',
-      height: '100%',
     },
   });

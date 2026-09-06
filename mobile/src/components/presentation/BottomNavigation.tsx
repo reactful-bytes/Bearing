@@ -13,7 +13,7 @@ const destinations: readonly {
   label: string;
   icon: AppIconName;
 }[] = [
-  { value: 'plan', label: 'Plan', icon: 'goal' },
+  { value: 'plan', label: 'Plan', icon: 'plan' },
   { value: 'calendar', label: 'Calendar', icon: 'calendar' },
   { value: 'notes', label: 'Notes', icon: 'note' },
   { value: 'profile', label: 'Profile', icon: 'profile' },

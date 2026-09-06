@@ -2,36 +2,33 @@
 
 ## Scope
 
-This inventory records the Phase 1 semantic icon contract. Application code
-uses names from `mobile/src/design/icons.ts`; it must not depend directly on
-MaterialIcons names or image paths.
+This inventory records the semantic icon contract. Application code uses names
+from `mobile/src/design/icons.ts`; it must not depend directly on third-party
+icon fonts or image paths.
 
-| Semantic name | Use                               | Target sizes | Source                                  | Decision                                              |
-| ------------- | --------------------------------- | ------------ | --------------------------------------- | ----------------------------------------------------- |
-| `bearingMark` | Brand lockup and launch treatment | 24, 48, 72   | `mobile/assets/icons/bearing-mark*.png` | Transparent alpha mask; tint through the active theme |
-| `goal`        | Goals                             | 24, 48, 72   | `mobile/assets/icons/goal*.png`         | Transparent mountain/flag alpha mask; tint by theme   |
-| `focus`       | Focus mode                        | 24, 32, 48   | MaterialIcons `center-focus-strong`     | Vector match is legible at row and action sizes       |
-| `idea`        | Idea Dump                         | 24, 32, 48   | MaterialIcons `lightbulb-outline`       | Vector match is legible at row and action sizes       |
-| `note`        | Notes                             | 24, 32       | MaterialIcons `description`             | Vector match is legible at row size                   |
-| `task`        | Tasks                             | 24, 32       | MaterialIcons `check-box-outline-blank` | Vector match is legible at row size                   |
-| `timeline`    | Milestones                        | 24, 32       | MaterialIcons `outlined-flag`           | Vector match is legible at row size                   |
-| `calendar`    | Calendar                          | 24, 32       | MaterialIcons `calendar-today`          | Vector match is legible at row and action sizes       |
-| `profile`     | Profile                           | 24, 32       | MaterialIcons `person-outline`          | Vector match is legible at row size                   |
-| `back`        | Navigation control                | 24           | MaterialIcons `arrow-back`              | Generic control remains vector                        |
-| `close`       | Dismiss control                   | 24           | MaterialIcons `close`                   | Generic control remains vector                        |
-| `create`      | Create action                     | 24, 32       | MaterialIcons `add`                     | Generic control remains vector                        |
-| `edit`        | Edit action                       | 24           | MaterialIcons `edit`                    | Generic control remains vector                        |
-| `more`        | Overflow control                  | 24           | MaterialIcons `more-horiz`              | Generic control remains vector                        |
-| `search`      | Search control                    | 24           | MaterialIcons `search`                  | Generic control remains vector                        |
+| Semantic name                                       | Use                               | Target sizes | Source                                  | Decision                                              |
+| --------------------------------------------------- | --------------------------------- | ------------ | --------------------------------------- | ----------------------------------------------------- |
+| `bearingMark`                                       | Brand lockup and launch treatment | 24, 48, 72   | `mobile/assets/icons/bearing-mark*.png` | Transparent alpha mask; tint through the active theme |
+| `plan`                                              | Plan/Schedule primary navigation  | 24, 48       | Google Play feature graphic crop        | Full-color approved Schedule artwork                  |
+| `goal`                                              | Goals primary navigation          | 24, 48       | Google Play feature graphic crop        | Full-color approved Goals artwork                     |
+| `focus`                                             | Focus Mode                        | 24, 32, 48   | Google Play feature graphic crop        | Full-color approved Focus Mode artwork                |
+| `note`                                              | Notes & Ideas primary navigation  | 24, 48       | Google Play feature graphic crop        | Full-color approved Notes & Ideas artwork             |
+| `calendar`                                          | Event/date controls               | 24, 32       | Supplied Bearing SVG path               | Custom calendar line icon                             |
+| `task`                                              | Tasks and task completion         | 24, 32       | Supplied Bearing SVG path               | Custom checkbox/check line icon                       |
+| `timeline`                                          | Goal timeline and milestones      | 24, 32       | Supplied Bearing SVG path               | Custom timeline line icon                             |
+| `idea`                                              | Idea Dump actions                 | 24, 32       | Supplied Bearing SVG path               | Custom lightbulb line icon                            |
+| `profile`                                           | Profile/account                   | 24, 32       | Supplied Bearing SVG path               | Custom profile line icon                              |
+| `back`, `close`, `create`, `edit`, `more`, `search` | Global controls                   | 24, 32       | Supplied Bearing SVG paths              | Custom control icon family; no third-party icon font  |
 
 ## Asset Follow-up
 
-The supplied design references are persisted under `docs/mockups/` and were
-reviewed against this table. Transparent 24/48/72px PNG alpha-mask assets for
-the Bearing mark and mountain/flag goal glyph now live under
-`mobile/assets/icons/`; `AppIcon` dispatches and tints both through the active
-theme. The remaining semantic icons retain MaterialIcons sources because they
-remain close matches at their documented target sizes.
+The supplied design references are persisted under `docs/mockups/`. `plan`,
+`goal`, `focus`, and `note` are transparent icon-only crops of the approved
+Google Play feature graphic and retain their original colored line work.
+`AppIcon` renders the other active semantic entries using the supplied Bearing
+SVG paths through `react-native-svg`, with the active theme supplying the line
+color. New icons must be added from the supplied icon-library source rather
+than from a third-party vector set.
 
 The official multicolor Google mark is intentionally excluded from this
 registry and remains an authentication-phase requirement.

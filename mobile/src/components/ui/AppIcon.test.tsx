@@ -30,11 +30,21 @@ describe('AppIcon', () => {
     );
   });
 
-  it('tints custom alpha-mask icons with an explicit color', () => {
-    render(<AppIcon name="goal" color="#22C55E" testID="goal-icon" />);
+  it('tints alpha-mask brand artwork with an explicit color', () => {
+    render(<AppIcon name="bearingMark" color="#22C55E" testID="bearing-mark-icon" />);
 
-    expect(screen.getByTestId('goal-icon').findByType('Image').props.style).toEqual(
+    expect(screen.getByTestId('bearing-mark-icon').findByType('Image').props.style).toEqual(
       expect.arrayContaining([expect.objectContaining({ tintColor: '#22C55E' })]),
     );
+  });
+
+  it('renders supplied path definitions without a third-party icon font', () => {
+    render(<AppIcon name="calendar" testID="calendar-icon" />);
+
+    expect(
+      screen.getByTestId('calendar-icon').findAllByProps({
+        d: 'M7 2v4M17 2v4M3 9h18M7 13h.01M11 13h.01M15 13h.01M7 17h.01M11 17h.01M15 17h.01',
+      }),
+    ).not.toHaveLength(0);
   });
 });

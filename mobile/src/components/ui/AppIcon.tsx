@@ -1,7 +1,7 @@
-import { MaterialIcons } from '@expo/vector-icons';
 import { Image, ImageStyle, StyleProp, View, ViewStyle } from 'react-native';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import { AppIconName, icons } from '../../design/icons';
+import { AppIconDefinition, AppIconName, icons } from '../../design/icons';
 import { useTheme } from '../../design/ThemeProvider';
 
 type AppIconProps = {
@@ -26,7 +26,7 @@ export function AppIcon({
   testID,
 }: AppIconProps) {
   const { theme } = useTheme();
-  const icon = icons[name];
+  const icon: AppIconDefinition = icons[name];
   const accessibilityProps = decorative
     ? { accessible: false }
     : { accessibilityRole: 'image' as const, accessibilityLabel: accessibilityLabel ?? name };
@@ -47,9 +47,27 @@ export function AppIcon({
     );
   }
 
+  const iconColor = color ?? theme.colors.textPrimary;
   return (
     <View testID={testID} style={containerStyle} {...accessibilityProps}>
-      <MaterialIcons name={icon.name} size={size} color={color ?? theme.colors.textPrimary} />
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        {icon.rects?.map((rect, index) => (
+          <Rect key={`rect-${index}`} {...rect} stroke={iconColor} strokeWidth={1.8} />
+        ))}
+        {icon.circles?.map((circle, index) => (
+          <Circle key={`circle-${index}`} {...circle} stroke={iconColor} strokeWidth={1.8} />
+        ))}
+        {icon.paths.map((path, index) => (
+          <Path
+            key={`path-${index}`}
+            {...path}
+            stroke={iconColor}
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ))}
+      </Svg>
     </View>
   );
 }
