@@ -16,7 +16,8 @@ import { GoalsScreen } from '../screens/GoalsScreen';
 import { NotesScreen } from '../screens/NotesScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { TasksScreen } from '../screens/TasksScreen';
-import { colors, componentTokens, layout, spacing, typography } from '../design/tokens';
+import { useTheme } from '../design/ThemeProvider';
+import { useThemedStyles } from '../design/useThemedStyles';
 import { AppTabParamList } from './navigationTypes';
 
 type AppTabsProps = {
@@ -48,6 +49,8 @@ function TabIcon({
   focused: boolean;
   isDesktop: boolean;
 }) {
+  const styles = useThemedStyles(createStyles);
+
   if (routeName === 'Calendar') {
     return (
       <View
@@ -75,6 +78,8 @@ function TabIcon({
 export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const isDesktopNavigation = usesDesktopNavigation(Platform.OS, width);
 
   return (
@@ -84,14 +89,14 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarPosition: isDesktopNavigation ? 'left' : 'bottom',
-          tabBarActiveTintColor: colors.brand,
-          tabBarInactiveTintColor: colors.textSecondary,
+          tabBarActiveTintColor: theme.colors.brand,
+          tabBarInactiveTintColor: theme.colors.textSecondary,
           tabBarStyle: isDesktopNavigation
             ? styles.desktopTabBar
             : [
                 styles.tabBar,
                 {
-                  height: layout.tabBarHeight + insets.bottom,
+                  height: theme.layout.tabBarHeight + insets.bottom,
                   paddingBottom: insets.bottom,
                 },
               ],
@@ -146,82 +151,83 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  tabBar: {
-    height: layout.tabBarHeight,
-    paddingTop: layout.tabBarPaddingVertical,
-    backgroundColor: componentTokens.tabBar.backgroundColor,
-    borderTopColor: componentTokens.tabBar.borderTopColor,
-    overflow: 'visible',
-  },
-  tabBarLabel: {
-    ...typography.tabLabel,
-  },
-  desktopTabBar: {
-    width: DESKTOP_NAVIGATION_WIDTH,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xl,
-    backgroundColor: componentTokens.tabBar.backgroundColor,
-    borderRightColor: componentTokens.tabBar.borderTopColor,
-    borderRightWidth: StyleSheet.hairlineWidth,
-    borderTopWidth: 0,
-  },
-  desktopTabBarItem: {
-    minHeight: 52,
-    borderRadius: 8,
-    marginVertical: spacing.xs,
-  },
-  desktopTabLabel: {
-    ...typography.button,
-    textAlign: 'left',
-  },
-  iconCircle: {
-    width: layout.tabIconSize,
-    height: layout.tabIconSize,
-    borderRadius: layout.tabIconRadius,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: componentTokens.tabIcon.backgroundColor,
-  },
-  iconCircleFocused: {
-    backgroundColor: componentTokens.tabIcon.focusedBackgroundColor,
-  },
-  iconText: {
-    ...typography.tabIcon,
-    color: componentTokens.tabIcon.textColor,
-  },
-  iconTextFocused: {
-    color: componentTokens.tabIcon.focusedTextColor,
-  },
-  calendarTabButton: {
-    width: 76,
-    height: layout.tabBarHeight + 12,
-    marginTop: -17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'visible',
-  },
-  logoCircle: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  logoCircleFocused: {
-    borderColor: colors.brand,
-  },
-  logoCircleDesktop: {
-    width: layout.tabIconSize,
-    height: layout.tabIconSize,
-    borderRadius: layout.tabIconRadius,
-  },
-  logoImage: {
-    width: '100%',
-    height: '100%',
-  },
-});
+const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
+  StyleSheet.create({
+    tabBar: {
+      height: theme.layout.tabBarHeight,
+      paddingTop: theme.layout.tabBarPaddingVertical,
+      backgroundColor: theme.componentTokens.tabBar.backgroundColor,
+      borderTopColor: theme.componentTokens.tabBar.borderTopColor,
+      overflow: 'visible',
+    },
+    tabBarLabel: {
+      ...theme.typography.tabLabel,
+    },
+    desktopTabBar: {
+      width: DESKTOP_NAVIGATION_WIDTH,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xl,
+      backgroundColor: theme.componentTokens.tabBar.backgroundColor,
+      borderRightColor: theme.componentTokens.tabBar.borderTopColor,
+      borderRightWidth: StyleSheet.hairlineWidth,
+      borderTopWidth: 0,
+    },
+    desktopTabBarItem: {
+      minHeight: 52,
+      borderRadius: 8,
+      marginVertical: theme.spacing.xs,
+    },
+    desktopTabLabel: {
+      ...theme.typography.button,
+      textAlign: 'left',
+    },
+    iconCircle: {
+      width: theme.layout.tabIconSize,
+      height: theme.layout.tabIconSize,
+      borderRadius: theme.layout.tabIconRadius,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.componentTokens.tabIcon.backgroundColor,
+    },
+    iconCircleFocused: {
+      backgroundColor: theme.componentTokens.tabIcon.focusedBackgroundColor,
+    },
+    iconText: {
+      ...theme.typography.tabIcon,
+      color: theme.componentTokens.tabIcon.textColor,
+    },
+    iconTextFocused: {
+      color: theme.componentTokens.tabIcon.focusedTextColor,
+    },
+    calendarTabButton: {
+      width: 76,
+      height: theme.layout.tabBarHeight + 12,
+      marginTop: -17,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'visible',
+    },
+    logoCircle: {
+      width: 76,
+      height: 76,
+      borderRadius: 38,
+      overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    logoCircleFocused: {
+      borderColor: theme.colors.brand,
+    },
+    logoCircleDesktop: {
+      width: theme.layout.tabIconSize,
+      height: theme.layout.tabIconSize,
+      borderRadius: theme.layout.tabIconRadius,
+    },
+    logoImage: {
+      width: '100%',
+      height: '100%',
+    },
+  });

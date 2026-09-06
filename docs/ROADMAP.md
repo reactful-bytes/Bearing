@@ -258,16 +258,16 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M22 - Theme and Icon Infrastructure
 
-| Task ID | Status      | Description                                     | Exit Criteria                                                                        |
-| ------- | ----------- | ----------------------------------------------- | ------------------------------------------------------------------------------------ |
-| M22.1   | not-started | Persist design-reference images                 | Three supplied images exist under `docs/mockups/` with documented source purpose     |
-| M22.2   | not-started | Install compatible navigation and icon packages | Lockfile and typecheck prove SDK-compatible packages resolve                         |
-| M22.3   | not-started | Define semantic dark and light tokens           | Tokens cover color, type, spacing, radius, layout, and compatibility aliases         |
-| M22.4   | not-started | Add persisted theme provider                    | Dark default, AsyncStorage restore, hydration, and provider-free fallback are tested |
-| M22.5   | not-started | Add themed stylesheet helper                    | A component creates styles from active semantic tokens without raw colors            |
-| M22.6   | not-started | Create icon inventory and assets                | Registry decision table identifies vector versus custom assets at target size        |
-| M22.7   | not-started | Add typed icon registry and AppIcon             | Every semantic icon renders at requested size with tint and accessible labeling      |
-| M22.8   | not-started | Apply theme to app shell                        | Provider, status bar, and existing token consumers resolve in both themes            |
+| Task ID | Status         | Description                                     | Exit Criteria                                                            |
+| ------- | -------------- | ----------------------------------------------- | ------------------------------------------------------------------------ |
+| M22.1   | manual-handoff | Persist design-reference images                 | Original attachment PNGs must be copied into `docs/mockups/`             |
+| M22.2   | completed      | Install compatible navigation and icon packages | Expo-compatible icon and native-stack packages resolve; typecheck passes |
+| M22.3   | completed      | Define semantic dark and light tokens           | Themes cover color, type, spacing, radius, layout, and aliases           |
+| M22.4   | completed      | Add persisted theme provider                    | Dark default, persistence, hydration, and provider-free fallback pass    |
+| M22.5   | completed      | Add themed stylesheet helper                    | Root and navigation shell use active semantic tokens                     |
+| M22.6   | completed      | Create icon inventory and assets                | Decision table covers semantic icon target sizes and rendering sources   |
+| M22.7   | completed      | Add typed icon registry and AppIcon             | Registry tests cover entries, size, and accessible labels                |
+| M22.8   | in-progress    | Apply theme to app shell                        | Root/status-bar/tab shell migrated; legacy token consumers remain        |
 
 ### M23 - Shared UI Primitives
 

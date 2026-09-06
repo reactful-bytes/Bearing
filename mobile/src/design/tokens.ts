@@ -1,17 +1,3 @@
-export const colors = {
-  background: '#F4F8FA',
-  surface: '#FCFEFF',
-  surfaceMuted: '#E4EEF3',
-  surfaceBrand: '#D7E6ED',
-  border: '#D3E1E8',
-  text: '#0B1F2A',
-  textPrimary: '#153748',
-  textSecondary: '#496879',
-  brand: '#0E5E85',
-  dangerSurface: '#FDEAEA',
-  dangerText: '#8A1E1E',
-};
-
 export const spacing = {
   xs: 4,
   sm: 8,
@@ -23,20 +9,32 @@ export const spacing = {
 };
 
 export const radii = {
-  sm: 10,
-  md: 14,
-  lg: 16,
-  xl: 24,
+  sm: 4,
+  md: 8,
+  lg: 12,
+  xl: 20,
 };
 
 export const typography = {
   title: {
-    fontSize: 30,
+    fontSize: 32,
+    lineHeight: 38,
     fontWeight: '700' as const,
   },
   screenTitle: {
-    fontSize: 28,
+    fontSize: 32,
+    lineHeight: 38,
     fontWeight: '700' as const,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: '600' as const,
+  },
+  cardTitle: {
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '600' as const,
   },
   body: {
     fontSize: 16,
@@ -44,6 +42,11 @@ export const typography = {
   },
   helper: {
     fontSize: 14,
+    lineHeight: 20,
+  },
+  caption: {
+    fontSize: 12,
+    lineHeight: 16,
   },
   label: {
     fontSize: 13,
@@ -72,29 +75,131 @@ export const layout = {
   tabBarPaddingVertical: spacing.md,
   tabIconSize: 28,
   tabIconRadius: 14,
+  minimumTouchTarget: 44,
 };
 
-export const componentTokens = {
-  button: {
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.brand,
-    textColor: '#F4F8FA',
-  },
-  card: {
-    borderRadius: radii.lg,
-    backgroundColor: colors.surfaceMuted,
-    padding: spacing['2xl'],
-  },
-  tabBar: {
-    backgroundColor: colors.surface,
-    borderTopColor: colors.border,
-  },
-  tabIcon: {
-    backgroundColor: colors.surfaceBrand,
-    focusedBackgroundColor: colors.brand,
-    textColor: colors.textSecondary,
-    focusedTextColor: '#F4F8FA',
-  },
+type ThemeColors = {
+  background: string;
+  surface: string;
+  surfaceMuted: string;
+  surfaceBrand: string;
+  elevated: string;
+  border: string;
+  text: string;
+  textPrimary: string;
+  textSecondary: string;
+  textMuted: string;
+  brand: string;
+  success: string;
+  warning: string;
+  purple: string;
+  danger: string;
+  dangerSurface: string;
+  dangerText: string;
+  onBrand: string;
+};
+
+const darkColors: ThemeColors = {
+  background: '#0B162E',
+  surface: '#111F35',
+  surfaceMuted: '#1E293B',
+  surfaceBrand: '#172B4D',
+  elevated: '#1E293B',
+  border: '#334155',
+  text: '#E2E8F0',
+  textPrimary: '#E2E8F0',
+  textSecondary: '#94A3B8',
+  textMuted: '#64748B',
+  brand: '#2563EB',
+  success: '#22C55E',
+  warning: '#FBBF24',
+  purple: '#A855F7',
+  danger: '#EF4444',
+  dangerSurface: '#3F1D2A',
+  dangerText: '#FCA5A5',
+  onBrand: '#FFFFFF',
+};
+
+const lightColors: ThemeColors = {
+  background: '#F4F8FA',
+  surface: '#FCFEFF',
+  surfaceMuted: '#E4EEF3',
+  surfaceBrand: '#D7E6ED',
+  elevated: '#FFFFFF',
+  border: '#D3E1E8',
+  text: '#0B1F2A',
+  textPrimary: '#153748',
+  textSecondary: '#496879',
+  textMuted: '#6B7D88',
+  brand: '#0E5E85',
+  success: '#16803A',
+  warning: '#A86500',
+  purple: '#7E22CE',
+  danger: '#B42318',
+  dangerSurface: '#FDEAEA',
+  dangerText: '#8A1E1E',
+  onBrand: '#FFFFFF',
+};
+
+function createComponentTokens(colors: ThemeColors) {
+  return {
+    button: {
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      backgroundColor: colors.brand,
+      textColor: colors.onBrand,
+    },
+    card: {
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceMuted,
+      padding: spacing['2xl'],
+    },
+    tabBar: {
+      backgroundColor: colors.surface,
+      borderTopColor: colors.border,
+    },
+    tabIcon: {
+      backgroundColor: colors.surfaceBrand,
+      focusedBackgroundColor: colors.brand,
+      textColor: colors.textSecondary,
+      focusedTextColor: colors.onBrand,
+    },
+  } as const;
+}
+
+export type Theme = {
+  colors: ThemeColors;
+  typography: typeof typography;
+  spacing: typeof spacing;
+  radii: typeof radii;
+  layout: typeof layout;
+  componentTokens: ReturnType<typeof createComponentTokens>;
+};
+
+export const darkTheme: Theme = {
+  colors: darkColors,
+  typography,
+  spacing,
+  radii,
+  layout,
+  componentTokens: createComponentTokens(darkColors),
+};
+
+export const lightTheme: Theme = {
+  colors: lightColors,
+  typography,
+  spacing,
+  radii,
+  layout,
+  componentTokens: createComponentTokens(lightColors),
+};
+
+export const themes = {
+  dark: darkTheme,
+  light: lightTheme,
 } as const;
+
+// Compatibility aliases keep existing screens stable while they migrate to useTheme.
+export const colors = darkTheme.colors;
+export const componentTokens = darkTheme.componentTokens;

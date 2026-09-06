@@ -9,10 +9,13 @@ import { RecoveryCard } from './src/components/ui/RecoveryCard';
 import { AppTabs } from './src/navigation/AppTabs';
 import { useAuthBootstrap } from './src/features/auth/useAuthBootstrap';
 import { signOutCurrentUser } from './src/services/firebase/firebaseAuthActions';
-import { colors, layout, spacing, typography } from './src/design/tokens';
+import { ThemeProvider, useTheme } from './src/design/ThemeProvider';
+import { useThemedStyles } from './src/design/useThemedStyles';
 
 function AppContent() {
   const { status, user, error, retry } = useAuthBootstrap();
+  const { preference, theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [authActionError, setAuthActionError] = useState<string | null>(null);
   const [isAuthActionPending, setIsAuthActionPending] = useState(false);
 
@@ -46,7 +49,7 @@ function AppContent() {
         <View style={styles.tabsContainer}>
           <AppTabs onPressSignOut={onPressSignOut} isSignOutPending={isAuthActionPending} />
         </View>
-        <StatusBar style="auto" />
+        <StatusBar style={preference === 'dark' ? 'light' : 'dark'} />
       </View>
     );
   }
@@ -82,7 +85,7 @@ function AppContent() {
         </ScrollView>
       </SafeAreaView>
 
-      <StatusBar style="auto" />
+      <StatusBar style={preference === 'dark' ? 'light' : 'dark'} />
     </KeyboardAvoidingView>
   );
 }
@@ -90,54 +93,57 @@ function AppContent() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AppContent />
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
 
-const styles = StyleSheet.create({
-  authenticatedContainer: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  tabsContainer: {
-    flex: 1,
-  },
-  authErrorBanner: {
-    paddingHorizontal: layout.pagePaddingHorizontal,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.md,
-    gap: spacing.xs,
-    backgroundColor: colors.dangerSurface,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  contentContainer: {
-    flexGrow: 1,
-    width: '100%',
-    maxWidth: 560,
-    alignSelf: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: layout.pagePaddingHorizontal,
-    paddingVertical: layout.pagePaddingVertical,
-    gap: spacing.md,
-  },
-  body: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  errorTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.dangerText,
-  },
-  errorText: {
-    fontSize: 14,
-    color: colors.dangerText,
-  },
-});
+const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
+  StyleSheet.create({
+    authenticatedContainer: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    tabsContainer: {
+      flex: 1,
+    },
+    authErrorBanner: {
+      paddingHorizontal: theme.layout.pagePaddingHorizontal,
+      paddingTop: theme.spacing.xl,
+      paddingBottom: theme.spacing.md,
+      gap: theme.spacing.xs,
+      backgroundColor: theme.colors.dangerSurface,
+    },
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    safeArea: {
+      flex: 1,
+    },
+    contentContainer: {
+      flexGrow: 1,
+      width: '100%',
+      maxWidth: 560,
+      alignSelf: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: theme.layout.pagePaddingHorizontal,
+      paddingVertical: theme.layout.pagePaddingVertical,
+      gap: theme.spacing.md,
+    },
+    body: {
+      ...theme.typography.body,
+      color: theme.colors.textPrimary,
+    },
+    errorTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.colors.dangerText,
+    },
+    errorText: {
+      fontSize: 14,
+      color: theme.colors.dangerText,
+    },
+  });
