@@ -25,14 +25,27 @@ export function SectionHeader({
   variant = 'default',
 }: SectionHeaderProps) {
   const styles = useThemedStyles(createStyles);
-  const action = actionLabel && onPressAction ? (
-    <AppButton label={actionLabel} onPress={onPressAction} style={styles.action} textStyle={styles.actionText} />
-  ) : null;
+  const action =
+    actionLabel && onPressAction ? (
+      <AppButton
+        label={actionLabel}
+        onPress={onPressAction}
+        style={styles.action}
+        textStyle={styles.actionText}
+      />
+    ) : null;
 
   return (
     <View style={[styles.container, variant === 'compact' && styles.compactContainer]}>
       <View style={styles.copy}>
-        <Text accessibilityRole="header" style={[styles.title, variant === 'compact' && styles.compactTitle, variant === 'uppercase-accent' && styles.uppercaseAccentTitle]}>
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.title,
+            variant === 'compact' && styles.compactTitle,
+            variant === 'uppercase-accent' && styles.uppercaseAccentTitle,
+          ]}
+        >
           {title}
         </Text>
         {description ? <Text style={styles.description}>{description}</Text> : null}

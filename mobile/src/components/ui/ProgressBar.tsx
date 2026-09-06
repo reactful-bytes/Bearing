@@ -38,7 +38,10 @@ export function ProgressBar({
         accessibilityValue={{ min: 0, max: safeMax, now: clampedValue, text: `${percentage}%` }}
         style={styles.track}
       >
-        <View testID={testID ? `${testID}-fill` : undefined} style={[styles.fill, styles[accent], { width: `${percentage}%` }]} />
+        <View
+          testID={testID ? `${testID}-fill` : undefined}
+          style={[styles.fill, styles[accent], { width: `${percentage}%` }]}
+        />
       </View>
       {showPercentage ? <Text style={styles.percentage}>{percentage}%</Text> : null}
     </View>

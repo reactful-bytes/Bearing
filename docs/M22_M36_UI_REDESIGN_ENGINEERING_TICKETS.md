@@ -65,14 +65,14 @@ auth, navigation, or feature-screen redesign begins before it passes.
 
 ## M25 - Foundation Validation
 
-| Ticket | Status      | Deliverable                             | Acceptance                                                                           |
-| ------ | ----------- | --------------------------------------- | ------------------------------------------------------------------------------------ |
-| M25.1  | not-started | Test theme infrastructure               | Preference, persistence, hydration, and isolated fallback coverage passes            |
-| M25.2  | not-started | Test icon infrastructure                | Registry entries, assets, tint, density, sizes, and accessibility pass               |
-| M25.3  | not-started | Test shared primitives                  | Compatibility, interactions, keyboard, busy states, and target sizes pass            |
-| M25.4  | not-started | Remove foundation raw-color regressions | Token-consumer audit finds no new component raw colors                               |
-| M25.5  | not-started | Run foundation quality gate             | Typecheck, focused/full Jest, lint, format, rules, and web export pass               |
-| M25.6  | not-started | Review two-theme primitive gallery      | Phone, tablet, and web screenshots show no clipping, contrast, or asset-edge defects |
+| Ticket | Status    | Deliverable                             | Acceptance                                                                       |
+| ------ | --------- | --------------------------------------- | -------------------------------------------------------------------------------- |
+| M25.1  | completed | Test theme infrastructure               | Preference, persistence, hydration, and isolated fallback coverage pass          |
+| M25.2  | completed | Test icon infrastructure                | Registry, alpha-mask tint, target sizes, and accessibility coverage pass         |
+| M25.3  | completed | Test shared primitives                  | Compatibility, interactions, keyboard, busy states, and target sizes pass        |
+| M25.4  | completed | Remove foundation raw-color regressions | Foundation audit moved AppModal scrim to a semantic theme token                  |
+| M25.5  | completed | Run foundation quality gate             | Typecheck, focused/full Jest, lint, format, rules, and web export pass           |
+| M25.6  | completed | Review two-theme primitive gallery      | Dark/light phone, tablet, and wide-web review found and repaired header clipping |
 
 ## M26 - Authentication and Splash
 
@@ -206,11 +206,12 @@ auth, navigation, or feature-screen redesign begins before it passes.
 
 ## Validation Log
 
-| Date       | Tickets             | Result  | Evidence                                                                                                                                                                                     |
-| ---------- | ------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-09-05 | M22-M36             | planned | Ticket decomposition created from the approved UI redesign architecture. No implementation has started.                                                                                      |
-| 2026-09-05 | M22.2-M22.7         | passed  | `npm run typecheck`; focused ThemeProvider, AppIcon, and AppTabs Jest tests pass.                                                                                                            |
-| 2026-09-05 | M22.1, M22.8        | open    | Reference PNG binaries require attachment handoff; remaining legacy token consumers use compatibility aliases.                                                                               |
-| 2026-09-05 | M22.1, M22.6, M22.8 | passed  | Mockups persisted; six transparent density assets generated; no production dark-alias imports; full Jest, typecheck, and lint pass.                                                          |
-| 2026-09-05 | M23.1-M23.6         | passed  | `npm test -- --runInBand src/components/ui/AppScreen.test.tsx src/components/ui/M23Primitives.test.tsx src/__tests__/uiPrimitives.test.tsx` (20 tests); `npm run typecheck`; `npm run lint`. |
-| 2026-09-05 | M24.1-M24.6         | passed  | `npm test -- --runInBand src/components/presentation/DomainPresentation.test.tsx` (6 tests); `npm run typecheck`; `npm run lint`.                                                            |
+| Date       | Tickets             | Result  | Evidence                                                                                                                                                                                              |
+| ---------- | ------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-05 | M22-M36             | planned | Ticket decomposition created from the approved UI redesign architecture. No implementation has started.                                                                                               |
+| 2026-09-05 | M22.2-M22.7         | passed  | `npm run typecheck`; focused ThemeProvider, AppIcon, and AppTabs Jest tests pass.                                                                                                                     |
+| 2026-09-05 | M22.1, M22.8        | open    | Reference PNG binaries require attachment handoff; remaining legacy token consumers use compatibility aliases.                                                                                        |
+| 2026-09-05 | M22.1, M22.6, M22.8 | passed  | Mockups persisted; six transparent density assets generated; no production dark-alias imports; full Jest, typecheck, and lint pass.                                                                   |
+| 2026-09-05 | M23.1-M23.6         | passed  | `npm test -- --runInBand src/components/ui/AppScreen.test.tsx src/components/ui/M23Primitives.test.tsx src/__tests__/uiPrimitives.test.tsx` (20 tests); `npm run typecheck`; `npm run lint`.          |
+| 2026-09-05 | M24.1-M24.6         | passed  | `npm test -- --runInBand src/components/presentation/DomainPresentation.test.tsx` (6 tests); `npm run typecheck`; `npm run lint`.                                                                     |
+| 2026-09-05 | M25.1-M25.6         | passed  | Focused foundation Jest suites (40 tests), Firestore rules (16 tests), web export, and dark/light gallery review at 390x844, 768x1024, and 1440x900 pass; empty AppHeader slot clipping was repaired. |

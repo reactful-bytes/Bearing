@@ -35,6 +35,14 @@ describe('M23 shared UI primitives', () => {
     );
   });
 
+  it('does not reserve empty action slots for an uncentered action-free header', () => {
+    render(<AppHeader testID="plain-header" title="Foundation gallery" eyebrow="Bearing UI" />);
+
+    expect(screen.queryByTestId('plain-header-leading')).toBeNull();
+    expect(screen.queryByTestId('plain-header-trailing')).toBeNull();
+    expect(screen.getByRole('header', { name: 'Foundation gallery' })).toBeTruthy();
+  });
+
   it('renders section variants and invokes its labeled action', () => {
     const onPressAction = jest.fn();
 
@@ -69,7 +77,9 @@ describe('M23 shared UI primitives', () => {
   });
 
   it('clamps progress values and exposes progress semantics with a separate label', () => {
-    render(<ProgressBar testID="goal-progress" value={140} max={80} accent="success" showPercentage />);
+    render(
+      <ProgressBar testID="goal-progress" value={140} max={80} accent="success" showPercentage />,
+    );
 
     expect(screen.getByLabelText('Progress').props.accessibilityValue).toEqual({
       min: 0,
@@ -105,7 +115,12 @@ describe('M23 shared UI primitives', () => {
   it('dismisses the bottom sheet through its backdrop and Android back callback', () => {
     const onDismiss = jest.fn();
     const result = render(
-      <BottomSheet visible onDismiss={onDismiss} accessibilityLabel="Create item" testID="create-sheet">
+      <BottomSheet
+        visible
+        onDismiss={onDismiss}
+        accessibilityLabel="Create item"
+        testID="create-sheet"
+      >
         <Text>Create something</Text>
       </BottomSheet>,
     );
@@ -117,11 +132,18 @@ describe('M23 shared UI primitives', () => {
   });
 
   it('renders a circular icon-only FAB at the requested touch-target size', () => {
-    render(<FloatingActionButton icon="create" size="small" accessibilityLabel="Add task" onPress={jest.fn()} />);
-
-    expect(StyleSheet.flatten(screen.getByRole('button', { name: 'Add task' }).props.style)).toEqual(
-      expect.objectContaining({ width: 44, minHeight: 44, borderRadius: 22 }),
+    render(
+      <FloatingActionButton
+        icon="create"
+        size="small"
+        accessibilityLabel="Add task"
+        onPress={jest.fn()}
+      />,
     );
+
+    expect(
+      StyleSheet.flatten(screen.getByRole('button', { name: 'Add task' }).props.style),
+    ).toEqual(expect.objectContaining({ width: 44, minHeight: 44, borderRadius: 22 }));
   });
 
   it('invokes a field trailing icon action without changing input labeling', () => {

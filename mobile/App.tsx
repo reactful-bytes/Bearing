@@ -6,6 +6,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { AuthShell } from './src/components/auth/AuthShell';
 import { SignedOutAuth } from './src/components/auth/SignedOutAuth';
 import { RecoveryCard } from './src/components/ui/RecoveryCard';
+import { FoundationGallery } from './src/components/ui/FoundationGallery';
 import { AppTabs } from './src/navigation/AppTabs';
 import { useAuthBootstrap } from './src/features/auth/useAuthBootstrap';
 import { signOutCurrentUser } from './src/services/firebase/firebaseAuthActions';
@@ -91,10 +92,12 @@ function AppContent() {
 }
 
 export default function App() {
+  const showFoundationGallery = process.env.EXPO_PUBLIC_FOUNDATION_GALLERY === 'true';
+
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <AppContent />
+        {showFoundationGallery ? <FoundationGallery /> : <AppContent />}
       </ThemeProvider>
     </SafeAreaProvider>
   );

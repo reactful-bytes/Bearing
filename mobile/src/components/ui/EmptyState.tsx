@@ -43,10 +43,14 @@ export function EmptyState({
         accessibilityLabel={`${title} icon`}
       />
       <View style={styles.copy}>
-        <Text accessibilityRole="header" style={[styles.title, isCompact && styles.compactTitle]}>{title}</Text>
+        <Text accessibilityRole="header" style={[styles.title, isCompact && styles.compactTitle]}>
+          {title}
+        </Text>
         {description ? <Text style={styles.description}>{description}</Text> : null}
       </View>
-      {actionLabel && onPressAction ? <AppButton label={actionLabel} variant={actionVariant} onPress={onPressAction} /> : null}
+      {actionLabel && onPressAction ? (
+        <AppButton label={actionLabel} variant={actionVariant} onPress={onPressAction} />
+      ) : null}
     </View>
   );
 }

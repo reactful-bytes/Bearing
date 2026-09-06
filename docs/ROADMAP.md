@@ -293,14 +293,14 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M25 - Foundation Validation
 
-| Task ID | Status      | Description                             | Exit Criteria                                                                        |
-| ------- | ----------- | --------------------------------------- | ------------------------------------------------------------------------------------ |
-| M25.1   | not-started | Test theme infrastructure               | Preference, persistence, hydration, and isolated fallback coverage passes            |
-| M25.2   | not-started | Test icon infrastructure                | Registry entries, assets, tint, density, sizes, and accessibility pass               |
-| M25.3   | not-started | Test shared primitives                  | Compatibility, interactions, keyboard, busy states, and target sizes pass            |
-| M25.4   | not-started | Remove foundation raw-color regressions | Token-consumer audit finds no new component raw colors                               |
-| M25.5   | not-started | Run foundation quality gate             | Typecheck, focused/full Jest, lint, format, rules, and web export pass               |
-| M25.6   | not-started | Review two-theme primitive gallery      | Phone, tablet, and web screenshots show no clipping, contrast, or asset-edge defects |
+| Task ID | Status    | Description                             | Exit Criteria                                                                    |
+| ------- | --------- | --------------------------------------- | -------------------------------------------------------------------------------- |
+| M25.1   | completed | Test theme infrastructure               | Preference, persistence, hydration, and isolated fallback coverage pass          |
+| M25.2   | completed | Test icon infrastructure                | Registry, alpha-mask tint, target sizes, and accessibility coverage pass         |
+| M25.3   | completed | Test shared primitives                  | Compatibility, interactions, keyboard, busy states, and target sizes pass        |
+| M25.4   | completed | Remove foundation raw-color regressions | Foundation audit moved AppModal scrim to a semantic theme token                  |
+| M25.5   | completed | Run foundation quality gate             | Typecheck, focused/full Jest, lint, format, rules, and web export pass           |
+| M25.6   | completed | Review two-theme primitive gallery      | Dark/light phone, tablet, and wide-web review found and repaired header clipping |
 
 ### M26 - Authentication and Splash
 

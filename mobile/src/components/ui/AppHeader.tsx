@@ -31,6 +31,7 @@ export function AppHeader({
 }: AppHeaderProps) {
   const styles = useThemedStyles(createStyles);
   const { theme } = useTheme();
+  const showActionSlots = centeredTitle || Boolean(leading || trailing);
   const copy = (
     <View style={[styles.copy, centeredTitle && styles.centeredCopy]}>
       {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
@@ -42,19 +43,27 @@ export function AppHeader({
           {title}
         </Text>
       </View>
-      {subtitle ? <Text numberOfLines={2} style={styles.subtitle}>{subtitle}</Text> : null}
+      {subtitle ? (
+        <Text numberOfLines={2} style={styles.subtitle}>
+          {subtitle}
+        </Text>
+      ) : null}
     </View>
   );
 
   return (
     <View testID={testID} style={[styles.container, style]}>
-      <View testID={testID ? `${testID}-leading` : undefined} style={styles.actionSlot}>
-        {leading}
-      </View>
+      {showActionSlots ? (
+        <View testID={testID ? `${testID}-leading` : undefined} style={styles.actionSlot}>
+          {leading}
+        </View>
+      ) : null}
       {centeredTitle ? <View style={styles.centeredCopyContainer}>{copy}</View> : copy}
-      <View testID={testID ? `${testID}-trailing` : undefined} style={styles.actionSlot}>
-        {trailing}
-      </View>
+      {showActionSlots ? (
+        <View testID={testID ? `${testID}-trailing` : undefined} style={styles.actionSlot}>
+          {trailing}
+        </View>
+      ) : null}
     </View>
   );
 }

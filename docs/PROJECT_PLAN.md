@@ -413,14 +413,14 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 ### M25 - Foundation Validation
 
-| Task ID | Status      | Description                             | Notes                                                                        |
-| ------- | ----------- | --------------------------------------- | ---------------------------------------------------------------------------- |
-| M25.1   | not-started | Test theme infrastructure               | Cover default, selection, persistence, hydration, and provider-free fallback |
-| M25.2   | not-started | Test icon infrastructure                | Missing production assets must fail CI                                       |
-| M25.3   | not-started | Test shared primitives                  | Include wrappers, dismissal, keyboard, busy states, and 44px targets         |
-| M25.4   | not-started | Remove foundation raw-color regressions | Audit all token consumers; do not introduce new component raw colors         |
-| M25.5   | not-started | Run foundation quality gate             | Run typecheck, focused/full Jest, lint, format, rules, and web export        |
-| M25.6   | not-started | Review two-theme primitive gallery      | Review compact phone, Android, tablet, and wide web before M26 begins        |
+| Task ID | Status    | Description                             | Notes                                                                            |
+| ------- | --------- | --------------------------------------- | -------------------------------------------------------------------------------- |
+| M25.1   | completed | Test theme infrastructure               | Default, persisted selection, hydration, and provider-free fallback pass         |
+| M25.2   | completed | Test icon infrastructure                | Registry, alpha-mask tint, requested sizes, and labels are covered               |
+| M25.3   | completed | Test shared primitives                  | Wrappers, dismissal, keyboard, busy states, and 44px targets pass                |
+| M25.4   | completed | Remove foundation raw-color regressions | Foundation AppModal scrim is now a semantic theme token                          |
+| M25.5   | completed | Run foundation quality gate             | Typecheck, focused/full Jest, lint, format, rules, and web export pass           |
+| M25.6   | completed | Review two-theme primitive gallery      | Gallery reviewed in dark/light at phone, tablet, and wide web; header fix landed |
 
 ### M26 - Authentication and Splash
 

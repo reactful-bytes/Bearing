@@ -78,8 +78,9 @@ describe('CreditPackPurchaseModal', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Continue with 12 AI credits' }));
     expect(screen.getByText('You are selecting')).toBeTruthy();
     expect(screen.getByText('One-time credit pack')).toBeTruthy();
-    expect(screen.getByText('This is a one-time purchase and does not renew automatically.'))
-      .toBeTruthy();
+    expect(
+      screen.getByText('This is a one-time purchase and does not renew automatically.'),
+    ).toBeTruthy();
 
     await act(async () => {
       fireEvent.press(
@@ -105,9 +106,9 @@ describe('CreditPackPurchaseModal', () => {
 
   it('shows the completing state while the store purchase is pending', async () => {
     let resolvePurchase: (result: 'success') => void = () => undefined;
-    jest.mocked(purchaseCreditPack).mockImplementation(
-      () => new Promise((resolve) => (resolvePurchase = resolve)),
-    );
+    jest
+      .mocked(purchaseCreditPack)
+      .mockImplementation(() => new Promise((resolve) => (resolvePurchase = resolve)));
     renderModal();
 
     await screen.findByText('12 AI planning credits');

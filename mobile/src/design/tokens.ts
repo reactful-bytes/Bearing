@@ -96,6 +96,7 @@ type ThemeColors = {
   danger: string;
   dangerSurface: string;
   dangerText: string;
+  scrim: string;
   onBrand: string;
 };
 
@@ -117,6 +118,7 @@ const darkColors: ThemeColors = {
   danger: '#EF4444',
   dangerSurface: '#3F1D2A',
   dangerText: '#FCA5A5',
+  scrim: 'rgba(11, 31, 42, 0.42)',
   onBrand: '#FFFFFF',
 };
 
@@ -138,6 +140,7 @@ const lightColors: ThemeColors = {
   danger: '#B42318',
   dangerSurface: '#FDEAEA',
   dangerText: '#8A1E1E',
+  scrim: 'rgba(11, 31, 42, 0.42)',
   onBrand: '#FFFFFF',
 };
 

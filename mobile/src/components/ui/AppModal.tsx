@@ -88,7 +88,7 @@ const createStyles = (theme: Theme) =>
     backdrop: {
       flex: 1,
       justifyContent: 'flex-end',
-      backgroundColor: 'rgba(11, 31, 42, 0.42)',
+      backgroundColor: theme.colors.scrim,
     },
     backdropPressArea: {
       ...StyleSheet.absoluteFill,

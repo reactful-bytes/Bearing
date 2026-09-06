@@ -1,5 +1,14 @@
 import { ReactNode } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleProp,
+  StyleSheet,
+  View,
+  ViewStyle,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { Theme } from '../../design/tokens';
@@ -14,12 +23,22 @@ export type BottomSheetProps = {
   testID?: string;
 };
 
-export function BottomSheet({ visible, onDismiss, children, accessibilityLabel = 'Bottom sheet', style, testID }: BottomSheetProps) {
+export function BottomSheet({
+  visible,
+  onDismiss,
+  children,
+  accessibilityLabel = 'Bottom sheet',
+  style,
+  testID,
+}: BottomSheetProps) {
   const styles = useThemedStyles(createStyles);
 
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onDismiss}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.overlay}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.overlay}
+      >
         <Pressable
           testID={testID ? `${testID}-backdrop` : undefined}
           accessibilityRole="button"

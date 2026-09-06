@@ -1,5 +1,13 @@
 import { ReactNode } from 'react';
-import { Pressable, PressableProps, StyleProp, StyleSheet, View, ViewProps, ViewStyle } from 'react-native';
+import {
+  Pressable,
+  PressableProps,
+  StyleProp,
+  StyleSheet,
+  View,
+  ViewProps,
+  ViewStyle,
+} from 'react-native';
 
 import type { Theme } from '../../design/tokens';
 import { useThemedStyles } from '../../design/useThemedStyles';
@@ -35,7 +43,11 @@ export function Card({
   const cardStyle = [styles.card, styles[variant], onPress ? styles.pressableCard : null, style];
 
   if (!onPress) {
-    return <View testID={testID} style={cardStyle}>{children}</View>;
+    return (
+      <View testID={testID} style={cardStyle}>
+        {children}
+      </View>
+    );
   }
 
   return (
@@ -47,7 +59,11 @@ export function Card({
       accessibilityState={{ ...accessibilityState, disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [cardStyle, pressed && !disabled ? styles.pressed : null, disabled ? styles.disabled : null]}
+      style={({ pressed }) => [
+        cardStyle,
+        pressed && !disabled ? styles.pressed : null,
+        disabled ? styles.disabled : null,
+      ]}
     >
       {children}
     </Pressable>
