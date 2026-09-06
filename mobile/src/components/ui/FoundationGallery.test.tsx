@@ -19,6 +19,9 @@ describe('FoundationGallery', () => {
   it('renders every registered Bearing icon alongside the foundation catalog', async () => {
     await renderGallery();
 
+    expect(screen.getByTestId('foundation-gallery-scroll').props.style).toEqual(
+      expect.objectContaining({ flex: 1 }),
+    );
     expect(screen.getByLabelText('Icon library')).toBeTruthy();
     Object.keys(icons).forEach((name) => {
       expect(screen.getByLabelText(`${name} icon`)).toBeTruthy();

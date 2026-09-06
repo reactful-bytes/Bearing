@@ -137,7 +137,11 @@ export function FoundationGallery() {
 
   return (
     <AppScreen mode="unmanaged" testID="foundation-gallery" style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        testID="foundation-gallery-scroll"
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+      >
         <AppHeader title="Foundation gallery" eyebrow="Bearing UI" showBearingMark />
         <Text accessibilityLiveRegion="polite" style={styles.notice}>
           {notice}
@@ -431,6 +435,7 @@ export function FoundationGallery() {
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: theme.colors.background },
+    scrollView: { flex: 1 },
     content: {
       gap: theme.spacing['2xl'],
       paddingHorizontal: theme.layout.pagePaddingHorizontal,
