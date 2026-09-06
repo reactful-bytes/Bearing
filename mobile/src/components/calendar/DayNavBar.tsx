@@ -1,6 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, spacing, typography } from '../../design/tokens';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import { spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 
 type DayNavBarProps = {
   date: Date;
@@ -33,6 +35,7 @@ export function formatDayLabel(date: Date): string {
 }
 
 export function DayNavBar({ date, onPrev, onNext }: DayNavBarProps) {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.container}>
       <Pressable
@@ -58,34 +61,35 @@ export function DayNavBar({ date, onPrev, onNext }: DayNavBarProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-  },
-  arrow: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    minWidth: 36,
-    alignItems: 'center',
-  },
-  arrowPressed: {
-    opacity: 0.6,
-  },
-  arrowText: {
-    fontSize: 28,
-    lineHeight: 32,
-    color: colors.brand,
-    fontWeight: '300',
-  },
-  label: {
-    ...typography.body,
-    fontWeight: '600',
-    color: colors.text,
-    flex: 1,
-    textAlign: 'center',
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.md,
+      gap: spacing.sm,
+    },
+    arrow: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      minWidth: 36,
+      alignItems: 'center',
+    },
+    arrowPressed: {
+      opacity: 0.6,
+    },
+    arrowText: {
+      fontSize: 28,
+      lineHeight: 32,
+      color: theme.colors.brand,
+      fontWeight: '300',
+    },
+    label: {
+      ...typography.body,
+      fontWeight: '600',
+      color: theme.colors.text,
+      flex: 1,
+      textAlign: 'center',
+    },
+  });

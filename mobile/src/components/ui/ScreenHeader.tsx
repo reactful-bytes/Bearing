@@ -1,7 +1,9 @@
 import { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, spacing, typography } from '../../design/tokens';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import { spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 
 type ScreenHeaderProps = {
   title: string;
@@ -11,6 +13,7 @@ type ScreenHeaderProps = {
 };
 
 export function ScreenHeader({ title, description, eyebrow, trailing }: ScreenHeaderProps) {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.container}>
       <View style={styles.copyBlock}>
@@ -23,27 +26,28 @@ export function ScreenHeader({ title, description, eyebrow, trailing }: ScreenHe
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    gap: spacing.md,
-  },
-  copyBlock: {
-    gap: spacing.sm,
-  },
-  eyebrow: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  description: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  trailing: {
-    alignSelf: 'flex-start',
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      gap: spacing.md,
+    },
+    copyBlock: {
+      gap: spacing.sm,
+    },
+    eyebrow: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: theme.colors.text,
+    },
+    description: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+    trailing: {
+      alignSelf: 'flex-start',
+    },
+  });

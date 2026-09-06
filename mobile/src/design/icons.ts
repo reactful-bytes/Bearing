@@ -21,7 +21,11 @@ export const icons = {
   create: { kind: 'vector', name: 'add' },
   edit: { kind: 'vector', name: 'edit' },
   focus: { kind: 'vector', name: 'center-focus-strong' },
-  goal: { kind: 'vector', name: 'flag' },
+  goal: {
+    kind: 'image',
+    source: require('../../assets/icons/goal.png'),
+    tintable: true,
+  },
   idea: { kind: 'vector', name: 'lightbulb-outline' },
   more: { kind: 'vector', name: 'more-horiz' },
   note: { kind: 'vector', name: 'description' },
@@ -31,8 +35,8 @@ export const icons = {
   timeline: { kind: 'vector', name: 'outlined-flag' },
   bearingMark: {
     kind: 'image',
-    source: require('../../assets/bearingLogoSmall.png'),
-    tintable: false,
+    source: require('../../assets/icons/bearing-mark.png'),
+    tintable: true,
   },
 } as const satisfies Record<string, AppIconDefinition>;
 

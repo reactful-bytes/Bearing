@@ -1,6 +1,8 @@
 import { Pressable, PressableProps, StyleProp, StyleSheet, Text, TextStyle } from 'react-native';
 
-import { colors, spacing, typography } from '../../design/tokens';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import { spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 
 type TextLinkProps = Omit<PressableProps, 'children' | 'style'> & {
   label: string;
@@ -8,6 +10,7 @@ type TextLinkProps = Omit<PressableProps, 'children' | 'style'> & {
 };
 
 export function TextLink({ label, disabled = false, textStyle, ...pressableProps }: TextLinkProps) {
+  const styles = useThemedStyles(createStyles);
   return (
     <Pressable
       {...pressableProps}
@@ -26,21 +29,22 @@ export function TextLink({ label, disabled = false, textStyle, ...pressableProps
   );
 }
 
-const styles = StyleSheet.create({
-  pressable: {
-    minHeight: 44,
-    alignSelf: 'flex-start',
-    justifyContent: 'center',
-    paddingVertical: spacing.xs,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  text: {
-    ...typography.button,
-    color: colors.brand,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    pressable: {
+      minHeight: 44,
+      alignSelf: 'flex-start',
+      justifyContent: 'center',
+      paddingVertical: spacing.xs,
+    },
+    pressed: {
+      opacity: 0.7,
+    },
+    disabled: {
+      opacity: 0.5,
+    },
+    text: {
+      ...typography.button,
+      color: theme.colors.brand,
+    },
+  });

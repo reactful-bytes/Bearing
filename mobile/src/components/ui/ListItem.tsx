@@ -1,6 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, componentTokens, spacing, typography } from '../../design/tokens';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import { spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 
 type ListItemProps = {
   title: string;
@@ -17,6 +19,7 @@ export function ListItem({
   onPress,
   disabled = false,
 }: ListItemProps) {
+  const styles = useThemedStyles(createStyles);
   if (onPress) {
     return (
       <Pressable
@@ -50,40 +53,41 @@ export function ListItem({
   );
 }
 
-const styles = StyleSheet.create({
-  item: {
-    borderRadius: componentTokens.card.borderRadius,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderWidth: 1,
-    borderColor: componentTokens.tabBar.borderTopColor,
-    gap: spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  itemPressed: {
-    opacity: 0.9,
-  },
-  itemDisabled: {
-    opacity: 0.6,
-  },
-  copyBlock: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  title: {
-    ...typography.button,
-    color: colors.text,
-  },
-  description: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  trailingText: {
-    ...typography.helper,
-    color: colors.brand,
-    fontWeight: '600',
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    item: {
+      borderRadius: theme.componentTokens.card.borderRadius,
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderWidth: 1,
+      borderColor: theme.componentTokens.tabBar.borderTopColor,
+      gap: spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    itemPressed: {
+      opacity: 0.9,
+    },
+    itemDisabled: {
+      opacity: 0.6,
+    },
+    copyBlock: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    title: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    description: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    trailingText: {
+      ...typography.helper,
+      color: theme.colors.brand,
+      fontWeight: '600',
+    },
+  });

@@ -1,8 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, spacing, typography } from '../../design/tokens';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import { spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 
 export function AuthDivider() {
+  const styles = useThemedStyles(createStyles);
   return (
     <View accessibilityRole="none" style={styles.row}>
       <View style={styles.line} />
@@ -12,20 +15,21 @@ export function AuthDivider() {
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.border,
-  },
-  label: {
-    ...typography.helper,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    line: {
+      flex: 1,
+      height: 1,
+      backgroundColor: theme.colors.border,
+    },
+    label: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+    },
+  });

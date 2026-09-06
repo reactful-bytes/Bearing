@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { useTheme } from '../../design/ThemeProvider';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import {
   CalendarDisplayEvent,
   CalendarUiState,
@@ -47,14 +50,14 @@ function formatHourLabel(hour: number, timeFormat: TimeFormat): string {
   return `${displayHour} ${period}`;
 }
 
-function getEventBgColor(status: EventStatus): string {
-  if (status === 'completed') return colors.textSecondary;
-  if (status === 'canceled') return colors.surfaceMuted;
-  return colors.brand;
+function getEventBgColor(status: EventStatus, theme: Theme): string {
+  if (status === 'completed') return theme.colors.textSecondary;
+  if (status === 'canceled') return theme.colors.surfaceMuted;
+  return theme.colors.brand;
 }
 
-function getEventTextColor(status: EventStatus): string {
-  return status === 'canceled' ? colors.textSecondary : '#F4F8FA';
+function getEventTextColor(status: EventStatus, theme: Theme): string {
+  return status === 'canceled' ? theme.colors.textSecondary : '#F4F8FA';
 }
 
 function isSameCalendarDay(a: Date, b: Date): boolean {
@@ -73,6 +76,8 @@ export function HourlyTimeline({
   uiState,
   timeFormat = DEFAULT_TIME_FORMAT,
 }: HourlyTimelineProps) {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const scrollViewRef = useRef<ScrollView>(null);
   const [viewportHeight, setViewportHeight] = useState(0);
   const now = new Date();
@@ -133,8 +138,8 @@ export function HourlyTimeline({
               const backgroundColor =
                 event.ownership === 'device' && event.calendarColor
                   ? event.calendarColor
-                  : getEventBgColor(event.status);
-              const textColor = getEventTextColor(event.status);
+                  : getEventBgColor(event.status, theme);
+              const textColor = getEventTextColor(event.status, theme);
               return (
                 <Pressable
                   key={event.id}
@@ -189,8 +194,8 @@ export function HourlyTimeline({
                 const bgColor =
                   event.ownership === 'device' && event.calendarColor
                     ? event.calendarColor
-                    : getEventBgColor(event.status);
-                const textColor = getEventTextColor(event.status);
+                    : getEventBgColor(event.status, theme);
+                const textColor = getEventTextColor(event.status, theme);
                 return (
                   <Pressable
                     key={event.id}
@@ -228,125 +233,126 @@ export function HourlyTimeline({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  stateContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing['2xl'],
-  },
-  stateText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  errorText: {
-    color: colors.dangerText,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  allDaySection: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingHorizontal: EVENT_PADDING_H,
-    paddingVertical: spacing.xs,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  allDayLabel: {
-    ...typography.helper,
-    fontSize: 11,
-    color: colors.textSecondary,
-    width: LABEL_COL_WIDTH - EVENT_PADDING_H,
-    paddingRight: spacing.sm,
-    paddingTop: spacing.xs,
-    textAlign: 'right',
-  },
-  allDayEventList: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  allDayEvent: {
-    minHeight: 28,
-    justifyContent: 'center',
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    overflow: 'hidden',
-  },
-  timelineContainer: {
-    height: TOTAL_HEIGHT,
-    position: 'relative',
-  },
-  hourRow: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: HOUR_HEIGHT,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  hourLabel: {
-    ...typography.helper,
-    fontSize: 11,
-    color: colors.textSecondary,
-    width: LABEL_COL_WIDTH,
-    paddingRight: spacing.sm,
-    textAlign: 'right',
-    marginTop: -7,
-  },
-  hourLine: {
-    flex: 1,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-    marginTop: 0,
-  },
-  currentTimeLine: {
-    position: 'absolute',
-    left: LABEL_COL_WIDTH - 4,
-    right: 0,
-    height: 2,
-    backgroundColor: colors.brand,
-    flexDirection: 'row',
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  currentTimeDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.brand,
-    marginLeft: -5,
-    marginTop: -4,
-  },
-  eventBlock: {
-    position: 'absolute',
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    overflow: 'hidden',
-    zIndex: 2,
-  },
-  eventBlockCanceled: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  eventBlockPressed: {
-    opacity: 0.8,
-  },
-  eventTitle: {
-    ...typography.helper,
-    fontWeight: '600',
-    fontSize: 12,
-  },
-  eventTime: {
-    fontSize: 11,
-    opacity: 0.9,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    stateContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing['2xl'],
+    },
+    stateText: {
+      ...typography.body,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+    },
+    errorText: {
+      color: theme.colors.dangerText,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    allDaySection: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      paddingHorizontal: EVENT_PADDING_H,
+      paddingVertical: spacing.xs,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+    },
+    allDayLabel: {
+      ...typography.helper,
+      fontSize: 11,
+      color: theme.colors.textSecondary,
+      width: LABEL_COL_WIDTH - EVENT_PADDING_H,
+      paddingRight: spacing.sm,
+      paddingTop: spacing.xs,
+      textAlign: 'right',
+    },
+    allDayEventList: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    allDayEvent: {
+      minHeight: 28,
+      justifyContent: 'center',
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      overflow: 'hidden',
+    },
+    timelineContainer: {
+      height: TOTAL_HEIGHT,
+      position: 'relative',
+    },
+    hourRow: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      height: HOUR_HEIGHT,
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+    },
+    hourLabel: {
+      ...typography.helper,
+      fontSize: 11,
+      color: theme.colors.textSecondary,
+      width: LABEL_COL_WIDTH,
+      paddingRight: spacing.sm,
+      textAlign: 'right',
+      marginTop: -7,
+    },
+    hourLine: {
+      flex: 1,
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.colors.border,
+      marginTop: 0,
+    },
+    currentTimeLine: {
+      position: 'absolute',
+      left: LABEL_COL_WIDTH - 4,
+      right: 0,
+      height: 2,
+      backgroundColor: theme.colors.brand,
+      flexDirection: 'row',
+      alignItems: 'center',
+      zIndex: 1,
+    },
+    currentTimeDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: theme.colors.brand,
+      marginLeft: -5,
+      marginTop: -4,
+    },
+    eventBlock: {
+      position: 'absolute',
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      overflow: 'hidden',
+      zIndex: 2,
+    },
+    eventBlockCanceled: {
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.border,
+    },
+    eventBlockPressed: {
+      opacity: 0.8,
+    },
+    eventTitle: {
+      ...typography.helper,
+      fontWeight: '600',
+      fontSize: 12,
+    },
+    eventTime: {
+      fontSize: 11,
+      opacity: 0.9,
+    },
+  });

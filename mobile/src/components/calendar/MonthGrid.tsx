@@ -1,6 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, spacing, typography } from '../../design/tokens';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import { spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 
 type MonthGridProps = {
   year: number;
@@ -59,6 +61,7 @@ export function MonthGrid({
   onSelectDate,
   width,
 }: MonthGridProps) {
+  const styles = useThemedStyles(createStyles);
   const weeks = buildWeeks(year, month);
   const today = new Date();
   const cellWidth = Math.floor(width / 7);
@@ -130,66 +133,67 @@ export function MonthGrid({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    marginBottom: spacing.xs,
-  },
-  weekRow: {
-    flexDirection: 'row',
-  },
-  cell: {
-    alignItems: 'center',
-    paddingVertical: spacing.xs,
-  },
-  dayHeader: {
-    ...typography.helper,
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  dayCircle: {
-    width: DAY_CIRCLE_SIZE,
-    height: DAY_CIRCLE_SIZE,
-    borderRadius: DAY_CIRCLE_SIZE / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dayCircleSelected: {
-    backgroundColor: colors.brand,
-  },
-  dayCircleToday: {
-    borderWidth: 1.5,
-    borderColor: colors.brand,
-  },
-  dayNumber: {
-    ...typography.body,
-    fontSize: 15,
-    color: colors.text,
-  },
-  dayNumberSelected: {
-    color: '#F4F8FA',
-    fontWeight: '700',
-  },
-  dayNumberToday: {
-    color: colors.brand,
-    fontWeight: '700',
-  },
-  eventDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: colors.brand,
-    marginTop: 2,
-  },
-  eventDotPlaceholder: {
-    width: 5,
-    height: 5,
-    marginTop: 2,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.lg,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      marginBottom: spacing.xs,
+    },
+    weekRow: {
+      flexDirection: 'row',
+    },
+    cell: {
+      alignItems: 'center',
+      paddingVertical: spacing.xs,
+    },
+    dayHeader: {
+      ...typography.helper,
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    dayCircle: {
+      width: DAY_CIRCLE_SIZE,
+      height: DAY_CIRCLE_SIZE,
+      borderRadius: DAY_CIRCLE_SIZE / 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dayCircleSelected: {
+      backgroundColor: theme.colors.brand,
+    },
+    dayCircleToday: {
+      borderWidth: 1.5,
+      borderColor: theme.colors.brand,
+    },
+    dayNumber: {
+      ...typography.body,
+      fontSize: 15,
+      color: theme.colors.text,
+    },
+    dayNumberSelected: {
+      color: '#F4F8FA',
+      fontWeight: '700',
+    },
+    dayNumberToday: {
+      color: theme.colors.brand,
+      fontWeight: '700',
+    },
+    eventDot: {
+      width: 5,
+      height: 5,
+      borderRadius: 2.5,
+      backgroundColor: theme.colors.brand,
+      marginTop: 2,
+    },
+    eventDotPlaceholder: {
+      width: 5,
+      height: 5,
+      marginTop: 2,
+    },
+  });

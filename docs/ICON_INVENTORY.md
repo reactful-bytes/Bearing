@@ -8,8 +8,8 @@ MaterialIcons names or image paths.
 
 | Semantic name | Use                               | Target sizes | Source                                  | Decision                                              |
 | ------------- | --------------------------------- | ------------ | --------------------------------------- | ----------------------------------------------------- |
-| `bearingMark` | Brand lockup and launch treatment | 32, 48, 64   | Existing Bearing artwork                | Static image; do not tint the existing colored source |
-| `goal`        | Goals                             | 24, 32, 48   | MaterialIcons `flag`                    | Vector match is legible at row and action sizes       |
+| `bearingMark` | Brand lockup and launch treatment | 24, 48, 72   | `mobile/assets/icons/bearing-mark*.png` | Transparent alpha mask; tint through the active theme |
+| `goal`        | Goals                             | 24, 48, 72   | `mobile/assets/icons/goal*.png`         | Transparent mountain/flag alpha mask; tint by theme   |
 | `focus`       | Focus mode                        | 24, 32, 48   | MaterialIcons `center-focus-strong`     | Vector match is legible at row and action sizes       |
 | `idea`        | Idea Dump                         | 24, 32, 48   | MaterialIcons `lightbulb-outline`       | Vector match is legible at row and action sizes       |
 | `note`        | Notes                             | 24, 32       | MaterialIcons `description`             | Vector match is legible at row size                   |
@@ -26,17 +26,12 @@ MaterialIcons names or image paths.
 
 ## Asset Follow-up
 
-The supplied design references are persisted under `docs/mockups/` and have
-been reviewed against this table. The current `bearingMark` source has an
-opaque white background and cannot be used on the dark surfaces shown in the
-references. MaterialIcons also does not match the distinctive Bearing ship or
-mountain-and-flag goal glyph closely enough for feature treatments.
-
-Before M22.6 closes, export approved transparent monochrome 24/48/72px PNG
-assets under `mobile/assets/icons/` for the Bearing mark and goal glyph. Recheck
-the focus reticle, Idea Dump bulb, note, task, timeline, calendar, and profile
-at their documented target sizes after those assets are available; keep a
-MaterialIcons source only where it remains a close visual match.
+The supplied design references are persisted under `docs/mockups/` and were
+reviewed against this table. Transparent 24/48/72px PNG alpha-mask assets for
+the Bearing mark and mountain/flag goal glyph now live under
+`mobile/assets/icons/`; `AppIcon` dispatches and tints both through the active
+theme. The remaining semantic icons retain MaterialIcons sources because they
+remain close matches at their documented target sizes.
 
 The official multicolor Google mark is intentionally excluded from this
 registry and remains an authentication-phase requirement.

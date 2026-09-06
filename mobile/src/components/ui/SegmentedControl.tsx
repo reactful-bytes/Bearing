@@ -1,6 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 
 export type SegmentedControlOption<Value extends string> = {
   value: Value;
@@ -21,6 +23,7 @@ export function SegmentedControl<Value extends string>({
   value,
   onChange,
 }: SegmentedControlProps<Value>) {
+  const styles = useThemedStyles(createStyles);
   return (
     <View accessibilityLabel={accessibilityLabel} style={styles.container}>
       {options.map((option) => {
@@ -62,49 +65,50 @@ export function SegmentedControl<Value extends string>({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    gap: spacing.xs,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceMuted,
-    padding: spacing.xs,
-  },
-  option: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  optionSelected: {
-    backgroundColor: colors.surface,
-  },
-  optionPressed: {
-    opacity: 0.82,
-  },
-  label: {
-    ...typography.helper,
-    color: colors.textSecondary,
-    fontWeight: '600',
-    flexShrink: 1,
-  },
-  labelSelected: {
-    color: colors.text,
-  },
-  count: {
-    ...typography.helper,
-    color: colors.textSecondary,
-    fontWeight: '700',
-    flexShrink: 0,
-  },
-  countSelected: {
-    color: colors.brand,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      gap: spacing.xs,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surfaceMuted,
+      padding: spacing.xs,
+    },
+    option: {
+      flex: 1,
+      minWidth: 0,
+      minHeight: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.sm,
+    },
+    optionSelected: {
+      backgroundColor: theme.colors.surface,
+    },
+    optionPressed: {
+      opacity: 0.82,
+    },
+    label: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      fontWeight: '600',
+      flexShrink: 1,
+    },
+    labelSelected: {
+      color: theme.colors.text,
+    },
+    count: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      fontWeight: '700',
+      flexShrink: 0,
+    },
+    countSelected: {
+      color: theme.colors.brand,
+    },
+  });

@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+
+import { useTheme } from '../../design/ThemeProvider';
+import { useThemedStyles } from '../../design/useThemedStyles';
 import { randomUUID } from 'expo-crypto';
 
 import { AppCard } from '../ui/AppCard';
@@ -20,7 +23,8 @@ import {
   getGoalDateFromParts,
   isFutureDate,
 } from './GoalDatePicker';
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import {
   AiGoalMilestone,
   AiCreditStatus,
@@ -119,6 +123,8 @@ export function CreateGoalModal({
   onLoadAiCreditStatus,
   creditPackUserId,
 }: CreateGoalModalProps) {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const today = useMemo(() => new Date(), []);
   const [wizardIndex, setWizardIndex] = useState(0);
   const [title, setTitle] = useState('');
@@ -494,7 +500,7 @@ export function CreateGoalModal({
                 value={title}
                 onChangeText={setTitle}
                 placeholder="Complete my first 10k"
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={theme.colors.textSecondary}
               />
 
               <FormField
@@ -504,7 +510,7 @@ export function CreateGoalModal({
                 onChangeText={setDescription}
                 multiline
                 placeholder="List 2-4 objectives, success measures, your starting point, constraints, and timing for each outcome."
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={theme.colors.textSecondary}
               />
 
               <AppCard style={styles.exampleCard}>
@@ -610,7 +616,7 @@ export function CreateGoalModal({
                     accessibilityRole="progressbar"
                     accessibilityLabel="Generating AI goal plan"
                   >
-                    <ActivityIndicator color={colors.brand} />
+                    <ActivityIndicator color={theme.colors.brand} />
                     <View style={styles.generationStatusCopy}>
                       <Text style={styles.generationStatusTitle}>Creating your draft...</Text>
                       <Text style={styles.generationStatusText}>
@@ -700,7 +706,7 @@ export function CreateGoalModal({
                     value={step.title}
                     onChangeText={(value) => updateDraftStep(step.id, 'title', value)}
                     placeholder="Add the next action"
-                    placeholderTextColor={colors.textSecondary}
+                    placeholderTextColor={theme.colors.textSecondary}
                   />
 
                   <FormField
@@ -710,7 +716,7 @@ export function CreateGoalModal({
                     onChangeText={(value) => updateDraftStep(step.id, 'description', value)}
                     multiline
                     placeholder="Optional details"
-                    placeholderTextColor={colors.textSecondary}
+                    placeholderTextColor={theme.colors.textSecondary}
                   />
 
                   <FormField
@@ -719,7 +725,7 @@ export function CreateGoalModal({
                     value={step.starter}
                     onChangeText={(value) => updateDraftStep(step.id, 'starter', value)}
                     placeholder="Optional starter cue"
-                    placeholderTextColor={colors.textSecondary}
+                    placeholderTextColor={theme.colors.textSecondary}
                   />
 
                   <GoalDatePicker
@@ -844,200 +850,201 @@ export function CreateGoalModal({
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    gap: spacing.lg,
-    paddingBottom: spacing['3xl'],
-  },
-  section: {
-    gap: spacing.lg,
-  },
-  stepLabel: {
-    ...typography.label,
-    color: colors.brand,
-  },
-  card: {
-    gap: spacing.md,
-  },
-  exampleCard: {
-    gap: spacing.xs,
-    paddingVertical: spacing.md,
-  },
-  cardTitle: {
-    ...typography.button,
-    color: colors.text,
-  },
-  cardBody: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  exampleLabel: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  exampleText: {
-    ...typography.helper,
-    color: colors.textPrimary,
-    lineHeight: 20,
-  },
-  regenerationGuidance: {
-    ...typography.helper,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-  generationStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  generationStatusCopy: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  generationStatusTitle: {
-    ...typography.button,
-    color: colors.text,
-  },
-  generationStatusText: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  confirmationContent: {
-    gap: spacing.md,
-  },
-  disabledBadge: {
-    alignSelf: 'flex-start',
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  disabledBadgeText: {
-    ...typography.helper,
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  milestoneFields: {
-    gap: spacing.sm,
-    paddingTop: spacing.sm,
-  },
-  fieldGroup: {
-    gap: spacing.xs,
-  },
-  dateFieldRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  dateFieldButton: {
-    flex: 1,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    gap: spacing.xs,
-  },
-  dateFieldLabel: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  dateFieldValue: {
-    ...typography.body,
-    color: colors.text,
-  },
-  dateSummary: {
-    ...typography.body,
-    color: colors.text,
-  },
-  dateHint: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  dropdownCard: {
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-  },
-  dropdownTitle: {
-    ...typography.helper,
-    color: colors.textSecondary,
-    fontWeight: '700',
-  },
-  dropdownList: {
-    maxHeight: 176,
-  },
-  dropdownOption: {
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  dropdownOptionText: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  label: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  input: {
-    ...typography.body,
-    color: colors.text,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  textArea: {
-    minHeight: 96,
-    textAlignVertical: 'top',
-  },
-  errorText: {
-    ...typography.helper,
-    color: colors.dangerText,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    justifyContent: 'flex-end',
-  },
-  actionButton: {
-    flex: 1,
-  },
-  primaryButton: {
-    flex: 1,
-    borderRadius: radii.md,
-    backgroundColor: colors.brand,
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  secondaryButton: {
-    flex: 1,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  primaryButtonText: {
-    ...typography.button,
-    color: colors.surface,
-  },
-  secondaryButtonText: {
-    ...typography.button,
-    color: colors.textPrimary,
-  },
-  buttonPressed: {
-    opacity: 0.86,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    content: {
+      gap: spacing.lg,
+      paddingBottom: spacing['3xl'],
+    },
+    section: {
+      gap: spacing.lg,
+    },
+    stepLabel: {
+      ...typography.label,
+      color: theme.colors.brand,
+    },
+    card: {
+      gap: spacing.md,
+    },
+    exampleCard: {
+      gap: spacing.xs,
+      paddingVertical: spacing.md,
+    },
+    cardTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    cardBody: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+    exampleLabel: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    exampleText: {
+      ...typography.helper,
+      color: theme.colors.textPrimary,
+      lineHeight: 20,
+    },
+    regenerationGuidance: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      lineHeight: 20,
+    },
+    generationStatus: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    generationStatusCopy: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    generationStatusTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    generationStatusText: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    confirmationContent: {
+      gap: spacing.md,
+    },
+    disabledBadge: {
+      alignSelf: 'flex-start',
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    disabledBadgeText: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      fontWeight: '600',
+    },
+    milestoneFields: {
+      gap: spacing.sm,
+      paddingTop: spacing.sm,
+    },
+    fieldGroup: {
+      gap: spacing.xs,
+    },
+    dateFieldRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    dateFieldButton: {
+      flex: 1,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      gap: spacing.xs,
+    },
+    dateFieldLabel: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    dateFieldValue: {
+      ...typography.body,
+      color: theme.colors.text,
+    },
+    dateSummary: {
+      ...typography.body,
+      color: theme.colors.text,
+    },
+    dateHint: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    dropdownCard: {
+      gap: spacing.sm,
+      paddingVertical: spacing.md,
+    },
+    dropdownTitle: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      fontWeight: '700',
+    },
+    dropdownList: {
+      maxHeight: 176,
+    },
+    dropdownOption: {
+      borderRadius: radii.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    dropdownOptionText: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+    label: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    input: {
+      ...typography.body,
+      color: theme.colors.text,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: radii.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    textArea: {
+      minHeight: 96,
+      textAlignVertical: 'top',
+    },
+    errorText: {
+      ...typography.helper,
+      color: theme.colors.dangerText,
+    },
+    actionRow: {
+      flexDirection: 'row',
+      gap: spacing.md,
+      justifyContent: 'flex-end',
+    },
+    actionButton: {
+      flex: 1,
+    },
+    primaryButton: {
+      flex: 1,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.brand,
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    secondaryButton: {
+      flex: 1,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    primaryButtonText: {
+      ...typography.button,
+      color: theme.colors.surface,
+    },
+    secondaryButtonText: {
+      ...typography.button,
+      color: theme.colors.textPrimary,
+    },
+    buttonPressed: {
+      opacity: 0.86,
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
+  });

@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { colors, spacing, typography } from '../../design/tokens';
+import { useTheme } from '../../design/ThemeProvider';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import { spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import {
   CalendarDisplayEvent,
   CalendarUiState,
@@ -58,15 +61,15 @@ function formatHourLabel(hour: number, timeFormat: TimeFormat): string {
   return `${displayHour} ${period}`;
 }
 
-function getEventColor(event: CalendarDisplayEvent): string {
+function getEventColor(event: CalendarDisplayEvent, theme: Theme): string {
   if (event.ownership === 'device' && event.calendarColor) return event.calendarColor;
-  if (event.status === 'completed') return colors.textSecondary;
-  if (event.status === 'canceled') return colors.surfaceMuted;
-  return colors.brand;
+  if (event.status === 'completed') return theme.colors.textSecondary;
+  if (event.status === 'canceled') return theme.colors.surfaceMuted;
+  return theme.colors.brand;
 }
 
-function getEventTextColor(status: EventStatus): string {
-  return status === 'canceled' ? colors.textSecondary : '#F4F8FA';
+function getEventTextColor(status: EventStatus, theme: Theme): string {
+  return status === 'canceled' ? theme.colors.textSecondary : '#F4F8FA';
 }
 
 function getEventTop(startAt: Date): number {
@@ -129,6 +132,8 @@ export function WeekTimeline({
   uiState,
   timeFormat = DEFAULT_TIME_FORMAT,
 }: WeekTimelineProps) {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const scrollViewRef = useRef<ScrollView>(null);
   const [viewportHeight, setViewportHeight] = useState(0);
   const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
@@ -225,10 +230,13 @@ export function WeekTimeline({
                       accessibilityRole="button"
                       accessibilityLabel={event.title}
                       onPress={() => onPressEvent(event)}
-                      style={[styles.allDayEvent, { backgroundColor: getEventColor(event) }]}
+                      style={[styles.allDayEvent, { backgroundColor: getEventColor(event, theme) }]}
                     >
                       <Text
-                        style={[styles.eventTitle, { color: getEventTextColor(event.status) }]}
+                        style={[
+                          styles.eventTitle,
+                          { color: getEventTextColor(event.status, theme) },
+                        ]}
                         numberOfLines={1}
                       >
                         {event.title}
@@ -276,18 +284,18 @@ export function WeekTimeline({
                         height: getEventHeight(event.startAt, event.endAt),
                         left: `${(lane / laneCount) * 100}%`,
                         width: `${100 / laneCount}%`,
-                        backgroundColor: getEventColor(event),
+                        backgroundColor: getEventColor(event, theme),
                       },
                     ]}
                   >
                     <Text
-                      style={[styles.eventTitle, { color: getEventTextColor(event.status) }]}
+                      style={[styles.eventTitle, { color: getEventTextColor(event.status, theme) }]}
                       numberOfLines={1}
                     >
                       {event.title}
                     </Text>
                     <Text
-                      style={[styles.eventTime, { color: getEventTextColor(event.status) }]}
+                      style={[styles.eventTime, { color: getEventTextColor(event.status, theme) }]}
                       numberOfLines={1}
                     >
                       {formatClockTime(event.startAt, timeFormat)}
@@ -303,151 +311,152 @@ export function WeekTimeline({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    minWidth: 760,
-    backgroundColor: colors.surface,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  stateContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing['2xl'],
-  },
-  stateText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  errorText: {
-    color: colors.dangerText,
-  },
-  dayHeaderRow: {
-    flexDirection: 'row',
-    minHeight: 68,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  stickyHeaderBlock: {
-    minHeight: WEEK_HEADER_MIN_HEIGHT,
-    backgroundColor: colors.surface,
-    zIndex: 4,
-  },
-  labelColumn: {
-    width: LABEL_COLUMN_WIDTH,
-  },
-  dayHeader: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    borderLeftWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  todayHeader: {
-    backgroundColor: colors.surfaceBrand,
-  },
-  dayName: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  dayNumber: {
-    ...typography.button,
-    color: colors.text,
-  },
-  todayText: {
-    color: colors.brand,
-  },
-  allDayRow: {
-    flexDirection: 'row',
-    minHeight: 38,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  allDayLabel: {
-    ...typography.helper,
-    width: LABEL_COLUMN_WIDTH,
-    paddingRight: spacing.sm,
-    paddingTop: spacing.sm,
-    color: colors.textSecondary,
-    fontSize: 11,
-    textAlign: 'right',
-  },
-  allDayColumn: {
-    flex: 1,
-    padding: 2,
-    gap: 2,
-    borderLeftWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  allDayEvent: {
-    minHeight: 26,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xs,
-    borderRadius: 4,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  timelineRow: {
-    height: TOTAL_HEIGHT,
-    flexDirection: 'row',
-  },
-  hourLabels: {
-    width: LABEL_COLUMN_WIDTH,
-    height: TOTAL_HEIGHT,
-    position: 'relative',
-  },
-  hourLabel: {
-    ...typography.helper,
-    position: 'absolute',
-    right: spacing.sm,
-    color: colors.textSecondary,
-    fontSize: 11,
-  },
-  dayColumn: {
-    flex: 1,
-    height: TOTAL_HEIGHT,
-    position: 'relative',
-    borderLeftWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  hourLine: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-  },
-  currentTimeLine: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: colors.brand,
-    zIndex: 3,
-  },
-  eventBlock: {
-    position: 'absolute',
-    zIndex: 2,
-    minWidth: 24,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 3,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: colors.surface,
-    overflow: 'hidden',
-  },
-  eventTitle: {
-    ...typography.helper,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  eventTime: {
-    fontSize: 10,
-    opacity: 0.9,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      minWidth: 760,
+      backgroundColor: theme.colors.surface,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.border,
+    },
+    stateContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing['2xl'],
+    },
+    stateText: {
+      ...typography.body,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+    },
+    errorText: {
+      color: theme.colors.dangerText,
+    },
+    dayHeaderRow: {
+      flexDirection: 'row',
+      minHeight: 68,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.border,
+    },
+    stickyHeaderBlock: {
+      minHeight: WEEK_HEADER_MIN_HEIGHT,
+      backgroundColor: theme.colors.surface,
+      zIndex: 4,
+    },
+    labelColumn: {
+      width: LABEL_COLUMN_WIDTH,
+    },
+    dayHeader: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      borderLeftWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.border,
+    },
+    todayHeader: {
+      backgroundColor: theme.colors.surfaceBrand,
+    },
+    dayName: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    dayNumber: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    todayText: {
+      color: theme.colors.brand,
+    },
+    allDayRow: {
+      flexDirection: 'row',
+      minHeight: 38,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.border,
+    },
+    allDayLabel: {
+      ...typography.helper,
+      width: LABEL_COLUMN_WIDTH,
+      paddingRight: spacing.sm,
+      paddingTop: spacing.sm,
+      color: theme.colors.textSecondary,
+      fontSize: 11,
+      textAlign: 'right',
+    },
+    allDayColumn: {
+      flex: 1,
+      padding: 2,
+      gap: 2,
+      borderLeftWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.border,
+    },
+    allDayEvent: {
+      minHeight: 26,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.xs,
+      borderRadius: 4,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    timelineRow: {
+      height: TOTAL_HEIGHT,
+      flexDirection: 'row',
+    },
+    hourLabels: {
+      width: LABEL_COLUMN_WIDTH,
+      height: TOTAL_HEIGHT,
+      position: 'relative',
+    },
+    hourLabel: {
+      ...typography.helper,
+      position: 'absolute',
+      right: spacing.sm,
+      color: theme.colors.textSecondary,
+      fontSize: 11,
+    },
+    dayColumn: {
+      flex: 1,
+      height: TOTAL_HEIGHT,
+      position: 'relative',
+      borderLeftWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.border,
+    },
+    hourLine: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.colors.border,
+    },
+    currentTimeLine: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      height: 2,
+      backgroundColor: theme.colors.brand,
+      zIndex: 3,
+    },
+    eventBlock: {
+      position: 'absolute',
+      zIndex: 2,
+      minWidth: 24,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 3,
+      borderRadius: 4,
+      borderWidth: 1,
+      borderColor: theme.colors.surface,
+      overflow: 'hidden',
+    },
+    eventTitle: {
+      ...typography.helper,
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    eventTime: {
+      fontSize: 10,
+      opacity: 0.9,
+    },
+  });

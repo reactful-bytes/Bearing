@@ -10,7 +10,9 @@ import {
   ViewStyle,
 } from 'react-native';
 
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 
 type FormFieldProps = Omit<TextInputProps, 'style'> & {
   label: string;
@@ -37,6 +39,7 @@ export function FormField({
   accessibilityHint,
   ...inputProps
 }: FormFieldProps) {
+  const styles = useThemedStyles(createStyles);
   const id = useId();
   const labelId = `${id}-label`;
   const messageId = `${id}-message`;
@@ -71,33 +74,34 @@ export function FormField({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    gap: spacing.sm,
-  },
-  label: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  input: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  multiline: {
-    minHeight: 120,
-  },
-  helper: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  error: {
-    ...typography.helper,
-    color: colors.dangerText,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      gap: spacing.sm,
+    },
+    label: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    input: {
+      minHeight: 48,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surface,
+      color: theme.colors.text,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+    },
+    multiline: {
+      minHeight: 120,
+    },
+    helper: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    error: {
+      ...typography.helper,
+      color: theme.colors.dangerText,
+    },
+  });

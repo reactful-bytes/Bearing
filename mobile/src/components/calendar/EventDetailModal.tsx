@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useTheme } from '../../design/ThemeProvider';
+import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppModal } from '../ui/AppModal';
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import {
   BearingEvent,
   CalendarDisplayEvent,
@@ -66,6 +69,8 @@ export function EventDetailModal({
   locale,
   timeFormat = DEFAULT_TIME_FORMAT,
 }: EventDetailModalProps) {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -212,10 +217,10 @@ export function EventDetailModal({
               style={[
                 styles.metaValue,
                 event.status === 'completed'
-                  ? { color: colors.brand }
+                  ? { color: theme.colors.brand }
                   : event.status === 'canceled'
-                    ? { color: colors.dangerText }
-                    : { color: colors.textSecondary },
+                    ? { color: theme.colors.dangerText }
+                    : { color: theme.colors.textSecondary },
               ]}
             >
               {statusLabel(event.status)}
@@ -298,113 +303,114 @@ export function EventDetailModal({
   );
 }
 
-const styles = StyleSheet.create({
-  eventTitle: {
-    ...typography.button,
-    fontSize: 18,
-    color: colors.text,
-  },
-  metaRow: {
-    gap: spacing.xs,
-  },
-  metaLabel: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  metaValue: {
-    ...typography.body,
-    color: colors.text,
-  },
-  errorText: {
-    ...typography.helper,
-    color: colors.dangerText,
-  },
-  readOnlyText: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  retryButton: {
-    borderRadius: radii.sm,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.surfaceBrand,
-    alignItems: 'center',
-  },
-  retryButtonDisabled: {
-    opacity: 0.5,
-  },
-  retryButtonText: {
-    ...typography.button,
-    color: colors.brand,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  editButton: {
-    flex: 1,
-    borderRadius: radii.sm,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.surfaceBrand,
-    alignItems: 'center',
-  },
-  editButtonText: {
-    ...typography.button,
-    color: colors.brand,
-  },
-  deleteButton: {
-    flex: 1,
-    borderRadius: radii.sm,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.dangerSurface,
-    alignItems: 'center',
-  },
-  actionButtonPressed: {
-    opacity: 0.8,
-  },
-  deleteButtonText: {
-    ...typography.button,
-    color: colors.dangerText,
-  },
-  confirmRow: {
-    gap: spacing.sm,
-  },
-  confirmText: {
-    ...typography.body,
-    color: colors.text,
-  },
-  confirmButtons: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  cancelButton: {
-    flex: 1,
-    borderRadius: radii.sm,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.surfaceMuted,
-    alignItems: 'center',
-  },
-  cancelButtonPressed: {
-    opacity: 0.8,
-  },
-  cancelButtonText: {
-    ...typography.button,
-    color: colors.textPrimary,
-  },
-  confirmDeleteButton: {
-    flex: 1,
-    borderRadius: radii.sm,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.dangerSurface,
-    alignItems: 'center',
-  },
-  confirmDeleteButtonDisabled: {
-    opacity: 0.5,
-  },
-  confirmDeleteButtonPressed: {
-    opacity: 0.8,
-  },
-  confirmDeleteButtonText: {
-    ...typography.button,
-    color: colors.dangerText,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    eventTitle: {
+      ...typography.button,
+      fontSize: 18,
+      color: theme.colors.text,
+    },
+    metaRow: {
+      gap: spacing.xs,
+    },
+    metaLabel: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    metaValue: {
+      ...typography.body,
+      color: theme.colors.text,
+    },
+    errorText: {
+      ...typography.helper,
+      color: theme.colors.dangerText,
+    },
+    readOnlyText: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    retryButton: {
+      borderRadius: radii.sm,
+      paddingVertical: spacing.md,
+      backgroundColor: theme.colors.surfaceBrand,
+      alignItems: 'center',
+    },
+    retryButtonDisabled: {
+      opacity: 0.5,
+    },
+    retryButtonText: {
+      ...typography.button,
+      color: theme.colors.brand,
+    },
+    actionRow: {
+      flexDirection: 'row',
+      gap: spacing.md,
+    },
+    editButton: {
+      flex: 1,
+      borderRadius: radii.sm,
+      paddingVertical: spacing.md,
+      backgroundColor: theme.colors.surfaceBrand,
+      alignItems: 'center',
+    },
+    editButtonText: {
+      ...typography.button,
+      color: theme.colors.brand,
+    },
+    deleteButton: {
+      flex: 1,
+      borderRadius: radii.sm,
+      paddingVertical: spacing.md,
+      backgroundColor: theme.colors.dangerSurface,
+      alignItems: 'center',
+    },
+    actionButtonPressed: {
+      opacity: 0.8,
+    },
+    deleteButtonText: {
+      ...typography.button,
+      color: theme.colors.dangerText,
+    },
+    confirmRow: {
+      gap: spacing.sm,
+    },
+    confirmText: {
+      ...typography.body,
+      color: theme.colors.text,
+    },
+    confirmButtons: {
+      flexDirection: 'row',
+      gap: spacing.md,
+    },
+    cancelButton: {
+      flex: 1,
+      borderRadius: radii.sm,
+      paddingVertical: spacing.md,
+      backgroundColor: theme.colors.surfaceMuted,
+      alignItems: 'center',
+    },
+    cancelButtonPressed: {
+      opacity: 0.8,
+    },
+    cancelButtonText: {
+      ...typography.button,
+      color: theme.colors.textPrimary,
+    },
+    confirmDeleteButton: {
+      flex: 1,
+      borderRadius: radii.sm,
+      paddingVertical: spacing.md,
+      backgroundColor: theme.colors.dangerSurface,
+      alignItems: 'center',
+    },
+    confirmDeleteButtonDisabled: {
+      opacity: 0.5,
+    },
+    confirmDeleteButtonPressed: {
+      opacity: 0.8,
+    },
+    confirmDeleteButtonText: {
+      ...typography.button,
+      color: theme.colors.dangerText,
+    },
+  });

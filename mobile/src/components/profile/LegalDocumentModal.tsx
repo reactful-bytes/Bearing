@@ -1,6 +1,8 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { colors, spacing, typography } from '../../design/tokens';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import { spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import { LegalDocument } from '../../features/profile/legalDocuments';
 import { AppModal } from '../ui/AppModal';
 
@@ -10,6 +12,7 @@ type LegalDocumentModalProps = {
 };
 
 export function LegalDocumentModal({ document, onClose }: LegalDocumentModalProps) {
+  const styles = useThemedStyles(createStyles);
   return (
     <AppModal visible={document !== null} title={document?.title ?? 'Legal'} onClose={onClose}>
       {document ? (
@@ -31,28 +34,29 @@ export function LegalDocumentModal({ document, onClose }: LegalDocumentModalProp
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    gap: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  effectiveDate: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  notice: {
-    ...typography.body,
-    color: colors.dangerText,
-  },
-  section: {
-    gap: spacing.sm,
-  },
-  heading: {
-    ...typography.button,
-    color: colors.text,
-  },
-  body: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    content: {
+      gap: spacing.lg,
+      paddingBottom: spacing.xl,
+    },
+    effectiveDate: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    notice: {
+      ...typography.body,
+      color: theme.colors.dangerText,
+    },
+    section: {
+      gap: spacing.sm,
+    },
+    heading: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    body: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+  });

@@ -8,9 +8,12 @@ import {
   Text,
   View,
 } from 'react-native';
+
+import { useThemedStyles } from '../../design/useThemedStyles';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colors, componentTokens, radii, spacing, typography } from '../../design/tokens';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 
 type AppModalProps = {
   visible: boolean;
@@ -31,6 +34,7 @@ export function AppModal({
   fullScreen = false,
   children,
 }: AppModalProps) {
+  const styles = useThemedStyles(createStyles);
   return (
     <Modal
       visible={visible}
@@ -79,71 +83,72 @@ export function AppModal({
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(11, 31, 42, 0.42)',
-  },
-  backdropPressArea: {
-    ...StyleSheet.absoluteFill,
-  },
-  fullScreenBackdrop: {
-    backgroundColor: colors.background,
-  },
-  sheet: {
-    maxHeight: '88%',
-    borderTopLeftRadius: radii.xl,
-    borderTopRightRadius: radii.xl,
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing['2xl'],
-    paddingTop: spacing['2xl'],
-    paddingBottom: spacing['3xl'],
-    gap: spacing.lg,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  title: {
-    ...typography.screenTitle,
-    color: colors.text,
-    flex: 1,
-  },
-  closeButton: {
-    minWidth: 44,
-    minHeight: 44,
-    borderRadius: componentTokens.button.borderRadius,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeButtonText: {
-    ...typography.helper,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  body: {
-    flexShrink: 1,
-    minHeight: 0,
-    gap: spacing.md,
-  },
-  fullScreenSheet: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing['2xl'],
-    paddingTop: spacing['2xl'],
-    gap: spacing.lg,
-  },
-  fullScreenBody: {
-    flex: 1,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      justifyContent: 'flex-end',
+      backgroundColor: 'rgba(11, 31, 42, 0.42)',
+    },
+    backdropPressArea: {
+      ...StyleSheet.absoluteFill,
+    },
+    fullScreenBackdrop: {
+      backgroundColor: theme.colors.background,
+    },
+    sheet: {
+      maxHeight: '88%',
+      borderTopLeftRadius: radii.xl,
+      borderTopRightRadius: radii.xl,
+      backgroundColor: theme.colors.background,
+      paddingHorizontal: spacing['2xl'],
+      paddingTop: spacing['2xl'],
+      paddingBottom: spacing['3xl'],
+      gap: spacing.lg,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+    },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    title: {
+      ...typography.screenTitle,
+      color: theme.colors.text,
+      flex: 1,
+    },
+    closeButton: {
+      minWidth: 44,
+      minHeight: 44,
+      borderRadius: theme.componentTokens.button.borderRadius,
+      paddingHorizontal: spacing.md,
+      backgroundColor: theme.colors.surfaceMuted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    closeButtonText: {
+      ...typography.helper,
+      fontWeight: '600',
+      color: theme.colors.textPrimary,
+    },
+    body: {
+      flexShrink: 1,
+      minHeight: 0,
+      gap: spacing.md,
+    },
+    fullScreenSheet: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+      paddingHorizontal: spacing['2xl'],
+      paddingTop: spacing['2xl'],
+      gap: spacing.lg,
+    },
+    fullScreenBody: {
+      flex: 1,
+    },
+  });

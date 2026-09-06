@@ -9,7 +9,9 @@ import {
   ViewStyle,
 } from 'react-native';
 
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 
 export type AppButtonVariant = 'primary' | 'secondary' | 'danger';
 
@@ -34,6 +36,7 @@ export function AppButton({
   textStyle,
   ...pressableProps
 }: AppButtonProps) {
+  const styles = useThemedStyles(createStyles);
   const isDisabled = disabled || loading;
 
   return (
@@ -62,45 +65,46 @@ export function AppButton({
   );
 }
 
-const styles = StyleSheet.create({
-  base: {
-    minHeight: 44,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primary: {
-    backgroundColor: colors.brand,
-  },
-  secondary: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  danger: {
-    backgroundColor: colors.dangerSurface,
-    borderWidth: 1,
-    borderColor: colors.dangerText,
-  },
-  pressed: {
-    opacity: 0.86,
-  },
-  disabled: {
-    opacity: 0.6,
-  },
-  text: {
-    ...typography.button,
-    textAlign: 'center',
-  },
-  primaryText: {
-    color: colors.surface,
-  },
-  secondaryText: {
-    color: colors.textPrimary,
-  },
-  dangerText: {
-    color: colors.dangerText,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    base: {
+      minHeight: 44,
+      borderRadius: radii.md,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    primary: {
+      backgroundColor: theme.colors.brand,
+    },
+    secondary: {
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    danger: {
+      backgroundColor: theme.colors.dangerSurface,
+      borderWidth: 1,
+      borderColor: theme.colors.dangerText,
+    },
+    pressed: {
+      opacity: 0.86,
+    },
+    disabled: {
+      opacity: 0.6,
+    },
+    text: {
+      ...typography.button,
+      textAlign: 'center',
+    },
+    primaryText: {
+      color: theme.colors.surface,
+    },
+    secondaryText: {
+      color: theme.colors.textPrimary,
+    },
+    dangerText: {
+      color: theme.colors.dangerText,
+    },
+  });

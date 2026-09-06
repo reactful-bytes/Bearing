@@ -14,7 +14,7 @@ import { useThemedStyles } from './src/design/useThemedStyles';
 
 function AppContent() {
   const { status, user, error, retry } = useAuthBootstrap();
-  const { preference, theme } = useTheme();
+  const { preference } = useTheme();
   const styles = useThemedStyles(createStyles);
   const [authActionError, setAuthActionError] = useState<string | null>(null);
   const [isAuthActionPending, setIsAuthActionPending] = useState(false);

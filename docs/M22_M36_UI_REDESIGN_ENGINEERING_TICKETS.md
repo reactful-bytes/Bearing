@@ -30,16 +30,16 @@ auth, navigation, or feature-screen redesign begins before it passes.
 
 ## M22 - Theme and Icon Infrastructure
 
-| Ticket | Status      | Deliverable                                     | Acceptance                                                                                  |
-| ------ | ----------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| M22.1  | completed   | Persist design-reference images                 | Verified the three supplied PNGs at the required `docs/mockups/` paths                      |
-| M22.2  | completed   | Install compatible navigation and icon packages | Expo installer added `@expo/vector-icons` 15.0.2 and native-stack 7.18.10; typecheck passes |
-| M22.3  | completed   | Define semantic dark and light tokens           | Semantic color/type/spacing/radius/layout/component themes plus dark compatibility aliases  |
-| M22.4  | completed   | Add persisted theme provider                    | Focused tests cover dark fallback, AsyncStorage restore, hydration, and persistence         |
-| M22.5  | completed   | Add themed stylesheet helper                    | `useThemedStyles` powers the root and navigation shell without raw colors                   |
-| M22.6  | in-progress | Create icon inventory and assets                | References are reviewed; transparent Bearing and mountain/flag density assets remain        |
-| M22.7  | completed   | Add typed icon registry and AppIcon             | Registry unit test covers every entry, requested dimensions, tint path, and labeling        |
-| M22.8  | in-progress | Apply theme to app shell                        | Root/status bar/tab shell migrated; 45 production dark-alias consumers remain               |
+| Ticket | Status    | Deliverable                                     | Acceptance                                                                                  |
+| ------ | --------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| M22.1  | completed | Persist design-reference images                 | Verified the three supplied PNGs at the required `docs/mockups/` paths                      |
+| M22.2  | completed | Install compatible navigation and icon packages | Expo installer added `@expo/vector-icons` 15.0.2 and native-stack 7.18.10; typecheck passes |
+| M22.3  | completed | Define semantic dark and light tokens           | Semantic color/type/spacing/radius/layout/component themes plus dark compatibility aliases  |
+| M22.4  | completed | Add persisted theme provider                    | Focused tests cover dark fallback, AsyncStorage restore, hydration, and persistence         |
+| M22.5  | completed | Add themed stylesheet helper                    | `useThemedStyles` powers the root and navigation shell without raw colors                   |
+| M22.6  | completed | Create icon inventory and assets                | Reviewed references; transparent 24/48/72px Bearing and mountain/flag assets are generated  |
+| M22.7  | completed | Add typed icon registry and AppIcon             | Registry unit test covers every entry, requested dimensions, tint path, and labeling        |
+| M22.8  | completed | Apply theme to app shell                        | Root, tab shell, and all 45 production former dark-alias consumers use active theme tokens  |
 
 ## M23 - Shared UI Primitives
 
@@ -206,8 +206,9 @@ auth, navigation, or feature-screen redesign begins before it passes.
 
 ## Validation Log
 
-| Date       | Tickets      | Result  | Evidence                                                                                                       |
-| ---------- | ------------ | ------- | -------------------------------------------------------------------------------------------------------------- |
-| 2026-09-05 | M22-M36      | planned | Ticket decomposition created from the approved UI redesign architecture. No implementation has started.        |
-| 2026-09-05 | M22.2-M22.7  | passed  | `npm run typecheck`; focused ThemeProvider, AppIcon, and AppTabs Jest tests pass.                              |
-| 2026-09-05 | M22.1, M22.8 | open    | Reference PNG binaries require attachment handoff; remaining legacy token consumers use compatibility aliases. |
+| Date       | Tickets             | Result  | Evidence                                                                                                                            |
+| ---------- | ------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-05 | M22-M36             | planned | Ticket decomposition created from the approved UI redesign architecture. No implementation has started.                             |
+| 2026-09-05 | M22.2-M22.7         | passed  | `npm run typecheck`; focused ThemeProvider, AppIcon, and AppTabs Jest tests pass.                                                   |
+| 2026-09-05 | M22.1, M22.8        | open    | Reference PNG binaries require attachment handoff; remaining legacy token consumers use compatibility aliases.                      |
+| 2026-09-05 | M22.1, M22.6, M22.8 | passed  | Mockups persisted; six transparent density assets generated; no production dark-alias imports; full Jest, typecheck, and lint pass. |

@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { useTheme } from '../../design/ThemeProvider';
+import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppCard } from '../ui/AppCard';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import { PremiumFeature, getPremiumPaywallCopy } from '../../features/premium/premiumAccess';
 import { usePremiumPurchase } from '../../features/premium/usePremiumPurchase';
 import { PremiumPlan } from '../../features/premium/purchaseTypes';
@@ -33,6 +36,8 @@ export function PremiumPaywallModal({
   hasPremiumAccess,
   onClose,
 }: PremiumPaywallModalProps) {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [legalDocumentId, setLegalDocumentId] = useState<LegalDocumentId | null>(null);
   const [selectedPackageIdentifier, setSelectedPackageIdentifier] = useState<string | null>(null);
   const [confirmationPlan, setConfirmationPlan] = useState<PremiumPlan | null>(null);
@@ -344,7 +349,7 @@ export function PremiumPaywallModal({
                 <View style={styles.progressIndicator}>
                   <ActivityIndicator
                     accessibilityLabel="Activating Bearing 360 purchase"
-                    color={colors.brand}
+                    color={theme.colors.brand}
                     size="large"
                   />
                 </View>
@@ -399,253 +404,254 @@ export function PremiumPaywallModal({
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    gap: spacing.md,
-    paddingBottom: spacing['3xl'],
-  },
-  heroBlock: {
-    gap: spacing.sm,
-  },
-  badge: {
-    ...typography.label,
-    color: colors.brand,
-  },
-  headline: {
-    ...typography.screenTitle,
-    color: colors.text,
-  },
-  body: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  highlightsCard: {
-    gap: spacing.md,
-  },
-  sectionTitle: {
-    ...typography.button,
-    color: colors.text,
-  },
-  highlightList: {
-    gap: spacing.md,
-  },
-  highlightRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-  },
-  highlightDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.brand,
-    marginTop: 8,
-  },
-  highlightText: {
-    ...typography.body,
-    color: colors.textPrimary,
-    flex: 1,
-  },
-  planColumn: {
-    gap: spacing.md,
-  },
-  planCard: {
-    minHeight: 56,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-  },
-  planCardSelected: {
-    borderColor: colors.brand,
-    backgroundColor: colors.surfaceBrand,
-  },
-  planCardPressed: {
-    opacity: 0.88,
-  },
-  planHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  planTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  selectionIndicator: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: colors.textSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  selectionIndicatorSelected: {
-    borderColor: colors.brand,
-  },
-  selectionIndicatorFill: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.brand,
-  },
-  planDetails: {
-    flex: 1,
-    minWidth: 0,
-    gap: spacing.xs,
-  },
-  planPriceBlock: {
-    alignItems: 'flex-end',
-    flexShrink: 0,
-  },
-  planName: {
-    ...typography.button,
-    color: colors.text,
-  },
-  planSummary: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  planPrice: {
-    ...typography.button,
-    color: colors.brand,
-    textAlign: 'right',
-  },
-  planIntroductoryOffer: {
-    ...typography.helper,
-    color: colors.brand,
-  },
-  planOfferBadge: {
-    alignSelf: 'flex-start',
-    borderRadius: radii.sm,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  planMeta: {
-    ...typography.helper,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-  footnote: {
-    ...typography.helper,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-  legalActions: {
-    gap: spacing.sm,
-  },
-  accountNote: {
-    ...typography.helper,
-    color: colors.brand,
-    lineHeight: 20,
-  },
-  errorText: {
-    ...typography.helper,
-    color: colors.dangerText,
-  },
-  purchaseState: {
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  transactionContent: {
-    gap: spacing.md,
-  },
-  transactionPlan: {
-    gap: spacing.xs,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceMuted,
-    padding: spacing.md,
-  },
-  transactionPlanLabel: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  transactionPlanRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  transactionPlanTitle: {
-    ...typography.button,
-    color: colors.text,
-    flex: 1,
-  },
-  transactionPlanPrice: {
-    ...typography.button,
-    color: colors.brand,
-  },
-  progressIndicator: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceBrand,
-  },
-  resultMark: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resultMarkSuccess: {
-    backgroundColor: colors.surfaceBrand,
-  },
-  resultMarkFailure: {
-    backgroundColor: colors.surfaceMuted,
-  },
-  resultMarkText: {
-    ...typography.title,
-    color: colors.brand,
-  },
-  purchaseStateTitle: {
-    ...typography.button,
-    color: colors.text,
-    textAlign: 'center',
-  },
-  purchaseStateDescription: {
-    ...typography.helper,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  confirmationContent: {
-    gap: spacing.lg,
-  },
-  confirmationIntro: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  confirmationPlan: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceMuted,
-    padding: spacing.lg,
-  },
-  confirmationPlanDetails: {
-    flex: 1,
-    minWidth: 0,
-    gap: spacing.xs,
-  },
-  confirmationPlanTitle: {
-    ...typography.button,
-    color: colors.text,
-  },
-  confirmationPlanPrice: {
-    ...typography.button,
-    color: colors.brand,
-    textAlign: 'right',
-  },
-  confirmationTerms: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    content: {
+      gap: spacing.md,
+      paddingBottom: spacing['3xl'],
+    },
+    heroBlock: {
+      gap: spacing.sm,
+    },
+    badge: {
+      ...typography.label,
+      color: theme.colors.brand,
+    },
+    headline: {
+      ...typography.screenTitle,
+      color: theme.colors.text,
+    },
+    body: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+    highlightsCard: {
+      gap: spacing.md,
+    },
+    sectionTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    highlightList: {
+      gap: spacing.md,
+    },
+    highlightRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.sm,
+    },
+    highlightDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.colors.brand,
+      marginTop: 8,
+    },
+    highlightText: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+      flex: 1,
+    },
+    planColumn: {
+      gap: spacing.md,
+    },
+    planCard: {
+      minHeight: 56,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surface,
+      padding: spacing.md,
+    },
+    planCardSelected: {
+      borderColor: theme.colors.brand,
+      backgroundColor: theme.colors.surfaceBrand,
+    },
+    planCardPressed: {
+      opacity: 0.88,
+    },
+    planHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+    },
+    planTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    selectionIndicator: {
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      borderWidth: 2,
+      borderColor: theme.colors.textSecondary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    selectionIndicatorSelected: {
+      borderColor: theme.colors.brand,
+    },
+    selectionIndicatorFill: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.colors.brand,
+    },
+    planDetails: {
+      flex: 1,
+      minWidth: 0,
+      gap: spacing.xs,
+    },
+    planPriceBlock: {
+      alignItems: 'flex-end',
+      flexShrink: 0,
+    },
+    planName: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    planSummary: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+    planPrice: {
+      ...typography.button,
+      color: theme.colors.brand,
+      textAlign: 'right',
+    },
+    planIntroductoryOffer: {
+      ...typography.helper,
+      color: theme.colors.brand,
+    },
+    planOfferBadge: {
+      alignSelf: 'flex-start',
+      borderRadius: radii.sm,
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+    },
+    planMeta: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      lineHeight: 20,
+    },
+    footnote: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      lineHeight: 20,
+    },
+    legalActions: {
+      gap: spacing.sm,
+    },
+    accountNote: {
+      ...typography.helper,
+      color: theme.colors.brand,
+      lineHeight: 20,
+    },
+    errorText: {
+      ...typography.helper,
+      color: theme.colors.dangerText,
+    },
+    purchaseState: {
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    transactionContent: {
+      gap: spacing.md,
+    },
+    transactionPlan: {
+      gap: spacing.xs,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surfaceMuted,
+      padding: spacing.md,
+    },
+    transactionPlanLabel: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    transactionPlanRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+    },
+    transactionPlanTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+      flex: 1,
+    },
+    transactionPlanPrice: {
+      ...typography.button,
+      color: theme.colors.brand,
+    },
+    progressIndicator: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.surfaceBrand,
+    },
+    resultMark: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    resultMarkSuccess: {
+      backgroundColor: theme.colors.surfaceBrand,
+    },
+    resultMarkFailure: {
+      backgroundColor: theme.colors.surfaceMuted,
+    },
+    resultMarkText: {
+      ...typography.title,
+      color: theme.colors.brand,
+    },
+    purchaseStateTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+      textAlign: 'center',
+    },
+    purchaseStateDescription: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+    },
+    confirmationContent: {
+      gap: spacing.lg,
+    },
+    confirmationIntro: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    confirmationPlan: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surfaceMuted,
+      padding: spacing.lg,
+    },
+    confirmationPlanDetails: {
+      flex: 1,
+      minWidth: 0,
+      gap: spacing.xs,
+    },
+    confirmationPlanTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    confirmationPlanPrice: {
+      ...typography.button,
+      color: theme.colors.brand,
+      textAlign: 'right',
+    },
+    confirmationTerms: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+  });

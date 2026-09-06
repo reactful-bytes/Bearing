@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { useThemedStyles } from '../design/useThemedStyles';
 import { AddEventModal } from '../components/calendar/AddEventModal';
 import { AddStepModal } from '../components/goals/AddStepModal';
 import { CreateGoalModal } from '../components/goals/CreateGoalModal';
@@ -12,7 +13,8 @@ import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
-import { colors, layout, radii, spacing, typography } from '../design/tokens';
+import { layout, radii, spacing, typography } from '../design/tokens';
+import type { Theme } from '../design/tokens';
 import {
   CreateGoalInput,
   CreateGoalStepInput,
@@ -54,6 +56,7 @@ function getGoalProgressPercent(goal: GoalWithSteps): number {
 }
 
 export function GoalsScreen() {
+  const styles = useThemedStyles(createStyles);
   const { createEvent, publicationCalendarTitle } = useCalendarPublication();
   const { authUser, isAnonymous, profile } = useUserProfile();
   const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
@@ -392,97 +395,98 @@ export function GoalsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  contentContainer: {
-    flexGrow: 1,
-    paddingHorizontal: layout.pagePaddingHorizontal,
-    paddingVertical: layout.pagePaddingVertical,
-    gap: spacing.xl,
-    paddingBottom: 120,
-  },
-  stateTitle: {
-    ...typography.button,
-    color: colors.text,
-  },
-  stateDescription: {
-    ...typography.body,
-    color: colors.textPrimary,
-    marginTop: spacing.sm,
-  },
-  goalCardPressable: {
-    borderRadius: radii.lg,
-  },
-  goalCardPressed: {
-    opacity: 0.88,
-  },
-  goalCard: {
-    gap: spacing.sm,
-  },
-  goalHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  goalTitle: {
-    ...typography.button,
-    fontSize: 18,
-    color: colors.text,
-    flex: 1,
-  },
-  goalStatus: {
-    ...typography.helper,
-    color: colors.brand,
-    fontWeight: '700',
-  },
-  goalDate: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  goalNextStep: {
-    ...typography.helper,
-    color: colors.textPrimary,
-  },
-  progressCopyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  goalProgress: {
-    ...typography.helper,
-    color: colors.textSecondary,
-    flex: 1,
-  },
-  goalProgressPercent: {
-    ...typography.helper,
-    color: colors.brand,
-    fontWeight: '700',
-  },
-  progressTrack: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.surface,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
-    backgroundColor: colors.brand,
-  },
-  fabContainer: {
-    position: 'absolute',
-    right: layout.pagePaddingHorizontal,
-    bottom: layout.pagePaddingVertical,
-  },
-  smallFab: {
-    alignSelf: 'flex-end',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.lg,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    contentContainer: {
+      flexGrow: 1,
+      paddingHorizontal: layout.pagePaddingHorizontal,
+      paddingVertical: layout.pagePaddingVertical,
+      gap: spacing.xl,
+      paddingBottom: 120,
+    },
+    stateTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    stateDescription: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+      marginTop: spacing.sm,
+    },
+    goalCardPressable: {
+      borderRadius: radii.lg,
+    },
+    goalCardPressed: {
+      opacity: 0.88,
+    },
+    goalCard: {
+      gap: spacing.sm,
+    },
+    goalHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    goalTitle: {
+      ...typography.button,
+      fontSize: 18,
+      color: theme.colors.text,
+      flex: 1,
+    },
+    goalStatus: {
+      ...typography.helper,
+      color: theme.colors.brand,
+      fontWeight: '700',
+    },
+    goalDate: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    goalNextStep: {
+      ...typography.helper,
+      color: theme.colors.textPrimary,
+    },
+    progressCopyRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+    },
+    goalProgress: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      flex: 1,
+    },
+    goalProgressPercent: {
+      ...typography.helper,
+      color: theme.colors.brand,
+      fontWeight: '700',
+    },
+    progressTrack: {
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.colors.surface,
+      overflow: 'hidden',
+    },
+    progressFill: {
+      height: '100%',
+      borderRadius: 4,
+      backgroundColor: theme.colors.brand,
+    },
+    fabContainer: {
+      position: 'absolute',
+      right: layout.pagePaddingHorizontal,
+      bottom: layout.pagePaddingVertical,
+    },
+    smallFab: {
+      alignSelf: 'flex-end',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radii.lg,
+    },
+  });

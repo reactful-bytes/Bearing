@@ -1,6 +1,8 @@
 import { Pressable, StyleProp, StyleSheet, Text, ViewStyle } from 'react-native';
 
-import { componentTokens, radii, spacing, typography } from '../../design/tokens';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 
 type FloatingActionButtonProps = {
   label?: string;
@@ -21,6 +23,7 @@ export function FloatingActionButton({
   style,
   labelColor,
 }: FloatingActionButtonProps) {
+  const styles = useThemedStyles(createStyles);
   return (
     <Pressable
       accessibilityRole="button"
@@ -42,31 +45,32 @@ export function FloatingActionButton({
   );
 }
 
-const styles = StyleSheet.create({
-  button: {
-    minHeight: 52,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: radii.xl,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    alignSelf: 'flex-start',
-    backgroundColor: componentTokens.button.backgroundColor,
-  },
-  buttonPressed: {
-    opacity: 0.86,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  icon: {
-    ...typography.button,
-    color: componentTokens.button.textColor,
-    lineHeight: 18,
-  },
-  label: {
-    ...typography.button,
-    color: componentTokens.button.textColor,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    button: {
+      minHeight: 52,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderRadius: radii.xl,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      alignSelf: 'flex-start',
+      backgroundColor: theme.componentTokens.button.backgroundColor,
+    },
+    buttonPressed: {
+      opacity: 0.86,
+    },
+    buttonDisabled: {
+      opacity: 0.5,
+    },
+    icon: {
+      ...typography.button,
+      color: theme.componentTokens.button.textColor,
+      lineHeight: 18,
+    },
+    label: {
+      ...typography.button,
+      color: theme.componentTokens.button.textColor,
+    },
+  });

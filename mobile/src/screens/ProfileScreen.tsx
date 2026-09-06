@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 
+import { useThemedStyles } from '../design/useThemedStyles';
 import { AppButton } from '../components/ui/AppButton';
 import { GoogleAuthButton } from '../components/auth/GoogleAuthButton';
 import { AppModal } from '../components/ui/AppModal';
@@ -27,7 +28,8 @@ import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { SectionHeading } from '../components/ui/SectionHeading';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
-import { colors, layout, radii, spacing, typography } from '../design/tokens';
+import { layout, radii, spacing, typography } from '../design/tokens';
+import type { Theme } from '../design/tokens';
 import {
   buildIcsFilename,
   downloadIcsFileOnWeb,
@@ -91,6 +93,7 @@ type ProfileScreenProps = {
 };
 
 export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScreenProps) {
+  const styles = useThemedStyles(createStyles);
   const {
     authUser,
     profile,
@@ -1446,233 +1449,234 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  contentContainer: {
-    flexGrow: 1,
-    paddingHorizontal: layout.pagePaddingHorizontal,
-    paddingVertical: layout.pagePaddingVertical,
-    gap: spacing.xl,
-    paddingBottom: 120,
-  },
-  stateTitle: {
-    ...typography.button,
-    color: colors.text,
-  },
-  stateDescription: {
-    ...typography.body,
-    color: colors.textPrimary,
-    marginTop: spacing.sm,
-  },
-  section: {
-    gap: spacing.md,
-    paddingBottom: spacing.xl,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  sectionBody: {
-    gap: spacing.md,
-  },
-  deletionOption: {
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-  },
-  sectionTitle: {
-    ...typography.button,
-    color: colors.text,
-  },
-  fieldGroup: {
-    gap: spacing.sm,
-  },
-  label: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  input: {
-    minHeight: 44,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  selectionButton: {
-    minHeight: 44,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    gap: spacing.xs,
-  },
-  selectionLabel: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  selectionValue: {
-    ...typography.body,
-    color: colors.text,
-  },
-  selectionMeta: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  identitySummary: {
-    minHeight: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceMuted,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  identityMark: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.brand,
-  },
-  identityInitial: {
-    ...typography.button,
-    color: colors.surface,
-  },
-  identityCopy: {
-    flex: 1,
-    minWidth: 0,
-    gap: spacing.xs,
-  },
-  identityName: {
-    ...typography.button,
-    color: colors.text,
-  },
-  identityEmail: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  primaryButton: {
-    minHeight: 44,
-    borderRadius: radii.md,
-    backgroundColor: colors.brand,
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  primaryButtonText: {
-    ...typography.button,
-    color: colors.surface,
-  },
-  buttonPressed: {
-    opacity: 0.85,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  errorText: {
-    ...typography.helper,
-    color: colors.dangerText,
-  },
-  successText: {
-    ...typography.helper,
-    color: colors.brand,
-  },
-  actionBlock: {
-    gap: spacing.md,
-  },
-  connectionMetaBlock: {
-    gap: spacing.xs,
-  },
-  connectionCalendarBlock: {
-    gap: spacing.sm,
-  },
-  secondaryActionButton: {
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  secondaryActionButtonText: {
-    ...typography.button,
-    color: colors.text,
-  },
-  calendarSelectionRow: {
-    minHeight: 44,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  calendarSelectionRowSelected: {
-    backgroundColor: colors.surfaceBrand,
-  },
-  calendarSelectionCopy: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  telemetryPreferenceRow: {
-    minHeight: 56,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  telemetryPreferenceCopy: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  optionStateText: {
-    ...typography.helper,
-    color: colors.brand,
-    fontWeight: '600',
-  },
-  disconnectButton: {
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.dangerText,
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  disconnectButtonText: {
-    ...typography.button,
-    color: colors.dangerText,
-  },
-  tipsButton: {
-    minHeight: 44,
-    justifyContent: 'center',
-    alignSelf: 'flex-start',
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.brand,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-  },
-  tipsButtonText: {
-    ...typography.button,
-    color: colors.brand,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    contentContainer: {
+      flexGrow: 1,
+      paddingHorizontal: layout.pagePaddingHorizontal,
+      paddingVertical: layout.pagePaddingVertical,
+      gap: spacing.xl,
+      paddingBottom: 120,
+    },
+    stateTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    stateDescription: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+      marginTop: spacing.sm,
+    },
+    section: {
+      gap: spacing.md,
+      paddingBottom: spacing.xl,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    sectionBody: {
+      gap: spacing.md,
+    },
+    deletionOption: {
+      gap: spacing.xs,
+      paddingVertical: spacing.sm,
+    },
+    sectionTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    fieldGroup: {
+      gap: spacing.sm,
+    },
+    label: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    input: {
+      minHeight: 44,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surface,
+      color: theme.colors.text,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+    },
+    selectionButton: {
+      minHeight: 44,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      gap: spacing.xs,
+    },
+    selectionLabel: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    selectionValue: {
+      ...typography.body,
+      color: theme.colors.text,
+    },
+    selectionMeta: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    identitySummary: {
+      minHeight: 56,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surfaceMuted,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    identityMark: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.brand,
+    },
+    identityInitial: {
+      ...typography.button,
+      color: theme.colors.surface,
+    },
+    identityCopy: {
+      flex: 1,
+      minWidth: 0,
+      gap: spacing.xs,
+    },
+    identityName: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    identityEmail: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    primaryButton: {
+      minHeight: 44,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.brand,
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    primaryButtonText: {
+      ...typography.button,
+      color: theme.colors.surface,
+    },
+    buttonPressed: {
+      opacity: 0.85,
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
+    errorText: {
+      ...typography.helper,
+      color: theme.colors.dangerText,
+    },
+    successText: {
+      ...typography.helper,
+      color: theme.colors.brand,
+    },
+    actionBlock: {
+      gap: spacing.md,
+    },
+    connectionMetaBlock: {
+      gap: spacing.xs,
+    },
+    connectionCalendarBlock: {
+      gap: spacing.sm,
+    },
+    secondaryActionButton: {
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    secondaryActionButtonText: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    calendarSelectionRow: {
+      minHeight: 44,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+    },
+    calendarSelectionRowSelected: {
+      backgroundColor: theme.colors.surfaceBrand,
+    },
+    calendarSelectionCopy: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    telemetryPreferenceRow: {
+      minHeight: 56,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    telemetryPreferenceCopy: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    optionStateText: {
+      ...typography.helper,
+      color: theme.colors.brand,
+      fontWeight: '600',
+    },
+    disconnectButton: {
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.dangerText,
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    disconnectButtonText: {
+      ...typography.button,
+      color: theme.colors.dangerText,
+    },
+    tipsButton: {
+      minHeight: 44,
+      justifyContent: 'center',
+      alignSelf: 'flex-start',
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.brand,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.md,
+    },
+    tipsButtonText: {
+      ...typography.button,
+      color: theme.colors.brand,
+    },
+  });

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppCard } from '../ui/AppCard';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
@@ -19,7 +20,8 @@ import {
   getGoalDateFromParts,
   isFutureDate,
 } from './GoalDatePicker';
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import { GoalStepRecord, GoalWithSteps } from '../../features/goals/goalTypes';
 import { DraggableStepList } from './DraggableStepList';
 
@@ -57,6 +59,7 @@ export function GoalDetailsModal({
   onToggleStepStatus,
   onReorderSteps,
 }: GoalDetailsModalProps) {
+  const styles = useThemedStyles(createStyles);
   const [editMode, setEditMode] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -313,110 +316,111 @@ export function GoalDetailsModal({
   );
 }
 
-const styles = StyleSheet.create({
-  scrollView: {
-    flexShrink: 1,
-  },
-  content: {
-    gap: spacing.lg,
-  },
-  section: {
-    gap: spacing.md,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  sectionTitle: {
-    ...typography.button,
-    color: colors.text,
-  },
-  summaryCard: {
-    gap: spacing.sm,
-  },
-  goalTitle: {
-    ...typography.button,
-    fontSize: 18,
-    color: colors.text,
-  },
-  milestoneTitle: {
-    ...typography.button,
-    color: colors.text,
-  },
-  goalDescription: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  metaText: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  headerButton: {
-    minHeight: 44,
-  },
-  headerButtonText: {
-    ...typography.helper,
-    color: colors.textPrimary,
-    fontWeight: '700',
-  },
-  fieldGroup: {
-    gap: spacing.xs,
-  },
-  label: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  input: {
-    ...typography.body,
-    color: colors.text,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  textArea: {
-    minHeight: 96,
-    textAlignVertical: 'top',
-  },
-  actionColumn: {
-    gap: spacing.md,
-  },
-  primaryButton: {
-    borderRadius: radii.md,
-    backgroundColor: colors.brand,
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  primaryButtonText: {
-    ...typography.button,
-    color: colors.surface,
-  },
-  secondaryButton: {
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  secondaryButtonText: {
-    ...typography.button,
-    color: colors.textPrimary,
-  },
-  buttonPressed: {
-    opacity: 0.84,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  errorText: {
-    ...typography.helper,
-    color: colors.dangerText,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    scrollView: {
+      flexShrink: 1,
+    },
+    content: {
+      gap: spacing.lg,
+    },
+    section: {
+      gap: spacing.md,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    sectionTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    summaryCard: {
+      gap: spacing.sm,
+    },
+    goalTitle: {
+      ...typography.button,
+      fontSize: 18,
+      color: theme.colors.text,
+    },
+    milestoneTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    goalDescription: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+    metaText: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    headerButton: {
+      minHeight: 44,
+    },
+    headerButtonText: {
+      ...typography.helper,
+      color: theme.colors.textPrimary,
+      fontWeight: '700',
+    },
+    fieldGroup: {
+      gap: spacing.xs,
+    },
+    label: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    input: {
+      ...typography.body,
+      color: theme.colors.text,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: radii.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    textArea: {
+      minHeight: 96,
+      textAlignVertical: 'top',
+    },
+    actionColumn: {
+      gap: spacing.md,
+    },
+    primaryButton: {
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.brand,
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    primaryButtonText: {
+      ...typography.button,
+      color: theme.colors.surface,
+    },
+    secondaryButton: {
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    secondaryButtonText: {
+      ...typography.button,
+      color: theme.colors.textPrimary,
+    },
+    buttonPressed: {
+      opacity: 0.84,
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
+    errorText: {
+      ...typography.helper,
+      color: theme.colors.dangerText,
+    },
+  });

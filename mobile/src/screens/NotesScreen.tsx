@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { useThemedStyles } from '../design/useThemedStyles';
 import { AddNoteModal } from '../components/notes/AddNoteModal';
 import { NoteDetailModal } from '../components/notes/NoteDetailModal';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { AppCard } from '../components/ui/AppCard';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
-import { colors, layout, radii, spacing, typography } from '../design/tokens';
+import { layout, radii, spacing, typography } from '../design/tokens';
+import type { Theme } from '../design/tokens';
 import { useNotes } from '../features/notes/useNotes';
 import { CreateNoteInput, NoteRecord, UpdateNoteInput } from '../features/notes/noteTypes';
 import { useUserProfile } from '../features/profile/useUserProfile';
@@ -28,6 +30,7 @@ function noteSourceLabel(note: NoteRecord): string {
 }
 
 export function NotesScreen() {
+  const styles = useThemedStyles(createStyles);
   const { notes, uiState, createNote, updateNote, deleteNote, retry } = useNotes();
   const { profile } = useUserProfile();
   const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
@@ -135,64 +138,65 @@ export function NotesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  contentContainer: {
-    flexGrow: 1,
-    paddingHorizontal: layout.pagePaddingHorizontal,
-    paddingVertical: layout.pagePaddingVertical,
-    gap: spacing.xl,
-    paddingBottom: 120,
-  },
-  stateTitle: {
-    ...typography.button,
-    color: colors.text,
-  },
-  stateDescription: {
-    ...typography.body,
-    color: colors.textPrimary,
-    marginTop: spacing.sm,
-  },
-  noteCard: {
-    gap: spacing.md,
-  },
-  noteCardPressed: {
-    opacity: 0.92,
-  },
-  noteMetaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  noteSource: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  noteDate: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  noteTitle: {
-    ...typography.button,
-    color: colors.text,
-  },
-  noteBody: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  fabContainer: {
-    position: 'absolute',
-    right: layout.pagePaddingHorizontal,
-    bottom: layout.pagePaddingVertical,
-  },
-  smallFab: {
-    alignSelf: 'flex-end',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.lg,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    contentContainer: {
+      flexGrow: 1,
+      paddingHorizontal: layout.pagePaddingHorizontal,
+      paddingVertical: layout.pagePaddingVertical,
+      gap: spacing.xl,
+      paddingBottom: 120,
+    },
+    stateTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    stateDescription: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+      marginTop: spacing.sm,
+    },
+    noteCard: {
+      gap: spacing.md,
+    },
+    noteCardPressed: {
+      opacity: 0.92,
+    },
+    noteMetaRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    noteSource: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    noteDate: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    noteTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    noteBody: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+    fabContainer: {
+      position: 'absolute',
+      right: layout.pagePaddingHorizontal,
+      bottom: layout.pagePaddingVertical,
+    },
+    smallFab: {
+      alignSelf: 'flex-end',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radii.lg,
+    },
+  });

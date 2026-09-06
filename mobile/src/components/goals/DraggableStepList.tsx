@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import { GoalStepRecord } from '../../features/goals/goalTypes';
 
 type DraggableStepListProps = {
@@ -17,6 +19,7 @@ export function DraggableStepList({
   onToggleStepStatus,
   onReorder,
 }: DraggableStepListProps) {
+  const styles = useThemedStyles(createStyles);
   const sortedSteps = useMemo(
     () => [...steps].sort((left, right) => left.order - right.order),
     [steps],
@@ -134,94 +137,95 @@ export function DraggableStepList({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    gap: spacing.md,
-  },
-  rowShell: {
-    minHeight: 104,
-  },
-  rowCard: {
-    flex: 1,
-    borderRadius: radii.lg,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    flexDirection: 'row',
-    gap: spacing.md,
-    alignItems: 'center',
-  },
-  rowMain: {
-    flex: 1,
-    minHeight: 44,
-    justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  rowMainPressed: {
-    opacity: 0.82,
-  },
-  rowTitle: {
-    ...typography.button,
-    color: colors.text,
-  },
-  rowDescription: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  completedText: {
-    color: colors.textSecondary,
-    textDecorationLine: 'line-through',
-  },
-  statusColumn: {
-    justifyContent: 'center',
-  },
-  moveColumn: {
-    width: 44,
-    alignItems: 'stretch',
-    justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  statusButton: {
-    minHeight: 44,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceBrand,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  statusButtonCompleted: {
-    backgroundColor: colors.surfaceMuted,
-  },
-  statusButtonPressed: {
-    opacity: 0.84,
-  },
-  statusButtonText: {
-    ...typography.helper,
-    color: colors.brand,
-    fontWeight: '700',
-  },
-  statusButtonCompletedText: {
-    color: colors.textSecondary,
-  },
-  moveButton: {
-    minWidth: 44,
-    height: 44,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  moveButtonDisabled: {
-    opacity: 0.45,
-  },
-  moveButtonText: {
-    ...typography.button,
-    color: colors.textPrimary,
-  },
-  moveButtonTextDisabled: {
-    color: colors.textSecondary,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      gap: spacing.md,
+    },
+    rowShell: {
+      minHeight: 104,
+    },
+    rowCard: {
+      flex: 1,
+      borderRadius: radii.lg,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      flexDirection: 'row',
+      gap: spacing.md,
+      alignItems: 'center',
+    },
+    rowMain: {
+      flex: 1,
+      minHeight: 44,
+      justifyContent: 'center',
+      gap: spacing.xs,
+    },
+    rowMainPressed: {
+      opacity: 0.82,
+    },
+    rowTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    rowDescription: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    completedText: {
+      color: theme.colors.textSecondary,
+      textDecorationLine: 'line-through',
+    },
+    statusColumn: {
+      justifyContent: 'center',
+    },
+    moveColumn: {
+      width: 44,
+      alignItems: 'stretch',
+      justifyContent: 'center',
+      gap: spacing.xs,
+    },
+    statusButton: {
+      minHeight: 44,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surfaceBrand,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    statusButtonCompleted: {
+      backgroundColor: theme.colors.surfaceMuted,
+    },
+    statusButtonPressed: {
+      opacity: 0.84,
+    },
+    statusButtonText: {
+      ...typography.helper,
+      color: theme.colors.brand,
+      fontWeight: '700',
+    },
+    statusButtonCompletedText: {
+      color: theme.colors.textSecondary,
+    },
+    moveButton: {
+      minWidth: 44,
+      height: 44,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surfaceMuted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    moveButtonDisabled: {
+      opacity: 0.45,
+    },
+    moveButtonText: {
+      ...typography.button,
+      color: theme.colors.textPrimary,
+    },
+    moveButtonTextDisabled: {
+      color: theme.colors.textSecondary,
+    },
+  });

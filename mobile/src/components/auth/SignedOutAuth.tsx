@@ -2,7 +2,9 @@ import { AuthCredential } from 'firebase/auth';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, spacing, typography } from '../../design/tokens';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import { spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import { useGoogleAuth } from '../../features/auth/useGoogleAuth';
 import {
   completeGooglePasswordConflict,
@@ -54,6 +56,7 @@ function getAuthCopy(screen: AuthScreen): { heading: string; description: string
 }
 
 export function SignedOutAuth() {
+  const styles = useThemedStyles(createStyles);
   const googleAuth = useGoogleAuth();
   const [screen, setScreen] = useState<AuthScreen>('sign-in');
   const [operation, setOperation] = useState<AuthOperation>(null);
@@ -379,6 +382,7 @@ export function SignedOutAuth() {
 }
 
 function AuthFeedback({ error, message }: { error: string | null; message: string | null }) {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.feedbackRegion}>
       {error ? (
@@ -395,43 +399,44 @@ function AuthFeedback({ error, message }: { error: string | null; message: strin
   );
 }
 
-const styles = StyleSheet.create({
-  providerSection: {
-    gap: spacing.sm,
-  },
-  formSection: {
-    gap: spacing.md,
-  },
-  passwordGroup: {
-    gap: 0,
-  },
-  forgotLink: {
-    fontSize: 14,
-  },
-  helper: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  feedbackRegion: {
-    minHeight: 20,
-    justifyContent: 'center',
-  },
-  errorText: {
-    ...typography.helper,
-    color: colors.dangerText,
-  },
-  successText: {
-    ...typography.helper,
-    color: colors.brand,
-  },
-  accountPrompt: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  promptText: {
-    ...typography.body,
-    color: colors.textSecondary,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    providerSection: {
+      gap: spacing.sm,
+    },
+    formSection: {
+      gap: spacing.md,
+    },
+    passwordGroup: {
+      gap: 0,
+    },
+    forgotLink: {
+      fontSize: 14,
+    },
+    helper: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    feedbackRegion: {
+      minHeight: 20,
+      justifyContent: 'center',
+    },
+    errorText: {
+      ...typography.helper,
+      color: theme.colors.dangerText,
+    },
+    successText: {
+      ...typography.helper,
+      color: theme.colors.brand,
+    },
+    accountPrompt: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    promptText: {
+      ...typography.body,
+      color: theme.colors.textSecondary,
+    },
+  });

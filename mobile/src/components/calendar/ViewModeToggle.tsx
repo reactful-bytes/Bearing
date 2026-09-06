@@ -1,6 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import { ViewMode } from '../../features/calendar/calendarTypes';
 
 type ViewModeToggleProps = {
@@ -16,6 +18,7 @@ const MODES: { key: ViewMode; label: string }[] = [
 ];
 
 export function ViewModeToggle({ mode, onChange, showWeek = false }: ViewModeToggleProps) {
+  const styles = useThemedStyles(createStyles);
   const visibleModes = showWeek ? MODES : MODES.filter(({ key }) => key !== 'week');
 
   return (
@@ -36,30 +39,31 @@ export function ViewModeToggle({ mode, onChange, showWeek = false }: ViewModeTog
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radii.md,
-    padding: 3,
-    alignSelf: 'center',
-    marginVertical: spacing.md,
-  },
-  segment: {
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.sm,
-    alignItems: 'center',
-    minWidth: 72,
-  },
-  segmentActive: {
-    backgroundColor: colors.brand,
-  },
-  label: {
-    ...typography.button,
-    color: colors.textSecondary,
-  },
-  labelActive: {
-    color: '#F4F8FA',
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      backgroundColor: theme.colors.surfaceMuted,
+      borderRadius: radii.md,
+      padding: 3,
+      alignSelf: 'center',
+      marginVertical: spacing.md,
+    },
+    segment: {
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.sm,
+      borderRadius: radii.sm,
+      alignItems: 'center',
+      minWidth: 72,
+    },
+    segmentActive: {
+      backgroundColor: theme.colors.brand,
+    },
+    label: {
+      ...typography.button,
+      color: theme.colors.textSecondary,
+    },
+    labelActive: {
+      color: '#F4F8FA',
+    },
+  });

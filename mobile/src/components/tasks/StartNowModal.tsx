@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 
+import { useTheme } from '../../design/ThemeProvider';
+import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { FormField } from '../ui/FormField';
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import { TaskRecord } from '../../features/tasks/taskTypes';
 import { CreateEventOptions } from '../../features/calendar/calendarTypes';
 
@@ -25,6 +28,8 @@ export function StartNowModal({
   onClose,
   onConfirm,
 }: StartNowModalProps) {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [minutes, setMinutes] = useState(DEFAULT_MINUTES);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -78,8 +83,8 @@ export function StartNowModal({
           <Switch
             value={publishToDevice}
             onValueChange={setPublishToDevice}
-            trackColor={{ false: colors.border, true: colors.surfaceBrand }}
-            thumbColor={publishToDevice ? colors.brand : colors.textSecondary}
+            trackColor={{ false: theme.colors.border, true: theme.colors.surfaceBrand }}
+            thumbColor={publishToDevice ? theme.colors.brand : theme.colors.textSecondary}
             accessibilityLabel={`Add to ${publicationCalendarTitle}`}
           />
         </View>
@@ -92,7 +97,7 @@ export function StartNowModal({
         onChangeText={setMinutes}
         keyboardType="number-pad"
         placeholder="30"
-        placeholderTextColor={colors.textSecondary}
+        placeholderTextColor={theme.colors.textSecondary}
         helperText="This will create an event starting immediately and open Focus Mode."
         error={error}
       />
@@ -108,38 +113,39 @@ export function StartNowModal({
   );
 }
 
-const styles = StyleSheet.create({
-  summaryCard: {
-    gap: spacing.xs,
-    borderRadius: radii.lg,
-    backgroundColor: colors.surfaceMuted,
-    padding: spacing.lg,
-  },
-  summaryLabel: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  summaryTitle: {
-    ...typography.button,
-    color: colors.text,
-  },
-  switchRow: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  switchLabelGroup: {
-    flex: 1,
-    gap: spacing.xs,
-    paddingRight: spacing.md,
-  },
-  label: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  helperText: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    summaryCard: {
+      gap: spacing.xs,
+      borderRadius: radii.lg,
+      backgroundColor: theme.colors.surfaceMuted,
+      padding: spacing.lg,
+    },
+    summaryLabel: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    summaryTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    switchRow: {
+      minHeight: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    switchLabelGroup: {
+      flex: 1,
+      gap: spacing.xs,
+      paddingRight: spacing.md,
+    },
+    label: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    helperText: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+  });

@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppCard } from '../ui/AppCard';
 import { AppModal } from '../ui/AppModal';
 import { FormField } from '../ui/FormField';
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import { ProfileSelectionOption } from '../../features/profile/profileOptions';
 
 type ProfileSelectionModalProps = {
@@ -26,6 +28,7 @@ export function ProfileSelectionModal({
   onClose,
   onSelect,
 }: ProfileSelectionModalProps) {
+  const styles = useThemedStyles(createStyles);
   const [query, setQuery] = useState('');
 
   const filteredOptions = useMemo(() => {
@@ -106,74 +109,75 @@ export function ProfileSelectionModal({
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    gap: spacing.md,
-  },
-  searchInput: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  resultsCard: {
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-  },
-  resultsLabel: {
-    ...typography.helper,
-    color: colors.textSecondary,
-    fontWeight: '700',
-  },
-  scrollList: {
-    maxHeight: 320,
-  },
-  optionRow: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  optionRowSelected: {
-    backgroundColor: colors.surfaceBrand,
-  },
-  optionCopy: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  optionLabel: {
-    ...typography.body,
-    color: colors.text,
-  },
-  optionValue: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  optionStatus: {
-    ...typography.helper,
-    color: colors.brand,
-    fontWeight: '600',
-  },
-  emptyState: {
-    gap: spacing.xs,
-    paddingVertical: spacing.md,
-  },
-  emptyStateTitle: {
-    ...typography.button,
-    color: colors.text,
-  },
-  emptyStateBody: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  buttonPressed: {
-    opacity: 0.85,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    content: {
+      gap: spacing.md,
+    },
+    searchInput: {
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surface,
+      color: theme.colors.text,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+    },
+    resultsCard: {
+      gap: spacing.sm,
+      paddingVertical: spacing.md,
+    },
+    resultsLabel: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      fontWeight: '700',
+    },
+    scrollList: {
+      maxHeight: 320,
+    },
+    optionRow: {
+      minHeight: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+      borderRadius: radii.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    optionRowSelected: {
+      backgroundColor: theme.colors.surfaceBrand,
+    },
+    optionCopy: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    optionLabel: {
+      ...typography.body,
+      color: theme.colors.text,
+    },
+    optionValue: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    optionStatus: {
+      ...typography.helper,
+      color: theme.colors.brand,
+      fontWeight: '600',
+    },
+    emptyState: {
+      gap: spacing.xs,
+      paddingVertical: spacing.md,
+    },
+    emptyStateTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    emptyStateBody: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    buttonPressed: {
+      opacity: 0.85,
+    },
+  });

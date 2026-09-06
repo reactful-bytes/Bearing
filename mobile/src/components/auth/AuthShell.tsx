@@ -1,7 +1,10 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
+
+import { useThemedStyles } from '../../design/useThemedStyles';
 import { ReactNode } from 'react';
 
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 
 type AuthShellProps = {
   heading: string;
@@ -10,6 +13,7 @@ type AuthShellProps = {
 };
 
 export function AuthShell({ heading, description, children }: AuthShellProps) {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.shell}>
       <View style={styles.brandRow}>
@@ -38,43 +42,44 @@ export function AuthShell({ heading, description, children }: AuthShellProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  shell: {
-    width: '100%',
-    gap: spacing.xl,
-  },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
-  },
-  logo: {
-    width: 84,
-    height: 84,
-    borderRadius: radii.md,
-  },
-  brandCopy: {
-    flex: 1,
-    minWidth: 0,
-    gap: spacing.xs,
-  },
-  brandName: {
-    ...typography.title,
-    color: colors.text,
-  },
-  tagline: {
-    ...typography.body,
-    color: colors.textSecondary,
-  },
-  intro: {
-    gap: spacing.sm,
-  },
-  heading: {
-    ...typography.screenTitle,
-    color: colors.text,
-  },
-  description: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    shell: {
+      width: '100%',
+      gap: spacing.xl,
+    },
+    brandRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.lg,
+    },
+    logo: {
+      width: 84,
+      height: 84,
+      borderRadius: radii.md,
+    },
+    brandCopy: {
+      flex: 1,
+      minWidth: 0,
+      gap: spacing.xs,
+    },
+    brandName: {
+      ...typography.title,
+      color: theme.colors.text,
+    },
+    tagline: {
+      ...typography.body,
+      color: theme.colors.textSecondary,
+    },
+    intro: {
+      gap: spacing.sm,
+    },
+    heading: {
+      ...typography.screenTitle,
+      color: theme.colors.text,
+    },
+    description: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+  });

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { useThemedStyles } from '../design/useThemedStyles';
 import { AddEventModal } from '../components/calendar/AddEventModal';
 import { AddTaskModal } from '../components/tasks/AddTaskModal';
 import { StartNowModal } from '../components/tasks/StartNowModal';
@@ -11,7 +12,8 @@ import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
-import { colors, layout, radii, spacing, typography } from '../design/tokens';
+import { layout, radii, spacing, typography } from '../design/tokens';
+import type { Theme } from '../design/tokens';
 import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { useTasks } from '../features/tasks/useTasks';
@@ -49,6 +51,7 @@ function completionLabel(task: TaskRecord): string {
 }
 
 export function TasksScreen() {
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NavigationProp<AppTabParamList>>();
   const { profile } = useUserProfile();
   const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
@@ -313,71 +316,72 @@ export function TasksScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  contentContainer: {
-    flexGrow: 1,
-    paddingHorizontal: layout.pagePaddingHorizontal,
-    paddingVertical: layout.pagePaddingVertical,
-    gap: spacing.xl,
-    paddingBottom: 120,
-  },
-  stateTitle: {
-    ...typography.button,
-    color: colors.text,
-  },
-  stateDescription: {
-    ...typography.body,
-    color: colors.textPrimary,
-    marginTop: spacing.sm,
-  },
-  taskCardPressable: {
-    borderRadius: radii.lg,
-  },
-  taskCardPressed: {
-    opacity: 0.92,
-  },
-  taskCard: {
-    gap: spacing.sm,
-  },
-  taskHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-  },
-  taskStatus: {
-    ...typography.label,
-    color: colors.brand,
-  },
-  taskDate: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  taskTitle: {
-    ...typography.button,
-    color: colors.text,
-    flex: 1,
-  },
-  taskDescription: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  fabContainer: {
-    position: 'absolute',
-    right: layout.pagePaddingHorizontal,
-    bottom: layout.pagePaddingVertical,
-  },
-  smallFab: {
-    alignSelf: 'flex-end',
-    width: 56,
-    minHeight: 56,
-    justifyContent: 'center',
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    borderRadius: 28,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    contentContainer: {
+      flexGrow: 1,
+      paddingHorizontal: layout.pagePaddingHorizontal,
+      paddingVertical: layout.pagePaddingVertical,
+      gap: spacing.xl,
+      paddingBottom: 120,
+    },
+    stateTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    stateDescription: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+      marginTop: spacing.sm,
+    },
+    taskCardPressable: {
+      borderRadius: radii.lg,
+    },
+    taskCardPressed: {
+      opacity: 0.92,
+    },
+    taskCard: {
+      gap: spacing.sm,
+    },
+    taskHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      gap: spacing.md,
+    },
+    taskStatus: {
+      ...typography.label,
+      color: theme.colors.brand,
+    },
+    taskDate: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    taskTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+      flex: 1,
+    },
+    taskDescription: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+    fabContainer: {
+      position: 'absolute',
+      right: layout.pagePaddingHorizontal,
+      bottom: layout.pagePaddingVertical,
+    },
+    smallFab: {
+      alignSelf: 'flex-end',
+      width: 56,
+      minHeight: 56,
+      justifyContent: 'center',
+      paddingHorizontal: 0,
+      paddingVertical: 0,
+      borderRadius: 28,
+    },
+  });

@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { useTheme } from '../../design/ThemeProvider';
+import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppButton } from '../ui/AppButton';
 import { FormField } from '../ui/FormField';
 import { EventDateTimePickerField } from './EventDateTimePickerField';
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import {
   CreateEventInput,
   CreateEventOptions,
@@ -98,6 +101,8 @@ export function EventForm({
   saveLabel = 'Save Event',
   onSave,
 }: EventFormProps) {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [values, setValues] = useState<CalendarEventFormValues>(() =>
     buildCalendarEventFormValues(initialDate, initialValues),
   );
@@ -197,7 +202,7 @@ export function EventForm({
         value={values.title}
         onChangeText={(value) => updateValue('title', value)}
         placeholder="Event title"
-        placeholderTextColor={colors.textSecondary}
+        placeholderTextColor={theme.colors.textSecondary}
         autoCapitalize="sentences"
         returnKeyType="next"
         accessibilityLabel="Event title"
@@ -208,7 +213,7 @@ export function EventForm({
         value={values.description}
         onChangeText={(value) => updateValue('description', value)}
         placeholder="Add notes"
-        placeholderTextColor={colors.textSecondary}
+        placeholderTextColor={theme.colors.textSecondary}
         multiline
         accessibilityLabel="Event description"
       />
@@ -218,8 +223,8 @@ export function EventForm({
         <Switch
           value={values.allDay}
           onValueChange={handleAllDayChange}
-          trackColor={{ false: colors.border, true: colors.surfaceBrand }}
-          thumbColor={values.allDay ? colors.brand : colors.textSecondary}
+          trackColor={{ false: theme.colors.border, true: theme.colors.surfaceBrand }}
+          thumbColor={values.allDay ? theme.colors.brand : theme.colors.textSecondary}
           accessibilityLabel="All-day event"
         />
       </View>
@@ -293,8 +298,8 @@ export function EventForm({
           <Switch
             value={publishToDevice}
             onValueChange={setPublishToDevice}
-            trackColor={{ false: colors.border, true: colors.surfaceBrand }}
-            thumbColor={publishToDevice ? colors.brand : colors.textSecondary}
+            trackColor={{ false: theme.colors.border, true: theme.colors.surfaceBrand }}
+            thumbColor={publishToDevice ? theme.colors.brand : theme.colors.textSecondary}
             accessibilityLabel={`Add to ${publicationCalendarTitle}`}
           />
         </View>
@@ -317,7 +322,7 @@ export function EventForm({
             value={values.timezone}
             onChangeText={(value) => updateValue('timezone', value)}
             placeholder="America/New_York"
-            placeholderTextColor={colors.textSecondary}
+            placeholderTextColor={theme.colors.textSecondary}
             autoCapitalize="none"
             autoCorrect={false}
             accessibilityLabel="Event timezone"
@@ -328,7 +333,7 @@ export function EventForm({
             value={values.location}
             onChangeText={(value) => updateValue('location', value)}
             placeholder="Add a location"
-            placeholderTextColor={colors.textSecondary}
+            placeholderTextColor={theme.colors.textSecondary}
             accessibilityLabel="Event location"
           />
 
@@ -531,7 +536,7 @@ export function EventForm({
             value={values.url}
             onChangeText={(value) => updateValue('url', value)}
             placeholder="https://"
-            placeholderTextColor={colors.textSecondary}
+            placeholderTextColor={theme.colors.textSecondary}
             keyboardType="url"
             autoCapitalize="none"
             autoCorrect={false}
@@ -553,186 +558,187 @@ export function EventForm({
   );
 }
 
-const styles = StyleSheet.create({
-  scrollView: {
-    flexShrink: 1,
-  },
-  content: {
-    gap: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  fieldGroup: {
-    gap: spacing.xs,
-  },
-  fieldLabel: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  input: {
-    ...typography.body,
-    color: colors.text,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  inputMultiline: {
-    minHeight: 72,
-    textAlignVertical: 'top',
-  },
-  switchRow: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  switchLabelGroup: {
-    flex: 1,
-    gap: spacing.xs,
-    paddingRight: spacing.md,
-  },
-  helperText: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  flexField: {
-    flex: 1,
-    minWidth: 0,
-  },
-  advancedButton: {
-    alignSelf: 'flex-start',
-    paddingVertical: spacing.sm,
-  },
-  advancedButtonText: {
-    ...typography.button,
-    color: colors.brand,
-  },
-  advancedFields: {
-    gap: spacing.md,
-  },
-  alertSelectorRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  alertSelector: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: 64,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: spacing.xs,
-  },
-  alertSelectorLabel: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  alertSelectorValue: {
-    ...typography.helper,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  alertOptions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surfaceMuted,
-    padding: spacing.sm,
-  },
-  alertOption: {
-    minHeight: 40,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    justifyContent: 'center',
-  },
-  alertOptionSelected: {
-    backgroundColor: colors.surfaceBrand,
-  },
-  alertOptionDisabled: {
-    opacity: 0.45,
-  },
-  alertOptionText: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  alertOptionTextSelected: {
-    color: colors.brand,
-    fontWeight: '700',
-  },
-  alertOptionTextDisabled: {
-    color: colors.textSecondary,
-  },
-  optionWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  weekdayRow: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  weekdayOption: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surface,
-  },
-  option: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.surface,
-  },
-  optionSelected: {
-    borderColor: colors.brand,
-    backgroundColor: colors.surfaceBrand,
-  },
-  optionText: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  optionTextSelected: {
-    color: colors.brand,
-    fontWeight: '700',
-  },
-  pressed: {
-    opacity: 0.65,
-  },
-  errorText: {
-    ...typography.helper,
-    color: colors.dangerText,
-  },
-  saveButton: {
-    borderRadius: radii.sm,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    backgroundColor: colors.brand,
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
-  saveButtonText: {
-    ...typography.button,
-    color: '#F4F8FA',
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    scrollView: {
+      flexShrink: 1,
+    },
+    content: {
+      gap: spacing.md,
+      paddingBottom: spacing.sm,
+    },
+    fieldGroup: {
+      gap: spacing.xs,
+    },
+    fieldLabel: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    input: {
+      ...typography.body,
+      color: theme.colors.text,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    inputMultiline: {
+      minHeight: 72,
+      textAlignVertical: 'top',
+    },
+    switchRow: {
+      minHeight: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    switchLabelGroup: {
+      flex: 1,
+      gap: spacing.xs,
+      paddingRight: spacing.md,
+    },
+    helperText: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    dateRow: {
+      flexDirection: 'row',
+      gap: spacing.md,
+    },
+    flexField: {
+      flex: 1,
+      minWidth: 0,
+    },
+    advancedButton: {
+      alignSelf: 'flex-start',
+      paddingVertical: spacing.sm,
+    },
+    advancedButtonText: {
+      ...typography.button,
+      color: theme.colors.brand,
+    },
+    advancedFields: {
+      gap: spacing.md,
+    },
+    alertSelectorRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    alertSelector: {
+      flex: 1,
+      minWidth: 0,
+      minHeight: 64,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: radii.sm,
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      gap: spacing.xs,
+    },
+    alertSelectorLabel: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    alertSelectorValue: {
+      ...typography.helper,
+      color: theme.colors.text,
+      fontWeight: '600',
+    },
+    alertOptions: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: radii.sm,
+      backgroundColor: theme.colors.surfaceMuted,
+      padding: spacing.sm,
+    },
+    alertOption: {
+      minHeight: 40,
+      borderRadius: radii.sm,
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: spacing.md,
+      justifyContent: 'center',
+    },
+    alertOptionSelected: {
+      backgroundColor: theme.colors.surfaceBrand,
+    },
+    alertOptionDisabled: {
+      opacity: 0.45,
+    },
+    alertOptionText: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    alertOptionTextSelected: {
+      color: theme.colors.brand,
+      fontWeight: '700',
+    },
+    alertOptionTextDisabled: {
+      color: theme.colors.textSecondary,
+    },
+    optionWrap: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    weekdayRow: {
+      flexDirection: 'row',
+      gap: spacing.xs,
+    },
+    weekdayOption: {
+      flex: 1,
+      minWidth: 0,
+      minHeight: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: radii.sm,
+      backgroundColor: theme.colors.surface,
+    },
+    option: {
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      backgroundColor: theme.colors.surface,
+    },
+    optionSelected: {
+      borderColor: theme.colors.brand,
+      backgroundColor: theme.colors.surfaceBrand,
+    },
+    optionText: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    optionTextSelected: {
+      color: theme.colors.brand,
+      fontWeight: '700',
+    },
+    pressed: {
+      opacity: 0.65,
+    },
+    errorText: {
+      ...typography.helper,
+      color: theme.colors.dangerText,
+    },
+    saveButton: {
+      borderRadius: radii.sm,
+      paddingVertical: spacing.md,
+      alignItems: 'center',
+      backgroundColor: theme.colors.brand,
+    },
+    saveButtonDisabled: {
+      opacity: 0.5,
+    },
+    saveButtonText: {
+      ...typography.button,
+      color: '#F4F8FA',
+    },
+  });

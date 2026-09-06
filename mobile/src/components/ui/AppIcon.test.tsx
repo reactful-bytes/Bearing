@@ -29,4 +29,12 @@ describe('AppIcon', () => {
       expect.arrayContaining([expect.objectContaining({ width: 32, height: 32 })]),
     );
   });
+
+  it('tints custom alpha-mask icons with an explicit color', () => {
+    render(<AppIcon name="goal" color="#22C55E" testID="goal-icon" />);
+
+    expect(screen.getByTestId('goal-icon').findByType('Image').props.style).toEqual(
+      expect.arrayContaining([expect.objectContaining({ tintColor: '#22C55E' })]),
+    );
+  });
 });

@@ -1,7 +1,9 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppCard } from '../ui/AppCard';
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 
 export type GoalDateField = 'month' | 'day' | 'year';
 
@@ -102,6 +104,7 @@ export function GoalDatePicker({
   onToggleField,
   onSelectField,
 }: GoalDatePickerProps) {
+  const styles = useThemedStyles(createStyles);
   const activeOptions = activeField ? optionsByField[activeField] : [];
 
   return (
@@ -175,71 +178,72 @@ export function GoalDatePicker({
   );
 }
 
-const styles = StyleSheet.create({
-  section: {
-    gap: spacing.md,
-  },
-  fieldGroup: {
-    gap: spacing.xs,
-  },
-  label: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  dateFieldRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  dateFieldButton: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    gap: spacing.xs,
-  },
-  dateFieldLabel: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  dateFieldValue: {
-    ...typography.body,
-    color: colors.text,
-  },
-  dateSummary: {
-    ...typography.body,
-    color: colors.text,
-  },
-  dateHint: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  dropdownCard: {
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-  },
-  dropdownTitle: {
-    ...typography.helper,
-    color: colors.textSecondary,
-    fontWeight: '700',
-  },
-  dropdownList: {
-    maxHeight: 176,
-  },
-  dropdownOption: {
-    minHeight: 44,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  dropdownOptionText: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  buttonPressed: {
-    opacity: 0.86,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    section: {
+      gap: spacing.md,
+    },
+    fieldGroup: {
+      gap: spacing.xs,
+    },
+    label: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    dateFieldRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    dateFieldButton: {
+      flex: 1,
+      minHeight: 44,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      gap: spacing.xs,
+    },
+    dateFieldLabel: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    dateFieldValue: {
+      ...typography.body,
+      color: theme.colors.text,
+    },
+    dateSummary: {
+      ...typography.body,
+      color: theme.colors.text,
+    },
+    dateHint: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    dropdownCard: {
+      gap: spacing.sm,
+      paddingVertical: spacing.md,
+    },
+    dropdownTitle: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      fontWeight: '700',
+    },
+    dropdownList: {
+      maxHeight: 176,
+    },
+    dropdownOption: {
+      minHeight: 44,
+      borderRadius: radii.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    dropdownOptionText: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+    buttonPressed: {
+      opacity: 0.86,
+    },
+  });

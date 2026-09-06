@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { useTheme } from '../../design/ThemeProvider';
+import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { FormField } from '../ui/FormField';
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import { CreateGoalStepInput } from '../../features/goals/goalTypes';
 
 type AddStepModalProps = {
@@ -76,6 +79,8 @@ function isFutureDate(date: Date, today: Date): boolean {
 }
 
 export function AddStepModal({ visible, onClose, onSave }: AddStepModalProps) {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const today = useMemo(() => new Date(), []);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -161,7 +166,7 @@ export function AddStepModal({ visible, onClose, onSave }: AddStepModalProps) {
         value={title}
         onChangeText={setTitle}
         placeholder="Add the next action"
-        placeholderTextColor={colors.textSecondary}
+        placeholderTextColor={theme.colors.textSecondary}
       />
 
       <FormField
@@ -171,7 +176,7 @@ export function AddStepModal({ visible, onClose, onSave }: AddStepModalProps) {
         onChangeText={setDescription}
         multiline
         placeholder="Optional details"
-        placeholderTextColor={colors.textSecondary}
+        placeholderTextColor={theme.colors.textSecondary}
       />
 
       <FormField
@@ -180,7 +185,7 @@ export function AddStepModal({ visible, onClose, onSave }: AddStepModalProps) {
         value={starter}
         onChangeText={setStarter}
         placeholder="Optional starter cue"
-        placeholderTextColor={colors.textSecondary}
+        placeholderTextColor={theme.colors.textSecondary}
       />
 
       <View style={styles.section}>
@@ -278,108 +283,109 @@ export function AddStepModal({ visible, onClose, onSave }: AddStepModalProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  section: {
-    gap: spacing.md,
-  },
-  fieldGroup: {
-    gap: spacing.xs,
-  },
-  label: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  input: {
-    ...typography.body,
-    color: colors.text,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  textArea: {
-    minHeight: 90,
-    textAlignVertical: 'top',
-  },
-  dateFieldRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  dateFieldButton: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    gap: spacing.xs,
-  },
-  dateFieldLabel: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  dateFieldValue: {
-    ...typography.body,
-    color: colors.text,
-  },
-  dateSummary: {
-    ...typography.body,
-    color: colors.text,
-  },
-  dateHint: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  dropdownCard: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    gap: spacing.sm,
-  },
-  dropdownTitle: {
-    ...typography.helper,
-    color: colors.textSecondary,
-    fontWeight: '700',
-  },
-  dropdownList: {
-    maxHeight: 176,
-  },
-  dropdownOption: {
-    minHeight: 44,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  dropdownOptionText: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  errorText: {
-    ...typography.helper,
-    color: colors.dangerText,
-  },
-  saveButton: {
-    borderRadius: radii.md,
-    backgroundColor: colors.brand,
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  saveButtonPressed: {
-    opacity: 0.88,
-  },
-  saveButtonDisabled: {
-    opacity: 0.6,
-  },
-  saveButtonText: {
-    ...typography.button,
-    color: colors.surface,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    section: {
+      gap: spacing.md,
+    },
+    fieldGroup: {
+      gap: spacing.xs,
+    },
+    label: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    input: {
+      ...typography.body,
+      color: theme.colors.text,
+      backgroundColor: theme.colors.surface,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    textArea: {
+      minHeight: 90,
+      textAlignVertical: 'top',
+    },
+    dateFieldRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    dateFieldButton: {
+      flex: 1,
+      minHeight: 44,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      gap: spacing.xs,
+    },
+    dateFieldLabel: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    dateFieldValue: {
+      ...typography.body,
+      color: theme.colors.text,
+    },
+    dateSummary: {
+      ...typography.body,
+      color: theme.colors.text,
+    },
+    dateHint: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    dropdownCard: {
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      gap: spacing.sm,
+    },
+    dropdownTitle: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      fontWeight: '700',
+    },
+    dropdownList: {
+      maxHeight: 176,
+    },
+    dropdownOption: {
+      minHeight: 44,
+      borderRadius: radii.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    dropdownOptionText: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+    errorText: {
+      ...typography.helper,
+      color: theme.colors.dangerText,
+    },
+    saveButton: {
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.brand,
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    saveButtonPressed: {
+      opacity: 0.88,
+    },
+    saveButtonDisabled: {
+      opacity: 0.6,
+    },
+    saveButtonText: {
+      ...typography.button,
+      color: theme.colors.surface,
+    },
+  });

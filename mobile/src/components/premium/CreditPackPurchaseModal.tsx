@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { useTheme } from '../../design/ThemeProvider';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import { useCreditPackPurchase } from '../../features/premium/useCreditPackPurchase';
 import { CreditPack, CreditPackSource } from '../../features/premium/purchaseTypes';
 import { AppButton } from '../ui/AppButton';
@@ -26,6 +29,8 @@ export function CreditPackPurchaseModal({
   onBalanceUpdated,
   onClose,
 }: CreditPackPurchaseModalProps) {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [selectedPack, setSelectedPack] = useState<CreditPack | null>(null);
   const [confirmationPack, setConfirmationPack] = useState<CreditPack | null>(null);
   const [transactionPack, setTransactionPack] = useState<CreditPack | null>(null);
@@ -118,7 +123,13 @@ export function CreditPackPurchaseModal({
       </AppModal>
       <AppModal
         visible={confirmationPack !== null || transactionPack !== null}
-        title={transactionPack ? (isPurchaseInProgress ? 'Completing Purchase' : 'Credit Pack Update') : 'Confirm Credit Pack'}
+        title={
+          transactionPack
+            ? isPurchaseInProgress
+              ? 'Completing Purchase'
+              : 'Credit Pack Update'
+            : 'Confirm Credit Pack'
+        }
         closeLabel={transactionPack ? 'Close' : 'Back'}
         onClose={() => {
           if (transactionPack) {
@@ -175,7 +186,7 @@ export function CreditPackPurchaseModal({
               <View style={styles.purchaseState}>
                 <ActivityIndicator
                   accessibilityLabel="Completing credit pack purchase"
-                  color={colors.brand}
+                  color={theme.colors.brand}
                   size="large"
                 />
                 <Text style={styles.purchaseStateTitle}>Confirming purchase</Text>
@@ -185,9 +196,7 @@ export function CreditPackPurchaseModal({
               </View>
             ) : isPurchaseComplete ? (
               <View style={styles.purchaseState}>
-                <View
-                  style={[styles.resultMark, purchase.error && styles.resultMarkFailure]}
-                >
+                <View style={[styles.resultMark, purchase.error && styles.resultMarkFailure]}>
                   <Text style={styles.resultMarkText}>{purchase.error ? '!' : '✓'}</Text>
                 </View>
                 <Text style={styles.purchaseStateTitle}>
@@ -215,131 +224,132 @@ export function CreditPackPurchaseModal({
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    gap: spacing.md,
-  },
-  balance: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  pack: {
-    minHeight: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    padding: spacing.md,
-  },
-  packSelected: {
-    borderColor: colors.brand,
-    backgroundColor: colors.surfaceBrand,
-  },
-  packAmount: {
-    ...typography.button,
-    color: colors.text,
-    flex: 1,
-  },
-  packPrice: {
-    ...typography.button,
-    color: colors.brand,
-  },
-  meta: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  confirmation: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  confirmationContent: {
-    gap: spacing.lg,
-  },
-  confirmationIntro: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  confirmationPack: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceMuted,
-    padding: spacing.lg,
-  },
-  confirmationPackDetails: {
-    flex: 1,
-    minWidth: 0,
-    gap: spacing.xs,
-  },
-  confirmationPackTitle: {
-    ...typography.button,
-    color: colors.text,
-  },
-  confirmationPackMeta: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  confirmationPackPrice: {
-    ...typography.button,
-    color: colors.brand,
-    textAlign: 'right',
-  },
-  confirmationTerms: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  error: {
-    ...typography.helper,
-    color: colors.dangerText,
-  },
-  feedback: {
-    ...typography.helper,
-    color: colors.brand,
-  },
-  transactionPack: {
-    gap: spacing.xs,
-  },
-  transactionPackLabel: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  transactionPackRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  purchaseState: {
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  purchaseStateTitle: {
-    ...typography.button,
-    color: colors.text,
-    textAlign: 'center',
-  },
-  purchaseStateDescription: {
-    ...typography.helper,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  resultMark: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceBrand,
-  },
-  resultMarkFailure: {
-    backgroundColor: colors.surfaceMuted,
-  },
-  resultMarkText: {
-    ...typography.screenTitle,
-    color: colors.brand,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    content: {
+      gap: spacing.md,
+    },
+    balance: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+    pack: {
+      minHeight: 56,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: radii.md,
+      padding: spacing.md,
+    },
+    packSelected: {
+      borderColor: theme.colors.brand,
+      backgroundColor: theme.colors.surfaceBrand,
+    },
+    packAmount: {
+      ...typography.button,
+      color: theme.colors.text,
+      flex: 1,
+    },
+    packPrice: {
+      ...typography.button,
+      color: theme.colors.brand,
+    },
+    meta: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    confirmation: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+    confirmationContent: {
+      gap: spacing.lg,
+    },
+    confirmationIntro: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    confirmationPack: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surfaceMuted,
+      padding: spacing.lg,
+    },
+    confirmationPackDetails: {
+      flex: 1,
+      minWidth: 0,
+      gap: spacing.xs,
+    },
+    confirmationPackTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    confirmationPackMeta: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    confirmationPackPrice: {
+      ...typography.button,
+      color: theme.colors.brand,
+      textAlign: 'right',
+    },
+    confirmationTerms: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+    error: {
+      ...typography.helper,
+      color: theme.colors.dangerText,
+    },
+    feedback: {
+      ...typography.helper,
+      color: theme.colors.brand,
+    },
+    transactionPack: {
+      gap: spacing.xs,
+    },
+    transactionPackLabel: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    transactionPackRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+    },
+    purchaseState: {
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    purchaseStateTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+      textAlign: 'center',
+    },
+    purchaseStateDescription: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+    },
+    resultMark: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.surfaceBrand,
+    },
+    resultMarkFailure: {
+      backgroundColor: theme.colors.surfaceMuted,
+    },
+    resultMarkText: {
+      ...typography.screenTitle,
+      color: theme.colors.brand,
+    },
+  });

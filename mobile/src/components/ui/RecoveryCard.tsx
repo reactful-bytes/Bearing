@@ -1,6 +1,8 @@
 import { StyleSheet, Text } from 'react-native';
 
-import { colors, spacing, typography } from '../../design/tokens';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import { spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import { AppButton } from './AppButton';
 import { AppCard } from './AppCard';
 
@@ -11,6 +13,7 @@ type RecoveryCardProps = {
 };
 
 export function RecoveryCard({ title, description, onRetry }: RecoveryCardProps) {
+  const styles = useThemedStyles(createStyles);
   return (
     <AppCard style={styles.card}>
       <Text style={styles.title}>{title}</Text>
@@ -20,8 +23,9 @@ export function RecoveryCard({ title, description, onRetry }: RecoveryCardProps)
   );
 }
 
-const styles = StyleSheet.create({
-  card: { gap: spacing.md },
-  title: { ...typography.button, color: colors.text },
-  description: { ...typography.body, color: colors.textPrimary },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    card: { gap: spacing.md },
+    title: { ...typography.button, color: theme.colors.text },
+    description: { ...typography.body, color: theme.colors.textPrimary },
+  });

@@ -8,6 +8,8 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+
+import { useThemedStyles } from '../design/useThemedStyles';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
@@ -19,7 +21,8 @@ import { MonthGrid, MONTH_NAMES } from '../components/calendar/MonthGrid';
 import { AddEventModal } from '../components/calendar/AddEventModal';
 import { EventDetailModal } from '../components/calendar/EventDetailModal';
 import { FocusModeOverlay } from '../components/calendar/FocusModeOverlay';
-import { colors, layout, spacing, typography } from '../design/tokens';
+import { layout, spacing, typography } from '../design/tokens';
+import type { Theme } from '../design/tokens';
 import {
   CalendarDisplayEvent,
   CalendarEvent,
@@ -123,6 +126,7 @@ export function CalendarScreen({
   route,
   navigation,
 }: CalendarScreenProps) {
+  const styles = useThemedStyles(createStyles);
   const { width: screenWidth } = useWindowDimensions();
   const isDesktopCalendar = Platform.OS === 'web' && screenWidth >= DESKTOP_CALENDAR_BREAKPOINT;
   const [selectedDate, setSelectedDate] = useState<Date>(initialDateOverride ?? new Date());
@@ -577,130 +581,131 @@ export function CalendarScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  calendarToolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingRight: spacing.md,
-  },
-  toolbarActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  refreshButton: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  buttonPressed: {
-    opacity: 0.65,
-  },
-  refreshButtonText: {
-    ...typography.button,
-    color: colors.brand,
-  },
-  deviceErrorText: {
-    ...typography.helper,
-    color: colors.dangerText,
-    paddingHorizontal: spacing.md,
-  },
-  monthContainer: {
-    flex: 1,
-  },
-  weekContainer: {
-    flex: 1,
-  },
-  weekNavRow: {
-    minHeight: 52,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  weekNavControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  weekNavButton: {
-    width: 40,
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  weekArrowText: {
-    fontSize: 28,
-    lineHeight: 32,
-    color: colors.brand,
-    fontWeight: '300',
-  },
-  todayButton: {
-    minHeight: 36,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 6,
-    backgroundColor: colors.surface,
-  },
-  todayButtonText: {
-    ...typography.button,
-    color: colors.brand,
-  },
-  weekRangeLabel: {
-    ...typography.button,
-    minWidth: 190,
-    color: colors.text,
-    textAlign: 'center',
-  },
-  monthNavRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-  },
-  monthArrow: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    minWidth: 36,
-    alignItems: 'center',
-  },
-  monthArrowPressed: {
-    opacity: 0.6,
-  },
-  monthArrowText: {
-    fontSize: 28,
-    lineHeight: 32,
-    color: colors.brand,
-    fontWeight: '300',
-  },
-  monthNavTitle: {
-    ...typography.button,
-    color: colors.text,
-    flex: 1,
-    textAlign: 'center',
-  },
-  fabContainer: {
-    position: 'absolute',
-    bottom: layout.pagePaddingVertical,
-    right: layout.pagePaddingHorizontal,
-    alignItems: 'flex-end',
-    gap: spacing.md,
-  },
-  primaryFab: {
-    alignSelf: 'flex-end',
-    backgroundColor: colors.textPrimary,
-  },
-  secondaryFab: {
-    alignSelf: 'flex-end',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    calendarToolbar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingRight: spacing.md,
+    },
+    toolbarActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    refreshButton: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    buttonPressed: {
+      opacity: 0.65,
+    },
+    refreshButtonText: {
+      ...typography.button,
+      color: theme.colors.brand,
+    },
+    deviceErrorText: {
+      ...typography.helper,
+      color: theme.colors.dangerText,
+      paddingHorizontal: spacing.md,
+    },
+    monthContainer: {
+      flex: 1,
+    },
+    weekContainer: {
+      flex: 1,
+    },
+    weekNavRow: {
+      minHeight: 52,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: spacing.md,
+    },
+    weekNavControls: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+    },
+    weekNavButton: {
+      width: 40,
+      minHeight: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    weekArrowText: {
+      fontSize: 28,
+      lineHeight: 32,
+      color: theme.colors.brand,
+      fontWeight: '300',
+    },
+    todayButton: {
+      minHeight: 36,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 6,
+      backgroundColor: theme.colors.surface,
+    },
+    todayButtonText: {
+      ...typography.button,
+      color: theme.colors.brand,
+    },
+    weekRangeLabel: {
+      ...typography.button,
+      minWidth: 190,
+      color: theme.colors.text,
+      textAlign: 'center',
+    },
+    monthNavRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.md,
+    },
+    monthArrow: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      minWidth: 36,
+      alignItems: 'center',
+    },
+    monthArrowPressed: {
+      opacity: 0.6,
+    },
+    monthArrowText: {
+      fontSize: 28,
+      lineHeight: 32,
+      color: theme.colors.brand,
+      fontWeight: '300',
+    },
+    monthNavTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+      flex: 1,
+      textAlign: 'center',
+    },
+    fabContainer: {
+      position: 'absolute',
+      bottom: layout.pagePaddingVertical,
+      right: layout.pagePaddingHorizontal,
+      alignItems: 'flex-end',
+      gap: spacing.md,
+    },
+    primaryFab: {
+      alignSelf: 'flex-end',
+      backgroundColor: theme.colors.textPrimary,
+    },
+    secondaryFab: {
+      alignSelf: 'flex-end',
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+  });

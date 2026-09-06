@@ -1,9 +1,11 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppCard } from '../ui/AppCard';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import { PROFILE_SOUND_OPTIONS } from '../../features/profile/profileSounds';
 
 type SoundPickerModalProps = {
@@ -29,6 +31,7 @@ export function SoundPickerModal({
   onPreview,
   onSelect,
 }: SoundPickerModalProps) {
+  const styles = useThemedStyles(createStyles);
   return (
     <AppModal visible={visible} title={title} onClose={onClose}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -81,85 +84,86 @@ export function SoundPickerModal({
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    gap: spacing.lg,
-  },
-  description: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  errorText: {
-    ...typography.helper,
-    color: colors.dangerText,
-  },
-  soundCard: {
-    gap: spacing.md,
-  },
-  soundCopy: {
-    gap: spacing.xs,
-  },
-  soundTitle: {
-    ...typography.button,
-    color: colors.text,
-  },
-  soundDescription: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  soundMeta: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  actionButton: {
-    flex: 1,
-  },
-  primaryButton: {
-    flex: 1,
-    borderRadius: radii.md,
-    backgroundColor: colors.brand,
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  primaryButtonText: {
-    ...typography.button,
-    color: colors.surface,
-  },
-  secondaryButton: {
-    flex: 1,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  secondaryButtonText: {
-    ...typography.button,
-    color: colors.textPrimary,
-  },
-  selectedButton: {
-    flex: 1,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceBrand,
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  selectedButtonText: {
-    ...typography.button,
-    color: colors.brand,
-  },
-  buttonPressed: {
-    opacity: 0.85,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    content: {
+      gap: spacing.lg,
+    },
+    description: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+    errorText: {
+      ...typography.helper,
+      color: theme.colors.dangerText,
+    },
+    soundCard: {
+      gap: spacing.md,
+    },
+    soundCopy: {
+      gap: spacing.xs,
+    },
+    soundTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    soundDescription: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+    soundMeta: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    actionsRow: {
+      flexDirection: 'row',
+      gap: spacing.md,
+    },
+    actionButton: {
+      flex: 1,
+    },
+    primaryButton: {
+      flex: 1,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.brand,
+      alignItems: 'center',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+    },
+    primaryButtonText: {
+      ...typography.button,
+      color: theme.colors.surface,
+    },
+    secondaryButton: {
+      flex: 1,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      alignItems: 'center',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+    },
+    secondaryButtonText: {
+      ...typography.button,
+      color: theme.colors.textPrimary,
+    },
+    selectedButton: {
+      flex: 1,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surfaceBrand,
+      alignItems: 'center',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+    },
+    selectedButtonText: {
+      ...typography.button,
+      color: theme.colors.brand,
+    },
+    buttonPressed: {
+      opacity: 0.85,
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
+  });

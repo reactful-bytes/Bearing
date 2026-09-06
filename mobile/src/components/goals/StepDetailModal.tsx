@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppCard } from '../ui/AppCard';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
@@ -19,7 +20,8 @@ import {
   getGoalDateFromParts,
   isFutureDate,
 } from './GoalDatePicker';
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import { CalendarEvent } from '../../features/calendar/calendarTypes';
 import { GoalStepRecord } from '../../features/goals/goalTypes';
 import { GoalStepEventsUiState } from '../../features/goals/useGoalStepEvents';
@@ -84,6 +86,7 @@ export function StepDetailModal({
   onSchedule,
   onToggleComplete,
 }: StepDetailModalProps) {
+  const styles = useThemedStyles(createStyles);
   const [editMode, setEditMode] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -364,123 +367,124 @@ export function StepDetailModal({
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    gap: spacing.lg,
-  },
-  summaryCard: {
-    gap: spacing.sm,
-  },
-  goalLabel: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  stepTitle: {
-    ...typography.button,
-    fontSize: 18,
-    color: colors.text,
-  },
-  stepStatus: {
-    ...typography.helper,
-    color: colors.brand,
-    fontWeight: '700',
-  },
-  section: {
-    gap: spacing.md,
-  },
-  fieldGroup: {
-    gap: spacing.xs,
-  },
-  label: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  input: {
-    ...typography.body,
-    color: colors.text,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  textArea: {
-    minHeight: 96,
-    textAlignVertical: 'top',
-  },
-  infoLabel: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  infoValue: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  sectionTitle: {
-    ...typography.button,
-    color: colors.text,
-  },
-  headerButton: {
-    minHeight: 44,
-  },
-  headerButtonText: {
-    ...typography.helper,
-    color: colors.textPrimary,
-    fontWeight: '700',
-  },
-  primaryButton: {
-    borderRadius: radii.md,
-    backgroundColor: colors.brand,
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  primaryButtonText: {
-    ...typography.button,
-    color: colors.surface,
-  },
-  secondaryButton: {
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  secondaryButtonText: {
-    ...typography.button,
-    color: colors.textPrimary,
-  },
-  dangerButton: {
-    borderRadius: radii.md,
-    backgroundColor: colors.dangerSurface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  dangerButtonText: {
-    ...typography.button,
-    color: colors.dangerText,
-  },
-  actionColumn: {
-    gap: spacing.md,
-  },
-  buttonPressed: {
-    opacity: 0.84,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  pastEvent: {
-    color: colors.textSecondary,
-    textDecorationLine: 'line-through',
-  },
-  errorText: {
-    ...typography.helper,
-    color: colors.dangerText,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    content: {
+      gap: spacing.lg,
+    },
+    summaryCard: {
+      gap: spacing.sm,
+    },
+    goalLabel: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    stepTitle: {
+      ...typography.button,
+      fontSize: 18,
+      color: theme.colors.text,
+    },
+    stepStatus: {
+      ...typography.helper,
+      color: theme.colors.brand,
+      fontWeight: '700',
+    },
+    section: {
+      gap: spacing.md,
+    },
+    fieldGroup: {
+      gap: spacing.xs,
+    },
+    label: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    input: {
+      ...typography.body,
+      color: theme.colors.text,
+      backgroundColor: theme.colors.surface,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    textArea: {
+      minHeight: 96,
+      textAlignVertical: 'top',
+    },
+    infoLabel: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    infoValue: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+    sectionTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    headerButton: {
+      minHeight: 44,
+    },
+    headerButtonText: {
+      ...typography.helper,
+      color: theme.colors.textPrimary,
+      fontWeight: '700',
+    },
+    primaryButton: {
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.brand,
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    primaryButtonText: {
+      ...typography.button,
+      color: theme.colors.surface,
+    },
+    secondaryButton: {
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    secondaryButtonText: {
+      ...typography.button,
+      color: theme.colors.textPrimary,
+    },
+    dangerButton: {
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.dangerSurface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    dangerButtonText: {
+      ...typography.button,
+      color: theme.colors.dangerText,
+    },
+    actionColumn: {
+      gap: spacing.md,
+    },
+    buttonPressed: {
+      opacity: 0.84,
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
+    pastEvent: {
+      color: theme.colors.textSecondary,
+      textDecorationLine: 'line-through',
+    },
+    errorText: {
+      ...typography.helper,
+      color: theme.colors.dangerText,
+    },
+  });

@@ -4,8 +4,10 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { Platform, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
+import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppModal } from '../ui/AppModal';
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import {
   eventFormValueToDate,
   toEventDateString,
@@ -85,6 +87,7 @@ export function EventDateTimePickerField({
   containerStyle,
   onChange,
 }: EventDateTimePickerFieldProps) {
+  const styles = useThemedStyles(createStyles);
   const [iosPickerVisible, setIosPickerVisible] = useState(false);
   const [pickerError, setPickerError] = useState<string | null>(null);
   const effectiveDateValue = dateValue || fallbackDateValue || toEventDateString(new Date());
@@ -180,55 +183,56 @@ export function EventDateTimePickerField({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    gap: spacing.xs,
-  },
-  label: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  controlRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  fieldButton: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: 44,
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  value: {
-    ...typography.body,
-    color: colors.text,
-  },
-  placeholder: {
-    color: colors.textSecondary,
-  },
-  errorText: {
-    ...typography.helper,
-    color: colors.dangerText,
-  },
-  clearButton: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
-  },
-  clearText: {
-    ...typography.helper,
-    color: colors.brand,
-    fontWeight: '600',
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  iosPicker: {
-    alignSelf: 'stretch',
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      gap: spacing.xs,
+    },
+    label: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    controlRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    fieldButton: {
+      flex: 1,
+      minWidth: 0,
+      minHeight: 44,
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: radii.sm,
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    value: {
+      ...typography.body,
+      color: theme.colors.text,
+    },
+    placeholder: {
+      color: theme.colors.textSecondary,
+    },
+    errorText: {
+      ...typography.helper,
+      color: theme.colors.dangerText,
+    },
+    clearButton: {
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.sm,
+    },
+    clearText: {
+      ...typography.helper,
+      color: theme.colors.brand,
+      fontWeight: '600',
+    },
+    pressed: {
+      opacity: 0.7,
+    },
+    iosPicker: {
+      alignSelf: 'stretch',
+    },
+  });

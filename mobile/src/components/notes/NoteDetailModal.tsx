@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppCard } from '../ui/AppCard';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { FormField } from '../ui/FormField';
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import { NoteRecord, UpdateNoteInput } from '../../features/notes/noteTypes';
 import {
   DEFAULT_TIME_FORMAT,
@@ -46,6 +48,7 @@ export function NoteDetailModal({
   onSave,
   onDelete,
 }: NoteDetailModalProps) {
+  const styles = useThemedStyles(createStyles);
   const [editMode, setEditMode] = useState(false);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -226,131 +229,132 @@ export function NoteDetailModal({
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    gap: spacing.lg,
-  },
-  summaryCard: {
-    gap: spacing.xs,
-  },
-  readOnlyCard: {
-    gap: spacing.md,
-  },
-  section: {
-    gap: spacing.md,
-  },
-  fieldGroup: {
-    gap: spacing.sm,
-  },
-  label: {
-    ...typography.label,
-    color: colors.textSecondary,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  textArea: {
-    minHeight: 180,
-  },
-  noteSource: {
-    ...typography.label,
-    color: colors.brand,
-  },
-  noteDate: {
-    ...typography.helper,
-    color: colors.textSecondary,
-  },
-  noteTitle: {
-    ...typography.button,
-    fontSize: 18,
-    color: colors.text,
-  },
-  noteBody: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  errorText: {
-    ...typography.helper,
-    color: colors.dangerText,
-  },
-  headerButton: {
-    minHeight: 44,
-  },
-  headerButtonText: {
-    ...typography.helper,
-    color: colors.textPrimary,
-    fontWeight: '600',
-  },
-  primaryButton: {
-    borderRadius: radii.md,
-    backgroundColor: colors.brand,
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  primaryButtonText: {
-    ...typography.button,
-    color: colors.surface,
-  },
-  secondaryButton: {
-    flex: 1,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceMuted,
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  secondaryButtonText: {
-    ...typography.button,
-    color: colors.textPrimary,
-  },
-  dangerButton: {
-    borderRadius: radii.md,
-    backgroundColor: colors.dangerSurface,
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  dangerButtonText: {
-    ...typography.button,
-    color: colors.dangerText,
-  },
-  confirmBlock: {
-    gap: spacing.sm,
-  },
-  confirmText: {
-    ...typography.body,
-    color: colors.text,
-  },
-  confirmActions: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  flexButton: {
-    flex: 1,
-  },
-  confirmDeleteButton: {
-    flex: 1,
-    borderRadius: radii.md,
-    backgroundColor: colors.dangerSurface,
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  confirmDeleteButtonText: {
-    ...typography.button,
-    color: colors.dangerText,
-  },
-  buttonPressed: {
-    opacity: 0.85,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    content: {
+      gap: spacing.lg,
+    },
+    summaryCard: {
+      gap: spacing.xs,
+    },
+    readOnlyCard: {
+      gap: spacing.md,
+    },
+    section: {
+      gap: spacing.md,
+    },
+    fieldGroup: {
+      gap: spacing.sm,
+    },
+    label: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surface,
+      color: theme.colors.text,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+    },
+    textArea: {
+      minHeight: 180,
+    },
+    noteSource: {
+      ...typography.label,
+      color: theme.colors.brand,
+    },
+    noteDate: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    noteTitle: {
+      ...typography.button,
+      fontSize: 18,
+      color: theme.colors.text,
+    },
+    noteBody: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+    errorText: {
+      ...typography.helper,
+      color: theme.colors.dangerText,
+    },
+    headerButton: {
+      minHeight: 44,
+    },
+    headerButtonText: {
+      ...typography.helper,
+      color: theme.colors.textPrimary,
+      fontWeight: '600',
+    },
+    primaryButton: {
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.brand,
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    primaryButtonText: {
+      ...typography.button,
+      color: theme.colors.surface,
+    },
+    secondaryButton: {
+      flex: 1,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surfaceMuted,
+      alignItems: 'center',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+    },
+    secondaryButtonText: {
+      ...typography.button,
+      color: theme.colors.textPrimary,
+    },
+    dangerButton: {
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.dangerSurface,
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    dangerButtonText: {
+      ...typography.button,
+      color: theme.colors.dangerText,
+    },
+    confirmBlock: {
+      gap: spacing.sm,
+    },
+    confirmText: {
+      ...typography.body,
+      color: theme.colors.text,
+    },
+    confirmActions: {
+      flexDirection: 'row',
+      gap: spacing.md,
+    },
+    flexButton: {
+      flex: 1,
+    },
+    confirmDeleteButton: {
+      flex: 1,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.dangerSurface,
+      alignItems: 'center',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+    },
+    confirmDeleteButtonText: {
+      ...typography.button,
+      color: theme.colors.dangerText,
+    },
+    buttonPressed: {
+      opacity: 0.85,
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
+  });

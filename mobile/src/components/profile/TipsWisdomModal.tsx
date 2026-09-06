@@ -1,9 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppCard } from '../ui/AppCard';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
-import { colors, radii, spacing, typography } from '../../design/tokens';
+import { radii, spacing, typography } from '../../design/tokens';
+import type { Theme } from '../../design/tokens';
 import { ProfileTip } from '../../features/profile/profileTypes';
 
 type TipsWisdomModalProps = {
@@ -14,6 +16,7 @@ type TipsWisdomModalProps = {
 };
 
 export function TipsWisdomModal({ visible, tip, onClose, onRefresh }: TipsWisdomModalProps) {
+  const styles = useThemedStyles(createStyles);
   return (
     <AppModal visible={visible} title="Tips & Wisdom" onClose={onClose}>
       {tip ? (
@@ -45,55 +48,56 @@ export function TipsWisdomModal({ visible, tip, onClose, onRefresh }: TipsWisdom
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    gap: spacing.lg,
-  },
-  tipCard: {
-    gap: spacing.md,
-  },
-  tipLabel: {
-    ...typography.label,
-    color: colors.brand,
-  },
-  tipBody: {
-    ...typography.body,
-    color: colors.text,
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  actionButton: {
-    flex: 1,
-  },
-  primaryButton: {
-    flex: 1,
-    borderRadius: radii.md,
-    backgroundColor: colors.brand,
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  primaryButtonText: {
-    ...typography.button,
-    color: colors.surface,
-  },
-  secondaryButton: {
-    flex: 1,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  secondaryButtonText: {
-    ...typography.button,
-    color: colors.textPrimary,
-  },
-  buttonPressed: {
-    opacity: 0.85,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    content: {
+      gap: spacing.lg,
+    },
+    tipCard: {
+      gap: spacing.md,
+    },
+    tipLabel: {
+      ...typography.label,
+      color: theme.colors.brand,
+    },
+    tipBody: {
+      ...typography.body,
+      color: theme.colors.text,
+    },
+    actionsRow: {
+      flexDirection: 'row',
+      gap: spacing.md,
+    },
+    actionButton: {
+      flex: 1,
+    },
+    primaryButton: {
+      flex: 1,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.brand,
+      alignItems: 'center',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+    },
+    primaryButtonText: {
+      ...typography.button,
+      color: theme.colors.surface,
+    },
+    secondaryButton: {
+      flex: 1,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      alignItems: 'center',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+    },
+    secondaryButtonText: {
+      ...typography.button,
+      color: theme.colors.textPrimary,
+    },
+    buttonPressed: {
+      opacity: 0.85,
+    },
+  });
