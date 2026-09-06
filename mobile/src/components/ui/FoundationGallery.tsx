@@ -18,6 +18,7 @@ import { TaskRecord } from '../../features/tasks/taskTypes';
 import { useTheme } from '../../design/ThemeProvider';
 import { icons } from '../../design/icons';
 import { iconLibraryExtraction } from '../../design/iconLibraryExtraction';
+import { legacyIconAssets } from '../../design/legacyIconAssets';
 import type { Theme } from '../../design/tokens';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppCard } from './AppCard';
@@ -237,6 +238,26 @@ export function FoundationGallery() {
                 resizeMode="contain"
                 style={styles.extractionIcon}
                 accessibilityLabel={`${name} mock icon`}
+              />
+              <Text numberOfLines={1} style={styles.iconLabel}>
+                {formatIconName(name)}
+              </Text>
+            </View>
+          ))}
+        </View>
+        <SectionHeader
+          title="Legacy icon assets"
+          description="Older hand/AI-generated files still in assets/icons/, not wired into the registry."
+          variant="uppercase-accent"
+        />
+        <View accessibilityLabel="Legacy icon assets" style={styles.iconGrid}>
+          {legacyIconAssets.map(({ name, source }) => (
+            <View key={name} style={styles.iconCell}>
+              <Image
+                source={source}
+                resizeMode="contain"
+                style={styles.extractionIcon}
+                accessibilityLabel={`${name} legacy icon`}
               />
               <Text numberOfLines={1} style={styles.iconLabel}>
                 {formatIconName(name)}

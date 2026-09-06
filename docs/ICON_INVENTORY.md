@@ -9,7 +9,7 @@ icon fonts or image paths.
 | Semantic name                                       | Use                               | Target sizes | Source                                  | Decision                                              |
 | --------------------------------------------------- | --------------------------------- | ------------ | --------------------------------------- | ----------------------------------------------------- |
 | `bearingMark`                                       | Brand lockup and launch treatment | 24, 48, 72   | `mobile/assets/icons/bearing-mark*.png` | Transparent alpha mask; tint through the active theme |
-| `plan`                                              | Plan/Schedule primary navigation  | 24, 48       | Icon-library mock crop                  | Approved Plan artwork                                 |
+| `plan`                                              | Plan/Schedule primary navigation  | 24, 48       | Icon-library mock crop (`home.png`)     | Mock crop mislabeled "plan"; artwork is a home glyph |
 | `goal`                                              | Goals primary navigation          | 24, 48       | Icon-library mock crop                  | Approved Goal artwork                                 |
 | `focus`                                             | Focus Mode                        | 24, 32, 48   | Icon-library mock crop                  | Approved Focus Mode artwork                           |
 | `note`                                              | Notes & Ideas primary navigation  | 24, 48       | Icon-library mock crop                  | Approved Note artwork                                 |
@@ -24,18 +24,25 @@ icon fonts or image paths.
 
 The supplied icon-library mock at `docs/mockups/bearing-ui-icon-library.png` is
 the primary artwork source. Its icon cells are retained under
-`mobile/assets/icon-library/` and are rendered by the active semantic entries
-in `AppIcon`. The custom `react-native-svg` definitions remain a secondary,
-scalable foundation library for roles that do not yet have a dedicated mock
-crop. New icons must be added from the supplied icon-library source rather than
-from a third-party vector set.
+`mobile/assets/icons/` (alongside the legacy hand-made assets and brand mark)
+and are rendered by the active semantic entries in `AppIcon`. The custom
+`react-native-svg` definitions remain a secondary, scalable foundation library
+for roles that do not yet have a dedicated mock crop. New icons must be added
+from the supplied icon-library source rather than from a third-party vector
+set.
+
+A few mock crops share a name with an unrelated legacy hand-made icon already
+in `mobile/assets/icons/` (`focus`, `goals`, `notes`); the legacy files keep a
+`-1` suffix and the mock crops a `-2` suffix. The mock crop originally labeled
+`plan` was renamed to `home.png` since the artwork is a home glyph, not a
+plan/schedule glyph; the semantic `plan` icon key still points to it.
 
 The official multicolor Google mark is intentionally excluded from this
 registry and remains an authentication-phase requirement.
 
 ## Full Mock Extraction
 
-`mobile/assets/icon-library/` contains a `.png` + `.svg` pair for every one of
+`mobile/assets/icons/` contains a `.png` + `.svg` pair for every one of
 the 84 unique icon glyphs shown in `docs/mockups/bearing-ui-icon-library.png`
 (duplicate glyphs reused across sections, e.g. "Search" or "Notifications",
 are captured once). Each crop is trimmed tightly to the glyph's alpha bounds
