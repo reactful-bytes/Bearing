@@ -20,7 +20,6 @@ describe('M23 shared UI primitives', () => {
         eyebrow="Today"
         subtitle="One thing at a time."
         centeredTitle
-        showBearingMark
         leading={<Text>Back</Text>}
         trailing={<Text>More</Text>}
       />,

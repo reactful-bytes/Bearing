@@ -159,7 +159,7 @@ export function FoundationGallery() {
         style={styles.scrollView}
         contentContainerStyle={styles.content}
       >
-        <AppHeader title="Foundation gallery" eyebrow="Bearing UI" showBearingMark />
+        <AppHeader title="Foundation gallery" eyebrow="Bearing UI" />
         <Text accessibilityLiveRegion="polite" style={styles.notice}>
           {notice}
         </Text>

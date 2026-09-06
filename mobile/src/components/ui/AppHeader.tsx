@@ -1,8 +1,6 @@
 import { ReactNode } from 'react';
 import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
-import { AppIcon } from './AppIcon';
-import { useTheme } from '../../design/ThemeProvider';
 import type { Theme } from '../../design/tokens';
 import { useThemedStyles } from '../../design/useThemedStyles';
 
@@ -13,7 +11,6 @@ export type AppHeaderProps = {
   leading?: ReactNode;
   trailing?: ReactNode;
   centeredTitle?: boolean;
-  showBearingMark?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 };
@@ -25,20 +22,15 @@ export function AppHeader({
   leading,
   trailing,
   centeredTitle = false,
-  showBearingMark = false,
   style,
   testID,
 }: AppHeaderProps) {
   const styles = useThemedStyles(createStyles);
-  const { theme } = useTheme();
   const showActionSlots = centeredTitle || Boolean(leading || trailing);
   const copy = (
     <View style={[styles.copy, centeredTitle && styles.centeredCopy]}>
       {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
       <View style={styles.titleRow}>
-        {showBearingMark ? (
-          <AppIcon decorative name="bearingMark" size={20} color={theme.colors.brand} />
-        ) : null}
         <Text accessibilityRole="header" numberOfLines={1} style={styles.title}>
           {title}
         </Text>
