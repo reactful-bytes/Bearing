@@ -37,6 +37,7 @@ export function AppIcon({
       <View testID={testID} style={containerStyle} {...accessibilityProps}>
         <Image
           source={icon.source}
+          resizeMode="contain"
           style={[
             { width: size, height: size },
             icon.tintable ? { tintColor: color ?? theme.colors.textPrimary } : null,

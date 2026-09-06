@@ -32,3 +32,21 @@ from a third-party vector set.
 
 The official multicolor Google mark is intentionally excluded from this
 registry and remains an authentication-phase requirement.
+
+## Full Mock Extraction
+
+`mobile/assets/icon-library/` contains a `.png` + `.svg` pair for every one of
+the 84 unique icon glyphs shown in `docs/mockups/bearing-ui-icon-library.png`
+(duplicate glyphs reused across sections, e.g. "Search" or "Notifications",
+are captured once). Each crop is trimmed tightly to the glyph's alpha bounds
+with a small padding margin and explicitly excludes the caption text printed
+beneath every icon in the mock — captions exist only to label the glyph for
+this reference sheet, not as part of the artwork.
+
+The `.svg` file for each icon embeds the same cleaned PNG as a base64 raster
+inside a minimal `<svg><image/></svg>` wrapper (viewBox matched to the crop's
+native pixel size). This project has no offline vector-tracing tool available
+(no `potrace`, `vtracer`, `inkscape`, or `pip`, and no passwordless package
+install), so hand-tracing ~84 icons into true vector paths was not attempted;
+the embedded-raster SVG keeps pixel-perfect fidelity to the approved mock and
+is a drop-in replacement if a true vector trace is produced later.
