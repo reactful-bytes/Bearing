@@ -271,14 +271,14 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M23 - Shared UI Primitives
 
-| Task ID | Status      | Description                       | Exit Criteria                                                                   |
-| ------- | ----------- | --------------------------------- | ------------------------------------------------------------------------------- |
-| M23.1   | not-started | Build AppScreen                   | Safe areas, keyboard behavior, scroll mode, and unmanaged list mode are tested  |
-| M23.2   | not-started | Build AppHeader and SectionHeader | Slots retain fixed 44px actions and stable title geometry                       |
-| M23.3   | not-started | Build Card and AppCard wrapper    | Standard, elevated, outlined, and press behavior render without nested-card use |
-| M23.4   | not-started | Build ProgressBar and EmptyState  | Values clamp, semantics announce correctly, and optional action works           |
-| M23.5   | not-started | Build BottomSheet                 | Dismissal, back handling, safe area, keyboard, and modal accessibility pass     |
-| M23.6   | not-started | Adapt legacy primitive APIs       | ScreenHeader, SectionHeading, FAB, and FormField callers remain compatible      |
+| Task ID | Status    | Description                       | Exit Criteria                                                                                |
+| ------- | --------- | --------------------------------- | -------------------------------------------------------------------------------------------- |
+| M23.1   | completed | Build AppScreen                   | Safe areas, keyboard behavior, static/scroll/unmanaged modes, and list boundaries are tested |
+| M23.2   | completed | Build AppHeader and SectionHeader | Slots retain fixed 44px actions and stable title geometry                                    |
+| M23.3   | completed | Build Card and AppCard wrapper    | Standard, elevated, outlined, and press behavior render without nested-card use              |
+| M23.4   | completed | Build ProgressBar and EmptyState  | Values clamp, semantics announce correctly, and optional action works                        |
+| M23.5   | completed | Build BottomSheet                 | Dismissal, back handling, safe area, keyboard, and modal accessibility pass                  |
+| M23.6   | completed | Adapt legacy primitive APIs       | ScreenHeader, SectionHeading, FAB, and FormField callers remain compatible                   |
 
 ### M24 - Reusable Domain Presentation
 

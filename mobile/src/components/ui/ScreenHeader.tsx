@@ -1,9 +1,6 @@
 import { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
 
-import { useThemedStyles } from '../../design/useThemedStyles';
-import { spacing, typography } from '../../design/tokens';
-import type { Theme } from '../../design/tokens';
+import { AppHeader } from './AppHeader';
 
 type ScreenHeaderProps = {
   title: string;
@@ -13,41 +10,5 @@ type ScreenHeaderProps = {
 };
 
 export function ScreenHeader({ title, description, eyebrow, trailing }: ScreenHeaderProps) {
-  const styles = useThemedStyles(createStyles);
-  return (
-    <View style={styles.container}>
-      <View style={styles.copyBlock}>
-        {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
-        <Text style={styles.title}>{title}</Text>
-        {description ? <Text style={styles.description}>{description}</Text> : null}
-      </View>
-      {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
-    </View>
-  );
+  return <AppHeader title={title} eyebrow={eyebrow} subtitle={description} trailing={trailing} />;
 }
-
-const createStyles = (theme: Theme) =>
-  StyleSheet.create({
-    container: {
-      gap: spacing.md,
-    },
-    copyBlock: {
-      gap: spacing.sm,
-    },
-    eyebrow: {
-      ...typography.label,
-      color: theme.colors.textSecondary,
-    },
-    title: {
-      fontSize: 28,
-      fontWeight: '700',
-      color: theme.colors.text,
-    },
-    description: {
-      ...typography.body,
-      color: theme.colors.textPrimary,
-    },
-    trailing: {
-      alignSelf: 'flex-start',
-    },
-  });

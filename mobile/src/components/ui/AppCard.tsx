@@ -1,9 +1,7 @@
 import { ReactNode } from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
+import { ViewStyle } from 'react-native';
 
-import { useThemedStyles } from '../../design/useThemedStyles';
-import {} from '../../design/tokens';
-import type { Theme } from '../../design/tokens';
+import { Card } from './Card';
 
 type AppCardProps = {
   children: ReactNode;
@@ -11,15 +9,5 @@ type AppCardProps = {
 };
 
 export function AppCard({ children, style }: AppCardProps) {
-  const styles = useThemedStyles(createStyles);
-  return <View style={[styles.card, style]}>{children}</View>;
+  return <Card style={style}>{children}</Card>;
 }
-
-const createStyles = (theme: Theme) =>
-  StyleSheet.create({
-    card: {
-      borderRadius: theme.componentTokens.card.borderRadius,
-      backgroundColor: theme.componentTokens.card.backgroundColor,
-      padding: theme.componentTokens.card.padding,
-    },
-  });

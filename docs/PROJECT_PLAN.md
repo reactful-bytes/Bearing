@@ -391,14 +391,14 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 ### M23 - Shared UI Primitives
 
-| Task ID | Status      | Description                       | Notes                                                                                |
-| ------- | ----------- | --------------------------------- | ------------------------------------------------------------------------------------ |
-| M23.1   | not-started | Build AppScreen                   | Support safe areas, keyboard avoidance, scroll, and unmanaged virtualized lists      |
-| M23.2   | not-started | Build AppHeader and SectionHeader | Maintain stable title geometry and 44px action targets                               |
-| M23.3   | not-started | Build Card and AppCard wrapper    | Support standard, elevated, outlined, and optional press behavior                    |
-| M23.4   | not-started | Build ProgressBar and EmptyState  | Clamp values and expose accessible progress or action state                          |
-| M23.5   | not-started | Build BottomSheet                 | Include controlled dismissal, Android back, safe area, keyboard, and modal semantics |
-| M23.6   | not-started | Adapt legacy primitive APIs       | Preserve all current ScreenHeader, SectionHeading, FAB, and FormField callers        |
+| Task ID | Status    | Description                       | Notes                                                                                               |
+| ------- | --------- | --------------------------------- | --------------------------------------------------------------------------------------------------- |
+| M23.1   | completed | Build AppScreen                   | Safe areas, keyboard avoidance, static/scroll/unmanaged modes, and list boundaries are tested       |
+| M23.2   | completed | Build AppHeader and SectionHeader | Slots retain fixed 44px actions, title geometry, logo treatment, variants, and action coverage      |
+| M23.3   | completed | Build Card and AppCard wrapper    | Standard, elevated, outlined, and accessible press behavior are covered; AppCard remains compatible |
+| M23.4   | completed | Build ProgressBar and EmptyState  | Values clamp, semantic progress/action states, presentations, and callbacks are covered             |
+| M23.5   | completed | Build BottomSheet                 | Controlled dismissal, back callback, safe area, keyboard, and modal semantics are covered           |
+| M23.6   | completed | Adapt legacy primitive APIs       | ScreenHeader, SectionHeading, FAB, and FormField caller compatibility is retained and tested        |
 
 ### M24 - Reusable Domain Presentation
 
