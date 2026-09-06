@@ -136,7 +136,12 @@ export function FoundationGallery() {
   };
 
   return (
-    <AppScreen mode="unmanaged" testID="foundation-gallery" style={styles.screen}>
+    <AppScreen
+      mode="unmanaged"
+      testID="foundation-gallery"
+      style={styles.screen}
+      contentContainerStyle={styles.unmanagedContent}
+    >
       <ScrollView
         testID="foundation-gallery-scroll"
         style={styles.scrollView}
@@ -435,6 +440,7 @@ export function FoundationGallery() {
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: theme.colors.background },
+    unmanagedContent: { flex: 1, minHeight: 0 },
     scrollView: { flex: 1 },
     content: {
       gap: theme.spacing['2xl'],
