@@ -26,9 +26,17 @@ describe('FoundationGallery', () => {
       expect.objectContaining({ flex: 1 }),
     );
     expect(screen.getByLabelText('Icon library')).toBeTruthy();
+    expect(screen.getByLabelText('Feature artwork')).toBeTruthy();
     Object.keys(icons).forEach((name) => {
       expect(screen.getByLabelText(`${name} icon`)).toBeTruthy();
     });
+    expect(screen.getByText('New Goal')).toBeTruthy();
+    expect(screen.getByText('Session Details')).toBeTruthy();
+    expect(screen.getByText('Imported Calendar')).toBeTruthy();
+    expect(screen.getByText('Plan SVG')).toBeTruthy();
+    expect(screen.getByText('Goal SVG')).toBeTruthy();
+    expect(screen.getByText('Notes SVG')).toBeTruthy();
+    expect(screen.getByText('Tasks')).toBeTruthy();
     expect(screen.getByText('Domain presentation')).toBeTruthy();
     expect(screen.getByText('Navigation')).toBeTruthy();
   });

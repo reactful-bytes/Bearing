@@ -104,6 +104,18 @@ const fixtureEvent: CalendarDisplayEvent = {
   updatedAt: new Date(),
 };
 
+const iconNames = Object.keys(icons) as (keyof typeof icons)[];
+const svgIconNames = iconNames.filter((name) => icons[name].kind === 'svg');
+const featureIconNames = iconNames.filter((name) => icons[name].kind === 'image');
+
+function formatIconName(name: string): string {
+  const label = name
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/\bai\b/gi, 'AI')
+    .replace(/^./, (letter) => letter.toUpperCase());
+  return label.endsWith(' Svg') ? `${label.slice(0, -4)} SVG` : label;
+}
+
 export function FoundationGallery() {
   const styles = useThemedStyles(createStyles);
   const { preference, setPreference } = useTheme();
@@ -182,16 +194,31 @@ export function FoundationGallery() {
         <SectionHeading title="Upcoming" description="Compatibility wrapper" />
 
         <SectionHeader
-          title="Icons"
-          description="Every registered Bearing icon."
+          title="SVG icon library"
+          description="Every custom vector glyph from the approved icon-library mock."
           variant="uppercase-accent"
         />
         <View accessibilityLabel="Icon library" style={styles.iconGrid}>
-          {(Object.keys(icons) as (keyof typeof icons)[]).map((name) => (
+          {svgIconNames.map((name) => (
             <View key={name} style={styles.iconCell}>
               <AppIcon name={name} size={30} accessibilityLabel={`${name} icon`} />
               <Text numberOfLines={1} style={styles.iconLabel}>
-                {name}
+                {formatIconName(name)}
+              </Text>
+            </View>
+          ))}
+        </View>
+        <SectionHeader
+          title="Feature artwork"
+          description="Approved full-color navigation and brand assets."
+          variant="uppercase-accent"
+        />
+        <View accessibilityLabel="Feature artwork" style={styles.iconGrid}>
+          {featureIconNames.map((name) => (
+            <View key={name} style={styles.iconCell}>
+              <AppIcon name={name} size={30} accessibilityLabel={`${name} icon`} />
+              <Text numberOfLines={1} style={styles.iconLabel}>
+                {formatIconName(name)}
               </Text>
             </View>
           ))}

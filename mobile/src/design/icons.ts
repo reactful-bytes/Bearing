@@ -229,6 +229,72 @@ export const icons = {
   ]),
   document: svg([{ d: 'M6 3h9l4 4v14H6zM15 3v5h5M9 12h6M9 16h6' }]),
   star: svg([{ d: 'm12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z' }]),
+  newGoal: svg(
+    [
+      {
+        d: 'M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.8 2.8M14.9 14.9l2.8 2.8M17.7 6.3l-2.8 2.8M9.1 14.9l-2.8 2.8',
+      },
+    ],
+    [{ cx: 12, cy: 12, r: 4 }],
+  ),
+  newTask: svg([{ d: 'm8 12 3 3 5-6' }], undefined, [{ x: 4, y: 4, width: 16, height: 16, rx: 2 }]),
+  newNote: svg([
+    {
+      d: 'M7 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM9 9h6M9 13h6M9 17h4',
+    },
+  ]),
+  newEvent: svg([{ d: 'M12 8v8M8 12h8M7 2v4M17 2v4M3 9h18' }], undefined, [
+    { x: 3, y: 4, width: 18, height: 17, rx: 2 },
+  ]),
+  focusMode: svg(
+    [
+      {
+        d: 'M12 4v3M12 17v3M4 12h3M17 12h3M8.5 8.5l2 2M13.5 13.5l2 2M15.5 8.5l-2 2M10.5 13.5l-2 2',
+      },
+    ],
+    [{ cx: 12, cy: 12, r: 5 }],
+  ),
+  add: svg([{ d: 'M12 8v8M8 12h8' }], [{ cx: 12, cy: 12, r: 8 }]),
+  sessionDetails: svg([{ d: 'M6 3h9l4 4v14H6zM15 3v5h5M9 12h6M9 16h6' }]),
+  goalMilestone: svg([{ d: 'M7 21V4M8 5h10l-2 4 2 4H8' }]),
+  event: svg([{ d: 'M7 2v4M17 2v4M3 9h18M8 13h8' }], undefined, [
+    { x: 3, y: 4, width: 18, height: 17, rx: 2 },
+  ]),
+  importedCalendar: svg(
+    [{ d: 'M7 2v4M17 2v4M3 9h18M7 13h.01M12 13h.01M17 13h.01M7 17h.01M12 17h.01M17 17h.01' }],
+    undefined,
+    [{ x: 3, y: 4, width: 18, height: 17, rx: 2 }],
+  ),
+  focusBlock: svg([{ d: 'M12 4v3M12 17v3M4 12h3M17 12h3' }], [{ cx: 12, cy: 12, r: 5 }]),
+  complete: svg([{ d: 'm7 12 3 3 7-7' }], [{ cx: 12, cy: 12, r: 9 }]),
+  ideas: svg([
+    {
+      d: 'M9 18h6M10 21h4M8.5 15.5A6 6 0 1 1 15.5 15.5c-.8.6-1.5 1.5-1.5 2.5h-4c0-1-.7-1.9-1.5-2.5zM12 2v2M4.2 4.2l1.4 1.4M19.8 4.2l-1.4 1.4',
+    },
+  ]),
+  holdToExit: svg([{ d: 'M12 4v8M8.5 7.5a6 6 0 1 0 7 0' }]),
+  planSvg: svg([{ d: 'M4 10.5 12 4l8 6.5V20H4zM9 20v-5h6v5' }]),
+  goalSvg: svg(
+    [
+      {
+        d: 'M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.8 2.8M14.9 14.9l2.8 2.8M17.7 6.3l-2.8 2.8M9.1 14.9l-2.8 2.8',
+      },
+    ],
+    [{ cx: 12, cy: 12, r: 4 }],
+  ),
+  notesSvg: svg([
+    {
+      d: 'M7 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM9 9h6M9 13h6M9 17h4',
+    },
+  ]),
+  tasks: svg(
+    [{ d: 'M8 6h10M8 12h10M8 18h10' }],
+    [
+      { cx: 4, cy: 6, r: 1 },
+      { cx: 4, cy: 12, r: 1 },
+      { cx: 4, cy: 18, r: 1 },
+    ],
+  ),
 } as const satisfies Record<string, AppIconDefinition>;
 
 export type AppIconName = keyof typeof icons;
