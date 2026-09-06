@@ -376,10 +376,187 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M21.6   | completed      | Run failure and security acceptance        | Parent gates plus focused privacy/rules checks pass     |
 | M21.7   | manual-handoff | Run release acceptance and close tracking  | Native and no-deployment evidence unavailable           |
 
+### M22 - Theme and Icon Infrastructure
+
+| Task ID | Status      | Description                                     | Notes                                                                               |
+| ------- | ----------- | ----------------------------------------------- | ----------------------------------------------------------------------------------- |
+| M22.1   | not-started | Persist design-reference images                 | Save supplied graphics under `docs/mockups/`; they are not runtime assets           |
+| M22.2   | not-started | Install compatible navigation and icon packages | Use Expo-compatible `@expo/vector-icons` and React Navigation native stack versions |
+| M22.3   | not-started | Define semantic dark and light tokens           | Retain compatibility aliases while callers migrate                                  |
+| M22.4   | not-started | Add persisted theme provider                    | Default dark; persist preference with AsyncStorage; support isolated tests          |
+| M22.5   | not-started | Add themed stylesheet helper                    | Styles consume active semantic tokens without component raw colors                  |
+| M22.6   | not-started | Create icon inventory and assets                | Record target sizes and vector/custom decisions before generating assets            |
+| M22.7   | not-started | Add typed icon registry and AppIcon             | Screens use semantic names, never library names or asset paths                      |
+| M22.8   | not-started | Apply theme to app shell                        | Do not change routes, markup, or feature behavior                                   |
+
+### M23 - Shared UI Primitives
+
+| Task ID | Status      | Description                       | Notes                                                                                |
+| ------- | ----------- | --------------------------------- | ------------------------------------------------------------------------------------ |
+| M23.1   | not-started | Build AppScreen                   | Support safe areas, keyboard avoidance, scroll, and unmanaged virtualized lists      |
+| M23.2   | not-started | Build AppHeader and SectionHeader | Maintain stable title geometry and 44px action targets                               |
+| M23.3   | not-started | Build Card and AppCard wrapper    | Support standard, elevated, outlined, and optional press behavior                    |
+| M23.4   | not-started | Build ProgressBar and EmptyState  | Clamp values and expose accessible progress or action state                          |
+| M23.5   | not-started | Build BottomSheet                 | Include controlled dismissal, Android back, safe area, keyboard, and modal semantics |
+| M23.6   | not-started | Adapt legacy primitive APIs       | Preserve all current ScreenHeader, SectionHeading, FAB, and FormField callers        |
+
+### M24 - Reusable Domain Presentation
+
+| Task ID | Status      | Description                         | Notes                                                                                   |
+| ------- | ----------- | ----------------------------------- | --------------------------------------------------------------------------------------- |
+| M24.1   | not-started | Build goal presentation components  | Presentation-only components use `GoalWithSteps` fixtures and extracted progress helper |
+| M24.2   | not-started | Build TaskRow                       | Separate row press from completion toggle; optional context must remain optional        |
+| M24.3   | not-started | Build event presentation components | Caller supplies locale and timezone formatting                                          |
+| M24.4   | not-started | Build BottomNavigation              | Support five destinations, raised Create action, safe areas, and wide rail variant      |
+| M24.5   | not-started | Build create-sheet presentation     | Callback-only sheet has no navigation or Firebase imports                               |
+| M24.6   | not-started | Test domain components              | Cover rendering, callbacks, accessibility, fixed geometry, and both themes              |
+
+### M25 - Foundation Validation
+
+| Task ID | Status      | Description                             | Notes                                                                        |
+| ------- | ----------- | --------------------------------------- | ---------------------------------------------------------------------------- |
+| M25.1   | not-started | Test theme infrastructure               | Cover default, selection, persistence, hydration, and provider-free fallback |
+| M25.2   | not-started | Test icon infrastructure                | Missing production assets must fail CI                                       |
+| M25.3   | not-started | Test shared primitives                  | Include wrappers, dismissal, keyboard, busy states, and 44px targets         |
+| M25.4   | not-started | Remove foundation raw-color regressions | Audit all token consumers; do not introduce new component raw colors         |
+| M25.5   | not-started | Run foundation quality gate             | Run typecheck, focused/full Jest, lint, format, rules, and web export        |
+| M25.6   | not-started | Review two-theme primitive gallery      | Review compact phone, Android, tablet, and wide web before M26 begins        |
+
+### M26 - Authentication and Splash
+
+| Task ID | Status      | Description                                  | Notes                                                                              |
+| ------- | ----------- | -------------------------------------------- | ---------------------------------------------------------------------------------- |
+| M26.1   | not-started | Audit and export launch artwork              | Use a sharp transparent mark; reject square-background and grid-crop sources       |
+| M26.2   | not-started | Configure deterministic native splash        | Use design-system dark background before persisted theme hydration                 |
+| M26.3   | not-started | Match React bootstrap frame                  | Match splash mark, background, and status bar for slow auth and startup error      |
+| M26.4   | not-started | Recompose responsive auth shell              | One shell handles small phones, tablets, keyboard, safe areas, and constrained web |
+| M26.5   | not-started | Restyle all auth states                      | Preserve SignedOutAuth state machine and every Firebase action unchanged           |
+| M26.6   | not-started | Replace handmade Google mark                 | Use official unmodified Google mark or a compliant provider button only            |
+| M26.7   | not-started | Add password visibility and feedback styling | Add optional FormField trailing control without breaking current callers           |
+| M26.8   | not-started | Validate auth and splash                     | Include auth states plus rebuilt iOS/Android cold and warm start evidence          |
+
+### M27 - Data Contracts and Persistence
+
+| Task ID | Status      | Description                             | Notes                                                                                 |
+| ------- | ----------- | --------------------------------------- | ------------------------------------------------------------------------------------- |
+| M27.1   | not-started | Extend task contracts                   | Add nullable goal/step/due/schedule fields with safe legacy decoding                  |
+| M27.2   | not-started | Expose event sourceTaskId               | Serialize and decode nullable task provenance; Calendar must not infer IDs            |
+| M27.3   | not-started | Add note pinned field                   | Missing legacy documents decode as `false`; update mutations and sorting              |
+| M27.4   | not-started | Confirm operational goal-step timeline  | GoalStepRecord is the only editable timeline source                                   |
+| M27.5   | not-started | Decide Focus persistence                | Either define the minimum persistent session model or document process-local behavior |
+| M27.6   | not-started | Deploy-compatible backend updates       | Update services, export/delete, rules, indexes, docs, and emulator tests              |
+| M27.7   | not-started | Validate compatibility and deploy order | Deploy rules and indexes before releasing field-writing clients                       |
+
+### M28 - Navigation Architecture
+
+| Task ID | Status      | Description                             | Notes                                                                           |
+| ------- | ----------- | --------------------------------------- | ------------------------------------------------------------------------------- |
+| M28.1   | not-started | Define typed navigation contracts       | Define root-tab, stack, and modal parameter lists before navigator changes      |
+| M28.2   | not-started | Add nested native stacks                | Preserve stack and scroll state where React Navigation supports it              |
+| M28.3   | not-started | Intercept Create destination            | Create opens a sheet and never becomes selected content                         |
+| M28.4   | not-started | Add typed detail and settings routes    | Cover all named details, editors, Focus, account, and subscription settings     |
+| M28.5   | not-started | Preserve responsive and legacy behavior | Keep 1024px rail, contextual returns, deep-link-ready params, and legacy parity |
+| M28.6   | not-started | Test navigation contracts               | Test selection, interception, nested state, modal routes, and rail behavior     |
+
+### M29 - Plan Dashboard
+
+| Task ID | Status      | Description                    | Notes                                                                    |
+| ------- | ----------- | ------------------------------ | ------------------------------------------------------------------------ |
+| M29.1   | not-started | Add Plan route and composition | Compose shared components from existing hooks only; do not add mock data |
+| M29.2   | not-started | Add contextual Plan header     | Test greeting boundaries and profile or overflow action                  |
+| M29.3   | not-started | Add today events preview       | Show chronological next three to five events with More Events route      |
+| M29.4   | not-started | Add Focus card states          | Cover inactive, contextual current/upcoming, and active session actions  |
+| M29.5   | not-started | Add active-goal preview        | Limit to three goals and handle loading, empty, error, and ready states  |
+| M29.6   | not-started | Add Idea Dump count/action     | Use existing Notes data and a direct capture route                       |
+| M29.7   | not-started | Validate Plan states           | Cover composition, order, navigation, greeting, and responsive layouts   |
+
+### M30 - Goals and Tasks
+
+| Task ID | Status      | Description                      | Notes                                                                         |
+| ------- | ----------- | -------------------------------- | ----------------------------------------------------------------------------- |
+| M30.1   | not-started | Restyle Goals List               | Map Current to existing persisted `active` status                             |
+| M30.2   | not-started | Add goal list actions and states | Use GoalCard plus Create Goal and explicit loading/empty/error states         |
+| M30.3   | not-started | Route Goal Detail                | Replace modal only after task/timeline and mutation parity exists             |
+| M30.4   | not-started | Link tasks to goals and steps    | Support toggle, edit, delete, due/schedule, and optional step context         |
+| M30.5   | not-started | Render operational timeline      | Use ordered operational steps with linked tasks; no duplicate milestone model |
+| M30.6   | not-started | Preserve standalone task access  | Keep unlinked task access from Plan and Create                                |
+| M30.7   | not-started | Validate goals and tasks         | Cover filters, mutations, ordering, and navigation                            |
+
+### M31 - Calendar
+
+| Task ID | Status      | Description                 | Notes                                                                               |
+| ------- | ----------- | --------------------------- | ----------------------------------------------------------------------------------- |
+| M31.1   | not-started | Restyle Calendar modes      | Retain day and month; keep week as a wide-web-only capability                       |
+| M31.2   | not-started | Distinguish event sources   | Use restrained non-color source indicators for Bearing, device, task, and milestone |
+| M31.3   | not-started | Preserve calendar semantics | Retain date, recurrence, alerts, timezone, availability, location, and URL behavior |
+| M31.4   | not-started | Add month agenda            | Render selected-date agenda with EventRow                                           |
+| M31.5   | not-started | Route Calendar Sources      | Move visibility and writable-calendar controls out of the primary screen            |
+| M31.6   | not-started | Migrate event presentation  | Preserve device publication, reconciliation, retry, and permission behavior         |
+| M31.7   | not-started | Validate Calendar           | Cover modes, agenda, sources, publication, and native/web layouts                   |
+
+### M32 - Global Creation Flows
+
+| Task ID | Status      | Description                          | Notes                                                                            |
+| ------- | ----------- | ------------------------------------ | -------------------------------------------------------------------------------- |
+| M32.1   | not-started | Route global create choices          | Return to the contextual screen after successful real mutation                   |
+| M32.2   | not-started | Rebuild goal creation steps          | Separate SMART, definition, target, AI/manual, review, and final creation        |
+| M32.3   | not-started | Preserve optional AI planning drafts | Retain draft through paywall acceptance or decline and reuse current services    |
+| M32.4   | not-started | Extend task creation                 | Progressively disclose optional links, due date, schedule, duration, and all-day |
+| M32.5   | not-started | Optimize note creation               | Keep quick capture first while retaining title, body, and source metadata        |
+| M32.6   | not-started | Align event creation                 | Retain calendar source, recurrence, alerts, timezone, availability, and links    |
+| M32.7   | not-started | Validate creation routes             | Test unsaved changes, validation, keyboard, loading/error, success, and cancel   |
+
+### M33 - Focus Mode
+
+| Task ID | Status      | Description                          | Notes                                                                                     |
+| ------- | ----------- | ------------------------------------ | ----------------------------------------------------------------------------------------- |
+| M33.1   | not-started | Extract Focus behavior to route      | Reuse timer, Idea Dump, hold exit, audio, and DND behavior without semantic change        |
+| M33.2   | not-started | Add contextual Focus start state     | Show linked event/task context and planned end before one Start command                   |
+| M33.3   | not-started | Build active Focus hierarchy         | Prioritize title, context, countdown, end time, Idea Dump, and truthful distraction state |
+| M33.4   | not-started | Remove bypass controls               | Block close, back, gesture, and modal dismissal while active                              |
+| M33.5   | not-started | Save Idea Dump in place              | Save note without route change; confirm, clear, update count, and restore input focus     |
+| M33.6   | not-started | Add details and supported settings   | Show only supported, truthful session details and preferences                             |
+| M33.7   | not-started | Implement hold-only exit and summary | Three-second hold cancels early and routes completion or expiry to summary                |
+| M33.8   | not-started | Validate Focus                       | Cover timer, lifecycle, DND, audio, exit, summary, and screen readers                     |
+
+### M34 - Notes
+
+| Task ID | Status      | Description                     | Notes                                                                              |
+| ------- | ----------- | ------------------------------- | ---------------------------------------------------------------------------------- |
+| M34.1   | not-started | Restyle Notes List              | Add search/filter controls and compact NoteCard presentation                       |
+| M34.2   | not-started | Define note section ordering    | Specify Pinned, Recent, and All membership and duplication behavior                |
+| M34.3   | not-started | Route Note Editor               | Preserve create, update, archive, and delete behavior before removing detail modal |
+| M34.4   | not-started | Confirm editor formatting scope | Keep plain text unless existing editor supports formatting without a new model     |
+| M34.5   | not-started | Add note conversion drafts      | Open editable task, goal, and event drafts; never auto-commit data                 |
+| M34.6   | not-started | Validate Notes                  | Cover search, pins, editor drafts, conversions, confirmation, and data states      |
+
+### M35 - Profile and Settings
+
+| Task ID | Status      | Description                             | Notes                                                                                    |
+| ------- | ----------- | --------------------------------------- | ---------------------------------------------------------------------------------------- |
+| M35.1   | not-started | Recompose Profile groups                | Group account, services, preferences, billing, legal, and actions with shared primitives |
+| M35.2   | not-started | Route profile subsections               | Move dense controls to typed routes; retain high-value status on Profile                 |
+| M35.3   | not-started | Preserve all profile behavior           | Retain account, calendar, purchases, credits, privacy, legal, and logout flows           |
+| M35.4   | not-started | Wire appearance preference              | ThemeProvider is the only appearance state and persists selection                        |
+| M35.5   | not-started | Add truthful status and danger handling | Use accurate connected/subscription status and restrained destructive treatment          |
+| M35.6   | not-started | Validate Profile                        | Cover routes, persistence, status, errors, and responsive layout                         |
+
+### M36 - Responsive, Accessibility, and Release Polish
+
+| Task ID | Status      | Description                       | Notes                                                                                     |
+| ------- | ----------- | --------------------------------- | ----------------------------------------------------------------------------------------- |
+| M36.1   | not-started | Audit required UI states          | Cover loading, empty, error, offline, permissions, disabled, and destructive confirmation |
+| M36.2   | not-started | Complete accessibility audit      | Check Dynamic Type, targets, names, focus, live regions, keyboard, motion, and contrast   |
+| M36.3   | not-started | Complete responsive visual review | Compare both themes on compact/large phone, tablet, and wide web                          |
+| M36.4   | not-started | Profile expensive rendering       | Measure list and timeline performance; fix demonstrated jank only                         |
+| M36.5   | not-started | Run complete release quality gate | Run full mobile quality suite, rules, web export, and representative native builds        |
+| M36.6   | not-started | Reconcile release documents       | Update model, deployment, release, and platform-limit documentation                       |
+
 ## Update Rules
 
 - Read this file before starting a task.
-- Update status, scope, dependencies, and notes when work changes.
+- Update the affected M22-M36 leaf ticket here, in `ROADMAP.md`, and in `M22_M36_UI_REDESIGN_ENGINEERING_TICKETS.md` when work changes.
+- Update the corresponding M22-M36 validation-log entry in `M22_M36_UI_REDESIGN_ENGINEERING_TICKETS.md` when a ticket completes, is blocked, or moves to manual handoff.
 - Do not mark tasks completed until acceptance criteria are met and validation has passed.
 - Preserve completed tasks as progress history.
 - Do not rewrite unrelated plan sections.
