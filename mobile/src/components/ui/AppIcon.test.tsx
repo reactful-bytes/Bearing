@@ -38,11 +38,18 @@ describe('AppIcon', () => {
     );
   });
 
-  it('renders supplied path definitions without a third-party icon font', () => {
-    render(<AppIcon name="calendar" testID="calendar-icon" />);
+  it('uses the icon-library crop as primary artwork and retains SVG glyphs as secondary', () => {
+    render(
+      <>
+        <AppIcon name="calendar" testID="calendar-icon" />
+        <AppIcon name="calendarOutline" testID="calendar-outline-icon" />
+      </>,
+    );
+
+    expect(screen.getByTestId('calendar-icon').findByType('Image')).toBeTruthy();
 
     expect(
-      screen.getByTestId('calendar-icon').findAllByProps({
+      screen.getByTestId('calendar-outline-icon').findAllByProps({
         d: 'M7 2v4M17 2v4M3 9h18M7 13h.01M11 13h.01M15 13h.01M7 17h.01M11 17h.01M15 17h.01',
       }),
     ).not.toHaveLength(0);
