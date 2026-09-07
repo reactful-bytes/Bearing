@@ -144,12 +144,25 @@ Fields:
 - userId: string
 - title: string
 - description: string
+- goalId: string | null
+- stepId: string | null
+- dueDate: timestamp | null
+- scheduledStart: timestamp | null
+- scheduledEnd: timestamp | null
+- allDay: boolean
 - status: enum (active, completed)
 - completionSource: enum (manual, scheduled, start_now) | null
 - completedAt: timestamp | null
 - completedEventId: string | null
 - createdAt: timestamp
 - updatedAt: timestamp
+
+`goalId` and `stepId` are optional links to the existing goal and operational
+step records. `dueDate` is the task's date-level target; `scheduledStart` and
+`scheduledEnd` are optional timestamp bounds for planned work. `allDay` is
+false for legacy documents and indicates that the scheduled bounds represent
+an all-day task when true. Clients must preserve explicit nulls when clearing
+links or dates and must not infer missing legacy fields.
 
 Indexes (planned):
 

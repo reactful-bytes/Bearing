@@ -321,7 +321,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 | Task ID | Status      | Description                             | Exit Criteria                                                                       |
 | ------- | ----------- | --------------------------------------- | ----------------------------------------------------------------------------------- |
-| M27.1   | not-started | Extend task contracts                   | Nullable links, due/schedule/all-day fields decode legacy documents and round-trip  |
+| M27.1   | completed   | Extend task contracts                   | Nullable links, due/schedule/all-day fields decode legacy documents and round-trip  |
 | M27.2   | not-started | Expose event sourceTaskId               | Event serialization and decoding retain nullable task provenance                    |
 | M27.3   | not-started | Add note pinned field                   | Missing legacy value is false; mutations and sorting preserve pinned behavior       |
 | M27.4   | not-started | Confirm operational goal-step timeline  | One GoalStepRecord source is used; no parallel editable milestone tree remains      |

@@ -441,7 +441,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 | Task ID | Status      | Description                             | Notes                                                                                 |
 | ------- | ----------- | --------------------------------------- | ------------------------------------------------------------------------------------- |
-| M27.1   | not-started | Extend task contracts                   | Add nullable goal/step/due/schedule fields with safe legacy decoding                  |
+| M27.1   | completed   | Extend task contracts                   | Add nullable goal/step/due/schedule fields with safe legacy decoding                  |
 | M27.2   | not-started | Expose event sourceTaskId               | Serialize and decode nullable task provenance; Calendar must not infer IDs            |
 | M27.3   | not-started | Add note pinned field                   | Missing legacy documents decode as `false`; update mutations and sorting              |
 | M27.4   | not-started | Confirm operational goal-step timeline  | GoalStepRecord is the only editable timeline source                                   |
@@ -557,6 +557,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 ## Update Rules
 
 - Read this file before starting a task.
+- Follow [COMMIT_CONVENTIONS.md](COMMIT_CONVENTIONS.md) for commit subjects.
 - Update the affected M22-M36 leaf ticket here, in `ROADMAP.md`, and in `M22_M36_UI_REDESIGN_ENGINEERING_TICKETS.md` when work changes.
 - Update the corresponding M22-M36 validation-log entry in `M22_M36_UI_REDESIGN_ENGINEERING_TICKETS.md` when a ticket completes, is blocked, or moves to manual handoff.
 - Do not mark tasks completed until acceptance criteria are met and validation has passed.
