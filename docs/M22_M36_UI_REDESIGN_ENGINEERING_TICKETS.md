@@ -116,13 +116,13 @@ auth, navigation, or feature-screen redesign begins before it passes.
 
 | Ticket | Status      | Deliverable                    | Acceptance                                                                         |
 | ------ | ----------- | ------------------------------ | ---------------------------------------------------------------------------------- |
-| M29.1  | not-started | Add Plan route and composition | Plan uses shared components and real hooks only                                    |
-| M29.2  | not-started | Add contextual Plan header     | Greeting boundary and profile/overflow action are tested                           |
-| M29.3  | not-started | Add today events preview       | Chronological live events are limited to three through five with More Events route |
-| M29.4  | not-started | Add Focus card states          | Inactive, contextual, and active session actions route correctly                   |
-| M29.5  | not-started | Add active-goal preview        | Up to three live goals, View All, and all data states work                         |
-| M29.6  | not-started | Add Idea Dump count/action     | Existing note data supplies count and direct capture route                         |
-| M29.7  | not-started | Validate Plan states           | Composition, ordering, routes, and responsive layouts pass                         |
+| M29.1  | completed | Add Plan route and composition | Plan uses shared components and real hooks only                                    |
+| M29.2  | completed | Add contextual Plan header     | Greeting boundary and profile/overflow action are tested                           |
+| M29.3  | completed | Add today events preview       | Chronological live events are limited to three through five with More Events route |
+| M29.4  | completed | Add Focus card states          | Inactive, contextual, and active session actions route correctly                   |
+| M29.5  | completed | Add active-goal preview        | Up to three live goals, View All, and all data states work                         |
+| M29.6  | completed | Add Idea Dump count/action     | Existing note data supplies count and direct capture route                         |
+| M29.7  | completed | Validate Plan states           | Composition, ordering, routes, and responsive layouts pass                         |
 
 ## M30 - Goals and Tasks
 
@@ -232,3 +232,4 @@ auth, navigation, or feature-screen redesign begins before it passes.
 | 2026-09-06 | M27.5               | passed         | Focus remains process-local: the UX spec requires an active overlay countdown and in-session Idea Dump, but does not require restart restoration or a persisted session identity. |
 | 2026-09-06 | M27.6-M27.7         | passed         | `npm run test:rules` (16 emulator tests); full mobile Jest (57 suites, 410 tests); mobile typecheck; touched-slice lint (0 errors, 2 pre-existing `FoundationGallery.tsx` warnings); Functions build/tests and format check; existing privacy/export/deletion collection coverage and ownership rules remain compatible. Deployment handoff: deploy `firestore.rules` and `firestore.indexes.json` before releasing clients that write the additive fields; no speculative index was added because no new query requires one. |
 | 2026-09-07 | M28.1-M28.6         | passed         | `npm run typecheck`; full mobile Jest (57 suites, 411 tests); focused AppTabs, CalendarNavigation, GoalsScreen, TasksScreen, NotesScreen, and CalendarScreen suites; `npm run lint` (0 errors, 2 pre-existing `FoundationGallery.tsx` warnings). Nested Plan, Calendar, Notes, and Profile native stacks, typed detail/settings/Focus params, Create-sheet interception, responsive rail behavior, and legacy Focus/modal flows are covered. |
+| 2026-09-07 | M29.1-M29.7         | passed         | Plan uses live profile, calendar, goals, and notes hooks; chronological five-event preview, contextual and active process-local Focus states, goal preview, Idea Dump count, recovery states, and typed routes are covered by `src/__tests__/PlanScreen.test.tsx`. Focus overlay timer/DND suites remain green. Full mobile Jest (58 suites, 416 tests), `npm run typecheck`, `npm run lint`, targeted Prettier check, and `git diff --check` pass. Focus remains process-local per M27.5; the dashboard reads the active session while the app is running and does not promise restart restoration. |

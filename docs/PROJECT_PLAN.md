@@ -464,13 +464,13 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 | Task ID | Status      | Description                    | Notes                                                                    |
 | ------- | ----------- | ------------------------------ | ------------------------------------------------------------------------ |
-| M29.1   | not-started | Add Plan route and composition | Compose shared components from existing hooks only; do not add mock data |
-| M29.2   | not-started | Add contextual Plan header     | Test greeting boundaries and profile or overflow action                  |
-| M29.3   | not-started | Add today events preview       | Show chronological next three to five events with More Events route      |
-| M29.4   | not-started | Add Focus card states          | Cover inactive, contextual current/upcoming, and active session actions  |
-| M29.5   | not-started | Add active-goal preview        | Limit to three goals and handle loading, empty, error, and ready states  |
-| M29.6   | not-started | Add Idea Dump count/action     | Use existing Notes data and a direct capture route                       |
-| M29.7   | not-started | Validate Plan states           | Cover composition, order, navigation, greeting, and responsive layouts   |
+| M29.1   | completed | Add Plan route and composition | Compose shared components from existing hooks only; do not add mock data |
+| M29.2   | completed | Add contextual Plan header     | Test greeting boundaries and profile or overflow action                  |
+| M29.3   | completed | Add today events preview       | Show chronological next three to five events with More Events route      |
+| M29.4   | completed | Add Focus card states          | Cover inactive, contextual current/upcoming, and active session actions  |
+| M29.5   | completed | Add active-goal preview        | Limit to three goals and handle loading, empty, error, and ready states  |
+| M29.6   | completed | Add Idea Dump count/action     | Use existing Notes data and a direct capture route                       |
+| M29.7   | completed | Validate Plan states           | Cover composition, order, navigation, greeting, and responsive layouts   |
 
 ### M30 - Goals and Tasks
 

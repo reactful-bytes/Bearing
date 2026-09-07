@@ -344,13 +344,13 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 | Task ID | Status      | Description                    | Exit Criteria                                                                      |
 | ------- | ----------- | ------------------------------ | ---------------------------------------------------------------------------------- |
-| M29.1   | not-started | Add Plan route and composition | Plan uses shared components and real hooks only                                    |
-| M29.2   | not-started | Add contextual Plan header     | Greeting boundary and profile/overflow action are tested                           |
-| M29.3   | not-started | Add today events preview       | Chronological live events are limited to three through five with More Events route |
-| M29.4   | not-started | Add Focus card states          | Inactive, contextual, and active session actions route correctly                   |
-| M29.5   | not-started | Add active-goal preview        | Up to three live goals, View All, and all data states work                         |
-| M29.6   | not-started | Add Idea Dump count/action     | Existing note data supplies count and direct capture route                         |
-| M29.7   | not-started | Validate Plan states           | Composition, ordering, routes, and responsive layouts pass                         |
+| M29.1   | completed | Add Plan route and composition | Plan uses shared components and real hooks only                                    |
+| M29.2   | completed | Add contextual Plan header     | Greeting boundary and profile/overflow action are tested                           |
+| M29.3   | completed | Add today events preview       | Chronological live events are limited to three through five with More Events route |
+| M29.4   | completed | Add Focus card states          | Inactive, contextual, and active session actions route correctly                   |
+| M29.5   | completed | Add active-goal preview        | Up to three live goals, View All, and all data states work                         |
+| M29.6   | completed | Add Idea Dump count/action     | Existing note data supplies count and direct capture route                         |
+| M29.7   | completed | Validate Plan states           | Composition, ordering, routes, and responsive layouts pass                         |
 
 ### M30 - Goals and Tasks
 

@@ -17,6 +17,7 @@ import { AppButton } from '../ui/AppButton';
 import { FormField } from '../ui/FormField';
 import { radii, spacing, typography } from '../../design/tokens';
 import { CalendarDisplayEvent } from '../../features/calendar/calendarTypes';
+import { clearFocusSession, setFocusSession } from '../../features/focus/focusSession';
 import { CreateNoteInput } from '../../features/notes/noteTypes';
 import {
   DEFAULT_TIMER_SOUND_ID,
@@ -97,8 +98,7 @@ export function FocusModeOverlay({
       player.loop = false;
       player.pause();
       void player.seekTo(0).catch(() => undefined);
-    } catch {
-    }
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -303,6 +303,21 @@ export function FocusModeOverlay({
       event: null,
     };
   }, [events, now, preferredEventId]);
+
+  useEffect(() => {
+    if (!visible || !focusSummary.event) {
+      clearFocusSession();
+      return;
+    }
+
+    setFocusSession({
+      eventId: focusSummary.event.id,
+      title: focusSummary.event.title,
+      endAt: focusSummary.event.endAt,
+    });
+
+    return () => clearFocusSession();
+  }, [focusSummary.event, visible]);
 
   function clearHoldTracking(): void {
     if (holdTimeoutRef.current) {

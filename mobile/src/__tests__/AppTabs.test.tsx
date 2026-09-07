@@ -17,6 +17,10 @@ jest.mock('../screens/NotesScreen', () => ({
   NotesScreen: () => null,
 }));
 
+jest.mock('../screens/PlanScreen', () => ({
+  PlanScreen: () => null,
+}));
+
 jest.mock('../screens/ProfileScreen', () => ({
   ProfileScreen: () => null,
 }));
