@@ -442,12 +442,12 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | Task ID | Status      | Description                             | Notes                                                                                 |
 | ------- | ----------- | --------------------------------------- | ------------------------------------------------------------------------------------- |
 | M27.1   | completed   | Extend task contracts                   | Add nullable goal/step/due/schedule fields with safe legacy decoding                  |
-| M27.2   | not-started | Expose event sourceTaskId               | Serialize and decode nullable task provenance; Calendar must not infer IDs            |
-| M27.3   | not-started | Add note pinned field                   | Missing legacy documents decode as `false`; update mutations and sorting              |
-| M27.4   | not-started | Confirm operational goal-step timeline  | GoalStepRecord is the only editable timeline source                                   |
-| M27.5   | not-started | Decide Focus persistence                | Either define the minimum persistent session model or document process-local behavior |
-| M27.6   | not-started | Deploy-compatible backend updates       | Update services, export/delete, rules, indexes, docs, and emulator tests              |
-| M27.7   | not-started | Validate compatibility and deploy order | Deploy rules and indexes before releasing field-writing clients                       |
+| M27.2   | completed   | Expose event sourceTaskId               | Serialize and decode nullable task provenance; Calendar must not infer IDs            |
+| M27.3   | completed   | Add note pinned field                   | Missing legacy documents decode as `false`; update mutations and sorting              |
+| M27.4   | completed   | Confirm operational goal-step timeline  | GoalStepRecord is the only editable timeline source                                   |
+| M27.5   | completed   | Decide Focus persistence                | Either define the minimum persistent session model or document process-local behavior |
+| M27.6   | completed   | Deploy-compatible backend updates       | Update services, export/delete, rules, indexes, docs, and emulator tests              |
+| M27.7   | completed   | Validate compatibility and deploy order | Deploy rules and indexes before releasing field-writing clients                       |
 
 ### M28 - Navigation Architecture
 

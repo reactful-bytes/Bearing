@@ -322,12 +322,12 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | Task ID | Status      | Description                             | Exit Criteria                                                                       |
 | ------- | ----------- | --------------------------------------- | ----------------------------------------------------------------------------------- |
 | M27.1   | completed   | Extend task contracts                   | Nullable links, due/schedule/all-day fields decode legacy documents and round-trip  |
-| M27.2   | not-started | Expose event sourceTaskId               | Event serialization and decoding retain nullable task provenance                    |
-| M27.3   | not-started | Add note pinned field                   | Missing legacy value is false; mutations and sorting preserve pinned behavior       |
-| M27.4   | not-started | Confirm operational goal-step timeline  | One GoalStepRecord source is used; no parallel editable milestone tree remains      |
-| M27.5   | not-started | Decide Focus persistence                | Persist smallest required session model or document process-local decision          |
-| M27.6   | not-started | Deploy-compatible backend updates       | Services, export/delete, rules, indexes, docs, and emulator tests cover all fields  |
-| M27.7   | not-started | Validate compatibility and deploy order | Round trips pass and rules/indexes deployment precedes field-writing client release |
+| M27.2   | completed   | Expose event sourceTaskId               | Event serialization and decoding retain nullable task provenance                    |
+| M27.3   | completed   | Add note pinned field                   | Missing legacy value is false; mutations and sorting preserve pinned behavior       |
+| M27.4   | completed   | Confirm operational goal-step timeline  | One GoalStepRecord source is used; no parallel editable milestone tree remains      |
+| M27.5   | completed   | Decide Focus persistence                | Persist smallest required session model or document process-local decision          |
+| M27.6   | completed   | Deploy-compatible backend updates       | Services, export/delete, rules, indexes, docs, and emulator tests cover all fields  |
+| M27.7   | completed   | Validate compatibility and deploy order | Round trips pass and rules/indexes deployment precedes field-writing client release |
 
 ### M28 - Navigation Architecture
 

@@ -33,6 +33,7 @@ describe('firebaseEvents legacy decoding', () => {
       startAt,
       endAt,
       status: 'scheduled',
+      sourceTaskId: null,
     });
     expect(decoded).not.toHaveProperty('source');
     expect(decoded).not.toHaveProperty('externalEventId');
@@ -45,6 +46,25 @@ describe('firebaseEvents legacy decoding', () => {
       retryable: false,
       deletionIntent: false,
     });
+    expect(decoded.sourceTaskId).toBeNull();
+  });
+
+  it('decodes nullable task provenance without inferring it from event IDs', () => {
+    const at = new Date(2026, 6, 31, 9);
+    const decoded = decodeCalendarEventData('event-task-42', {
+      userId: 'user-1',
+      title: 'Task block',
+      description: '',
+      startAt: timestamp(at),
+      endAt: timestamp(new Date(2026, 6, 31, 10)),
+      timezone: 'UTC',
+      sourceTaskId: 'task-42',
+      status: 'scheduled',
+      createdAt: timestamp(at),
+      updatedAt: timestamp(at),
+    });
+
+    expect(decoded.sourceTaskId).toBe('task-42');
   });
 
   it('decodes publication state without accepting native identifiers', () => {

@@ -141,6 +141,7 @@ function makeCalendarEvent(overrides: Partial<CalendarEvent> = {}): CalendarEven
     alarms: [],
     availability: 'busy',
     url: null,
+    sourceTaskId: null,
     goalId: null,
     stepId: null,
     status: 'scheduled',

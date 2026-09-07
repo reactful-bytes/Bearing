@@ -61,7 +61,7 @@ Fields:
 - status: enum (active, completed, archived)
 - isAiAssisted: boolean
 - aiPlanVersion: number | null
-- aiMilestones: array of editable accepted milestone objects
+- aiMilestones: array of accepted AI-plan milestone metadata; not an operational timeline
   - title: string
   - description: string
 - createdAt: timestamp
@@ -181,6 +181,7 @@ Fields:
 - source: enum (manual, idea_dump)
 - sourceEventId: string | null
 - sourceStepId: string | null
+- pinned: boolean (false for legacy documents)
 - processed: boolean
 - archived: boolean
 - createdAt: timestamp

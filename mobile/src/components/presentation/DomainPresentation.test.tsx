@@ -79,6 +79,7 @@ const event: CalendarDisplayEvent = {
   status: 'scheduled',
   ownership: 'bearing',
   userId: 'user-1',
+  sourceTaskId: null,
   goalId: null,
   stepId: null,
   publication: {

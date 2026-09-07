@@ -247,6 +247,7 @@ export function CalendarScreen({
       alarms: [],
       availability: 'busy',
       url: null,
+      sourceTaskId: null,
       goalId: null,
       stepId: null,
       status: 'scheduled',

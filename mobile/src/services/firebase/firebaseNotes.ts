@@ -18,6 +18,8 @@ import {
 
 import { getFirebaseApp } from './firebaseApp';
 import { CreateNoteInput, NoteRecord, UpdateNoteInput } from '../../features/notes/noteTypes';
+import { decodeNoteData } from '../../features/notes/noteDecoder';
+import { sortNotes } from '../../features/notes/noteSorting';
 import { shouldInjectNotesSubscriptionFailure } from '../../features/testing/e2eFaults';
 
 let cachedDb: Firestore | null = null;
@@ -36,21 +38,7 @@ function getFirebaseFirestore(): Firestore {
 }
 
 function docToNote(snapshot: QueryDocumentSnapshot<DocumentData>): NoteRecord {
-  const data = snapshot.data();
-
-  return {
-    id: snapshot.id,
-    userId: data.userId as string,
-    title: data.title as string,
-    body: data.body as string,
-    source: data.source as NoteRecord['source'],
-    sourceEventId: (data.sourceEventId as string | null) ?? null,
-    sourceStepId: (data.sourceStepId as string | null) ?? null,
-    processed: Boolean(data.processed),
-    archived: Boolean(data.archived),
-    createdAt: (data.createdAt as Timestamp).toDate(),
-    updatedAt: (data.updatedAt as Timestamp).toDate(),
-  };
+  return decodeNoteData(snapshot.id, snapshot.data());
 }
 
 function buildNoteTitle(
@@ -93,7 +81,7 @@ export function subscribeToNotes(
   return onSnapshot(
     notesQuery,
     (snapshot) => {
-      onNext(snapshot.docs.map(docToNote));
+      onNext(sortNotes(snapshot.docs.map(docToNote)));
     },
     (firestoreError) => {
       onError(new Error('Failed to load notes.', { cause: firestoreError }));
@@ -112,6 +100,7 @@ export async function createNote(userId: string, input: CreateNoteInput): Promis
     source: input.source,
     sourceEventId: input.sourceEventId ?? null,
     sourceStepId: input.sourceStepId ?? null,
+    pinned: input.pinned === true,
     processed: false,
     archived: false,
     createdAt: now,
@@ -128,11 +117,14 @@ export async function updateNote(
 ): Promise<void> {
   const db = getFirebaseFirestore();
 
-  await updateDoc(doc(db, 'notes', noteId), {
+  const updatePayload: Record<string, unknown> = {
     title: buildNoteTitle({ title: fields.title, body: fields.body }),
     body: fields.body.trim(),
     updatedAt: Timestamp.now(),
-  });
+  };
+  if (fields.pinned !== undefined) updatePayload.pinned = fields.pinned;
+
+  await updateDoc(doc(db, 'notes', noteId), updatePayload);
 }
 
 export async function deleteNote(_userId: string, noteId: string): Promise<void> {

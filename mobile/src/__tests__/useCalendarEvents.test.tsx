@@ -62,6 +62,7 @@ function makeBearingEvent(): BearingEvent {
     alarms: [],
     availability: 'busy',
     url: null,
+    sourceTaskId: null,
     goalId: null,
     stepId: null,
     status: 'scheduled',

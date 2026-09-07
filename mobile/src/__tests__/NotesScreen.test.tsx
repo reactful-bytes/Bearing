@@ -27,6 +27,7 @@ function makeNote(overrides: Partial<NoteRecord> = {}): NoteRecord {
     createdAt: new Date(2026, 6, 20, 10, 0, 0),
     updatedAt: new Date(2026, 6, 20, 10, 0, 0),
     ...overrides,
+    pinned: overrides.pinned ?? false,
   };
 }
 

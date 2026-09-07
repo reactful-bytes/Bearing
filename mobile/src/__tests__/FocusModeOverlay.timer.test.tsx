@@ -35,6 +35,7 @@ function makeActiveEvent(startAt: Date, endAt: Date): CalendarDisplayEvent {
     alarms: [],
     availability: 'busy',
     url: null,
+    sourceTaskId: null,
     status: 'scheduled',
     goalId: null,
     stepId: null,

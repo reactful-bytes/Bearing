@@ -1060,6 +1060,7 @@ describe('GoalsScreen', () => {
           alarms: [],
           availability: 'busy',
           url: null,
+          sourceTaskId: null,
           goalId: 'goal-1',
           stepId: 'step-1',
           status: 'scheduled',

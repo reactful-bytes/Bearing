@@ -135,7 +135,7 @@ function eventToConversionInput(eventId: string, data: DocumentData): TaskConver
   const event = decodeCalendarEventData(eventId, data);
   return {
     userId: event.userId,
-    sourceTaskId: data.sourceTaskId as string,
+    sourceTaskId: event.sourceTaskId ?? '',
     input: {
       title: event.title,
       description: event.description,
@@ -189,8 +189,8 @@ export async function convertTaskToEvent(
                   eventInput,
                   createUnpublishedMetadata(),
                   Timestamp.fromDate(now),
+                  sourceTaskId,
                 ),
-                sourceTaskId,
               });
             },
             completeTask: (requestedTaskId, source, eventId, now) => {

@@ -92,6 +92,7 @@ const fixtureEvent: CalendarDisplayEvent = {
   status: 'scheduled',
   ownership: 'bearing',
   userId: 'gallery-user',
+  sourceTaskId: null,
   goalId: fixtureGoal.id,
   stepId: fixtureStep.id,
   publication: {

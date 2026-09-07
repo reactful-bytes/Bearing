@@ -59,6 +59,7 @@ export function buildEventPayload(
   input: CreateEventInput,
   publication: CalendarPublicationMetadata,
   now: Timestamp = Timestamp.now(),
+  sourceTaskId: string | null = null,
 ): Record<string, unknown> {
   const recurrenceRule = input.recurrenceRule
     ? {
@@ -84,6 +85,7 @@ export function buildEventPayload(
     alarms,
     availability: input.availability ?? 'busy',
     url: input.url ?? null,
+    sourceTaskId,
     goalId: input.goalId ?? null,
     stepId: input.stepId ?? null,
     status: 'scheduled',

@@ -73,6 +73,7 @@ type CalendarDisplayFields = {
 export type BearingEvent = CalendarDisplayFields & {
   ownership: 'bearing';
   userId: string;
+  sourceTaskId: string | null;
   goalId: string | null;
   stepId: string | null;
   publication: CalendarPublicationMetadata;

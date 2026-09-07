@@ -70,6 +70,7 @@ function makeTestEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
     alarms: [],
     availability: 'busy',
     url: null,
+    sourceTaskId: null,
     goalId: null,
     stepId: null,
     status: 'scheduled',

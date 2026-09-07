@@ -99,6 +99,7 @@ export function decodeCalendarEventData(id: string, data: Record<string, unknown
     alarms: decodeAlarms(data.alarms),
     availability: decodeAvailability(data.availability),
     url: typeof data.url === 'string' ? data.url : null,
+    sourceTaskId: typeof data.sourceTaskId === 'string' ? data.sourceTaskId : null,
     goalId: (data.goalId as string | null) ?? null,
     stepId: (data.stepId as string | null) ?? null,
     status: data.status as EventStatus,
