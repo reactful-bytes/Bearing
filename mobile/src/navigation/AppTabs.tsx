@@ -1,18 +1,29 @@
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, NavigationProp, useNavigation } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useState } from 'react';
 import { Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CreateSheet } from '../components/presentation/CreateSheet';
+import { AppIcon } from '../components/ui/AppIcon';
+import { useTheme } from '../design/ThemeProvider';
+import { useThemedStyles } from '../design/useThemedStyles';
+import { AppIconName } from '../design/icons';
 import { CalendarScreen } from '../screens/CalendarScreen';
 import { GoalsScreen } from '../screens/GoalsScreen';
 import { NotesScreen } from '../screens/NotesScreen';
+import { PlanScreen } from '../screens/PlanScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { TasksScreen } from '../screens/TasksScreen';
-import { useTheme } from '../design/ThemeProvider';
-import { useThemedStyles } from '../design/useThemedStyles';
-import { AppIcon } from '../components/ui/AppIcon';
-import { AppIconName } from '../design/icons';
-import { AppTabParamList } from './navigationTypes';
+import { NavigationPlaceholderScreen } from './NavigationPlaceholderScreen';
+import {
+  AppTabParamList,
+  CalendarStackParamList,
+  NotesStackParamList,
+  PlanStackParamList,
+  ProfileStackParamList,
+} from './navigationTypes';
 
 type AppTabsProps = {
   onPressSignOut: () => Promise<void> | void;
@@ -20,6 +31,10 @@ type AppTabsProps = {
 };
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
+const PlanStack = createNativeStackNavigator<PlanStackParamList>();
+const CalendarStack = createNativeStackNavigator<CalendarStackParamList>();
+const NotesStack = createNativeStackNavigator<NotesStackParamList>();
+const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 const DESKTOP_NAVIGATION_BREAKPOINT = 1024;
 export const DESKTOP_NAVIGATION_WIDTH = 152;
 
@@ -28,9 +43,9 @@ export function usesDesktopNavigation(platform: string, width: number): boolean 
 }
 
 const TAB_ICONS: Record<keyof AppTabParamList, AppIconName> = {
-  Goals: 'goal',
-  Tasks: 'task',
-  Calendar: 'plan',
+  Plan: 'plan',
+  Calendar: 'calendar',
+  Create: 'create',
   Notes: 'note',
   Profile: 'profile',
 };
@@ -46,31 +61,78 @@ function TabIcon({
 }) {
   const styles = useThemedStyles(createStyles);
 
-  if (routeName === 'Calendar') {
-    return (
-      <View
-        testID="calendar-tab-icon"
-        style={[
-          styles.logoCircle,
-          isDesktop ? styles.logoCircleDesktop : null,
-          focused ? styles.logoCircleFocused : null,
-        ]}
-      >
-        <AppIcon name={TAB_ICONS[routeName]} size={isDesktop ? 22 : 48} decorative />
-      </View>
-    );
-  }
-
   return (
     <View style={[styles.iconCircle, focused ? styles.iconCircleFocused : null]}>
       <AppIcon
         name={TAB_ICONS[routeName]}
-        size={20}
+        size={isDesktop ? 20 : 22}
         color={focused ? styles.iconTextFocused.color : styles.iconText.color}
         decorative
       />
     </View>
   );
+}
+
+function PlanNavigator() {
+  return (
+    <PlanStack.Navigator screenOptions={{ headerShown: false }}>
+      <PlanStack.Screen name="Plan" component={PlanScreen} />
+      <PlanStack.Screen name="Goals" component={GoalsScreen} />
+      <PlanStack.Screen name="Tasks" component={TasksScreen} />
+      <PlanStack.Screen name="GoalDetail" component={NavigationPlaceholderScreen} />
+      <PlanStack.Screen name="FocusMode" component={NavigationPlaceholderScreen} />
+      <PlanStack.Screen name="CreateGoal" component={NavigationPlaceholderScreen} />
+    </PlanStack.Navigator>
+  );
+}
+
+function CalendarNavigator() {
+  return (
+    <CalendarStack.Navigator screenOptions={{ headerShown: false }}>
+      <CalendarStack.Screen name="Calendar" component={CalendarScreen} />
+      <CalendarStack.Screen name="EventDetail" component={NavigationPlaceholderScreen} />
+      <CalendarStack.Screen name="CalendarSources" component={NavigationPlaceholderScreen} />
+      <CalendarStack.Screen name="CreateEvent" component={NavigationPlaceholderScreen} />
+      <CalendarStack.Screen name="CreateTask" component={NavigationPlaceholderScreen} />
+    </CalendarStack.Navigator>
+  );
+}
+
+function NotesNavigator() {
+  return (
+    <NotesStack.Navigator screenOptions={{ headerShown: false }}>
+      <NotesStack.Screen name="Notes" component={NotesScreen} />
+      <NotesStack.Screen name="NoteEditor" component={NavigationPlaceholderScreen} />
+      <NotesStack.Screen name="CreateGoalFromNote" component={NavigationPlaceholderScreen} />
+      <NotesStack.Screen name="CreateTaskFromNote" component={NavigationPlaceholderScreen} />
+      <NotesStack.Screen name="CreateEventFromNote" component={NavigationPlaceholderScreen} />
+    </NotesStack.Navigator>
+  );
+}
+
+function ProfileNavigator({ onPressSignOut, isSignOutPending }: AppTabsProps) {
+  return (
+    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+      <ProfileStack.Screen name="Profile">
+        {() => (
+          <ProfileScreen onPressSignOut={onPressSignOut} isSignOutPending={isSignOutPending} />
+        )}
+      </ProfileStack.Screen>
+      <ProfileStack.Screen name="PersonalInformation" component={NavigationPlaceholderScreen} />
+      <ProfileStack.Screen name="Security" component={NavigationPlaceholderScreen} />
+      <ProfileStack.Screen name="ConnectedServices" component={NavigationPlaceholderScreen} />
+      <ProfileStack.Screen name="Notifications" component={NavigationPlaceholderScreen} />
+      <ProfileStack.Screen name="FocusPreferences" component={NavigationPlaceholderScreen} />
+      <ProfileStack.Screen name="Appearance" component={NavigationPlaceholderScreen} />
+      <ProfileStack.Screen name="PlanBilling" component={NavigationPlaceholderScreen} />
+      <ProfileStack.Screen name="Legal" component={NavigationPlaceholderScreen} />
+      <ProfileStack.Screen name="Subscription" component={NavigationPlaceholderScreen} />
+    </ProfileStack.Navigator>
+  );
+}
+
+function CreateTabScreen() {
+  return null;
 }
 
 export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
@@ -79,11 +141,61 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const isDesktopNavigation = usesDesktopNavigation(Platform.OS, width);
+  const [createVisible, setCreateVisible] = useState(false);
 
   return (
     <NavigationContainer>
+      <AppTabsNavigator
+        createVisible={createVisible}
+        insets={insets}
+        isDesktopNavigation={isDesktopNavigation}
+        isSignOutPending={isSignOutPending}
+        onPressSignOut={onPressSignOut}
+        setCreateVisible={setCreateVisible}
+        styles={styles}
+        theme={theme}
+      />
+    </NavigationContainer>
+  );
+}
+
+function AppTabsNavigator({
+  createVisible,
+  insets,
+  isDesktopNavigation,
+  isSignOutPending,
+  onPressSignOut,
+  setCreateVisible,
+  styles,
+  theme,
+}: AppTabsProps & {
+  createVisible: boolean;
+  insets: ReturnType<typeof useSafeAreaInsets>;
+  isDesktopNavigation: boolean;
+  setCreateVisible: (visible: boolean) => void;
+  styles: ReturnType<typeof createStyles>;
+  theme: ReturnType<typeof useTheme>['theme'];
+}) {
+  const navigation = useNavigation<NavigationProp<AppTabParamList>>();
+
+  function navigateToCreate(action: 'goal' | 'task' | 'note' | 'event'): void {
+    setCreateVisible(false);
+
+    if (action === 'goal') {
+      navigation.navigate('Plan', { screen: 'Goals', params: { createGoal: true } });
+    } else if (action === 'task') {
+      navigation.navigate('Plan', { screen: 'Tasks', params: { createTask: true } });
+    } else if (action === 'note') {
+      navigation.navigate('Notes', { screen: 'Notes', params: { createNote: true } });
+    } else {
+      navigation.navigate('Calendar', { screen: 'Calendar', params: { createEvent: true } });
+    }
+  }
+
+  return (
+    <>
       <Tab.Navigator
-        initialRouteName="Calendar"
+        initialRouteName="Plan"
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarPosition: isDesktopNavigation ? 'left' : 'bottom',
@@ -113,39 +225,46 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
           ),
         })}
       >
-        <Tab.Screen name="Goals" component={GoalsScreen} />
-        <Tab.Screen name="Tasks" component={TasksScreen} />
+        <Tab.Screen name="Plan" component={PlanNavigator} />
+        <Tab.Screen name="Calendar" component={CalendarNavigator} />
         <Tab.Screen
-          name="Calendar"
-          component={CalendarScreen}
-          options={
-            isDesktopNavigation
-              ? undefined
-              : {
-                  tabBarLabel: () => null,
-                  tabBarButton: ({ children, onLongPress, onPress, accessibilityState, style }) => (
-                    <Pressable
-                      testID="calendar-tab-button"
-                      accessibilityRole="button"
-                      accessibilityState={accessibilityState}
-                      onLongPress={onLongPress}
-                      onPress={onPress}
-                      style={[style, styles.calendarTabButton]}
-                    >
-                      {children}
-                    </Pressable>
-                  ),
-                }
-          }
+          name="Create"
+          component={CreateTabScreen}
+          options={{
+            tabBarLabel: () => null,
+            tabBarButton: ({ children, accessibilityState, style }) => (
+              <Pressable
+                testID="create-tab-button"
+                accessibilityRole="button"
+                accessibilityLabel="Create"
+                accessibilityState={accessibilityState}
+                onPress={() => setCreateVisible(true)}
+                style={[
+                  style,
+                  isDesktopNavigation ? styles.createRailButton : styles.createTabButton,
+                ]}
+              >
+                {children}
+              </Pressable>
+            ),
+          }}
         />
-        <Tab.Screen name="Notes" component={NotesScreen} />
+        <Tab.Screen name="Notes" component={NotesNavigator} />
         <Tab.Screen name="Profile">
           {() => (
-            <ProfileScreen onPressSignOut={onPressSignOut} isSignOutPending={isSignOutPending} />
+            <ProfileNavigator onPressSignOut={onPressSignOut} isSignOutPending={isSignOutPending} />
           )}
         </Tab.Screen>
       </Tab.Navigator>
-    </NavigationContainer>
+      <CreateSheet
+        visible={createVisible}
+        onDismiss={() => setCreateVisible(false)}
+        onCreateGoal={() => navigateToCreate('goal')}
+        onCreateTask={() => navigateToCreate('task')}
+        onCreateNote={() => navigateToCreate('note')}
+        onCreateEvent={() => navigateToCreate('event')}
+      />
+    </>
   );
 }
 
@@ -197,7 +316,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
     iconTextFocused: {
       color: theme.componentTokens.tabIcon.focusedTextColor,
     },
-    calendarTabButton: {
+    createTabButton: {
       width: 76,
       height: theme.layout.tabBarHeight + 12,
       marginTop: -17,
@@ -205,23 +324,10 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       justifyContent: 'center',
       overflow: 'visible',
     },
-    logoCircle: {
-      width: 76,
-      height: 76,
-      borderRadius: 38,
-      overflow: 'hidden',
-      alignItems: 'center',
+    createRailButton: {
+      width: '100%',
+      minHeight: 52,
+      alignItems: 'flex-start',
       justifyContent: 'center',
-      backgroundColor: theme.colors.surface,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-    },
-    logoCircleFocused: {
-      borderColor: theme.colors.brand,
-    },
-    logoCircleDesktop: {
-      width: theme.layout.tabIconSize,
-      height: theme.layout.tabIconSize,
-      borderRadius: theme.layout.tabIconRadius,
     },
   });

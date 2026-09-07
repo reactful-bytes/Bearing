@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useThemedStyles } from '../design/useThemedStyles';
@@ -28,6 +28,7 @@ import { useGoals } from '../features/goals/useGoals';
 import { useGoalStepEvents } from '../features/goals/useGoalStepEvents';
 import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
+import { PlanStackParamList } from '../navigation/navigationTypes';
 import {
   generateAiGoalPlanDraft,
   getAiCreditStatus,
@@ -55,7 +56,12 @@ function getGoalProgressPercent(goal: GoalWithSteps): number {
   return Math.round((goal.completedStepCount / goal.totalStepCount) * 100);
 }
 
-export function GoalsScreen() {
+type GoalsScreenProps = {
+  route?: { params?: PlanStackParamList['Goals'] };
+  navigation?: { setParams: (params: PlanStackParamList['Goals']) => void };
+};
+
+export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   const styles = useThemedStyles(createStyles);
   const { createEvent, publicationCalendarTitle } = useCalendarPublication();
   const { authUser, isAnonymous, profile } = useUserProfile();
@@ -80,6 +86,15 @@ export function GoalsScreen() {
   const [premiumPaywallFeature, setPremiumPaywallFeature] = useState<PremiumFeature | null>(null);
   const [goalFilter, setGoalFilter] = useState<GoalFilter>('active');
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
+
+  useEffect(() => {
+    if (!route?.params?.createGoal) {
+      return;
+    }
+
+    setCreateGoalVisible(true);
+    navigation?.setParams({ createGoal: undefined });
+  }, [navigation, route?.params?.createGoal]);
 
   const activeGoalCount = useMemo(
     () => goals.filter((goal) => goal.status === 'active').length,

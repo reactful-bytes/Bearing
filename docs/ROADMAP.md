@@ -333,12 +333,12 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 | Task ID | Status      | Description                             | Exit Criteria                                                               |
 | ------- | ----------- | --------------------------------------- | --------------------------------------------------------------------------- |
-| M28.1   | not-started | Define typed navigation contracts       | Tab, stack, and modal parameter lists compile                               |
-| M28.2   | not-started | Add nested native stacks                | Plan, Calendar, Notes, and Profile retain stack state where supported       |
-| M28.3   | not-started | Intercept Create destination            | Create opens the global sheet and is never selected as a content tab        |
-| M28.4   | not-started | Add typed detail and settings routes    | Every named detail, editor, settings, and Focus route has explicit params   |
-| M28.5   | not-started | Preserve responsive and legacy behavior | Wide rail, return targets, deep-link-ready params, and legacy parity remain |
-| M28.6   | not-started | Test navigation contracts               | Selection, interception, nested state, modal routes, and web rail pass      |
+| M28.1   | completed | Define typed navigation contracts       | Tab, stack, and modal parameter lists compile                               |
+| M28.2   | completed | Add nested native stacks                | Plan, Calendar, Notes, and Profile retain stack state where supported       |
+| M28.3   | completed | Intercept Create destination            | Create opens the global sheet and is never selected as a content tab        |
+| M28.4   | completed | Add typed detail and settings routes    | Every named detail, editor, settings, and Focus route has explicit params   |
+| M28.5   | completed | Preserve responsive and legacy behavior | Wide rail, return targets, deep-link-ready params, and legacy parity remain |
+| M28.6   | completed | Test navigation contracts               | Selection, interception, nested state, modal routes, and web rail pass      |
 
 ### M29 - Plan Dashboard
 

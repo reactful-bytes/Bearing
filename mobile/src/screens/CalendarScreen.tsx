@@ -107,10 +107,11 @@ export type CalendarScreenProps = {
   route?: {
     params?: {
       focusLaunch?: CalendarFocusLaunch;
+      createEvent?: boolean;
     };
   };
   navigation?: {
-    setParams?: (params: { focusLaunch?: CalendarFocusLaunch }) => void;
+    setParams?: (params: { focusLaunch?: CalendarFocusLaunch; createEvent?: boolean }) => void;
   };
 };
 
@@ -139,6 +140,15 @@ export function CalendarScreen({
   const [pendingFocusEvent, setPendingFocusEvent] = useState<CalendarEvent | null>(null);
   const [preferredFocusEventId, setPreferredFocusEventId] = useState<string | null>(null);
   const [timelineFocusRequest, setTimelineFocusRequest] = useState(0);
+
+  useEffect(() => {
+    if (!route?.params?.createEvent) {
+      return;
+    }
+
+    setAddEventVisible(true);
+    navigation?.setParams?.({ createEvent: undefined });
+  }, [navigation, route?.params?.createEvent]);
   const year = selectedDate.getFullYear();
   const month = selectedDate.getMonth();
   const weekStart = useMemo(() => getSundayWeekStart(selectedDate), [selectedDate]);

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -18,7 +18,11 @@ import { CreateEventInput, CreateEventOptions } from '../features/calendar/calen
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { useTasks } from '../features/tasks/useTasks';
 import { CreateTaskInput, TaskRecord, UpdateTaskInput } from '../features/tasks/taskTypes';
-import { AppTabParamList, CalendarFocusLaunch } from '../navigation/navigationTypes';
+import {
+  AppTabParamList,
+  CalendarFocusLaunch,
+  PlanStackParamList,
+} from '../navigation/navigationTypes';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { DEFAULT_TIME_FORMAT, TimeFormat, timeFormatOptions } from '../features/profile/timeFormat';
 
@@ -50,7 +54,12 @@ function completionLabel(task: TaskRecord): string {
   return 'Completed';
 }
 
-export function TasksScreen() {
+type TasksScreenProps = {
+  route?: { params?: PlanStackParamList['Tasks'] };
+  navigation?: { setParams: (params: PlanStackParamList['Tasks']) => void };
+};
+
+export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenProps = {}) {
   const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NavigationProp<AppTabParamList>>();
   const { profile } = useUserProfile();
@@ -71,6 +80,15 @@ export function TasksScreen() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [scheduleTaskId, setScheduleTaskId] = useState<string | null>(null);
   const [startNowTaskId, setStartNowTaskId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!route?.params?.createTask) {
+      return;
+    }
+
+    setAddTaskVisible(true);
+    stackNavigation?.setParams({ createTask: undefined });
+  }, [route?.params?.createTask, stackNavigation]);
 
   const selectedTask = useMemo(
     () => tasks.find((task) => task.id === selectedTaskId) ?? null,
@@ -177,7 +195,7 @@ export function TasksScreen() {
 
     setStartNowTaskId(null);
     setSelectedTaskId(null);
-    navigation.navigate('Calendar', { focusLaunch });
+    navigation.navigate('Calendar', { screen: 'Calendar', params: { focusLaunch } });
   }
 
   return (

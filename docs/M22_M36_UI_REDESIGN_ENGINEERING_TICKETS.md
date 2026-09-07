@@ -105,12 +105,12 @@ auth, navigation, or feature-screen redesign begins before it passes.
 
 | Ticket | Status      | Deliverable                             | Acceptance                                                                  |
 | ------ | ----------- | --------------------------------------- | --------------------------------------------------------------------------- |
-| M28.1  | not-started | Define typed navigation contracts       | Tab, stack, and modal parameter lists compile                               |
-| M28.2  | not-started | Add nested native stacks                | Plan, Calendar, Notes, and Profile retain stack state where supported       |
-| M28.3  | not-started | Intercept Create destination            | Create opens the global sheet and is never selected as a content tab        |
-| M28.4  | not-started | Add typed detail and settings routes    | Every named detail, editor, settings, and Focus route has explicit params   |
-| M28.5  | not-started | Preserve responsive and legacy behavior | Wide rail, return targets, deep-link-ready params, and legacy parity remain |
-| M28.6  | not-started | Test navigation contracts               | Selection, interception, nested state, modal routes, and web rail pass      |
+| M28.1  | completed | Define typed navigation contracts       | Tab, stack, and modal parameter lists compile                               |
+| M28.2  | completed | Add nested native stacks                | Plan, Calendar, Notes, and Profile retain stack state where supported       |
+| M28.3  | completed | Intercept Create destination            | Create opens the global sheet and is never selected as a content tab        |
+| M28.4  | completed | Add typed detail and settings routes    | Every named detail, editor, settings, and Focus route has explicit params   |
+| M28.5  | completed | Preserve responsive and legacy behavior | Wide rail, return targets, deep-link-ready params, and legacy parity remain |
+| M28.6  | completed | Test navigation contracts               | Selection, interception, nested state, modal routes, and web rail pass      |
 
 ## M29 - Plan Dashboard
 
@@ -231,3 +231,4 @@ auth, navigation, or feature-screen redesign begins before it passes.
 | 2026-09-06 | M27.4               | passed         | `npm test -- --runInBand src/features/goals/goalHelpers.test.ts`; `GoalStepRecord` remains the only operational timeline. `aiMilestones` are retained as read-only accepted AI-plan metadata. |
 | 2026-09-06 | M27.5               | passed         | Focus remains process-local: the UX spec requires an active overlay countdown and in-session Idea Dump, but does not require restart restoration or a persisted session identity. |
 | 2026-09-06 | M27.6-M27.7         | passed         | `npm run test:rules` (16 emulator tests); full mobile Jest (57 suites, 410 tests); mobile typecheck; touched-slice lint (0 errors, 2 pre-existing `FoundationGallery.tsx` warnings); Functions build/tests and format check; existing privacy/export/deletion collection coverage and ownership rules remain compatible. Deployment handoff: deploy `firestore.rules` and `firestore.indexes.json` before releasing clients that write the additive fields; no speculative index was added because no new query requires one. |
+| 2026-09-07 | M28.1-M28.6         | passed         | `npm run typecheck`; full mobile Jest (57 suites, 411 tests); focused AppTabs, CalendarNavigation, GoalsScreen, TasksScreen, NotesScreen, and CalendarScreen suites; `npm run lint` (0 errors, 2 pre-existing `FoundationGallery.tsx` warnings). Nested Plan, Calendar, Notes, and Profile native stacks, typed detail/settings/Focus params, Create-sheet interception, responsive rail behavior, and legacy Focus/modal flows are covered. |

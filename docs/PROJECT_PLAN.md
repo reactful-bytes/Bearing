@@ -453,12 +453,12 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 | Task ID | Status      | Description                             | Notes                                                                           |
 | ------- | ----------- | --------------------------------------- | ------------------------------------------------------------------------------- |
-| M28.1   | not-started | Define typed navigation contracts       | Define root-tab, stack, and modal parameter lists before navigator changes      |
-| M28.2   | not-started | Add nested native stacks                | Preserve stack and scroll state where React Navigation supports it              |
-| M28.3   | not-started | Intercept Create destination            | Create opens a sheet and never becomes selected content                         |
-| M28.4   | not-started | Add typed detail and settings routes    | Cover all named details, editors, Focus, account, and subscription settings     |
-| M28.5   | not-started | Preserve responsive and legacy behavior | Keep 1024px rail, contextual returns, deep-link-ready params, and legacy parity |
-| M28.6   | not-started | Test navigation contracts               | Test selection, interception, nested state, modal routes, and rail behavior     |
+| M28.1   | completed | Define typed navigation contracts       | Define root-tab, stack, and modal parameter lists before navigator changes      |
+| M28.2   | completed | Add nested native stacks                | Preserve stack and scroll state where React Navigation supports it              |
+| M28.3   | completed | Intercept Create destination            | Create opens a sheet and never becomes selected content                         |
+| M28.4   | completed | Add typed detail and settings routes    | Cover all named details, editors, Focus, account, and subscription settings     |
+| M28.5   | completed | Preserve responsive and legacy behavior | Keep 1024px rail, contextual returns, deep-link-ready params, and legacy parity |
+| M28.6   | completed | Test navigation contracts               | Test selection, interception, nested state, modal routes, and rail behavior     |
 
 ### M29 - Plan Dashboard
 

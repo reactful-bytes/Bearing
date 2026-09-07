@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useThemedStyles } from '../design/useThemedStyles';
@@ -14,6 +14,7 @@ import { useNotes } from '../features/notes/useNotes';
 import { CreateNoteInput, NoteRecord, UpdateNoteInput } from '../features/notes/noteTypes';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { DEFAULT_TIME_FORMAT, TimeFormat, timeFormatOptions } from '../features/profile/timeFormat';
+import { NotesStackParamList } from '../navigation/navigationTypes';
 
 function formatDateTime(date: Date, timeFormat: TimeFormat, locale?: string): string {
   return date.toLocaleString(locale, {
@@ -29,13 +30,27 @@ function noteSourceLabel(note: NoteRecord): string {
   return note.source === 'idea_dump' ? 'Idea Dump' : 'Manual Note';
 }
 
-export function NotesScreen() {
+type NotesScreenProps = {
+  route?: { params?: NotesStackParamList['Notes'] };
+  navigation?: { setParams: (params: NotesStackParamList['Notes']) => void };
+};
+
+export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
   const styles = useThemedStyles(createStyles);
   const { notes, uiState, createNote, updateNote, deleteNote, retry } = useNotes();
   const { profile } = useUserProfile();
   const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
   const [addNoteVisible, setAddNoteVisible] = useState(false);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!route?.params?.createNote) {
+      return;
+    }
+
+    setAddNoteVisible(true);
+    navigation?.setParams({ createNote: undefined });
+  }, [navigation, route?.params?.createNote]);
 
   const selectedNote = selectedNoteId
     ? (notes.find((note) => note.id === selectedNoteId) ?? null)

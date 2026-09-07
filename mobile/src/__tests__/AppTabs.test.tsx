@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { render } from '@testing-library/react-native';
+import { fireEvent, render } from '@testing-library/react-native';
 import React from 'react';
 
 import { layout } from '../design/tokens';
@@ -25,8 +25,19 @@ jest.mock('../screens/TasksScreen', () => ({
   TasksScreen: () => null,
 }));
 
+jest.mock('../components/presentation/CreateSheet', () => {
+  const ReactModule = jest.requireActual<typeof import('react')>('react');
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+
+  return {
+    CreateSheet: ({ visible }: { visible: boolean }) =>
+      visible ? ReactModule.createElement(Text, { testID: 'create-sheet' }, 'Create') : null,
+  };
+});
+
 jest.mock('@react-navigation/native', () => ({
   NavigationContainer: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useNavigation: jest.fn(() => ({ navigate: jest.fn() })),
 }));
 
 jest.mock('react-native-safe-area-context', () => ({
@@ -75,7 +86,7 @@ jest.mock('@react-navigation/bottom-tabs', () => {
               <View key={route.name}>
                 {mergedOptions.tabBarButton({
                   children: icon,
-                  onPress: jest.fn(),
+                  onPress: mergedOptions.tabBarButton ? jest.fn() : undefined,
                   style: { flex: 1 },
                 })}
               </View>
@@ -98,6 +109,23 @@ jest.mock('@react-navigation/bottom-tabs', () => {
   };
 });
 
+jest.mock('@react-navigation/native-stack', () => {
+  const ReactModule = jest.requireActual<typeof import('react')>('react');
+  const { View } = jest.requireActual<typeof import('react-native')>('react-native');
+
+  function Screen() {
+    return null;
+  }
+
+  function Navigator({ children }: { children: React.ReactNode }) {
+    return <View>{ReactModule.Children.map(children, (child) => child)}</View>;
+  }
+
+  return {
+    createNativeStackNavigator: () => ({ Navigator, Screen }),
+  };
+});
+
 describe('AppTabs', () => {
   it('uses desktop navigation only for wide web viewports', () => {
     expect(usesDesktopNavigation('web', 1024)).toBe(true);
@@ -110,15 +138,15 @@ describe('AppTabs', () => {
     expect(DESKTOP_NAVIGATION_WIDTH).toBe(152);
   });
 
-  it('renders the Calendar tab button as an oversized floating action', () => {
+  it('renders Create as a non-content tab action', () => {
     const { getByTestId } = render(
       <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
     );
 
-    const calendarTabButton = getByTestId('calendar-tab-button');
-    const calendarTabIcon = getByTestId('calendar-tab-icon');
+    const createTabButton = getByTestId('create-tab-button');
 
-    expect(calendarTabButton.props.style).toEqual(
+    expect(createTabButton.props.accessibilityLabel).toBe('Create');
+    expect(createTabButton.props.style).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           height: layout.tabBarHeight + 12,
@@ -127,11 +155,16 @@ describe('AppTabs', () => {
         }),
       ]),
     );
-    expect(calendarTabIcon.props.style).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ height: 76, width: 76, borderRadius: 38 }),
-      ]),
+  });
+
+  it('opens the global Create sheet without selecting the Create destination', () => {
+    const { getByTestId } = render(
+      <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
     );
+
+    fireEvent.press(getByTestId('create-tab-button'));
+
+    expect(getByTestId('create-sheet')).toBeTruthy();
   });
 
   it('reserves the Android bottom safe-area inset for the tab bar', () => {
@@ -139,7 +172,7 @@ describe('AppTabs', () => {
       <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
     );
 
-    expect(getByTestId('tab-bar-Goals').props.style).toEqual(
+    expect(getByTestId('tab-bar-Plan').props.style).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           height: layout.tabBarHeight + 24,
