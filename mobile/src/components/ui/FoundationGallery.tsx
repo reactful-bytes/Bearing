@@ -5,6 +5,7 @@ import { BottomNavigation, BottomNavigationDestination } from '../presentation/B
 import { CreateSheet } from '../presentation/CreateSheet';
 import {
   GoalCard,
+  GoalFilter,
   GoalMilestones,
   GoalStatusTabs,
   GoalTimeline,
@@ -12,7 +13,6 @@ import {
 import { EventCard, EventRow, EventSourceChip } from '../presentation/EventPresentation';
 import { TaskRow } from '../presentation/TaskRow';
 import { CalendarDisplayEvent } from '../../features/calendar/calendarTypes';
-import { GoalFilter } from '../presentation/GoalPresentation';
 import { GoalStepRecord, GoalWithSteps } from '../../features/goals/goalTypes';
 import { TaskRecord } from '../../features/tasks/taskTypes';
 import { useTheme } from '../../design/ThemeProvider';

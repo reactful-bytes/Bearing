@@ -170,6 +170,7 @@ export const icons = {
   review: svg([{ d: 'm8 12 3 3 5-6' }], undefined, [{ x: 4, y: 4, width: 16, height: 16, rx: 2 }]),
   milestone: svg([{ d: 'M7 21V4M8 5h10l-2 4 2 4H8' }]),
   next: svg([{ d: 'M5 12h14M13 6l6 6-6 6' }]),
+  forward: svg([{ d: 'm10 6 6 6-6 6M16 12H4' }]),
   cancel: svg([{ d: 'm8 8 8 8M16 8l-8 8' }], [{ cx: 12, cy: 12, r: 9 }]),
   duration: svg([{ d: 'M12 7v5l3 2' }], [{ cx: 12, cy: 12, r: 9 }]),
   progress: svg([{ d: 'M5 18v-4M10 18V9M15 18v-6M20 18V5M4 20h17' }]),
@@ -241,6 +242,14 @@ export const icons = {
     [{ x: 3, y: 4, width: 18, height: 17, rx: 2 }],
   ),
   focusBlock: svg([{ d: 'M12 4v3M12 17v3M4 12h3M17 12h3' }], [{ cx: 12, cy: 12, r: 5 }]),
+  focusSettings: svg(
+    [{ d: 'M5 5v14M12 5v14M19 5v14' }],
+    [
+      { cx: 5, cy: 9, r: 2 },
+      { cx: 12, cy: 15, r: 2 },
+      { cx: 19, cy: 11, r: 2 },
+    ],
+  ),
   complete: svg([{ d: 'm7 12 3 3 7-7' }], [{ cx: 12, cy: 12, r: 9 }]),
   ideas: svg([
     {
