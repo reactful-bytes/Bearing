@@ -99,7 +99,7 @@ const createStyles = (theme: Theme) =>
       textAlign: 'center',
     },
     primaryText: {
-      color: theme.colors.surface,
+      color: theme.colors.onBrand,
     },
     secondaryText: {
       color: theme.colors.textPrimary,

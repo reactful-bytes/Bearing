@@ -6,6 +6,7 @@ import { useAuthBootstrap } from '../features/auth/useAuthBootstrap';
 import { useGoogleAuth } from '../features/auth/useGoogleAuth';
 import {
   completeGooglePasswordConflict,
+  registerWithEmailPassword,
   sendPasswordResetForEmail,
   signInWithEmailPassword,
   signInWithGoogleAuth,
@@ -84,6 +85,16 @@ jest.mock('../navigation/AppTabs', () => ({
 }));
 
 describe('App shell', () => {
+  async function renderReadyApp(): Promise<void> {
+    render(<App />);
+    await waitFor(
+      () => {
+        expect(screen.queryByLabelText('Loading Bearing')).toBeNull();
+      },
+      { timeout: 3000 },
+    );
+  }
+
   beforeEach(() => {
     jest.clearAllMocks();
     const mockedUseGoogleAuth = useGoogleAuth as jest.MockedFunction<typeof useGoogleAuth>;
@@ -98,7 +109,7 @@ describe('App shell', () => {
     });
   });
 
-  it('renders signed-out state entry point', () => {
+  it('renders signed-out state entry point', async () => {
     const mockedUseAuthBootstrap = useAuthBootstrap as jest.MockedFunction<typeof useAuthBootstrap>;
 
     mockedUseAuthBootstrap.mockReturnValue({
@@ -108,14 +119,63 @@ describe('App shell', () => {
       retry: jest.fn(),
     });
 
-    render(<App />);
+    await renderReadyApp();
 
     expect(screen.getByText('Bearing')).toBeTruthy();
+    expect(screen.getByLabelText('Bearing logo')).toBeTruthy();
     expect(screen.getByLabelText('Email address')).toBeTruthy();
     expect(screen.getByLabelText('Password')).toBeTruthy();
     expect(screen.getByText('Sign In')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Forgot password?' })).toBeTruthy();
+  });
+
+  it('toggles sign-in password visibility through the accessible field action', async () => {
+    const mockedUseAuthBootstrap = useAuthBootstrap as jest.MockedFunction<typeof useAuthBootstrap>;
+
+    mockedUseAuthBootstrap.mockReturnValue({
+      status: 'unauthenticated',
+      user: null,
+      error: null,
+      retry: jest.fn(),
+    });
+
+    await renderReadyApp();
+
+    const passwordField = screen.getByLabelText('Password');
+    expect(passwordField.props.secureTextEntry).toBe(true);
+    fireEvent.press(screen.getByRole('button', { name: 'Show password' }));
+    expect(passwordField.props.secureTextEntry).toBe(false);
+    expect(screen.getByRole('button', { name: 'Hide password' })).toBeTruthy();
+  });
+
+  it('submits registration from the create-account state', async () => {
+    const mockedUseAuthBootstrap = useAuthBootstrap as jest.MockedFunction<typeof useAuthBootstrap>;
+    const mockedRegister = registerWithEmailPassword as jest.MockedFunction<
+      typeof registerWithEmailPassword
+    >;
+
+    mockedUseAuthBootstrap.mockReturnValue({
+      status: 'unauthenticated',
+      user: null,
+      error: null,
+      retry: jest.fn(),
+    });
+
+    await renderReadyApp();
+
+    fireEvent.press(screen.getByRole('link', { name: 'Create an account' }));
+    fireEvent.changeText(screen.getByLabelText('Display name'), 'Avery');
+    fireEvent.changeText(screen.getByLabelText('Email address'), 'avery@example.com');
+    fireEvent.changeText(screen.getByLabelText('Password'), 'hunter2!');
+    fireEvent.changeText(screen.getByLabelText('Confirm password'), 'hunter2!');
+    await act(async () => {
+      fireEvent.press(screen.getByRole('button', { name: 'Create account' }));
+    });
+
+    await waitFor(() => {
+      expect(mockedRegister).toHaveBeenCalledWith('avery@example.com', 'hunter2!', 'Avery');
+    });
   });
 
   it('submits email sign-in from the unauthenticated shell', async () => {
@@ -131,7 +191,7 @@ describe('App shell', () => {
       retry: jest.fn(),
     });
 
-    render(<App />);
+    await renderReadyApp();
 
     fireEvent.changeText(screen.getByLabelText('Email address'), 'person@example.com');
     fireEvent.changeText(screen.getByLabelText('Password'), 'hunter2!');
@@ -157,7 +217,7 @@ describe('App shell', () => {
       retry: jest.fn(),
     });
 
-    render(<App />);
+    await renderReadyApp();
 
     fireEvent.press(screen.getByRole('link', { name: 'Forgot password?' }));
     expect(screen.getByRole('header', { name: 'Reset your password' })).toBeTruthy();
@@ -198,7 +258,7 @@ describe('App shell', () => {
     });
     mockedCompleteConflict.mockResolvedValue({ uid: 'canonical-user' } as never);
 
-    render(<App />);
+    await renderReadyApp();
 
     await act(async () => {
       fireEvent.press(screen.getByRole('button', { name: 'Continue with Google' }));
@@ -223,7 +283,7 @@ describe('App shell', () => {
     });
   });
 
-  it('renders authenticated users into the tab shell and switches tabs', () => {
+  it('renders authenticated users into the tab shell and switches tabs', async () => {
     const mockedUseAuthBootstrap = useAuthBootstrap as jest.MockedFunction<typeof useAuthBootstrap>;
 
     mockedUseAuthBootstrap.mockReturnValue({
@@ -233,7 +293,7 @@ describe('App shell', () => {
       retry: jest.fn(),
     });
 
-    render(<App />);
+    await renderReadyApp();
 
     expect(screen.getByText('Day')).toBeTruthy(); // ViewModeToggle visible on Calendar tab
     expect(screen.getByLabelText('Previous day')).toBeTruthy();
@@ -255,7 +315,7 @@ describe('App shell', () => {
     expect(screen.getByText('Sign Out')).toBeTruthy();
   });
 
-  it('retries auth bootstrap after a startup error', () => {
+  it('retries auth bootstrap after a startup error', async () => {
     const retry = jest.fn();
     const mockedUseAuthBootstrap = useAuthBootstrap as jest.MockedFunction<typeof useAuthBootstrap>;
     mockedUseAuthBootstrap.mockReturnValue({
@@ -265,7 +325,7 @@ describe('App shell', () => {
       retry,
     });
 
-    render(<App />);
+    await renderReadyApp();
     fireEvent.press(screen.getByRole('button', { name: 'Try Again' }));
 
     expect(retry).toHaveBeenCalledTimes(1);

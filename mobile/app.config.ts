@@ -20,10 +20,18 @@ const config: ExpoConfig = {
     'expo-asset',
     'expo-audio',
     [
+      'expo-navigation-bar',
+      {
+        enforceContrast: false,
+        hidden: false,
+        style: 'light',
+      },
+    ],
+    [
       'expo-splash-screen',
       {
-        backgroundColor: '#061B3A',
-        image: './assets/logoBlueBackground.png',
+        backgroundColor: '#0B162E',
+        image: './assets/launch-mark.png',
         imageWidth: 220,
         resizeMode: 'contain',
       },

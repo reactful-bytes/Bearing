@@ -63,6 +63,7 @@ export function FormField({
       accessibilityHint={accessibilityHint ?? message}
       aria-describedby={message ? messageId : undefined}
       multiline={multiline}
+      placeholderTextColor={inputProps.placeholderTextColor ?? theme.colors.textSecondary}
       textAlignVertical={multiline ? (inputProps.textAlignVertical ?? 'top') : undefined}
       style={[
         styles.input,

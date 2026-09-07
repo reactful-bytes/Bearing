@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bearing SVG icon preview</title>
+  <style>
+    :root { color-scheme: light; --ink: #18221f; --muted: #6b7772; --paper: #f4f2eb; --tile: #fffdf8; --line: #d9ded7; --accent: #d96843; }
+    :root.dark { color-scheme: dark; --ink: #eef2ec; --muted: #aab5ae; --paper: #18201d; --tile: #202a26; --line: #394740; --accent: #f08b62; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.4 ui-sans-serif, system-ui, sans-serif; }
+    header { position: sticky; top: 0; z-index: 2; padding: 28px clamp(20px, 5vw, 72px) 20px; background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+    .eyebrow { color: var(--accent); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 5px 0 3px; font: 700 clamp(25px, 4vw, 42px)/1.05 Georgia, serif; letter-spacing: 0; }
+    .sub { margin: 0 0 18px; color: var(--muted); }
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; }
+    input, button { border: 1px solid var(--line); border-radius: 7px; background: var(--tile); color: var(--ink); padding: 9px 12px; font: inherit; }
+    input { min-width: min(360px, 100%); flex: 1; }
+    button { cursor: pointer; }
+    button:hover { border-color: var(--accent); }
+    main { padding: 28px clamp(20px, 5vw, 72px) 64px; }
+    .count { color: var(--muted); margin-bottom: 14px; font-size: 13px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 12px; }
+    .tile { min-height: 132px; display: grid; place-items: center; align-content: center; gap: 13px; padding: 15px 8px 12px; background: var(--tile); border: 1px solid var(--line); border-radius: 8px; }
+    .tile img { width: 52px; height: 52px; object-fit: contain; image-rendering: auto; }
+    .label { max-width: 100%; overflow-wrap: anywhere; text-align: center; color: var(--muted); font-size: 12px; }
+    .missing { color: var(--accent); font-size: 11px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="eyebrow">Bearing / icon study</div>
+    <h1>SVG path gallery</h1>
+    <p class="sub">The supplied icon family, rendered at a consistent 24 × 24 viewBox.</p>
+    <div class="controls">
+      <input id="filter" type="search" placeholder="Filter icons…" aria-label="Filter icons">
+      <button id="theme" type="button">Toggle contrast</button>
+    </div>
+  </header>
+  <main>
+    <div id="count" class="count"></div>
+    <section id="grid" class="grid" aria-live="polite"></section>
+  </main>
+  <script>
+    const files = [
+      'account','active','add','addEvent','aiPlanning','archive','archived','back','billing','calendar','cancel','collapse','complete','completed','copy','create','date','dayView','define','delete','document','duration','edit','error','event','expand','externalLink','favorite','filter','focusBlock','focusMode','goal','goalMilestone','goals-2','google','holdToExit','holdToExitToggle','home','ideaDump','ideas','image','importedCalendar','info','integrations','legal','link','location','logout','map','menu','milestone','monthView','more','newEvent','newGoal','newNote','newTask','next','none','note','notes-2','notifications','pinned','profile','profileAvatar','progress','review','search','security','sessionDetails','settings','share','smartIntro','star','tags','targetDate','task','tasks','time','timeline','timer','today','upcoming','warning'
+    ];
+    const root = document.documentElement;
+    const grid = document.querySelector('#grid');
+    const filter = document.querySelector('#filter');
+    const count = document.querySelector('#count');
+    const render = () => {
+      const query = filter.value.trim().toLowerCase();
+      const visible = files.filter(name => name.toLowerCase().includes(query));
+      count.textContent = `${visible.length} of ${files.length} icons`;
+      grid.replaceChildren(...visible.map(name => {
+        const tile = document.createElement('article');
+        tile.className = 'tile';
+        const image = document.createElement('img');
+        image.src = `../mobile/assets/icons/${name}.svg`;
+        image.alt = name;
+        image.onerror = () => { image.hidden = true; tile.insertAdjacentHTML('beforeend', '<span class="missing">asset missing</span>'); };
+        const label = document.createElement('div');
+        label.className = 'label';
+        label.textContent = name;
+        tile.append(image, label);
+        return tile;
+      }));
+    };
+    filter.addEventListener('input', render);
+    document.querySelector('#theme').addEventListener('click', () => root.classList.toggle('dark'));
+    render();
+  </script>
+</body>
+</html>

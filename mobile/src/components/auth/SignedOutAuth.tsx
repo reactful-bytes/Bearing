@@ -62,7 +62,9 @@ export function SignedOutAuth() {
   const [operation, setOperation] = useState<AuthOperation>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -81,7 +83,9 @@ export function SignedOutAuth() {
   function returnToSignIn(): void {
     clearFeedback();
     setPassword('');
+    setIsPasswordVisible(false);
     setConfirmPassword('');
+    setIsConfirmPasswordVisible(false);
     setPendingGoogleConflict(null);
     setResetSent(false);
     setScreen('sign-in');
@@ -149,6 +153,7 @@ export function SignedOutAuth() {
         }
         setEmail(result.email);
         setPassword('');
+        setIsPasswordVisible(false);
         setPendingGoogleConflict({ email: result.email, credential: result.credential });
         setScreen('google-conflict');
       }
@@ -259,8 +264,11 @@ export function SignedOutAuth() {
             accessibilityLabel="Existing account password"
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
+            secureTextEntry={!isPasswordVisible}
             placeholder="Password"
+            trailingIcon={isPasswordVisible ? 'eyeOff' : 'eye'}
+            trailingIconLabel={isPasswordVisible ? 'Hide password' : 'Show password'}
+            onPressTrailingIcon={() => setIsPasswordVisible((visible) => !visible)}
           />
           <AuthFeedback error={error} message={message} />
           <AppButton
@@ -323,8 +331,11 @@ export function SignedOutAuth() {
             accessibilityLabel="Password"
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
+            secureTextEntry={!isPasswordVisible}
             placeholder="Password"
+            trailingIcon={isPasswordVisible ? 'eyeOff' : 'eye'}
+            trailingIconLabel={isPasswordVisible ? 'Hide password' : 'Show password'}
+            onPressTrailingIcon={() => setIsPasswordVisible((visible) => !visible)}
           />
           {!isCreateAccount ? (
             <TextLink
@@ -334,6 +345,7 @@ export function SignedOutAuth() {
               onPress={() => {
                 clearFeedback();
                 setPassword('');
+                setIsPasswordVisible(false);
                 setScreen('forgot-password');
               }}
             />
@@ -345,8 +357,13 @@ export function SignedOutAuth() {
             accessibilityLabel="Confirm password"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            secureTextEntry
+            secureTextEntry={!isConfirmPasswordVisible}
             placeholder="Re-enter password"
+            trailingIcon={isConfirmPasswordVisible ? 'eyeOff' : 'eye'}
+            trailingIconLabel={
+              isConfirmPasswordVisible ? 'Hide confirmation password' : 'Show confirmation password'
+            }
+            onPressTrailingIcon={() => setIsConfirmPasswordVisible((visible) => !visible)}
           />
         ) : null}
 
@@ -372,7 +389,9 @@ export function SignedOutAuth() {
           onPress={() => {
             clearFeedback();
             setPassword('');
+            setIsPasswordVisible(false);
             setConfirmPassword('');
+            setIsConfirmPasswordVisible(false);
             setScreen(isCreateAccount ? 'sign-in' : 'create-account');
           }}
         />

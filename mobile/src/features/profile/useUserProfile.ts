@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { onAuthStateChanged, reload, User } from 'firebase/auth';
+import { onAuthStateChanged, User } from 'firebase/auth';
 
 import { revokeNativeGoogleAccess } from '../auth/googleNativeAuth';
 import { useGoogleAuth } from '../auth/useGoogleAuth';
@@ -70,28 +70,15 @@ export function useUserProfile(): UseUserProfileReturn {
   useEffect(() => {
     const auth = getFirebaseAuth();
     let cancelled = false;
-    let authChangeId = 0;
 
     const unsubscribe = onAuthStateChanged(
       auth,
       (nextUser) => {
-        const currentAuthChangeId = ++authChangeId;
+        if (cancelled) {
+          return;
+        }
 
-        void (async () => {
-          if (nextUser) {
-            try {
-              await reload(nextUser);
-            } catch {
-              // Keep the authenticated session usable when metadata refresh is temporarily offline.
-            }
-          }
-
-          if (cancelled || currentAuthChangeId !== authChangeId) {
-            return;
-          }
-
-          setAuthSnapshot(createAuthUserSnapshot(nextUser));
-        })();
+        setAuthSnapshot(createAuthUserSnapshot(nextUser));
       },
       (authError) => {
         setUiState('error');
@@ -101,7 +88,6 @@ export function useUserProfile(): UseUserProfileReturn {
 
     return () => {
       cancelled = true;
-      authChangeId += 1;
       unsubscribe();
     };
   }, []);

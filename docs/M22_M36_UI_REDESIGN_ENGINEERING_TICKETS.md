@@ -76,16 +76,18 @@ auth, navigation, or feature-screen redesign begins before it passes.
 
 ## M26 - Authentication and Splash
 
+**Status:** in-progress
+
 | Ticket | Status      | Deliverable                                  | Acceptance                                                                                 |
 | ------ | ----------- | -------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| M26.1  | not-started | Audit and export launch artwork              | Transparent launch mark uses sharp approved source, not a square or grid crop              |
-| M26.2  | not-started | Configure deterministic native splash        | Dark background and transparent mark are configured in Expo and native rebuild is recorded |
-| M26.3  | not-started | Match React bootstrap frame                  | Loading and startup-error surfaces match splash background, mark, and status bar           |
-| M26.4  | not-started | Recompose responsive auth shell              | Shared screen, tokens, safe areas, keyboard, and constrained web layout work               |
-| M26.5  | not-started | Restyle all auth states                      | Sign-in, registration, reset, conflict, loading, and retry retain current Firebase actions |
-| M26.6  | not-started | Replace handmade Google mark                 | Official unmodified Google mark or compliant provider button passes platform checks        |
-| M26.7  | not-started | Add password visibility and feedback styling | FormField trailing action and accessible validation/busy feedback work                     |
-| M26.8  | not-started | Validate auth and splash                     | Focused auth tests, web check, and iOS/Android cold/warm-start evidence pass               |
+| M26.1  | completed   | Audit and export launch artwork              | Transparent launch mark uses sharp approved source, not a square or grid crop              |
+| M26.2  | completed   | Configure deterministic native splash        | Dark background and transparent mark are configured in Expo and native rebuild is recorded |
+| M26.3  | completed   | Match React bootstrap frame                  | Loading and startup-error surfaces match splash background, mark, and status bar           |
+| M26.4  | completed   | Recompose responsive auth shell              | Shared screen, tokens, safe areas, keyboard, and constrained web layout work               |
+| M26.5  | completed   | Restyle all auth states                      | Sign-in, registration, reset, conflict, loading, and retry retain current Firebase actions |
+| M26.6  | completed   | Replace handmade Google mark                 | Official unmodified Google mark or compliant provider button passes platform checks        |
+| M26.7  | completed   | Add password visibility and feedback styling | FormField trailing action and accessible validation/busy feedback work                     |
+| M26.8  | manual-handoff | Validate auth and splash                     | Focused auth tests, web check, and iOS/Android cold/warm-start evidence pass               |
 
 ## M27 - Data Contracts and Persistence
 
@@ -215,3 +217,11 @@ auth, navigation, or feature-screen redesign begins before it passes.
 | 2026-09-05 | M23.1-M23.6         | passed  | `npm test -- --runInBand src/components/ui/AppScreen.test.tsx src/components/ui/M23Primitives.test.tsx src/__tests__/uiPrimitives.test.tsx` (20 tests); `npm run typecheck`; `npm run lint`.          |
 | 2026-09-05 | M24.1-M24.6         | passed  | `npm test -- --runInBand src/components/presentation/DomainPresentation.test.tsx` (6 tests); `npm run typecheck`; `npm run lint`.                                                                     |
 | 2026-09-05 | M25.1-M25.6         | passed  | Focused foundation Jest suites (40 tests), Firestore rules (16 tests), web export, and dark/light gallery review at 390x844, 768x1024, and 1440x900 pass; empty AppHeader slot clipping was repaired. |
+| 2026-09-06 | M26.1              | passed  | `file mobile/assets/launch-mark.png`; alpha range `0` to `1`; 1024x1024 dark-background composite review passed.                                                                                     |
+| 2026-09-06 | M26.2              | passed  | `mobile/node_modules/.bin/expo config --type public`; `mobile/node_modules/.bin/expo prebuild --no-install`; splash resolves to `launch-mark.png` on `#0B162E`; device cold/warm-start proof remains manual handoff. |
+| 2026-09-06 | M26.3              | passed  | `npm test -- --runInBand src/__tests__/App.smoke.test.tsx` (6 tests); `npx eslint src/components/auth/AuthShell.tsx`; `get_errors` reports no errors; loading and startup-error states use the transparent mark. |
+| 2026-09-06 | M26.4              | passed  | Existing `App.tsx` shell uses safe areas, keyboard avoidance, scroll boundaries, and a centered `maxWidth: 560`; auth smoke suite passed across signed-out and startup states. |
+| 2026-09-06 | M26.6              | passed  | The themed app-owned button now uses the supplied `assets/icons/google.png` mark on native, web, and loading states; dark-mode label contrast is theme-controlled. |
+| 2026-09-06 | M26.7              | passed  | `npm test -- --runInBand src/__tests__/App.smoke.test.tsx` (7 tests); `npx eslint src/design/icons.ts src/components/auth/SignedOutAuth.tsx src/__tests__/App.smoke.test.tsx`; `npm run typecheck`; accessible password visibility works through `FormField`. |
+| 2026-09-06 | M26.5              | passed  | `npm test -- --runInBand src/__tests__/App.smoke.test.tsx` (8 tests) covers sign-in, registration, reset, conflict recovery, loading, startup retry, and preserved Firebase actions. |
+| 2026-09-06 | M26.8              | manual-handoff | Repository auth tests, lint, typecheck, Expo config/prebuild, and web export pass; owner must record signed Android/iOS cold and warm starts plus native Google button rendering. |

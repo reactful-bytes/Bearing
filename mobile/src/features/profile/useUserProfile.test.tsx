@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { onAuthStateChanged, reload } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 
 import { revokeNativeGoogleAccess } from '../auth/googleNativeAuth';
 import { useGoogleAuth } from '../auth/useGoogleAuth';
@@ -11,7 +11,6 @@ import { useUserProfile } from './useUserProfile';
 
 jest.mock('firebase/auth', () => ({
   onAuthStateChanged: jest.fn(),
-  reload: jest.fn(),
 }));
 
 jest.mock('../auth/useGoogleAuth', () => ({
@@ -52,14 +51,18 @@ describe('useUserProfile provider metadata', () => {
     });
   });
 
-  it('reloads stale provider data before reporting connected providers', async () => {
-    const user = {
+  it('reports provider data from the auth-state user without reloading the session', async () => {
+    const initialUser = {
       uid: 'user-1',
       email: 'person@example.com',
       isAnonymous: false,
       providerData: [{ providerId: 'password' }],
     };
-    const auth = { currentUser: user };
+    const user = {
+      ...initialUser,
+      providerData: [{ providerId: 'password' }, { providerId: 'google.com' }],
+    };
+    const auth = { currentUser: initialUser };
     (getFirebaseAuth as jest.MockedFunction<typeof getFirebaseAuth>).mockReturnValue(auth as never);
     (onAuthStateChanged as jest.MockedFunction<typeof onAuthStateChanged>).mockImplementation(
       (_auth, onNext) => {
@@ -71,17 +74,10 @@ describe('useUserProfile provider metadata', () => {
         return jest.fn();
       },
     );
-    (reload as jest.MockedFunction<typeof reload>).mockImplementation(async () => {
-      user.providerData = [{ providerId: 'password' }, { providerId: 'google.com' }];
-    });
-
     const { result } = renderHook(() => useUserProfile());
 
     expect(result.current.hasPasswordProvider).toBe(true);
-    expect(result.current.hasGoogleProvider).toBe(false);
-
     await waitFor(() => expect(result.current.hasGoogleProvider).toBe(true));
-    expect(reload).toHaveBeenCalledWith(user);
     expect(ensureUserProfile).toHaveBeenCalledWith(user);
     expect(subscribeToUserProfile).toHaveBeenCalledWith(
       'user-1',

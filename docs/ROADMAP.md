@@ -304,6 +304,8 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M26 - Authentication and Splash
 
+**Status:** in-progress
+
 | Task ID | Status      | Description                                  | Exit Criteria                                                                              |
 | ------- | ----------- | -------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | M26.1   | not-started | Audit and export launch artwork              | Transparent launch mark uses sharp approved source, not a square or grid crop              |

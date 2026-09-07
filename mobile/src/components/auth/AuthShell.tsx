@@ -3,7 +3,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { ReactNode } from 'react';
 
-import { radii, spacing, typography } from '../../design/tokens';
+import { spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
 
 type AuthShellProps = {
@@ -16,28 +16,30 @@ export function AuthShell({ heading, description, children }: AuthShellProps) {
   const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.shell}>
-      <View style={styles.brandRow}>
-        <Image
-          accessibilityLabel="Bearing logo"
-          source={require('../../../assets/logoBlueBackground.png')}
-          style={styles.logo}
-        />
-        <View style={styles.brandCopy}>
-          <Text accessibilityRole="header" style={styles.brandName}>
-            Bearing
-          </Text>
-          <Text style={styles.tagline}>Your day, with direction.</Text>
+      <View style={styles.content}>
+        <View style={styles.brandRow}>
+          <Image
+            accessibilityLabel="Bearing logo"
+            source={require('../../../assets/launch-mark.png')}
+            style={styles.logo}
+          />
+          <View style={styles.brandCopy}>
+            <Text accessibilityRole="header" style={styles.brandName}>
+              Bearing
+            </Text>
+            <Text style={styles.tagline}>Your day, with direction.</Text>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.intro}>
-        <Text accessibilityRole="header" style={styles.heading}>
-          {heading}
-        </Text>
-        <Text style={styles.description}>{description}</Text>
-      </View>
+        <View style={styles.intro}>
+          <Text accessibilityRole="header" style={styles.heading}>
+            {heading}
+          </Text>
+          <Text style={styles.description}>{description}</Text>
+        </View>
 
-      {children}
+        {children}
+      </View>
     </View>
   );
 }
@@ -46,7 +48,11 @@ const createStyles = (theme: Theme) =>
   StyleSheet.create({
     shell: {
       width: '100%',
+      backgroundColor: 'transparent',
+    },
+    content: {
       gap: spacing.xl,
+      zIndex: 1,
     },
     brandRow: {
       flexDirection: 'row',
@@ -54,9 +60,9 @@ const createStyles = (theme: Theme) =>
       gap: spacing.lg,
     },
     logo: {
-      width: 84,
-      height: 84,
-      borderRadius: radii.md,
+      width: 124,
+      height: 124,
+      resizeMode: 'contain',
     },
     brandCopy: {
       flex: 1,

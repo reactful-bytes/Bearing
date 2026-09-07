@@ -424,6 +424,8 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 ### M26 - Authentication and Splash
 
+**Status:** in-progress
+
 | Task ID | Status      | Description                                  | Notes                                                                              |
 | ------- | ----------- | -------------------------------------------- | ---------------------------------------------------------------------------------- |
 | M26.1   | not-started | Audit and export launch artwork              | Use a sharp transparent mark; reject square-background and grid-crop sources       |

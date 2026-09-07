@@ -80,6 +80,7 @@ export function FocusModeOverlay({
   const [holdProgress, setHoldProgress] = useState(0);
   const timerPlayer = useAudioPlayer(null);
   const timerPlayerRef = useRef(timerPlayer);
+  const timerPlayerDisposedRef = useRef(false);
 
   const holdTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -87,11 +88,17 @@ export function FocusModeOverlay({
   const timerCompletionHandledRef = useRef(false);
 
   const stopTimerSound = useCallback((): void => {
-    timerPlayerRef.current.loop = false;
-    timerPlayerRef.current.pause();
-    void timerPlayerRef.current.seekTo(0).catch((error: unknown) => {
-      console.error('Failed to rewind timer sound:', error);
-    });
+    if (timerPlayerDisposedRef.current) {
+      return;
+    }
+
+    try {
+      const player = timerPlayerRef.current;
+      player.loop = false;
+      player.pause();
+      void player.seekTo(0).catch(() => undefined);
+    } catch {
+    }
   }, []);
 
   useEffect(() => {
@@ -177,13 +184,14 @@ export function FocusModeOverlay({
 
   useEffect(() => {
     if (!visible) {
+      stopTimerSound();
       setIdeaBody('');
       setSaveError(null);
       setHoldProgress(0);
       trackedEventRef.current = null;
       timerCompletionHandledRef.current = false;
     }
-  }, [visible]);
+  }, [stopTimerSound, visible]);
 
   useEffect(() => {
     if (!visible) {
@@ -207,6 +215,8 @@ export function FocusModeOverlay({
     timerCompletionHandledRef.current = true;
     onClose();
 
+    let disposed = false;
+
     void (async () => {
       try {
         const [soundUri] = await Promise.all([
@@ -217,25 +227,41 @@ export function FocusModeOverlay({
           }),
         ]);
 
-        timerPlayerRef.current.loop = true;
-        timerPlayerRef.current.replace(soundUri);
-        timerPlayerRef.current.play();
-      } catch (error) {
-        console.error('Failed to play timer sound:', error);
+        if (disposed || timerPlayerDisposedRef.current) {
+          return;
+        }
+
+        try {
+          const player = timerPlayerRef.current;
+          player.loop = true;
+          player.replace(soundUri);
+          player.play();
+        } catch {
+          return;
+        }
+      } catch {
+        return;
+      }
+
+      if (disposed || timerPlayerDisposedRef.current) {
+        return;
       }
 
       Alert.alert(`${trackedEvent.title} block finished`, undefined, [
         { text: 'OK', onPress: stopTimerSound },
       ]);
     })();
+
+    return () => {
+      disposed = true;
+    };
   }, [events, now, onClose, preferredEventId, stopTimerSound, timerSoundId, visible]);
 
   useEffect(() => {
-    const player = timerPlayerRef.current;
+    timerPlayerDisposedRef.current = false;
 
     return () => {
-      player.loop = false;
-      player.pause();
+      timerPlayerDisposedRef.current = true;
       if (holdTimeoutRef.current) {
         clearTimeout(holdTimeoutRef.current);
       }

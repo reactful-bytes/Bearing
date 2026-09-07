@@ -16,8 +16,22 @@ export function useSoundPreview(): UseSoundPreviewReturn {
   const [playingSoundId, setPlayingSoundId] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const activeSoundUriRef = useRef<string | null>(null);
+  const disposedRef = useRef(false);
 
   useEffect(() => {
+    return () => {
+      disposedRef.current = true;
+      try {
+        player.pause();
+      } catch {
+        return;
+      }
+    };
+  }, [player]);
+
+  useEffect(() => {
+    if (disposedRef.current) return;
+
     void setAudioModeAsync({
       playsInSilentMode: true,
       interruptionMode: 'mixWithOthers',
@@ -25,6 +39,8 @@ export function useSoundPreview(): UseSoundPreviewReturn {
   }, []);
 
   useEffect(() => {
+    if (disposedRef.current) return;
+
     if (status.error) {
       setPreviewError(status.error);
       setPlayingSoundId(null);
@@ -41,6 +57,7 @@ export function useSoundPreview(): UseSoundPreviewReturn {
 
       try {
         const soundUri = await ensureProfileSoundPreviewUri(soundId);
+        if (disposedRef.current) return;
 
         if (activeSoundUriRef.current === soundUri) {
           await player.seekTo(0);
@@ -54,6 +71,7 @@ export function useSoundPreview(): UseSoundPreviewReturn {
 
         setPlayingSoundId(soundId);
       } catch (error) {
+        if (disposedRef.current) return;
         setPlayingSoundId(null);
         setPreviewError(error instanceof Error ? error.message : 'Failed to preview sound.');
       }
@@ -62,7 +80,12 @@ export function useSoundPreview(): UseSoundPreviewReturn {
   );
 
   const stopPreview = useCallback((): void => {
-    player.pause();
+    if (disposedRef.current) return;
+    try {
+      player.pause();
+    } catch {
+      return;
+    }
     setPlayingSoundId(null);
   }, [player]);
 
