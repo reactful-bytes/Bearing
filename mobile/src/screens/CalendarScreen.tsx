@@ -37,7 +37,7 @@ import {
 } from '../features/calendar/calendarTypes';
 import { useCalendarEvents } from '../features/calendar/useCalendarEvents';
 import { CreateNoteInput as CreateNotePayload } from '../features/notes/noteTypes';
-import { CalendarFocusLaunch } from '../navigation/navigationTypes';
+import { AppTabParamList, CalendarFocusLaunch } from '../navigation/navigationTypes';
 import { getFirebaseAuth } from '../services/firebase/firebaseAuth';
 import { useCreateNote } from '../features/notes/useNotes';
 import { useUserProfile } from '../features/profile/useUserProfile';
@@ -115,7 +115,7 @@ export type CalendarScreenProps = {
   };
   navigation?: {
     setParams?: (params: { focusLaunch?: CalendarFocusLaunch; createEvent?: boolean }) => void;
-    navigate?: (route: 'CalendarSources') => void;
+    navigate?: (route: 'CalendarSources' | 'Plan', params?: AppTabParamList['Plan']) => void;
   };
 };
 
@@ -236,6 +236,22 @@ export function CalendarScreen({
   useEffect(() => {
     const focusLaunch = route?.params?.focusLaunch;
     if (!focusLaunch) {
+      return;
+    }
+
+    if (navigation?.navigate) {
+      navigation.navigate('Plan', {
+        screen: 'FocusMode',
+        params: {
+          eventId: focusLaunch.eventId,
+          title: focusLaunch.title,
+          description: focusLaunch.description,
+          startAtIso: focusLaunch.startAtIso,
+          endAtIso: focusLaunch.endAtIso,
+          timezone: focusLaunch.timezone,
+        },
+      });
+      navigation.setParams?.({ focusLaunch: undefined });
       return;
     }
 
@@ -367,6 +383,19 @@ export function CalendarScreen({
   }
 
   function handlePressFocusMode(): void {
+    const now = new Date();
+    const event =
+      focusEvents.find((candidate) => now >= candidate.startAt && now < candidate.endAt) ??
+      focusEvents.find((candidate) => candidate.startAt > now);
+
+    if (navigation?.navigate) {
+      navigation.navigate('Plan', {
+        screen: 'FocusMode',
+        params: event ? { eventId: event.id } : undefined,
+      });
+      return;
+    }
+
     setFocusModeVisible(true);
   }
 

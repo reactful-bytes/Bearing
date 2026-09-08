@@ -193,7 +193,7 @@ describe('PlanScreen', () => {
     expect(mockRootNavigate).toHaveBeenCalledWith('Profile');
   });
 
-  it('shows the active focus session and returns to Calendar', () => {
+  it('shows the active focus session and opens Focus Mode', () => {
     mockUseFocusSession.mockReturnValue({
       eventId: 'event-1',
       title: 'Plan block 1',
@@ -205,7 +205,10 @@ describe('PlanScreen', () => {
 
     expect(screen.getByText('Focus active: Plan block 1')).toBeTruthy();
     fireEvent.press(screen.getByRole('button', { name: 'Open Focus' }));
-    expect(mockRootNavigate).toHaveBeenCalledWith('Calendar');
+    expect(mockRootNavigate).toHaveBeenCalledWith('Plan', {
+      screen: 'FocusMode',
+      params: { eventId: 'event-1' },
+    });
   });
 
   it('renders recovery states for each live Plan source', () => {

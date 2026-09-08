@@ -20,6 +20,7 @@ import {
 } from '../screens/CreationScreens';
 import { GoalsScreen } from '../screens/GoalsScreen';
 import { GoalDetailScreen } from '../screens/GoalDetailScreen';
+import { FocusModeScreen } from '../screens/FocusModeScreen';
 import { NotesScreen } from '../screens/NotesScreen';
 import { PlanScreen } from '../screens/PlanScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
@@ -88,7 +89,7 @@ function PlanNavigator() {
       <PlanStack.Screen name="Goals" component={GoalsScreen} />
       <PlanStack.Screen name="Tasks" component={TasksScreen} />
       <PlanStack.Screen name="GoalDetail" component={GoalDetailScreen} />
-      <PlanStack.Screen name="FocusMode" component={NavigationPlaceholderScreen} />
+      <PlanStack.Screen name="FocusMode" component={FocusModeScreen} />
       <PlanStack.Screen name="CreateGoal" component={CreateGoalScreen} />
       <PlanStack.Screen name="CreateTask" component={CreateTaskScreen} />
     </PlanStack.Navigator>

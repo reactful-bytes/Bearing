@@ -23,6 +23,10 @@ jest.mock('../screens/GoalDetailScreen', () => ({
   GoalDetailScreen: () => null,
 }));
 
+jest.mock('../screens/FocusModeScreen', () => ({
+  FocusModeScreen: () => null,
+}));
+
 jest.mock('../screens/NotesScreen', () => ({
   NotesScreen: () => null,
 }));

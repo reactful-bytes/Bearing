@@ -15,7 +15,18 @@ export type PlanStackParamList = {
   Goals: { createGoal?: boolean } | undefined;
   Tasks: { createTask?: boolean } | undefined;
   GoalDetail: { goalId: string; initialTab?: 'tasks' | 'timeline' };
-  FocusMode: { eventId: string; taskId?: string; returnTo?: string };
+  FocusMode:
+    | {
+        eventId?: string;
+        taskId?: string;
+        title?: string;
+        description?: string;
+        startAtIso?: string;
+        endAtIso?: string;
+        timezone?: string;
+        returnTo?: string;
+      }
+    | undefined;
   CreateGoal: { sourceNoteId?: string } | undefined;
   CreateTask: { goalId?: string; stepId?: string } | undefined;
 };

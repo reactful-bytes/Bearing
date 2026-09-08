@@ -20,11 +20,7 @@ import { useGoals } from '../features/goals/useGoals';
 import { useNotes } from '../features/notes/useNotes';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { DEFAULT_TIME_FORMAT, TimeFormat, timeFormatOptions } from '../features/profile/timeFormat';
-import {
-  AppTabParamList,
-  CalendarFocusLaunch,
-  PlanStackParamList,
-} from '../navigation/navigationTypes';
+import { AppTabParamList, PlanStackParamList } from '../navigation/navigationTypes';
 
 const MAX_TODAY_EVENTS = 5;
 const MAX_ACTIVE_GOALS = 3;
@@ -65,18 +61,6 @@ function formatFocusTimeRemaining(endAt: Date): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${String(seconds).padStart(2, '0')} remaining`;
-}
-
-function toFocusLaunch(event: CalendarDisplayEvent): CalendarFocusLaunch {
-  return {
-    token: `${event.id}-${event.startAt.getTime()}`,
-    eventId: event.id,
-    title: event.title,
-    description: event.description,
-    startAtIso: event.startAt.toISOString(),
-    endAtIso: event.endAt.toISOString(),
-    timezone: event.timezone,
-  };
 }
 
 function PlanSection({
@@ -145,19 +129,22 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
 
   function openFocus(): void {
     if (focusSession) {
-      rootNavigation.navigate('Calendar');
-      return;
-    }
-
-    if (currentEvent) {
-      rootNavigation.navigate('Calendar', {
-        screen: 'CalendarHome',
-        params: { focusLaunch: toFocusLaunch(currentEvent) },
+      rootNavigation.navigate('Plan', {
+        screen: 'FocusMode',
+        params: { eventId: focusSession.eventId },
       });
       return;
     }
 
-    rootNavigation.navigate('Calendar');
+    if (currentEvent) {
+      rootNavigation.navigate('Plan', {
+        screen: 'FocusMode',
+        params: { eventId: currentEvent.id },
+      });
+      return;
+    }
+
+    rootNavigation.navigate('Plan', { screen: 'FocusMode' });
   }
 
   return (

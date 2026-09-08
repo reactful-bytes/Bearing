@@ -36,7 +36,10 @@ type FocusModeOverlayProps = {
   onClose: () => void;
   onSaveIdeaDump: (input: CreateNoteInput) => Promise<void>;
   dndService?: FocusDndService;
+  onDndStatusChange?: (status: FocusDndStatus) => void;
 };
+
+export type FocusDndStatus = 'checking' | 'blocked' | 'not-granted' | 'unavailable';
 
 const HOLD_TO_EXIT_MS = 3000;
 
@@ -73,11 +76,17 @@ export function FocusModeOverlay({
   onClose,
   onSaveIdeaDump,
   dndService = androidFocusDndService,
+  onDndStatusChange,
 }: FocusModeOverlayProps) {
   const [now, setNow] = useState<Date>(new Date());
   const [ideaBody, setIdeaBody] = useState('');
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [savedCount, setSavedCount] = useState(0);
+  const [showSavedConfirmation, setShowSavedConfirmation] = useState(false);
+  const [dndStatus, setDndStatus] = useState<FocusDndStatus>(
+    dndService.isAvailable ? 'checking' : 'unavailable',
+  );
   const [holdProgress, setHoldProgress] = useState(0);
   const timerPlayer = useAudioPlayer(null);
   const timerPlayerRef = useRef(timerPlayer);
@@ -85,6 +94,7 @@ export function FocusModeOverlay({
 
   const holdTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const savedConfirmationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const trackedEventRef = useRef<CalendarDisplayEvent | null>(null);
   const timerCompletionHandledRef = useRef(false);
 
@@ -102,7 +112,12 @@ export function FocusModeOverlay({
   }, []);
 
   useEffect(() => {
+    onDndStatusChange?.(dndStatus);
+  }, [dndStatus, onDndStatusChange]);
+
+  useEffect(() => {
     if (!visible || !dndService.isAvailable) {
+      setDndStatus('unavailable');
       return;
     }
 
@@ -114,9 +129,14 @@ export function FocusModeOverlay({
         if (disposed) return;
 
         if (hasAccess) {
-          await dndService.beginPriorityMode();
+          const started = await dndService.beginPriorityMode();
+          if (!disposed) {
+            setDndStatus(started ? 'blocked' : 'not-granted');
+          }
           return;
         }
+
+        setDndStatus('not-granted');
 
         if (showAccessPrompt) {
           Alert.alert(
@@ -140,6 +160,7 @@ export function FocusModeOverlay({
         }
       } catch {
         if (!disposed) {
+          setDndStatus('unavailable');
           Alert.alert(
             'Do Not Disturb unavailable',
             'Focus Mode is still active, but Android priority-only Do Not Disturb could not be enabled.',
@@ -150,6 +171,10 @@ export function FocusModeOverlay({
 
     void activatePriorityMode(true);
     const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState !== 'active') {
+        clearHoldTracking();
+        setHoldProgress(0);
+      }
       if (nextState === 'active') {
         void activatePriorityMode(false);
       }
@@ -187,6 +212,12 @@ export function FocusModeOverlay({
       stopTimerSound();
       setIdeaBody('');
       setSaveError(null);
+      setSavedCount(0);
+      setShowSavedConfirmation(false);
+      if (savedConfirmationTimeoutRef.current) {
+        clearTimeout(savedConfirmationTimeoutRef.current);
+        savedConfirmationTimeoutRef.current = null;
+      }
       setHoldProgress(0);
       trackedEventRef.current = null;
       timerCompletionHandledRef.current = false;
@@ -258,6 +289,21 @@ export function FocusModeOverlay({
   }, [events, now, onClose, preferredEventId, stopTimerSound, timerSoundId, visible]);
 
   useEffect(() => {
+    if (!visible || dndService.isAvailable) {
+      return;
+    }
+
+    const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState !== 'active') {
+        clearHoldTracking();
+        setHoldProgress(0);
+      }
+    });
+
+    return () => appStateSubscription.remove();
+  }, [dndService.isAvailable, visible]);
+
+  useEffect(() => {
     timerPlayerDisposedRef.current = false;
 
     return () => {
@@ -267,6 +313,9 @@ export function FocusModeOverlay({
       }
       if (holdIntervalRef.current) {
         clearInterval(holdIntervalRef.current);
+      }
+      if (savedConfirmationTimeoutRef.current) {
+        clearTimeout(savedConfirmationTimeoutRef.current);
       }
     };
   }, []);
@@ -375,6 +424,15 @@ export function FocusModeOverlay({
           focusSummary.event?.ownership === 'bearing' ? focusSummary.event.stepId : null,
       });
       setIdeaBody('');
+      setSavedCount((count) => count + 1);
+      setShowSavedConfirmation(true);
+      if (savedConfirmationTimeoutRef.current) {
+        clearTimeout(savedConfirmationTimeoutRef.current);
+      }
+      savedConfirmationTimeoutRef.current = setTimeout(() => {
+        setShowSavedConfirmation(false);
+        savedConfirmationTimeoutRef.current = null;
+      }, 1800);
     } catch {
       setSaveError('Failed to save Idea Dump. Please try again.');
     } finally {
@@ -400,6 +458,15 @@ export function FocusModeOverlay({
           <View style={styles.timerCard}>
             <Text style={styles.timerLabel}>{focusSummary.timerLabel}</Text>
             <Text style={styles.timerValue}>{focusSummary.timerValue}</Text>
+            {focusSummary.event ? (
+              <Text style={styles.endTime}>
+                Ends at{' '}
+                {focusSummary.event.endAt.toLocaleTimeString([], {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                })}
+              </Text>
+            ) : null}
           </View>
 
           <View style={styles.ideaBlock}>
@@ -426,6 +493,64 @@ export function FocusModeOverlay({
               loading={saving}
               loadingLabel="Saving..."
             />
+            <View style={styles.ideaMeta}>
+              <Text style={styles.ideaCount}>Ideas captured: {savedCount}</Text>
+              {showSavedConfirmation ? <Text style={styles.savedText}>Saved</Text> : null}
+            </View>
+          </View>
+
+          <View style={styles.utilityBlock}>
+            <Text style={styles.distractionStatus}>
+              {dndStatus === 'blocked'
+                ? 'Distractions blocked'
+                : dndStatus === 'not-granted'
+                  ? 'Distraction protection not granted'
+                  : dndStatus === 'checking'
+                    ? 'Checking distraction protection...'
+                    : 'Distraction protection unavailable on this device'}
+            </Text>
+            <View style={styles.utilityButtons}>
+              <AppButton
+                label="Session Details"
+                variant="secondary"
+                onPress={() =>
+                  Alert.alert(
+                    'Session Details',
+                    `${focusSummary.title}\n${
+                      focusSummary.event
+                        ? `Scheduled duration: ${formatDuration(
+                            focusSummary.event.endAt.getTime() -
+                              focusSummary.event.startAt.getTime(),
+                          )}`
+                        : 'No linked calendar event.'
+                    }`,
+                  )
+                }
+                style={styles.utilityButton}
+              />
+              <AppButton
+                label="Focus Settings"
+                variant="secondary"
+                onPress={() =>
+                  Alert.alert(
+                    'Focus Settings',
+                    dndStatus === 'not-granted'
+                      ? 'Allow Android Do Not Disturb access to enable distraction protection.'
+                      : 'Timer sound and distraction protection follow your current profile and device settings.',
+                    dndStatus === 'not-granted'
+                      ? [
+                          { text: 'Not now', style: 'cancel' },
+                          {
+                            text: 'Open Settings',
+                            onPress: () => void dndService.openPolicyAccessSettings(),
+                          },
+                        ]
+                      : [{ text: 'Done' }],
+                  )
+                }
+                style={styles.utilityButton}
+              />
+            </View>
           </View>
 
           <View style={styles.exitBlock}>
@@ -503,6 +628,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#F4F8FA',
   },
+  endTime: {
+    ...typography.body,
+    color: '#B7D0DC',
+  },
   ideaBlock: {
     gap: spacing.md,
   },
@@ -528,6 +657,34 @@ const styles = StyleSheet.create({
   errorText: {
     ...typography.helper,
     color: '#FFB3B3',
+  },
+  ideaMeta: {
+    minHeight: 22,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  ideaCount: {
+    ...typography.helper,
+    color: '#B7D0DC',
+  },
+  savedText: {
+    ...typography.helper,
+    color: '#A8E6C1',
+  },
+  utilityBlock: {
+    gap: spacing.sm,
+  },
+  distractionStatus: {
+    ...typography.body,
+    color: '#B7D0DC',
+  },
+  utilityButtons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  utilityButton: {
+    flex: 1,
   },
   exitBlock: {
     gap: spacing.sm,

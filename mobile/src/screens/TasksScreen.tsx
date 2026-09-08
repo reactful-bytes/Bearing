@@ -18,11 +18,7 @@ import { CreateEventInput, CreateEventOptions } from '../features/calendar/calen
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { useTasks } from '../features/tasks/useTasks';
 import { CreateTaskInput, TaskRecord, UpdateTaskInput } from '../features/tasks/taskTypes';
-import {
-  AppTabParamList,
-  CalendarFocusLaunch,
-  PlanStackParamList,
-} from '../navigation/navigationTypes';
+import { AppTabParamList, PlanStackParamList } from '../navigation/navigationTypes';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { DEFAULT_TIME_FORMAT, TimeFormat, timeFormatOptions } from '../features/profile/timeFormat';
 
@@ -183,19 +179,20 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
       await publishEvent(conversion.eventId, conversion.eventInput);
     }
 
-    const focusLaunch: CalendarFocusLaunch = {
-      token: `${conversion.eventId}-${Date.now()}`,
-      eventId: conversion.eventId,
-      title: conversion.eventInput.title,
-      description: conversion.eventInput.description,
-      startAtIso: conversion.eventInput.startAt.toISOString(),
-      endAtIso: conversion.eventInput.endAt.toISOString(),
-      timezone: conversion.eventInput.timezone,
-    };
-
     setStartNowTaskId(null);
     setSelectedTaskId(null);
-    navigation.navigate('Calendar', { screen: 'CalendarHome', params: { focusLaunch } });
+    navigation.navigate('Plan', {
+      screen: 'FocusMode',
+      params: {
+        eventId: conversion.eventId,
+        taskId: startNowTask.id,
+        title: conversion.eventInput.title,
+        description: conversion.eventInput.description,
+        startAtIso: conversion.eventInput.startAt.toISOString(),
+        endAtIso: conversion.eventInput.endAt.toISOString(),
+        timezone: conversion.eventInput.timezone,
+      },
+    });
   }
 
   return (

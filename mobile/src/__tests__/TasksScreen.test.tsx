@@ -352,16 +352,16 @@ describe('TasksScreen', () => {
         publishEvent.mock.invocationCallOrder[0],
       );
       expect(completeTaskMock).not.toHaveBeenCalled();
-      expect(mockNavigate).toHaveBeenCalledWith('Calendar', {
-        screen: 'CalendarHome',
+      expect(mockNavigate).toHaveBeenCalledWith('Plan', {
+        screen: 'FocusMode',
         params: {
-          focusLaunch: expect.objectContaining({
-            eventId: 'task-task-1',
-            title: 'Write proposal',
-            description: 'Focus on the executive summary.',
-            startAtIso: startAt.toISOString(),
-            endAtIso: new Date(2026, 6, 28, 14, 30, 0).toISOString(),
-          }),
+          eventId: 'task-task-1',
+          taskId: 'task-1',
+          title: 'Write proposal',
+          description: 'Focus on the executive summary.',
+          startAtIso: startAt.toISOString(),
+          endAtIso: new Date(2026, 6, 28, 14, 30, 0).toISOString(),
+          timezone: 'America/Chicago',
         },
       });
     });

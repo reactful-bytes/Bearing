@@ -394,14 +394,14 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 | Task ID | Status      | Description                          | Exit Criteria                                                             |
 | ------- | ----------- | ------------------------------------ | ------------------------------------------------------------------------- |
-| M33.1   | not-started | Extract Focus behavior to route      | Timer, Idea Dump, hold exit, audio, and DND retain tested semantics       |
-| M33.2   | not-started | Add contextual Focus start state     | Event/task context and planned end time are explicit before start         |
-| M33.3   | not-started | Build active Focus hierarchy         | Countdown, end time, Idea Dump, and truthful distraction state render     |
-| M33.4   | not-started | Remove bypass controls               | No UI, back, gesture, or modal dismiss bypasses hold-to-exit              |
-| M33.5   | not-started | Save Idea Dump in place              | Note saves, confirmation, count, clear, and focus return work             |
-| M33.6   | not-started | Add details and supported settings   | Informational details and truthful supported preferences are labeled      |
-| M33.7   | not-started | Implement hold-only exit and summary | Three-second progress/cancel/completion and summary route work            |
-| M33.8   | not-started | Validate Focus                       | Timer, lifecycle, DND, audio, exit, summary, and accessibility tests pass |
+| M33.1   | completed | Extract Focus behavior to route      | Plan-owned route retains tested timer, Idea Dump, hold exit, audio, and DND semantics |
+| M33.2   | completed | Add contextual Focus start state     | Typed event/task context and planned end appear before Start                  |
+| M33.3   | completed | Build active Focus hierarchy         | Countdown, end time, Idea Dump, utilities, and truthful distraction state render |
+| M33.4   | completed | Remove bypass controls               | Back, gesture, and modal dismissal cannot bypass hold-to-exit while active    |
+| M33.5   | completed | Save Idea Dump in place              | In-place note save, Saved confirmation, clear behavior, and count are covered |
+| M33.6   | completed | Add details and supported settings   | Session Details and supported Focus Settings are labeled and truthful         |
+| M33.7   | completed | Implement hold-only exit and summary | Interrupted/released holds cancel; completion renders a summary before return |
+| M33.8   | completed | Validate Focus                       | 62 suites/432 tests, typecheck, lint, format, and diff checks pass             |
 
 ### M34 - Notes
 
