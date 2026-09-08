@@ -25,7 +25,10 @@ import {
 } from '../services/firebase/firebaseAiGoalPlans';
 
 type CreationNavigation = {
+  canGoBack?: () => boolean;
   goBack?: () => void;
+  navigate?: (screen: string) => void;
+  replace?: (screen: string) => void;
 };
 
 type CreateGoalScreenProps = {
@@ -56,6 +59,28 @@ function NoteConversionMissing() {
   return <Text>Note unavailable.</Text>;
 }
 
+function dismissCreationScreen(
+  navigation: CreationNavigation | undefined,
+  fallbackRoute: string,
+): void {
+  if (navigation?.canGoBack?.() === true) {
+    navigation.goBack?.();
+    return;
+  }
+
+  if (navigation?.replace) {
+    navigation.replace(fallbackRoute);
+    return;
+  }
+
+  if (navigation?.navigate) {
+    navigation.navigate(fallbackRoute);
+    return;
+  }
+
+  navigation?.goBack?.();
+}
+
 export function CreateGoalScreen({ navigation }: CreateGoalScreenProps) {
   const { authUser, isAnonymous } = useUserProfile();
   const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
@@ -67,7 +92,7 @@ export function CreateGoalScreen({ navigation }: CreateGoalScreenProps) {
     <AppScreen mode="unmanaged">
       <CreateGoalModal
         visible
-        onClose={() => navigation?.goBack?.()}
+        onClose={() => dismissCreationScreen(navigation, 'PlanHome')}
         onSave={createGoal}
         hasPremiumAccess={hasPremiumAccess}
         isPremiumStatusResolved={entitlementUiState === 'ready'}
@@ -96,7 +121,7 @@ export function CreateTaskScreen({ route, navigation }: CreateTaskScreenProps) {
     <AppScreen mode="unmanaged">
       <AddTaskModal
         visible
-        onClose={() => navigation?.goBack?.()}
+        onClose={() => dismissCreationScreen(navigation, 'PlanHome')}
         onSave={createTask}
         initialGoalId={params?.goalId ?? null}
         initialStepId={params?.stepId ?? null}
@@ -113,7 +138,7 @@ export function CreateNoteScreen({ route, navigation }: CreateNoteScreenProps) {
     <AppScreen mode="unmanaged">
       <AddNoteModal
         visible
-        onClose={() => navigation?.goBack?.()}
+        onClose={() => dismissCreationScreen(navigation, 'NotesHome')}
         sourceEventId={params?.sourceEventId ?? null}
         sourceStepId={params?.sourceStepId ?? null}
         onSave={createNote}
@@ -139,7 +164,7 @@ export function CreateEventScreen({ route, navigation }: CreateEventScreenProps)
         publicationCalendarTitle={publicationCalendarTitle}
         locale={profile?.locale}
         timeFormat={profile?.timeFormat}
-        onClose={() => navigation?.goBack?.()}
+        onClose={() => dismissCreationScreen(navigation, 'CalendarHome')}
         onSave={async (input, options) => {
           await createEvent(input, options);
         }}
@@ -171,7 +196,7 @@ export function CreateGoalFromNoteScreen({ route, navigation }: NoteConversionPr
         visible
         initialTitle={note.title}
         initialDescription={note.body}
-        onClose={() => navigation?.goBack?.()}
+        onClose={() => dismissCreationScreen(navigation, 'NotesHome')}
         onSave={createGoal}
         hasPremiumAccess={hasPremiumAccess}
         isPremiumStatusResolved={entitlementUiState === 'ready'}
@@ -241,7 +266,7 @@ export function CreateEventFromNoteScreen({ route, navigation }: NoteConversionP
         publicationCalendarTitle={publicationCalendarTitle}
         locale={profile?.locale}
         timeFormat={profile?.timeFormat}
-        onClose={() => navigation?.goBack?.()}
+        onClose={() => dismissCreationScreen(navigation, 'NotesHome')}
         onSave={async (input, options) => {
           await createEvent(input, options);
         }}

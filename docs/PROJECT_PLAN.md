@@ -495,7 +495,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M31.3   | completed | Preserve calendar semantics | Retain date, recurrence, alerts, timezone, availability, location, and URL behavior |
 | M31.4   | completed | Add month agenda            | Render selected-date agenda with EventRow                                           |
 | M31.5   | completed | Route Calendar Sources      | Move visibility and writable-calendar controls out of the primary screen            |
-| M31.6   | completed | Migrate event presentation  | Preserve device publication, reconciliation, retry, and permission behavior         |
+| M31.6   | completed | Migrate event presentation  | Typed detail/create routes preserve device publication, reconciliation, retry, and permission behavior |
 | M31.7   | completed | Validate Calendar           | Cover modes, agenda, sources, publication, and native/web layouts                   |
 
 ### M32 - Global Creation Flows
@@ -539,7 +539,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | Task ID | Status    | Description                             | Notes                                                                                    |
 | ------- | --------- | --------------------------------------- | ---------------------------------------------------------------------------------------- |
 | M35.1   | completed | Recompose Profile groups                | Group account, services, preferences, billing, legal, and actions with shared primitives |
-| M35.2   | completed | Route profile subsections               | Typed routes render focused sections and retain high-value status on Profile             |
+| M35.2   | completed | Route profile subsections               | Typed routes render distinct focused sections and retain high-value status on Profile    |
 | M35.3   | completed | Preserve all profile behavior           | Account, calendar, purchases, credits, privacy, legal, and logout remain reachable       |
 | M35.4   | completed | Wire appearance preference              | ThemeProvider preference is exposed in Profile and persists selection                    |
 | M35.5   | completed | Add truthful status and danger handling | Existing connected/subscription status and destructive flows remain accurate             |

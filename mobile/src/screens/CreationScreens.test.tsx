@@ -159,7 +159,7 @@ jest.mock('../services/firebase/firebaseAiGoalPlans', () => ({
 describe('creation route screens', () => {
   it('delegates goal save and cancel to the existing wizard and navigation', async () => {
     const goBack = jest.fn();
-    render(<CreateGoalScreen navigation={{ goBack }} />);
+    render(<CreateGoalScreen navigation={{ canGoBack: () => true, goBack }} />);
 
     fireEvent.press(screen.getByText('Save goal'));
     await waitFor(() => expect(mockCreateGoal).toHaveBeenCalledWith({ title: 'Goal' }));
@@ -181,7 +181,7 @@ describe('creation route screens', () => {
     const goBack = jest.fn();
     render(
       <CreateNoteScreen
-        navigation={{ goBack }}
+        navigation={{ canGoBack: () => true, goBack }}
         route={{ params: { sourceEventId: 'event-1', sourceStepId: 'step-1' } }}
       />,
     );
@@ -199,6 +199,17 @@ describe('creation route screens', () => {
 
     fireEvent.press(screen.getByText('Save event'));
     await waitFor(() => expect(mockCreateEvent).toHaveBeenCalledWith({ title: 'Event' }, {}));
+  });
+
+  it('replaces the event route with Calendar home when it has no back history', () => {
+    const goBack = jest.fn();
+    const replace = jest.fn();
+    render(<CreateEventScreen navigation={{ canGoBack: () => false, goBack, replace }} />);
+
+    fireEvent.press(screen.getByText('Cancel event'));
+
+    expect(replace).toHaveBeenCalledWith('CalendarHome');
+    expect(goBack).not.toHaveBeenCalled();
   });
 
   it('prefills editable task, goal, and event drafts from a note', () => {

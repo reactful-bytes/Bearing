@@ -33,7 +33,7 @@ export type PlanStackParamList = {
 
 export type CalendarStackParamList = {
   CalendarHome: { focusLaunch?: CalendarFocusLaunch; createEvent?: boolean } | undefined;
-  EventDetail: { eventId: string };
+  EventDetail: { eventId: string; dateIso?: string };
   CalendarSources: undefined;
   CreateEvent: { goalId?: string; stepId?: string; returnTo?: string } | undefined;
   CreateTask: { goalId?: string; stepId?: string; returnTo?: string } | undefined;

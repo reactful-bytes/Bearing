@@ -115,7 +115,14 @@ export type CalendarScreenProps = {
   };
   navigation?: {
     setParams?: (params: { focusLaunch?: CalendarFocusLaunch; createEvent?: boolean }) => void;
-    navigate?: (route: 'CalendarSources' | 'Plan', params?: AppTabParamList['Plan']) => void;
+    navigate?: (
+      route: 'CalendarSources' | 'CreateEvent' | 'EventDetail' | 'Plan',
+      params?:
+        | AppTabParamList['Plan']
+        | { eventId: string; dateIso?: string }
+        | { goalId?: string; stepId?: string; returnTo?: string }
+        | undefined,
+    ) => void;
   };
 };
 
@@ -150,7 +157,11 @@ export function CalendarScreen({
       return;
     }
 
-    setAddEventVisible(true);
+    if (navigation?.navigate) {
+      navigation.navigate('CreateEvent');
+    } else {
+      setAddEventVisible(true);
+    }
     navigation?.setParams?.({ createEvent: undefined });
   }, [navigation, route?.params?.createEvent]);
   const year = selectedDate.getFullYear();
@@ -379,6 +390,11 @@ export function CalendarScreen({
   }
 
   function handlePressAddEvent(): void {
+    if (navigation?.navigate) {
+      navigation.navigate('CreateEvent', { returnTo: 'CalendarHome' });
+      return;
+    }
+
     setAddEventVisible(true);
   }
 
@@ -405,6 +421,14 @@ export function CalendarScreen({
   }
 
   function handlePressEvent(event: CalendarDisplayEvent): void {
+    if (navigation?.navigate) {
+      navigation.navigate('EventDetail', {
+        eventId: event.id,
+        dateIso: event.startAt.toISOString(),
+      });
+      return;
+    }
+
     setActiveEvent(event);
   }
 
@@ -623,7 +647,7 @@ export function CalendarScreen({
 
       {/* Modals */}
       <AddEventModal
-        visible={addEventVisible}
+        visible={addEventVisible && !navigation?.navigate}
         initialDate={selectedDate}
         publicationCalendarTitle={publicationCalendarTitle}
         locale={profile?.locale}

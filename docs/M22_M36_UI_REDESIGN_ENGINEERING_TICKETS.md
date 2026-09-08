@@ -178,7 +178,7 @@ auth, navigation, or feature-screen redesign begins before it passes.
 | M31.3  | completed | Preserve calendar semantics | Date, recurrence, alarm, timezone, availability, location, and URL behavior remains |
 | M31.4  | completed | Add month agenda            | Selected date agenda uses EventRow and preserves selection behavior                 |
 | M31.5  | completed | Route Calendar Sources      | Source controls move from main Calendar into typed route                            |
-| M31.6  | completed | Migrate event presentation  | Detail/create preserve publication, reconciliation, retry, and permission behavior  |
+| M31.6  | completed | Migrate event presentation  | Typed detail/create routes preserve publication, reconciliation, retry, and permission behavior  |
 | M31.7  | completed | Validate Calendar           | Transitions, sources, publication, and responsive tests pass                        |
 
 ## M32 - Global Creation Flows
@@ -223,7 +223,7 @@ auth, navigation, or feature-screen redesign begins before it passes.
 | Ticket | Status    | Deliverable                             | Acceptance                                                                                                         |
 | ------ | --------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | M35.1  | completed | Recompose Profile groups                | Account, services, preferences, billing, legal, and actions use shared primitives                                  |
-| M35.2  | completed | Route profile subsections               | Typed Profile routes render focused sections with an explicit route back action                                    |
+| M35.2  | completed | Route profile subsections               | Typed Profile routes render distinct focused sections with an explicit route back action                       |
 | M35.3  | completed | Preserve all profile behavior           | Account, calendar, purchase, credits, privacy, legal, and logout remain reachable                                  |
 | M35.4  | completed | Wire appearance preference              | ThemeProvider remains the only appearance state and persists the selected theme                                    |
 | M35.5  | completed | Add truthful status and danger handling | Existing connection, subscription, export, and destructive states remain intact                                    |

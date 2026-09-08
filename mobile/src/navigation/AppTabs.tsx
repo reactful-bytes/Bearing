@@ -12,6 +12,7 @@ import { useThemedStyles } from '../design/useThemedStyles';
 import { AppIconName } from '../design/icons';
 import { CalendarScreen } from '../screens/CalendarScreen';
 import { CalendarSourcesScreen } from '../screens/CalendarSourcesScreen';
+import { EventDetailScreen } from '../screens/EventDetailScreen';
 import {
   CreateEventScreen,
   CreateEventFromNoteScreen,
@@ -27,10 +28,9 @@ import { FocusModeScreen } from '../screens/FocusModeScreen';
 import { NotesScreen } from '../screens/NotesScreen';
 import { PlanScreen } from '../screens/PlanScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
-import type { ProfileSection } from '../screens/ProfileScreen';
+import type { ProfileNavigationTarget, ProfileSection } from '../screens/ProfileScreen';
 import { TasksScreen } from '../screens/TasksScreen';
 import { NoteEditorScreen } from '../screens/NoteEditorScreen';
-import { NavigationPlaceholderScreen } from './NavigationPlaceholderScreen';
 import {
   AppTabParamList,
   CalendarStackParamList,
@@ -105,7 +105,7 @@ function CalendarNavigator() {
   return (
     <CalendarStack.Navigator screenOptions={{ headerShown: false }}>
       <CalendarStack.Screen name="CalendarHome" component={CalendarScreen} />
-      <CalendarStack.Screen name="EventDetail" component={NavigationPlaceholderScreen} />
+      <CalendarStack.Screen name="EventDetail" component={EventDetailScreen} />
       <CalendarStack.Screen name="CalendarSources" component={CalendarSourcesScreen} />
       <CalendarStack.Screen name="CreateEvent" component={CreateEventScreen} />
       <CalendarStack.Screen name="CreateTask" component={CreateTaskScreen} />
@@ -143,8 +143,14 @@ function ProfileNavigator({ onPressSignOut, isSignOutPending }: AppTabsProps) {
   return (
     <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
       <ProfileStack.Screen name="ProfileHome">
-        {() => (
-          <ProfileScreen onPressSignOut={onPressSignOut} isSignOutPending={isSignOutPending} />
+        {({ navigation }) => (
+          <ProfileScreen
+            onPressSignOut={onPressSignOut}
+            isSignOutPending={isSignOutPending}
+            navigation={{
+              navigate: (screen: ProfileNavigationTarget) => navigation.navigate(screen),
+            }}
+          />
         )}
       </ProfileStack.Screen>
       <ProfileStack.Screen name="PersonalInformation">
@@ -154,14 +160,16 @@ function ProfileNavigator({ onPressSignOut, isSignOutPending }: AppTabsProps) {
       <ProfileStack.Screen name="ConnectedServices">
         {renderSection('connectedServices')}
       </ProfileStack.Screen>
-      <ProfileStack.Screen name="Notifications">{renderSection('preferences')}</ProfileStack.Screen>
-      <ProfileStack.Screen name="FocusPreferences">
-        {renderSection('preferences')}
+      <ProfileStack.Screen name="Notifications">
+        {renderSection('notifications')}
       </ProfileStack.Screen>
-      <ProfileStack.Screen name="Appearance">{renderSection('preferences')}</ProfileStack.Screen>
+      <ProfileStack.Screen name="FocusPreferences">
+        {renderSection('focusPreferences')}
+      </ProfileStack.Screen>
+      <ProfileStack.Screen name="Appearance">{renderSection('appearance')}</ProfileStack.Screen>
       <ProfileStack.Screen name="PlanBilling">{renderSection('plan')}</ProfileStack.Screen>
       <ProfileStack.Screen name="Legal">{renderSection('legal')}</ProfileStack.Screen>
-      <ProfileStack.Screen name="Subscription">{renderSection('plan')}</ProfileStack.Screen>
+      <ProfileStack.Screen name="Subscription">{renderSection('subscription')}</ProfileStack.Screen>
     </ProfileStack.Navigator>
   );
 }

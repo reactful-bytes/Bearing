@@ -361,6 +361,47 @@ describe('ProfileScreen', () => {
     expect(onPressBack).toHaveBeenCalledTimes(1);
   });
 
+  it('renders distinct focused preference routes and exposes them from the hub', () => {
+    mockProfileHooks();
+    const navigate = jest.fn();
+
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        navigation={{ navigate }}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText('Notifications'));
+    fireEvent.press(screen.getByLabelText('Focus preferences'));
+    fireEvent.press(screen.getAllByRole('button', { name: 'Appearance' })[0]);
+
+    expect(navigate).toHaveBeenNthCalledWith(1, 'Notifications');
+    expect(navigate).toHaveBeenNthCalledWith(2, 'FocusPreferences');
+    expect(navigate).toHaveBeenNthCalledWith(3, 'Appearance');
+  });
+
+  it.each([
+    ['notifications', 'Notifications', 'Reminder sound'],
+    ['focusPreferences', 'Focus Preferences', 'Timer sound'],
+    ['appearance', 'Appearance', 'Appearance'],
+  ] as [
+    'notifications' | 'focusPreferences' | 'appearance',
+    'Notifications' | 'Focus Preferences' | 'Appearance',
+    'Reminder sound' | 'Timer sound' | 'Appearance',
+  ][])('renders the %s route as a focused section', (section, heading, controlLabel) => {
+    mockProfileHooks();
+
+    render(
+      <ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} section={section} />,
+    );
+
+    expect(screen.getByRole('header', { name: heading })).toBeTruthy();
+    expect(screen.getByLabelText(controlLabel)).toBeTruthy();
+    expect(screen.queryByRole('header', { name: 'Preferences' })).toBeNull();
+  });
+
   it('saves account settings and sends a password reset email', async () => {
     const { updateProfile, sendPasswordReset } = mockProfileHooks();
 

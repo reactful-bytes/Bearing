@@ -89,23 +89,41 @@ import {
 } from '../services/firebase/firebasePrivacy';
 import { recordTelemetryEvent } from '../services/telemetry/telemetry';
 import { showPremiumSubscriptionManagement } from '../services/purchases/revenueCatClient';
+import type { ProfileStackParamList } from '../navigation/navigationTypes';
 
 export type ProfileSection =
-  'account' | 'security' | 'preferences' | 'connectedServices' | 'plan' | 'legal' | 'session';
+  | 'account'
+  | 'security'
+  | 'preferences'
+  | 'notifications'
+  | 'focusPreferences'
+  | 'appearance'
+  | 'connectedServices'
+  | 'plan'
+  | 'subscription'
+  | 'legal'
+  | 'session';
+
+export type ProfileNavigationTarget = Exclude<keyof ProfileStackParamList, 'ProfileHome'>;
 
 type ProfileScreenProps = {
   onPressSignOut: () => Promise<void> | void;
   isSignOutPending: boolean;
   section?: ProfileSection;
   onPressBack?: () => void;
+  navigation?: { navigate: (screen: ProfileNavigationTarget) => void };
 };
 
 const PROFILE_SECTION_LABELS: Record<ProfileSection, string> = {
   account: 'Personal Information',
   security: 'Security',
   preferences: 'Preferences',
+  notifications: 'Notifications',
+  focusPreferences: 'Focus Preferences',
+  appearance: 'Appearance',
   connectedServices: 'Connected Services',
   plan: 'Plan & Billing',
+  subscription: 'Subscription',
   legal: 'Privacy & Legal',
   session: 'Session',
 };
@@ -120,6 +138,7 @@ export function ProfileScreen({
   isSignOutPending,
   section: profileSection,
   onPressBack,
+  navigation,
 }: ProfileScreenProps) {
   const styles = useThemedStyles(createStyles);
   const { preference: themePreference, setPreference: setThemePreference } = useTheme();
@@ -935,6 +954,28 @@ export function ProfileScreen({
                   title="Preferences"
                   description="Set your region, prompts, and alert sounds."
                 />
+                {profileSection === undefined && navigation ? (
+                  <>
+                    <ListItem
+                      onPress={() => navigation.navigate('Notifications')}
+                      title="Notifications"
+                      description="Choose the sound used for reminders."
+                      trailingText="Open"
+                    />
+                    <ListItem
+                      onPress={() => navigation.navigate('FocusPreferences')}
+                      title="Focus preferences"
+                      description="Choose the sound used when Focus Mode finishes."
+                      trailingText="Open"
+                    />
+                    <ListItem
+                      onPress={() => navigation.navigate('Appearance')}
+                      title="Appearance"
+                      description="Choose the light or dark app theme."
+                      trailingText="Open"
+                    />
+                  </>
+                ) : null}
                 <View style={styles.fieldGroup}>
                   <Text style={styles.label}>Timezone</Text>
                   <Pressable
@@ -1042,6 +1083,58 @@ export function ProfileScreen({
               </View>
             ) : null}
 
+            {profileSection === 'notifications' ? (
+              <View style={styles.section}>
+                <SectionHeading
+                  title="Notifications"
+                  description="Choose the sound used before scheduled events."
+                />
+                <ListItem
+                  onPress={() => setSoundPicker('reminder')}
+                  title="Reminder sound"
+                  description="Pick the sound used before scheduled events."
+                  trailingText={getProfileSoundOption(profile.reminderSoundId).label}
+                />
+                {soundError ? <Text style={styles.errorText}>{soundError}</Text> : null}
+              </View>
+            ) : null}
+
+            {profileSection === 'focusPreferences' ? (
+              <View style={styles.section}>
+                <SectionHeading
+                  title="Focus Preferences"
+                  description="Choose the sound used when a Focus timer finishes."
+                />
+                <ListItem
+                  onPress={() => setSoundPicker('alarm')}
+                  title="Timer sound"
+                  description="Pick the sound used when timer-style alerts finish."
+                  trailingText={getProfileSoundOption(profile.alarmSoundId).label}
+                />
+                {soundError ? <Text style={styles.errorText}>{soundError}</Text> : null}
+              </View>
+            ) : null}
+
+            {profileSection === 'appearance' ? (
+              <View style={styles.section}>
+                <SectionHeading
+                  title="Appearance"
+                  description="Choose how Bearing looks on this device."
+                />
+                <SegmentedControl
+                  accessibilityLabel="Appearance"
+                  options={THEME_OPTIONS}
+                  value={themePreference}
+                  onChange={(nextPreference) => void handleThemePreferenceChange(nextPreference)}
+                />
+                <Text style={styles.selectionMeta}>
+                  {themePreferencePending
+                    ? 'Saving appearance preference...'
+                    : (themePreferenceError ?? 'Saved to this device.')}
+                </Text>
+              </View>
+            ) : null}
+
             {shouldRenderSection('connectedServices') ? (
               <View style={styles.section}>
                 <SectionHeading
@@ -1100,6 +1193,31 @@ export function ProfileScreen({
                     trailingText="Get more"
                   />
                 ) : null}
+                {premiumManagementError ? (
+                  <Text style={styles.errorText}>{premiumManagementError}</Text>
+                ) : null}
+              </View>
+            ) : null}
+
+            {profileSection === 'subscription' ? (
+              <View style={styles.section}>
+                <SectionHeading
+                  title="Subscription"
+                  description="Review and manage Bearing 360 access."
+                />
+                <ListItem
+                  onPress={() => void handlePremiumAction()}
+                  title="Bearing 360 access"
+                  description={getPremiumAccessDescription()}
+                  trailingText={
+                    premiumManagementPending
+                      ? 'Opening...'
+                      : hasPremiumAccess
+                        ? 'Manage'
+                        : 'View plans'
+                  }
+                  disabled={premiumManagementPending}
+                />
                 {premiumManagementError ? (
                   <Text style={styles.errorText}>{premiumManagementError}</Text>
                 ) : null}

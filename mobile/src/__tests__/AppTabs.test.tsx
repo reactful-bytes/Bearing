@@ -15,6 +15,10 @@ jest.mock('../screens/CalendarSourcesScreen', () => ({
   CalendarSourcesScreen: () => null,
 }));
 
+jest.mock('../screens/EventDetailScreen', () => ({
+  EventDetailScreen: () => null,
+}));
+
 jest.mock('../screens/GoalsScreen', () => ({
   GoalsScreen: () => null,
 }));
