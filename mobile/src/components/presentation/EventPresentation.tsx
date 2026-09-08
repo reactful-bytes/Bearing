@@ -10,6 +10,12 @@ type EventSourceChipProps = {
   tone?: 'bearing' | 'device';
 };
 
+export function getEventKindLabel(event: CalendarDisplayEvent): string {
+  if (event.ownership === 'bearing' && event.sourceTaskId !== null) return 'Task';
+  if (event.ownership === 'bearing' && event.stepId !== null) return 'Milestone';
+  return event.ownership === 'device' ? 'Imported event' : 'Event';
+}
+
 export function EventSourceChip({ label, tone = 'bearing' }: EventSourceChipProps) {
   const styles = useThemedStyles(createStyles);
   return (
@@ -38,6 +44,7 @@ export function EventRow({ event, dateTime, timezone, onPress }: EventRowProps) 
         <Text numberOfLines={1} style={styles.title}>
           {event.title}
         </Text>
+        <Text style={styles.kindLabel}>{getEventKindLabel(event)}</Text>
         <EventSourceChip label={sourceLabel} tone={event.ownership} />
       </View>
       <Text style={styles.meta}>{dateTime}</Text>
@@ -70,6 +77,7 @@ export function EventCard({
         <Text numberOfLines={1} style={styles.title}>
           {event.title}
         </Text>
+        <Text style={styles.kindLabel}>{getEventKindLabel(event)}</Text>
         <EventSourceChip label={sourceLabel} tone={event.ownership} />
       </View>
       <Text style={styles.meta}>{dateTime}</Text>
@@ -84,6 +92,7 @@ const createStyles = (theme: Theme) =>
     row: { gap: theme.spacing.xs },
     titleRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
     title: { ...theme.typography.cardTitle, color: theme.colors.text, flex: 1 },
+    kindLabel: { ...theme.typography.caption, color: theme.colors.textSecondary },
     meta: { ...theme.typography.caption, color: theme.colors.textSecondary },
     description: { ...theme.typography.helper, color: theme.colors.text },
     sourceChip: {

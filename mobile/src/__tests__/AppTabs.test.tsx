@@ -9,6 +9,10 @@ jest.mock('../screens/CalendarScreen', () => ({
   CalendarScreen: () => null,
 }));
 
+jest.mock('../screens/CalendarSourcesScreen', () => ({
+  CalendarSourcesScreen: () => null,
+}));
+
 jest.mock('../screens/GoalsScreen', () => ({
   GoalsScreen: () => null,
 }));

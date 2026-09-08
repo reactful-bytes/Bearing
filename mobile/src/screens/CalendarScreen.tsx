@@ -3,6 +3,7 @@ import {
   FlatList,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -21,6 +22,8 @@ import { MonthGrid, MONTH_NAMES } from '../components/calendar/MonthGrid';
 import { AddEventModal } from '../components/calendar/AddEventModal';
 import { EventDetailModal } from '../components/calendar/EventDetailModal';
 import { FocusModeOverlay } from '../components/calendar/FocusModeOverlay';
+import { EventRow } from '../components/presentation/EventPresentation';
+import { IconButton } from '../components/ui/IconButton';
 import { layout, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import {
@@ -38,7 +41,7 @@ import { CalendarFocusLaunch } from '../navigation/navigationTypes';
 import { getFirebaseAuth } from '../services/firebase/firebaseAuth';
 import { useCreateNote } from '../features/notes/useNotes';
 import { useUserProfile } from '../features/profile/useUserProfile';
-import { DEFAULT_TIME_FORMAT } from '../features/profile/timeFormat';
+import { DEFAULT_TIME_FORMAT, formatClockTime } from '../features/profile/timeFormat';
 
 // ---------------------------------------------------------------------------
 // Month carousel data
@@ -112,6 +115,7 @@ export type CalendarScreenProps = {
   };
   navigation?: {
     setParams?: (params: { focusLaunch?: CalendarFocusLaunch; createEvent?: boolean }) => void;
+    navigate?: (route: 'CalendarSources') => void;
   };
 };
 
@@ -288,7 +292,9 @@ export function CalendarScreen({
 
   function handleSelectDate(date: Date): void {
     setSelectedDate(date);
-    setViewMode('day');
+    if (viewMode !== 'month') {
+      setViewMode('day');
+    }
   }
 
   function handlePrevWeek(): void {
@@ -411,6 +417,11 @@ export function CalendarScreen({
           >
             <Text style={styles.refreshButtonText}>Refresh</Text>
           </Pressable>
+          <IconButton
+            name="settings"
+            accessibilityLabel="Open Calendar Sources"
+            onPress={() => navigation?.navigate?.('CalendarSources')}
+          />
         </View>
       </View>
       {deviceError ? (
@@ -433,29 +444,19 @@ export function CalendarScreen({
         <View style={styles.weekContainer}>
           <View style={styles.weekNavRow}>
             <View style={styles.weekNavControls} testID="week-navigation-controls">
-              <Pressable
-                accessibilityRole="button"
+              <IconButton
+                name="back"
                 accessibilityLabel="Previous week"
                 onPress={handlePrevWeek}
-                style={({ pressed }) => [
-                  styles.weekNavButton,
-                  pressed ? styles.buttonPressed : null,
-                ]}
-              >
-                <Text style={styles.weekArrowText}>‹</Text>
-              </Pressable>
+                style={styles.weekNavButton}
+              />
               <Text style={styles.weekRangeLabel}>{formatWeekRange(weekStart)}</Text>
-              <Pressable
-                accessibilityRole="button"
+              <IconButton
+                name="back"
                 accessibilityLabel="Next week"
                 onPress={handleNextWeek}
-                style={({ pressed }) => [
-                  styles.weekNavButton,
-                  pressed ? styles.buttonPressed : null,
-                ]}
-              >
-                <Text style={styles.weekArrowText}>›</Text>
-              </Pressable>
+                style={[styles.weekNavButton, styles.nextIcon]}
+              />
             </View>
           </View>
           <WeekTimeline
@@ -472,33 +473,23 @@ export function CalendarScreen({
         <View style={styles.monthContainer}>
           {/* Month nav header */}
           <View style={styles.monthNavRow}>
-            <Pressable
-              accessibilityRole="button"
+            <IconButton
+              name="back"
               accessibilityLabel="Previous month"
               onPress={handlePrevMonth}
-              style={({ pressed }) => [
-                styles.monthArrow,
-                pressed ? styles.monthArrowPressed : null,
-              ]}
-            >
-              <Text style={styles.monthArrowText}>‹</Text>
-            </Pressable>
+              style={styles.monthArrow}
+            />
             {visibleMonth ? (
               <Text style={styles.monthNavTitle}>
                 {MONTH_NAMES[visibleMonth.month]} {visibleMonth.year}
               </Text>
             ) : null}
-            <Pressable
-              accessibilityRole="button"
+            <IconButton
+              name="back"
               accessibilityLabel="Next month"
               onPress={handleNextMonth}
-              style={({ pressed }) => [
-                styles.monthArrow,
-                pressed ? styles.monthArrowPressed : null,
-              ]}
-            >
-              <Text style={styles.monthArrowText}>›</Text>
-            </Pressable>
+              style={[styles.monthArrow, styles.nextIcon]}
+            />
           </View>
 
           {/* Horizontally pageable month grids */}
@@ -541,6 +532,46 @@ export function CalendarScreen({
               );
             }}
           />
+          <View style={styles.monthAgenda} testID="month-selected-date-agenda">
+            <View style={styles.monthAgendaHeader}>
+              <Text style={styles.monthAgendaTitle}>
+                {selectedDate.toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              </Text>
+              <Text style={styles.monthAgendaCount}>
+                {dayEvents.length} {dayEvents.length === 1 ? 'event' : 'events'}
+              </Text>
+            </View>
+            <ScrollView
+              contentContainerStyle={styles.monthAgendaContent}
+              showsVerticalScrollIndicator={false}
+            >
+              {dayEvents.length > 0 ? (
+                dayEvents
+                  .slice()
+                  .sort((left, right) => left.startAt.getTime() - right.startAt.getTime())
+                  .map((event) => (
+                    <EventRow
+                      key={event.id}
+                      event={event}
+                      dateTime={
+                        event.allDay
+                          ? 'All day'
+                          : `${formatClockTime(event.startAt, timeFormat)} - ${formatClockTime(event.endAt, timeFormat)}`
+                      }
+                      timezone={event.timezone}
+                      onPress={() => handlePressEvent(event)}
+                    />
+                  ))
+              ) : (
+                <Text style={styles.monthAgendaEmpty}>No events scheduled</Text>
+              )}
+            </ScrollView>
+          </View>
         </View>
       )}
 
@@ -650,12 +681,7 @@ const createStyles = (theme: Theme) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    weekArrowText: {
-      fontSize: 28,
-      lineHeight: 32,
-      color: theme.colors.brand,
-      fontWeight: '300',
-    },
+    nextIcon: { transform: [{ rotate: '180deg' }] },
     todayButton: {
       minHeight: 36,
       justifyContent: 'center',
@@ -687,20 +713,43 @@ const createStyles = (theme: Theme) =>
       minWidth: 36,
       alignItems: 'center',
     },
-    monthArrowPressed: {
-      opacity: 0.6,
-    },
-    monthArrowText: {
-      fontSize: 28,
-      lineHeight: 32,
-      color: theme.colors.brand,
-      fontWeight: '300',
-    },
     monthNavTitle: {
       ...typography.button,
       color: theme.colors.text,
       flex: 1,
       textAlign: 'center',
+    },
+    monthAgenda: {
+      flex: 1,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.border,
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.md,
+    },
+    monthAgendaHeader: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+    },
+    monthAgendaTitle: {
+      ...typography.sectionTitle,
+      color: theme.colors.text,
+      flex: 1,
+    },
+    monthAgendaCount: {
+      ...typography.caption,
+      color: theme.colors.textSecondary,
+    },
+    monthAgendaContent: {
+      paddingVertical: spacing.sm,
+      gap: spacing.sm,
+      paddingBottom: layout.pagePaddingVertical,
+    },
+    monthAgendaEmpty: {
+      ...typography.body,
+      color: theme.colors.textSecondary,
+      paddingVertical: spacing.lg,
     },
     fabContainer: {
       position: 'absolute',

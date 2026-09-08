@@ -71,6 +71,15 @@ describe('CalendarScreen navigation', () => {
     expect(screen.queryByLabelText('Next day')).toBeNull();
   });
 
+  it('opens Calendar Sources from the toolbar settings control', () => {
+    const navigate = jest.fn();
+    render(<CalendarScreen navigation={{ navigate }} />);
+
+    fireEvent.press(screen.getByLabelText('Open Calendar Sources'));
+
+    expect(navigate).toHaveBeenCalledWith('CalendarSources');
+  });
+
   it('switches back to day view when Day toggle is pressed from month view', () => {
     render(<CalendarScreen initialDateOverride={FIXED_DATE} initialViewMode="month" />);
 
@@ -152,16 +161,17 @@ describe('CalendarScreen navigation', () => {
     }
   });
 
-  it('switches to day view and updates selected date when a month date is tapped', () => {
+  it('updates the selected-date agenda when a month date is tapped', () => {
     render(<CalendarScreen initialDateOverride={FIXED_DATE} initialViewMode="month" />);
 
     // Tap July 20, 2026 in the month grid
     fireEvent.press(screen.getByLabelText('July 20, 2026'));
 
-    // Should switch to day view showing the selected date
+    // The selected date stays in month mode so its agenda remains visible.
     const expectedLabel = formatDayLabel(new Date(2026, 6, 20));
     expect(screen.getByText(expectedLabel)).toBeTruthy();
-    expect(screen.getByLabelText('Previous day')).toBeTruthy();
+    expect(screen.getByTestId('month-selected-date-agenda')).toBeTruthy();
+    expect(screen.queryByLabelText('Previous day')).toBeNull();
   });
 
   it('opens Focus Mode from the secondary FAB', () => {

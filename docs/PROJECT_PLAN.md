@@ -490,13 +490,13 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 | Task ID | Status      | Description                 | Notes                                                                               |
 | ------- | ----------- | --------------------------- | ----------------------------------------------------------------------------------- |
-| M31.1   | not-started | Restyle Calendar modes      | Retain day and month; keep week as a wide-web-only capability                       |
-| M31.2   | not-started | Distinguish event sources   | Use restrained non-color source indicators for Bearing, device, task, and milestone |
-| M31.3   | not-started | Preserve calendar semantics | Retain date, recurrence, alerts, timezone, availability, location, and URL behavior |
-| M31.4   | not-started | Add month agenda            | Render selected-date agenda with EventRow                                           |
-| M31.5   | not-started | Route Calendar Sources      | Move visibility and writable-calendar controls out of the primary screen            |
-| M31.6   | not-started | Migrate event presentation  | Preserve device publication, reconciliation, retry, and permission behavior         |
-| M31.7   | not-started | Validate Calendar           | Cover modes, agenda, sources, publication, and native/web layouts                   |
+| M31.1   | completed | Restyle Calendar modes      | Retain day and month; keep week as a wide-web-only capability                       |
+| M31.2   | completed | Distinguish event sources   | Use restrained non-color source indicators for Bearing, device, task, and milestone |
+| M31.3   | completed | Preserve calendar semantics | Retain date, recurrence, alerts, timezone, availability, location, and URL behavior |
+| M31.4   | completed | Add month agenda            | Render selected-date agenda with EventRow                                           |
+| M31.5   | completed | Route Calendar Sources      | Move visibility and writable-calendar controls out of the primary screen            |
+| M31.6   | completed | Migrate event presentation  | Preserve device publication, reconciliation, retry, and permission behavior         |
+| M31.7   | completed | Validate Calendar           | Cover modes, agenda, sources, publication, and native/web layouts                   |
 
 ### M32 - Global Creation Flows
 

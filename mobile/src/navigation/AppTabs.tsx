@@ -11,6 +11,7 @@ import { useTheme } from '../design/ThemeProvider';
 import { useThemedStyles } from '../design/useThemedStyles';
 import { AppIconName } from '../design/icons';
 import { CalendarScreen } from '../screens/CalendarScreen';
+import { CalendarSourcesScreen } from '../screens/CalendarSourcesScreen';
 import { GoalsScreen } from '../screens/GoalsScreen';
 import { GoalDetailScreen } from '../screens/GoalDetailScreen';
 import { NotesScreen } from '../screens/NotesScreen';
@@ -92,7 +93,7 @@ function CalendarNavigator() {
     <CalendarStack.Navigator screenOptions={{ headerShown: false }}>
       <CalendarStack.Screen name="Calendar" component={CalendarScreen} />
       <CalendarStack.Screen name="EventDetail" component={NavigationPlaceholderScreen} />
-      <CalendarStack.Screen name="CalendarSources" component={NavigationPlaceholderScreen} />
+      <CalendarStack.Screen name="CalendarSources" component={CalendarSourcesScreen} />
       <CalendarStack.Screen name="CreateEvent" component={NavigationPlaceholderScreen} />
       <CalendarStack.Screen name="CreateTask" component={NavigationPlaceholderScreen} />
     </CalendarStack.Navigator>

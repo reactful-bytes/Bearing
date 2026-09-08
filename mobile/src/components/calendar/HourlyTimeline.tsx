@@ -10,6 +10,7 @@ import {
   CalendarUiState,
   EventStatus,
 } from '../../features/calendar/calendarTypes';
+import { getEventKindLabel } from '../presentation/EventPresentation';
 import {
   DEFAULT_TIME_FORMAT,
   TimeFormat,
@@ -157,6 +158,9 @@ export function HourlyTimeline({
                   <Text style={[styles.eventTitle, { color: textColor }]} numberOfLines={1}>
                     {event.title}
                   </Text>
+                  <Text style={[styles.eventKind, { color: textColor }]} numberOfLines={1}>
+                    {getEventKindLabel(event)}
+                  </Text>
                 </Pressable>
               );
             })}
@@ -218,6 +222,9 @@ export function HourlyTimeline({
                   >
                     <Text style={[styles.eventTitle, { color: textColor }]} numberOfLines={1}>
                       {event.title}
+                    </Text>
+                    <Text style={[styles.eventKind, { color: textColor }]} numberOfLines={1}>
+                      {getEventKindLabel(event)}
                     </Text>
                     <Text style={[styles.eventTime, { color: textColor }]} numberOfLines={1}>
                       {formatClockTime(event.startAt, timeFormat)} –{' '}
@@ -350,6 +357,11 @@ const createStyles = (theme: Theme) =>
       ...typography.helper,
       fontWeight: '600',
       fontSize: 12,
+    },
+    eventKind: {
+      ...typography.helper,
+      fontSize: 10,
+      opacity: 0.9,
     },
     eventTime: {
       fontSize: 11,

@@ -370,13 +370,13 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 | Task ID | Status      | Description                 | Exit Criteria                                                                       |
 | ------- | ----------- | --------------------------- | ----------------------------------------------------------------------------------- |
-| M31.1   | not-started | Restyle Calendar modes      | Day/month share components; week remains wide-web-only                              |
-| M31.2   | not-started | Distinguish event sources   | Bearing, device, task, and milestone indicators have non-color labels               |
-| M31.3   | not-started | Preserve calendar semantics | Date, recurrence, alarm, timezone, availability, location, and URL behavior remains |
-| M31.4   | not-started | Add month agenda            | Selected date agenda uses EventRow and preserves selection behavior                 |
-| M31.5   | not-started | Route Calendar Sources      | Source controls move from main Calendar into typed route                            |
-| M31.6   | not-started | Migrate event presentation  | Detail/create preserve publication, reconciliation, retry, and permission behavior  |
-| M31.7   | not-started | Validate Calendar           | Transitions, sources, publication, and responsive tests pass                        |
+| M31.1   | completed | Restyle Calendar modes      | Day/month share components; week remains wide-web-only                              |
+| M31.2   | completed | Distinguish event sources   | Bearing, device, task, and milestone indicators have non-color labels               |
+| M31.3   | completed | Preserve calendar semantics | Date, recurrence, alarm, timezone, availability, location, and URL behavior remains |
+| M31.4   | completed | Add month agenda            | Selected date agenda uses EventRow and preserves selection behavior                 |
+| M31.5   | completed | Route Calendar Sources      | Source controls move from main Calendar into typed route                            |
+| M31.6   | completed | Migrate event presentation  | Detail/create preserve publication, reconciliation, retry, and permission behavior  |
+| M31.7   | completed | Validate Calendar           | Transitions, sources, publication, and responsive tests pass                        |
 
 ### M32 - Global Creation Flows
 
