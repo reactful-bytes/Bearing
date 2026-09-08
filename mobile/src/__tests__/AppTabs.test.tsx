@@ -43,11 +43,18 @@ jest.mock('../screens/TasksScreen', () => ({
   TasksScreen: () => null,
 }));
 
+jest.mock('../screens/NoteEditorScreen', () => ({
+  NoteEditorScreen: () => null,
+}));
+
 jest.mock('../screens/CreationScreens', () => ({
   CreateEventScreen: () => null,
+  CreateEventFromNoteScreen: () => null,
   CreateGoalScreen: () => null,
+  CreateGoalFromNoteScreen: () => null,
   CreateNoteScreen: () => null,
   CreateTaskScreen: () => null,
+  CreateTaskFromNoteScreen: () => null,
 }));
 
 jest.mock('../components/presentation/CreateSheet', () => {

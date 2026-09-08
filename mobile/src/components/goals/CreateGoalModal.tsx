@@ -44,6 +44,8 @@ type CreateGoalModalProps = {
   onGenerateAiPlan: (input: AiGoalPlanInput) => Promise<AiGoalPlanDraft>;
   onLoadAiCreditStatus: () => Promise<AiCreditStatus>;
   creditPackUserId: string | null;
+  initialTitle?: string;
+  initialDescription?: string;
 };
 
 type DraftGoalStep = CreateGoalStepInput & {
@@ -122,13 +124,15 @@ export function CreateGoalModal({
   onGenerateAiPlan,
   onLoadAiCreditStatus,
   creditPackUserId,
+  initialTitle = '',
+  initialDescription = '',
 }: CreateGoalModalProps) {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const today = useMemo(() => new Date(), []);
   const [wizardIndex, setWizardIndex] = useState(0);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState(initialTitle);
+  const [description, setDescription] = useState(initialDescription);
   const [goalDateParts, setGoalDateParts] = useState<GoalDateParts>(() =>
     buildDefaultGoalDateParts(today),
   );
@@ -146,6 +150,12 @@ export function CreateGoalModal({
   const [aiCreditStatusError, setAiCreditStatusError] = useState<string | null>(null);
   const [creditPackVisible, setCreditPackVisible] = useState(false);
   const aiRequestId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!visible) return;
+    setTitle(initialTitle);
+    setDescription(initialDescription);
+  }, [initialDescription, initialTitle, visible]);
 
   const canGoBack = wizardIndex > 0;
   const wizardLabel = useMemo(

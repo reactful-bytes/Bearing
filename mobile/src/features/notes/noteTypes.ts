@@ -30,4 +30,5 @@ export type UpdateNoteInput = {
   title: string;
   body: string;
   pinned?: boolean;
+  archived?: boolean;
 };

@@ -14,6 +14,7 @@ export type UseNotesReturn = {
   uiState: NoteUiState;
   createNote: (input: CreateNoteInput) => Promise<void>;
   updateNote: (noteId: string, fields: UpdateNoteInput) => Promise<void>;
+  archiveNote: (noteId: string, fields: UpdateNoteInput) => Promise<void>;
   deleteNote: (noteId: string) => Promise<void>;
   retry: () => void;
 };
@@ -83,5 +84,12 @@ export function useNotes(): UseNotesReturn {
     await deleteFirebaseNote(userId, noteId);
   }, []);
 
-  return { notes, uiState, createNote, updateNote, deleteNote, retry };
+  const archiveNote = useCallback(
+    async (noteId: string, fields: UpdateNoteInput): Promise<void> => {
+      await updateNote(noteId, { ...fields, archived: true });
+    },
+    [updateNote],
+  );
+
+  return { notes, uiState, createNote, updateNote, archiveNote, deleteNote, retry };
 }

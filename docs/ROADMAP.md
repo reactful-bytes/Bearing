@@ -407,12 +407,12 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 | Task ID | Status      | Description                     | Exit Criteria                                                                     |
 | ------- | ----------- | ------------------------------- | --------------------------------------------------------------------------------- |
-| M34.1   | not-started | Restyle Notes List              | Search/filter controls and compact NoteCard layout work                           |
-| M34.2   | not-started | Define note section ordering    | Pinned, Recent, and All membership avoids unintended duplicates                   |
-| M34.3   | not-started | Route Note Editor               | Create, update, archive, and delete parity replaces detail modal                  |
-| M34.4   | not-started | Confirm editor formatting scope | Plain text remains unless existing editor supports formatting without a new model |
-| M34.5   | not-started | Add note conversion drafts      | Task, goal, and event drafts are editable before commit                           |
-| M34.6   | not-started | Validate Notes                  | Search, pins, drafts, conversion, confirmation, and data states pass              |
+| M34.1   | completed | Restyle Notes List              | Search/filter controls and compact NoteCard layout work                           |
+| M34.2   | completed | Define note section ordering    | Pinned, Recent, and All membership avoids unintended duplicates                   |
+| M34.3   | completed | Route Note Editor               | Create, update, archive, and delete parity replaces detail modal                  |
+| M34.4   | completed | Confirm editor formatting scope | Plain text remains unless existing editor supports formatting without a new model |
+| M34.5   | completed | Add note conversion drafts      | Task, goal, and event drafts are editable before commit                           |
+| M34.6   | completed | Validate Notes                  | Search, pins, drafts, conversion, confirmation, and data states pass              |
 
 ### M35 - Profile and Settings
 

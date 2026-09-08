@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { EventDateTimePickerField } from '../calendar/EventDateTimePickerField';
@@ -18,6 +18,8 @@ type AddTaskModalProps = {
   onSave: (input: CreateTaskInput) => Promise<void>;
   initialGoalId?: string | null;
   initialStepId?: string | null;
+  initialTitle?: string;
+  initialDescription?: string;
   contextLabel?: string;
 };
 
@@ -27,12 +29,14 @@ export function AddTaskModal({
   onSave,
   initialGoalId = null,
   initialStepId = null,
+  initialTitle = '',
+  initialDescription = '',
   contextLabel,
 }: AddTaskModalProps) {
   const styles = useThemedStyles(createStyles);
   const { profile } = useUserProfile();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState(initialTitle);
+  const [description, setDescription] = useState(initialDescription);
   const [scheduleVisible, setScheduleVisible] = useState(false);
   const [dueDate, setDueDate] = useState('');
   const [scheduledStartDate, setScheduledStartDate] = useState('');
@@ -42,6 +46,12 @@ export function AddTaskModal({
   const [allDay, setAllDay] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!visible) return;
+    setTitle(initialTitle);
+    setDescription(initialDescription);
+  }, [initialDescription, initialTitle, visible]);
 
   function resetForm(): void {
     setTitle('');

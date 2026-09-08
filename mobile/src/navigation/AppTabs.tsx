@@ -14,9 +14,12 @@ import { CalendarScreen } from '../screens/CalendarScreen';
 import { CalendarSourcesScreen } from '../screens/CalendarSourcesScreen';
 import {
   CreateEventScreen,
+  CreateEventFromNoteScreen,
   CreateGoalScreen,
+  CreateGoalFromNoteScreen,
   CreateNoteScreen,
   CreateTaskScreen,
+  CreateTaskFromNoteScreen,
 } from '../screens/CreationScreens';
 import { GoalsScreen } from '../screens/GoalsScreen';
 import { GoalDetailScreen } from '../screens/GoalDetailScreen';
@@ -25,6 +28,7 @@ import { NotesScreen } from '../screens/NotesScreen';
 import { PlanScreen } from '../screens/PlanScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { TasksScreen } from '../screens/TasksScreen';
+import { NoteEditorScreen } from '../screens/NoteEditorScreen';
 import { NavigationPlaceholderScreen } from './NavigationPlaceholderScreen';
 import {
   AppTabParamList,
@@ -113,10 +117,10 @@ function NotesNavigator() {
     <NotesStack.Navigator screenOptions={{ headerShown: false }}>
       <NotesStack.Screen name="NotesHome" component={NotesScreen} />
       <NotesStack.Screen name="CreateNote" component={CreateNoteScreen} />
-      <NotesStack.Screen name="NoteEditor" component={CreateNoteScreen} />
-      <NotesStack.Screen name="CreateGoalFromNote" component={NavigationPlaceholderScreen} />
-      <NotesStack.Screen name="CreateTaskFromNote" component={NavigationPlaceholderScreen} />
-      <NotesStack.Screen name="CreateEventFromNote" component={NavigationPlaceholderScreen} />
+      <NotesStack.Screen name="NoteEditor" component={NoteEditorScreen} />
+      <NotesStack.Screen name="CreateGoalFromNote" component={CreateGoalFromNoteScreen} />
+      <NotesStack.Screen name="CreateTaskFromNote" component={CreateTaskFromNoteScreen} />
+      <NotesStack.Screen name="CreateEventFromNote" component={CreateEventFromNoteScreen} />
     </NotesStack.Navigator>
   );
 }

@@ -123,6 +123,7 @@ export async function updateNote(
     updatedAt: Timestamp.now(),
   };
   if (fields.pinned !== undefined) updatePayload.pinned = fields.pinned;
+  if (fields.archived !== undefined) updatePayload.archived = fields.archived;
 
   await updateDoc(doc(db, 'notes', noteId), updatePayload);
 }

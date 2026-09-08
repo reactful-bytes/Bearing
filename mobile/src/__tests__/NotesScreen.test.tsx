@@ -39,6 +39,7 @@ function makeUseNotesReturn(
     uiState: 'empty',
     createNote: async () => undefined,
     updateNote: async () => undefined,
+    archiveNote: async () => undefined,
     deleteNote: async () => undefined,
     retry: jest.fn(),
     ...overrides,
@@ -85,6 +86,45 @@ describe('NotesScreen', () => {
     expect(screen.getByText('Manual note')).toBeTruthy();
     expect(screen.getByText('Idea Dump')).toBeTruthy();
     expect(screen.getByText('Manual Note')).toBeTruthy();
+  });
+
+  it('keeps archived notes hidden and separates pinned, recent, and all notes', () => {
+    const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
+    mockedUseNotes.mockReturnValue(
+      makeUseNotesReturn({
+        notes: [
+          makeNote({ id: 'pinned', title: 'Pinned note', pinned: true }),
+          makeNote({ id: 'recent', title: 'Recent note', updatedAt: new Date() }),
+          makeNote({
+            id: 'older',
+            title: 'Older note',
+            updatedAt: new Date(2020, 1, 1),
+          }),
+          makeNote({
+            id: 'oldest',
+            title: 'Oldest note',
+            updatedAt: new Date(2019, 1, 1),
+          }),
+          makeNote({
+            id: 'ancient',
+            title: 'Ancient note',
+            updatedAt: new Date(2018, 1, 1),
+          }),
+          makeNote({ id: 'archived', title: 'Archived note', archived: true }),
+        ],
+        uiState: 'ready',
+      }),
+    );
+
+    render(<NotesScreen />);
+
+    expect(screen.getByText('Pinned')).toBeTruthy();
+    expect(screen.getByText('Recent')).toBeTruthy();
+    expect(screen.getByText('All notes')).toBeTruthy();
+    expect(screen.getByText('Pinned note')).toBeTruthy();
+    expect(screen.getByText('Recent note')).toBeTruthy();
+    expect(screen.getByText('Ancient note')).toBeTruthy();
+    expect(screen.queryByText('Archived note')).toBeNull();
   });
 
   it('opens the new note modal and saves a manual note', async () => {
