@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { GoalMilestone, GoalStepRecord, GoalWithSteps } from '../../features/goals/goalTypes';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import type { Theme } from '../../design/tokens';
+import { AppIcon } from '../ui/AppIcon';
 import { Card } from '../ui/Card';
 import { ProgressBar } from '../ui/ProgressBar';
 import { SegmentedControl, SegmentedControlOption } from '../ui/SegmentedControl';
@@ -41,30 +42,48 @@ export function GoalCard({ goal, formatDate, onPress }: GoalCardProps) {
         : styles.active;
   const statusLabel =
     goal.status === 'active' ? 'Current' : `${goal.status[0].toUpperCase()}${goal.status.slice(1)}`;
+  const statusIcon = goal.status === 'completed' ? 'complete' : 'goalsOutline';
+  const statusColor =
+    goal.status === 'completed'
+      ? styles.completed.color
+      : goal.status === 'archived'
+        ? styles.archived.color
+        : styles.active.color;
 
   return (
     <Card accessibilityLabel={`Open goal ${goal.title}`} onPress={onPress} style={styles.card}>
-      <View style={styles.titleRow}>
-        <Text numberOfLines={2} style={styles.title}>
-          {goal.title}
-        </Text>
-        <Text style={statusStyle}>{statusLabel}</Text>
+      <View style={styles.cardRow}>
+        <View style={[styles.iconContainer, { borderColor: statusColor }]}>
+          <AppIcon name={statusIcon} size={22} color={statusColor} decorative />
+        </View>
+        <View style={styles.cardCopy}>
+          <View style={styles.titleRow}>
+            <Text numberOfLines={2} style={styles.title}>
+              {goal.title}
+            </Text>
+            <Text style={statusStyle}>{statusLabel}</Text>
+          </View>
+          <Text style={styles.meta}>Target: {formatDate(goal.estimatedCompletionDate)}</Text>
+          <Text numberOfLines={1} style={styles.nextStep}>
+            Next: {nextStep}
+          </Text>
+          <Text style={styles.meta}>{goal.progressText}</Text>
+          <ProgressBar
+            accessibilityLabel={`Goal progress ${goal.title}`}
+            value={progressPercent}
+            max={100}
+            accent={
+              goal.status === 'completed'
+                ? 'success'
+                : goal.status === 'archived'
+                  ? 'neutral'
+                  : 'brand'
+            }
+            accessibilityValueText={goal.progressText}
+            showPercentage
+          />
+        </View>
       </View>
-      <Text style={styles.meta}>Target: {formatDate(goal.estimatedCompletionDate)}</Text>
-      <Text numberOfLines={1} style={styles.nextStep}>
-        Next: {nextStep}
-      </Text>
-      <Text style={styles.meta}>{goal.progressText}</Text>
-      <ProgressBar
-        accessibilityLabel={`Goal progress ${goal.title}`}
-        value={progressPercent}
-        max={100}
-        accent={
-          goal.status === 'completed' ? 'success' : goal.status === 'archived' ? 'neutral' : 'brand'
-        }
-        accessibilityValueText={goal.progressText}
-        showPercentage
-      />
     </Card>
   );
 }
@@ -156,14 +175,25 @@ export function GoalMilestones({ milestones }: GoalMilestonesProps) {
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
-    card: { gap: theme.spacing.md },
+    card: { padding: theme.spacing.lg },
+    cardRow: { flexDirection: 'row', alignItems: 'flex-start', gap: theme.spacing.md },
+    iconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      backgroundColor: theme.colors.surfaceBrand,
+    },
+    cardCopy: { flex: 1, gap: theme.spacing.xs },
     titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: theme.spacing.md },
     title: { ...theme.typography.cardTitle, color: theme.colors.text, flex: 1 },
     active: { ...theme.typography.caption, color: theme.colors.brand },
     completed: { ...theme.typography.caption, color: theme.colors.success },
     archived: { ...theme.typography.caption, color: theme.colors.textSecondary },
     meta: { ...theme.typography.caption, color: theme.colors.textSecondary },
-    nextStep: { ...theme.typography.helper, color: theme.colors.text },
+    nextStep: { ...theme.typography.caption, color: theme.colors.textSecondary },
     timeline: { gap: theme.spacing.sm },
     timelineItem: {
       minHeight: theme.layout.minimumTouchTarget,

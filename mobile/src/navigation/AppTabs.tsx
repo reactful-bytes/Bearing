@@ -63,13 +63,13 @@ function TabIcon({
   const styles = useThemedStyles(createStyles);
 
   return (
-    <View style={[styles.iconCircle, focused ? styles.iconCircleFocused : null]}>
-      <AppIcon
-        name={TAB_ICONS[routeName]}
-        size={isDesktop ? 20 : 22}
-        color={focused ? styles.iconTextFocused.color : styles.iconText.color}
-        decorative
-      />
+    <View
+      style={[
+        routeName === 'Create' ? styles.createIconCircle : styles.iconSlot,
+        routeName !== 'Create' && focused ? styles.iconSlotFocused : null,
+      ]}
+    >
+      <AppIcon name={TAB_ICONS[routeName]} size={isDesktop ? 20 : 22} decorative />
     </View>
   );
 }
@@ -299,23 +299,22 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       ...theme.typography.button,
       textAlign: 'left',
     },
-    iconCircle: {
+    iconSlot: {
       width: theme.layout.tabIconSize,
       height: theme.layout.tabIconSize,
-      borderRadius: theme.layout.tabIconRadius,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: theme.componentTokens.tabIcon.backgroundColor,
     },
-    iconCircleFocused: {
+    iconSlotFocused: {
+      opacity: 1,
+    },
+    createIconCircle: {
+      width: theme.layout.tabIconSize + 12,
+      height: theme.layout.tabIconSize + 12,
+      borderRadius: (theme.layout.tabIconSize + 12) / 2,
       backgroundColor: theme.componentTokens.tabIcon.focusedBackgroundColor,
-    },
-    iconText: {
-      ...theme.typography.tabIcon,
-      color: theme.componentTokens.tabIcon.textColor,
-    },
-    iconTextFocused: {
-      color: theme.componentTokens.tabIcon.focusedTextColor,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     createTabButton: {
       width: 76,

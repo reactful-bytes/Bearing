@@ -64,7 +64,7 @@ describe('NotesScreen', () => {
     render(<NotesScreen />);
 
     expect(screen.getByText('No notes yet.')).toBeTruthy();
-    expect(screen.getByText('New Note')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'New Note' })).toBeTruthy();
   });
 
   it('renders saved notes with source metadata', () => {
@@ -94,7 +94,7 @@ describe('NotesScreen', () => {
 
     render(<NotesScreen />);
 
-    fireEvent.press(screen.getByText('New Note'));
+    fireEvent.press(screen.getByRole('button', { name: 'New Note' }));
     fireEvent.changeText(screen.getByLabelText('Note title'), 'Inbox thought');
     fireEvent.changeText(screen.getByLabelText('Note body'), 'Capture this before it disappears.');
     await act(async () => {

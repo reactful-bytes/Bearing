@@ -1,29 +1,30 @@
 import { useMemo, useState } from 'react';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AddEventModal } from '../components/calendar/AddEventModal';
 import { AddStepModal } from '../components/goals/AddStepModal';
 import { GoalDetailsModal } from '../components/goals/GoalDetailsModal';
 import { StepDetailModal } from '../components/goals/StepDetailModal';
-import { GoalCard, GoalTimeline } from '../components/presentation/GoalPresentation';
+import { GoalTimeline, getGoalProgressPercent } from '../components/presentation/GoalPresentation';
 import { TaskRow } from '../components/presentation/TaskRow';
 import { AppButton } from '../components/ui/AppButton';
 import { AppCard } from '../components/ui/AppCard';
 import { EmptyState } from '../components/ui/EmptyState';
+import { IconButton } from '../components/ui/IconButton';
+import { ProgressBar } from '../components/ui/ProgressBar';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
-import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { useThemedStyles } from '../design/useThemedStyles';
 import type { Theme } from '../design/tokens';
 import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { useGoalStepEvents } from '../features/goals/useGoalStepEvents';
-import { CreateGoalStepInput, GoalStepRecord, GoalWithSteps } from '../features/goals/goalTypes';
+import { CreateGoalStepInput, GoalWithSteps } from '../features/goals/goalTypes';
 import { useGoals } from '../features/goals/useGoals';
 import { useTasks } from '../features/tasks/useTasks';
 import { CreateTaskInput, TaskRecord, UpdateTaskInput } from '../features/tasks/taskTypes';
 import { useUserProfile } from '../features/profile/useUserProfile';
-import { DEFAULT_TIME_FORMAT, timeFormatOptions } from '../features/profile/timeFormat';
+import { DEFAULT_TIME_FORMAT } from '../features/profile/timeFormat';
 import { AppTabParamList, PlanStackParamList } from '../navigation/navigationTypes';
 import { AddTaskModal } from '../components/tasks/AddTaskModal';
 import { StartNowModal } from '../components/tasks/StartNowModal';
@@ -35,10 +36,6 @@ type DetailTab = (typeof DETAIL_TABS)[number];
 type GoalDetailScreenProps = {
   route: { params: PlanStackParamList['GoalDetail'] };
 };
-
-function formatDate(date: Date, locale?: string): string {
-  return date.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
-}
 
 function formatTaskContext(task: TaskRecord, goal: GoalWithSteps, locale?: string): string {
   const step = task.stepId ? goal.steps.find((candidate) => candidate.id === task.stepId) : null;
@@ -241,27 +238,44 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
-        <AppButton label="Back" variant="secondary" onPress={() => navigation.goBack()} />
-        <ScreenHeader
-          eyebrow="Goal detail"
-          title={goal.title}
-          description={
-            goal.description || 'Keep the next move visible and the finish line concrete.'
-          }
+        <View style={styles.detailHeader}>
+          <IconButton
+            name="back"
+            accessibilityLabel="Back to goals"
+            onPress={() => navigation.goBack()}
+          />
+          <View style={styles.detailHeaderCopy}>
+            <Text numberOfLines={1} style={styles.detailTitle}>
+              {goal.title}
+            </Text>
+            <Text style={styles.detailProgressText}>{getGoalProgressPercent(goal)}% complete</Text>
+          </View>
+          <IconButton
+            name="more"
+            accessibilityLabel="Edit goal"
+            onPress={() => setEditGoalVisible(true)}
+          />
+        </View>
+        <ProgressBar
+          accessibilityLabel={`Goal progress ${goal.title}`}
+          value={getGoalProgressPercent(goal)}
+          max={100}
+          accent="brand"
+          accessibilityValueText={`${getGoalProgressPercent(goal)}% complete`}
         />
-        <GoalCard
-          goal={goal}
-          formatDate={(date) => formatDate(date, profile?.locale)}
-          onPress={() => setEditGoalVisible(true)}
-        />
-        <View style={styles.tabRow}>
+        <View accessibilityLabel="Goal detail tabs" style={styles.tabRow}>
           {DETAIL_TABS.map((tab) => (
-            <AppButton
+            <Pressable
               key={tab}
-              label={tab === 'tasks' ? 'Tasks' : 'Timeline'}
-              variant={activeTab === tab ? 'primary' : 'secondary'}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: activeTab === tab }}
               onPress={() => setActiveTab(tab)}
-            />
+              style={[styles.tab, activeTab === tab ? styles.tabActive : null]}
+            >
+              <Text style={[styles.tabLabel, activeTab === tab ? styles.tabLabelActive : null]}>
+                {tab === 'tasks' ? 'Tasks' : 'Timeline'}
+              </Text>
+            </Pressable>
           ))}
         </View>
 
@@ -475,7 +489,26 @@ const createStyles = (theme: Theme) =>
     stateCard: { margin: theme.layout.pagePaddingHorizontal, gap: theme.spacing.sm },
     stateTitle: { ...theme.typography.cardTitle, color: theme.colors.text },
     stateDescription: { ...theme.typography.body, color: theme.colors.textSecondary },
-    tabRow: { flexDirection: 'row', gap: theme.spacing.sm },
+    detailHeader: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
+    detailHeaderCopy: { flex: 1, gap: theme.spacing.xs },
+    detailTitle: { ...theme.typography.cardTitle, color: theme.colors.text },
+    detailProgressText: { ...theme.typography.caption, color: theme.colors.textSecondary },
+    tabRow: {
+      flexDirection: 'row',
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    tab: {
+      flex: 1,
+      minHeight: theme.layout.minimumTouchTarget,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderBottomWidth: 2,
+      borderBottomColor: 'transparent',
+    },
+    tabActive: { borderBottomColor: theme.colors.brand },
+    tabLabel: { ...theme.typography.helper, color: theme.colors.textSecondary },
+    tabLabelActive: { color: theme.colors.brand, fontWeight: '700' },
     section: { gap: theme.spacing.md },
     sectionHeader: {
       flexDirection: 'row',

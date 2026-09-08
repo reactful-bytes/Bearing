@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useThemedStyles } from '../design/useThemedStyles';
 import { AddNoteModal } from '../components/notes/AddNoteModal';
 import { NoteDetailModal } from '../components/notes/NoteDetailModal';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
+import { AppIcon } from '../components/ui/AppIcon';
 import { AppCard } from '../components/ui/AppCard';
+import { IconButton } from '../components/ui/IconButton';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { layout, radii, spacing, typography } from '../design/tokens';
@@ -42,6 +44,8 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
   const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
   const [addNoteVisible, setAddNoteVisible] = useState(false);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showPinnedOnly, setShowPinnedOnly] = useState(false);
 
   useEffect(() => {
     if (!route?.params?.createNote) {
@@ -55,6 +59,16 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
   const selectedNote = selectedNoteId
     ? (notes.find((note) => note.id === selectedNoteId) ?? null)
     : null;
+  const visibleNotes = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    return notes.filter((note) => {
+      if (showPinnedOnly && !note.pinned) return false;
+      if (!normalizedQuery) return true;
+      return `${note.title} ${note.body}`.toLowerCase().includes(normalizedQuery);
+    });
+  }, [notes, searchQuery, showPinnedOnly]);
+  const pinnedNotes = visibleNotes.filter((note) => note.pinned);
+  const otherNotes = visibleNotes.filter((note) => !note.pinned);
 
   async function handleCreateNote(input: CreateNoteInput): Promise<void> {
     await createNote(input);
@@ -72,11 +86,27 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.contentContainer}>
-        <ScreenHeader
-          eyebrow="Notes"
-          title="Notes"
-          description="Capture quick thoughts, Idea Dump entries, and longer-form notes."
-        />
+        <ScreenHeader eyebrow="Notes" title="Notes" />
+
+        <View style={styles.searchRow}>
+          <View style={styles.searchField}>
+            <AppIcon name="search" size={18} color={styles.searchIcon.color} decorative />
+            <TextInput
+              accessibilityLabel="Search notes"
+              onChangeText={setSearchQuery}
+              placeholder="Search notes"
+              placeholderTextColor={styles.searchPlaceholder.color}
+              style={styles.searchInput}
+              value={searchQuery}
+            />
+          </View>
+          <IconButton
+            name="filter"
+            accessibilityLabel={showPinnedOnly ? 'Show all notes' : 'Show pinned notes'}
+            onPress={() => setShowPinnedOnly((current) => !current)}
+            style={showPinnedOnly ? styles.filterActive : null}
+          />
+        </View>
 
         {uiState === 'loading' ? (
           <AppCard>
@@ -102,8 +132,14 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
           </AppCard>
         ) : null}
 
-        {uiState === 'ready'
-          ? notes.map((note) => (
+        {uiState === 'ready' ? (
+          <>
+            {pinnedNotes.length > 0 ? (
+              <Text accessibilityRole="header" style={styles.sectionLabel}>
+                Pinned
+              </Text>
+            ) : null}
+            {pinnedNotes.map((note) => (
               <Pressable
                 key={note.id}
                 accessibilityRole="button"
@@ -122,15 +158,49 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
                   <Text style={styles.noteBody}>{note.body}</Text>
                 </AppCard>
               </Pressable>
-            ))
-          : null}
+            ))}
+            {otherNotes.length > 0 ? (
+              <Text accessibilityRole="header" style={styles.sectionLabel}>
+                All notes
+              </Text>
+            ) : null}
+            {otherNotes.map((note) => (
+              <Pressable
+                key={note.id}
+                accessibilityRole="button"
+                accessibilityLabel={`Open note ${note.title}`}
+                onPress={() => setSelectedNoteId(note.id)}
+                style={({ pressed }) => [pressed ? styles.noteCardPressed : null]}
+              >
+                <AppCard style={styles.noteCard}>
+                  <View style={styles.noteMetaRow}>
+                    <Text style={styles.noteSource}>{noteSourceLabel(note)}</Text>
+                    <Text style={styles.noteDate}>
+                      {formatDateTime(note.updatedAt, timeFormat, profile?.locale)}
+                    </Text>
+                  </View>
+                  <Text style={styles.noteTitle}>{note.title}</Text>
+                  <Text style={styles.noteBody}>{note.body}</Text>
+                </AppCard>
+              </Pressable>
+            ))}
+            {visibleNotes.length === 0 ? (
+              <AppCard>
+                <Text style={styles.stateTitle}>No matching notes.</Text>
+                <Text style={styles.stateDescription}>Try a different search or filter.</Text>
+              </AppCard>
+            ) : null}
+          </>
+        ) : null}
       </ScrollView>
 
       <View style={styles.fabContainer}>
         <FloatingActionButton
-          label="New Note"
+          accessibilityLabel="New Note"
+          icon="add"
           onPress={() => setAddNoteVisible(true)}
-          style={styles.smallFab}
+          size="standard"
+          style={styles.fab}
         />
       </View>
 
@@ -178,6 +248,38 @@ const createStyles = (theme: Theme) =>
     noteCard: {
       gap: spacing.md,
     },
+    searchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    searchField: {
+      flex: 1,
+      minHeight: layout.minimumTouchTarget,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surface,
+    },
+    searchIcon: { color: theme.colors.textSecondary },
+    searchPlaceholder: { color: theme.colors.textMuted },
+    searchInput: {
+      flex: 1,
+      minHeight: layout.minimumTouchTarget,
+      ...typography.helper,
+      color: theme.colors.text,
+      paddingVertical: 0,
+    },
+    filterActive: { backgroundColor: theme.colors.surfaceBrand },
+    sectionLabel: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+      marginTop: spacing.sm,
+    },
     noteCardPressed: {
       opacity: 0.92,
     },
@@ -208,10 +310,5 @@ const createStyles = (theme: Theme) =>
       right: layout.pagePaddingHorizontal,
       bottom: layout.pagePaddingVertical,
     },
-    smallFab: {
-      alignSelf: 'flex-end',
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      borderRadius: radii.lg,
-    },
+    fab: { alignSelf: 'flex-end' },
   });

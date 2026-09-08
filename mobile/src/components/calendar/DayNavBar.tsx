@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
+import { IconButton } from '../ui/IconButton';
 import { spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
 
@@ -38,25 +39,11 @@ export function DayNavBar({ date, onPrev, onNext }: DayNavBarProps) {
   const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.container}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Previous day"
-        onPress={onPrev}
-        style={({ pressed }) => [styles.arrow, pressed ? styles.arrowPressed : null]}
-      >
-        <Text style={styles.arrowText}>‹</Text>
-      </Pressable>
+      <IconButton name="back" accessibilityLabel="Previous day" onPress={onPrev} />
       <Text style={styles.label} numberOfLines={1}>
         {formatDayLabel(date)}
       </Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Next day"
-        onPress={onNext}
-        style={({ pressed }) => [styles.arrow, pressed ? styles.arrowPressed : null]}
-      >
-        <Text style={styles.arrowText}>›</Text>
-      </Pressable>
+      <IconButton name="next" accessibilityLabel="Next day" onPress={onNext} />
     </View>
   );
 }
@@ -69,21 +56,6 @@ const createStyles = (theme: Theme) =>
       paddingVertical: spacing.md,
       paddingHorizontal: spacing.md,
       gap: spacing.sm,
-    },
-    arrow: {
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.xs,
-      minWidth: 36,
-      alignItems: 'center',
-    },
-    arrowPressed: {
-      opacity: 0.6,
-    },
-    arrowText: {
-      fontSize: 28,
-      lineHeight: 32,
-      color: theme.colors.brand,
-      fontWeight: '300',
     },
     label: {
       ...typography.body,

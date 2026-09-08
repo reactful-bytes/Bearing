@@ -149,7 +149,7 @@ describe('GoalDetailScreen', () => {
 
     render(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
 
-    expect(screen.getAllByText('Run a 10k')).toHaveLength(2);
+    expect(screen.getByText('Run a 10k')).toBeTruthy();
     expect(screen.getAllByText('Book the race')).toHaveLength(2);
     fireEvent.press(screen.getAllByRole('checkbox', { name: 'Mark Book the race complete' })[0]);
     fireEvent.press(screen.getAllByRole('button', { name: 'Open task Book the race' })[0]);
