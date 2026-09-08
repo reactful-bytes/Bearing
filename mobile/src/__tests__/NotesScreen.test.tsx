@@ -106,6 +106,8 @@ describe('NotesScreen', () => {
         title: 'Inbox thought',
         body: 'Capture this before it disappears.',
         source: 'manual',
+        sourceEventId: null,
+        sourceStepId: null,
       });
     });
   });

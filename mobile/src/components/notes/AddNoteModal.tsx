@@ -9,9 +9,17 @@ type AddNoteModalProps = {
   visible: boolean;
   onClose: () => void;
   onSave: (input: CreateNoteInput) => Promise<void>;
+  sourceEventId?: string | null;
+  sourceStepId?: string | null;
 };
 
-export function AddNoteModal({ visible, onClose, onSave }: AddNoteModalProps) {
+export function AddNoteModal({
+  visible,
+  onClose,
+  onSave,
+  sourceEventId = null,
+  sourceStepId = null,
+}: AddNoteModalProps) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +52,8 @@ export function AddNoteModal({ visible, onClose, onSave }: AddNoteModalProps) {
         title: title.trim(),
         body: trimmedBody,
         source: 'manual',
+        sourceEventId,
+        sourceStepId,
       });
       handleClose();
     } catch {

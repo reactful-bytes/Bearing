@@ -306,33 +306,33 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 **Status:** in-progress (manual native validation remains)
 
-| Task ID | Status          | Description                                  | Exit Criteria                                                                                 |
-| ------- | --------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| M26.1   | completed       | Audit and export launch artwork              | Transparent launch mark uses sharp approved source, not a square or grid crop               |
-| M26.2   | completed       | Configure deterministic native splash        | Dark background and transparent mark are configured in Expo and native rebuild is recorded  |
-| M26.3   | completed       | Match React bootstrap frame                  | Loading and startup-error surfaces match splash background, mark, and status bar            |
-| M26.4   | completed       | Recompose responsive auth shell              | Shared screen, tokens, safe areas, keyboard, and constrained web layout work               |
-| M26.5   | completed       | Restyle all auth states                      | Sign-in, registration, reset, conflict, loading, and retry retain current Firebase actions |
-| M26.6   | completed       | Replace handmade Google mark                 | Official unmodified Google mark or compliant provider button passes platform checks         |
-| M26.7   | completed       | Add password visibility and feedback styling | FormField trailing action and accessible validation/busy feedback work                      |
-| M26.8   | manual-handoff | Validate auth and splash                     | Repository checks pass; signed iOS/Android cold/warm-start evidence remains                 |
+| Task ID | Status         | Description                                  | Exit Criteria                                                                              |
+| ------- | -------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| M26.1   | completed      | Audit and export launch artwork              | Transparent launch mark uses sharp approved source, not a square or grid crop              |
+| M26.2   | completed      | Configure deterministic native splash        | Dark background and transparent mark are configured in Expo and native rebuild is recorded |
+| M26.3   | completed      | Match React bootstrap frame                  | Loading and startup-error surfaces match splash background, mark, and status bar           |
+| M26.4   | completed      | Recompose responsive auth shell              | Shared screen, tokens, safe areas, keyboard, and constrained web layout work               |
+| M26.5   | completed      | Restyle all auth states                      | Sign-in, registration, reset, conflict, loading, and retry retain current Firebase actions |
+| M26.6   | completed      | Replace handmade Google mark                 | Official unmodified Google mark or compliant provider button passes platform checks        |
+| M26.7   | completed      | Add password visibility and feedback styling | FormField trailing action and accessible validation/busy feedback work                     |
+| M26.8   | manual-handoff | Validate auth and splash                     | Repository checks pass; signed iOS/Android cold/warm-start evidence remains                |
 
 ### M27 - Data Contracts and Persistence
 
-| Task ID | Status      | Description                             | Exit Criteria                                                                       |
-| ------- | ----------- | --------------------------------------- | ----------------------------------------------------------------------------------- |
-| M27.1   | completed   | Extend task contracts                   | Nullable links, due/schedule/all-day fields decode legacy documents and round-trip  |
-| M27.2   | completed   | Expose event sourceTaskId               | Event serialization and decoding retain nullable task provenance                    |
-| M27.3   | completed   | Add note pinned field                   | Missing legacy value is false; mutations and sorting preserve pinned behavior       |
-| M27.4   | completed   | Confirm operational goal-step timeline  | One GoalStepRecord source is used; no parallel editable milestone tree remains      |
-| M27.5   | completed   | Decide Focus persistence                | Persist smallest required session model or document process-local decision          |
-| M27.6   | completed   | Deploy-compatible backend updates       | Services, export/delete, rules, indexes, docs, and emulator tests cover all fields  |
-| M27.7   | completed   | Validate compatibility and deploy order | Round trips pass and rules/indexes deployment precedes field-writing client release |
+| Task ID | Status    | Description                             | Exit Criteria                                                                       |
+| ------- | --------- | --------------------------------------- | ----------------------------------------------------------------------------------- |
+| M27.1   | completed | Extend task contracts                   | Nullable links, due/schedule/all-day fields decode legacy documents and round-trip  |
+| M27.2   | completed | Expose event sourceTaskId               | Event serialization and decoding retain nullable task provenance                    |
+| M27.3   | completed | Add note pinned field                   | Missing legacy value is false; mutations and sorting preserve pinned behavior       |
+| M27.4   | completed | Confirm operational goal-step timeline  | One GoalStepRecord source is used; no parallel editable milestone tree remains      |
+| M27.5   | completed | Decide Focus persistence                | Persist smallest required session model or document process-local decision          |
+| M27.6   | completed | Deploy-compatible backend updates       | Services, export/delete, rules, indexes, docs, and emulator tests cover all fields  |
+| M27.7   | completed | Validate compatibility and deploy order | Round trips pass and rules/indexes deployment precedes field-writing client release |
 
 ### M28 - Navigation Architecture
 
-| Task ID | Status      | Description                             | Exit Criteria                                                               |
-| ------- | ----------- | --------------------------------------- | --------------------------------------------------------------------------- |
+| Task ID | Status    | Description                             | Exit Criteria                                                               |
+| ------- | --------- | --------------------------------------- | --------------------------------------------------------------------------- |
 | M28.1   | completed | Define typed navigation contracts       | Tab, stack, and modal parameter lists compile                               |
 | M28.2   | completed | Add nested native stacks                | Plan, Calendar, Notes, and Profile retain stack state where supported       |
 | M28.3   | completed | Intercept Create destination            | Create opens the global sheet and is never selected as a content tab        |
@@ -342,8 +342,8 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M29 - Plan Dashboard
 
-| Task ID | Status      | Description                    | Exit Criteria                                                                      |
-| ------- | ----------- | ------------------------------ | ---------------------------------------------------------------------------------- |
+| Task ID | Status    | Description                    | Exit Criteria                                                                      |
+| ------- | --------- | ------------------------------ | ---------------------------------------------------------------------------------- |
 | M29.1   | completed | Add Plan route and composition | Plan uses shared components and real hooks only                                    |
 | M29.2   | completed | Add contextual Plan header     | Greeting boundary and profile/overflow action are tested                           |
 | M29.3   | completed | Add today events preview       | Chronological live events are limited to three through five with More Events route |
@@ -356,8 +356,8 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 **Status:** completed
 
-| Task ID | Status      | Description                      | Exit Criteria                                                                    |
-| ------- | ----------- | -------------------------------- | -------------------------------------------------------------------------------- |
+| Task ID | Status    | Description                      | Exit Criteria                                                                    |
+| ------- | --------- | -------------------------------- | -------------------------------------------------------------------------------- |
 | M30.1   | completed | Restyle Goals List               | Current maps to persisted active and all three filters have deterministic states |
 | M30.2   | completed | Add goal list actions and states | Goal cards, Create Goal, and loading/empty/error states use shared components    |
 | M30.3   | completed | Route Goal Detail                | Tasks and Timeline tabs replace modal only after mutation parity                 |
@@ -368,8 +368,8 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M31 - Calendar
 
-| Task ID | Status      | Description                 | Exit Criteria                                                                       |
-| ------- | ----------- | --------------------------- | ----------------------------------------------------------------------------------- |
+| Task ID | Status    | Description                 | Exit Criteria                                                                       |
+| ------- | --------- | --------------------------- | ----------------------------------------------------------------------------------- |
 | M31.1   | completed | Restyle Calendar modes      | Day/month share components; week remains wide-web-only                              |
 | M31.2   | completed | Distinguish event sources   | Bearing, device, task, and milestone indicators have non-color labels               |
 | M31.3   | completed | Preserve calendar semantics | Date, recurrence, alarm, timezone, availability, location, and URL behavior remains |
@@ -380,15 +380,15 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M32 - Global Creation Flows
 
-| Task ID | Status      | Description                          | Exit Criteria                                                                     |
-| ------- | ----------- | ------------------------------------ | --------------------------------------------------------------------------------- |
-| M32.1   | not-started | Route global create choices          | Every sheet choice opens a typed modal and returns context after success          |
-| M32.2   | not-started | Rebuild goal creation steps          | SMART, definition, target, AI/manual, review, and create are separately navigable |
-| M32.3   | not-started | Preserve optional AI planning drafts | Draft survives paywall outcomes and uses current AI/premium services              |
-| M32.4   | not-started | Extend task creation                 | Optional links and progressively disclosed date/schedule/all-day fields persist   |
-| M32.5   | not-started | Optimize note creation               | Quick capture supports title, body, and source metadata                           |
-| M32.6   | not-started | Align event creation                 | Event fields and source behavior retain Calendar semantics                        |
-| M32.7   | not-started | Validate creation routes             | Unsaved changes, validation, keyboard, success, error, and cancel tests pass      |
+| Task ID | Status    | Description                          | Exit Criteria                                                                     |
+| ------- | --------- | ------------------------------------ | --------------------------------------------------------------------------------- |
+| M32.1   | completed | Route global create choices          | Every sheet choice opens a typed modal and returns context after success          |
+| M32.2   | completed | Rebuild goal creation steps          | SMART, definition, target, AI/manual, review, and create are separately navigable |
+| M32.3   | completed | Preserve optional AI planning drafts | Draft survives paywall outcomes and uses current AI/premium services              |
+| M32.4   | completed | Extend task creation                 | Optional links and progressively disclosed date/schedule/all-day fields persist   |
+| M32.5   | completed | Optimize note creation               | Quick capture supports title, body, and source metadata                           |
+| M32.6   | completed | Align event creation                 | Event fields and source behavior retain Calendar semantics                        |
+| M32.7   | completed | Validate creation routes             | Unsaved changes, validation, keyboard, success, error, and cancel tests pass      |
 
 ### M33 - Focus Mode
 

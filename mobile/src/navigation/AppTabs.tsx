@@ -12,6 +12,12 @@ import { useThemedStyles } from '../design/useThemedStyles';
 import { AppIconName } from '../design/icons';
 import { CalendarScreen } from '../screens/CalendarScreen';
 import { CalendarSourcesScreen } from '../screens/CalendarSourcesScreen';
+import {
+  CreateEventScreen,
+  CreateGoalScreen,
+  CreateNoteScreen,
+  CreateTaskScreen,
+} from '../screens/CreationScreens';
 import { GoalsScreen } from '../screens/GoalsScreen';
 import { GoalDetailScreen } from '../screens/GoalDetailScreen';
 import { NotesScreen } from '../screens/NotesScreen';
@@ -83,7 +89,8 @@ function PlanNavigator() {
       <PlanStack.Screen name="Tasks" component={TasksScreen} />
       <PlanStack.Screen name="GoalDetail" component={GoalDetailScreen} />
       <PlanStack.Screen name="FocusMode" component={NavigationPlaceholderScreen} />
-      <PlanStack.Screen name="CreateGoal" component={NavigationPlaceholderScreen} />
+      <PlanStack.Screen name="CreateGoal" component={CreateGoalScreen} />
+      <PlanStack.Screen name="CreateTask" component={CreateTaskScreen} />
     </PlanStack.Navigator>
   );
 }
@@ -94,8 +101,8 @@ function CalendarNavigator() {
       <CalendarStack.Screen name="Calendar" component={CalendarScreen} />
       <CalendarStack.Screen name="EventDetail" component={NavigationPlaceholderScreen} />
       <CalendarStack.Screen name="CalendarSources" component={CalendarSourcesScreen} />
-      <CalendarStack.Screen name="CreateEvent" component={NavigationPlaceholderScreen} />
-      <CalendarStack.Screen name="CreateTask" component={NavigationPlaceholderScreen} />
+      <CalendarStack.Screen name="CreateEvent" component={CreateEventScreen} />
+      <CalendarStack.Screen name="CreateTask" component={CreateTaskScreen} />
     </CalendarStack.Navigator>
   );
 }
@@ -104,7 +111,8 @@ function NotesNavigator() {
   return (
     <NotesStack.Navigator screenOptions={{ headerShown: false }}>
       <NotesStack.Screen name="Notes" component={NotesScreen} />
-      <NotesStack.Screen name="NoteEditor" component={NavigationPlaceholderScreen} />
+      <NotesStack.Screen name="CreateNote" component={CreateNoteScreen} />
+      <NotesStack.Screen name="NoteEditor" component={CreateNoteScreen} />
       <NotesStack.Screen name="CreateGoalFromNote" component={NavigationPlaceholderScreen} />
       <NotesStack.Screen name="CreateTaskFromNote" component={NavigationPlaceholderScreen} />
       <NotesStack.Screen name="CreateEventFromNote" component={NavigationPlaceholderScreen} />
@@ -184,13 +192,13 @@ function AppTabsNavigator({
     setCreateVisible(false);
 
     if (action === 'goal') {
-      navigation.navigate('Plan', { screen: 'Goals', params: { createGoal: true } });
+      navigation.navigate('Plan', { screen: 'CreateGoal' });
     } else if (action === 'task') {
-      navigation.navigate('Plan', { screen: 'Tasks', params: { createTask: true } });
+      navigation.navigate('Plan', { screen: 'CreateTask' });
     } else if (action === 'note') {
-      navigation.navigate('Notes', { screen: 'Notes', params: { createNote: true } });
+      navigation.navigate('Notes', { screen: 'NoteEditor' });
     } else {
-      navigation.navigate('Calendar', { screen: 'Calendar', params: { createEvent: true } });
+      navigation.navigate('Calendar', { screen: 'CreateEvent' });
     }
   }
 

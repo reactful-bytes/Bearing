@@ -17,6 +17,7 @@ export type PlanStackParamList = {
   GoalDetail: { goalId: string; initialTab?: 'tasks' | 'timeline' };
   FocusMode: { eventId: string; taskId?: string; returnTo?: string };
   CreateGoal: { sourceNoteId?: string } | undefined;
+  CreateTask: { goalId?: string; stepId?: string } | undefined;
 };
 
 export type CalendarStackParamList = {
@@ -29,6 +30,7 @@ export type CalendarStackParamList = {
 
 export type NotesStackParamList = {
   Notes: { createNote?: boolean } | undefined;
+  CreateNote: { sourceEventId?: string; sourceStepId?: string } | undefined;
   NoteEditor: { noteId?: string; sourceEventId?: string; sourceStepId?: string } | undefined;
   CreateGoalFromNote: { noteId: string };
   CreateTaskFromNote: { noteId: string };

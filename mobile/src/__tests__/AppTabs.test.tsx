@@ -5,6 +5,8 @@ import React from 'react';
 import { layout } from '../design/tokens';
 import { AppTabs, DESKTOP_NAVIGATION_WIDTH, usesDesktopNavigation } from '../navigation/AppTabs';
 
+const mockNavigate = jest.fn();
+
 jest.mock('../screens/CalendarScreen', () => ({
   CalendarScreen: () => null,
 }));
@@ -37,19 +39,60 @@ jest.mock('../screens/TasksScreen', () => ({
   TasksScreen: () => null,
 }));
 
+jest.mock('../screens/CreationScreens', () => ({
+  CreateEventScreen: () => null,
+  CreateGoalScreen: () => null,
+  CreateNoteScreen: () => null,
+  CreateTaskScreen: () => null,
+}));
+
 jest.mock('../components/presentation/CreateSheet', () => {
   const ReactModule = jest.requireActual<typeof import('react')>('react');
-  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native');
 
   return {
-    CreateSheet: ({ visible }: { visible: boolean }) =>
-      visible ? ReactModule.createElement(Text, { testID: 'create-sheet' }, 'Create') : null,
+    CreateSheet: ({
+      visible,
+      onCreateGoal,
+      onCreateTask,
+      onCreateNote,
+      onCreateEvent,
+    }: {
+      visible: boolean;
+      onCreateGoal: () => void;
+      onCreateTask: () => void;
+      onCreateNote: () => void;
+      onCreateEvent: () => void;
+    }) =>
+      visible
+        ? ReactModule.createElement(
+            ReactModule.Fragment,
+            null,
+            ReactModule.createElement(Text, { testID: 'create-sheet' }, 'Create'),
+            ReactModule.createElement(Pressable, {
+              testID: 'create-goal-action',
+              onPress: onCreateGoal,
+            }),
+            ReactModule.createElement(Pressable, {
+              testID: 'create-task-action',
+              onPress: onCreateTask,
+            }),
+            ReactModule.createElement(Pressable, {
+              testID: 'create-note-action',
+              onPress: onCreateNote,
+            }),
+            ReactModule.createElement(Pressable, {
+              testID: 'create-event-action',
+              onPress: onCreateEvent,
+            }),
+          )
+        : null,
   };
 });
 
 jest.mock('@react-navigation/native', () => ({
   NavigationContainer: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  useNavigation: jest.fn(() => ({ navigate: jest.fn() })),
+  useNavigation: jest.fn(() => ({ navigate: mockNavigate })),
 }));
 
 jest.mock('react-native-safe-area-context', () => ({
@@ -177,6 +220,29 @@ describe('AppTabs', () => {
     fireEvent.press(getByTestId('create-tab-button'));
 
     expect(getByTestId('create-sheet')).toBeTruthy();
+  });
+
+  it.each([
+    ['goal', 'create-goal-action', { screen: 'CreateGoal' }],
+    ['task', 'create-task-action', { screen: 'CreateTask' }],
+    ['note', 'create-note-action', { screen: 'NoteEditor' }],
+    ['event', 'create-event-action', { screen: 'CreateEvent' }],
+  ])('routes the global %s action to its typed screen', (_action, testID, target) => {
+    mockNavigate.mockClear();
+    const { getByTestId } = render(
+      <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
+    );
+
+    fireEvent.press(getByTestId('create-tab-button'));
+    fireEvent.press(getByTestId(testID));
+
+    const tab =
+      target.screen === 'NoteEditor'
+        ? 'Notes'
+        : target.screen === 'CreateEvent'
+          ? 'Calendar'
+          : 'Plan';
+    expect(mockNavigate).toHaveBeenCalledWith(tab, target);
   });
 
   it('reserves the Android bottom safe-area inset for the tab bar', () => {
