@@ -156,7 +156,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
     setStartNowTaskId(null);
     setSelectedTaskId(null);
     navigation.navigate('Calendar', {
-      screen: 'Calendar',
+      screen: 'CalendarHome',
       params: {
         focusLaunch: {
           token: `${conversion.eventId}-${Date.now()}`,

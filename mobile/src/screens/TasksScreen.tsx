@@ -195,7 +195,7 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
 
     setStartNowTaskId(null);
     setSelectedTaskId(null);
-    navigation.navigate('Calendar', { screen: 'Calendar', params: { focusLaunch } });
+    navigation.navigate('Calendar', { screen: 'CalendarHome', params: { focusLaunch } });
   }
 
   return (

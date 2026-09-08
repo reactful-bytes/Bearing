@@ -187,7 +187,7 @@ describe('PlanScreen', () => {
     expect(mockRootNavigate).toHaveBeenCalledWith('Calendar');
     expect(stackNavigate).toHaveBeenCalledWith('Goals');
     expect(mockRootNavigate).toHaveBeenCalledWith('Notes', {
-      screen: 'Notes',
+      screen: 'NotesHome',
       params: { createNote: true },
     });
     expect(mockRootNavigate).toHaveBeenCalledWith('Profile');

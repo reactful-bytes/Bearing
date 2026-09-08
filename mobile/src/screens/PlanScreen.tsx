@@ -30,7 +30,7 @@ const MAX_TODAY_EVENTS = 5;
 const MAX_ACTIVE_GOALS = 3;
 
 type PlanScreenProps = {
-  navigation: NavigationProp<PlanStackParamList, 'Plan'>;
+  navigation: NavigationProp<PlanStackParamList, 'PlanHome'>;
 };
 
 function getDayRange(date: Date): { start: Date; end: Date } {
@@ -151,7 +151,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
 
     if (currentEvent) {
       rootNavigation.navigate('Calendar', {
-        screen: 'Calendar',
+        screen: 'CalendarHome',
         params: { focusLaunch: toFocusLaunch(currentEvent) },
       });
       return;
@@ -218,7 +218,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
                 event={event}
                 dateTime={formatEventTime(event, locale, timeFormat)}
                 timezone={event.timezone}
-                onPress={() => rootNavigation.navigate('Calendar', { screen: 'Calendar' })}
+                onPress={() => rootNavigation.navigate('Calendar', { screen: 'CalendarHome' })}
               />
             ))
           : null}
@@ -342,7 +342,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
             variant="secondary"
             onPress={() =>
               rootNavigation.navigate('Notes', {
-                screen: 'Notes',
+                screen: 'NotesHome',
                 params: { createNote: true },
               })
             }

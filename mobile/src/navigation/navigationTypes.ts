@@ -11,7 +11,7 @@ export type CalendarFocusLaunch = {
 };
 
 export type PlanStackParamList = {
-  Plan: undefined;
+  PlanHome: undefined;
   Goals: { createGoal?: boolean } | undefined;
   Tasks: { createTask?: boolean } | undefined;
   GoalDetail: { goalId: string; initialTab?: 'tasks' | 'timeline' };
@@ -21,7 +21,7 @@ export type PlanStackParamList = {
 };
 
 export type CalendarStackParamList = {
-  Calendar: { focusLaunch?: CalendarFocusLaunch; createEvent?: boolean } | undefined;
+  CalendarHome: { focusLaunch?: CalendarFocusLaunch; createEvent?: boolean } | undefined;
   EventDetail: { eventId: string };
   CalendarSources: undefined;
   CreateEvent: { goalId?: string; stepId?: string; returnTo?: string } | undefined;
@@ -29,7 +29,7 @@ export type CalendarStackParamList = {
 };
 
 export type NotesStackParamList = {
-  Notes: { createNote?: boolean } | undefined;
+  NotesHome: { createNote?: boolean } | undefined;
   CreateNote: { sourceEventId?: string; sourceStepId?: string } | undefined;
   NoteEditor: { noteId?: string; sourceEventId?: string; sourceStepId?: string } | undefined;
   CreateGoalFromNote: { noteId: string };
@@ -38,7 +38,7 @@ export type NotesStackParamList = {
 };
 
 export type ProfileStackParamList = {
-  Profile: undefined;
+  ProfileHome: undefined;
   PersonalInformation: undefined;
   Security: undefined;
   ConnectedServices: undefined;

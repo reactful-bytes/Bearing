@@ -353,7 +353,7 @@ describe('TasksScreen', () => {
       );
       expect(completeTaskMock).not.toHaveBeenCalled();
       expect(mockNavigate).toHaveBeenCalledWith('Calendar', {
-        screen: 'Calendar',
+        screen: 'CalendarHome',
         params: {
           focusLaunch: expect.objectContaining({
             eventId: 'task-task-1',

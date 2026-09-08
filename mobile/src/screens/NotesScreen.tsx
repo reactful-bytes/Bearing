@@ -33,8 +33,8 @@ function noteSourceLabel(note: NoteRecord): string {
 }
 
 type NotesScreenProps = {
-  route?: { params?: NotesStackParamList['Notes'] };
-  navigation?: { setParams: (params: NotesStackParamList['Notes']) => void };
+  route?: { params?: NotesStackParamList['NotesHome'] };
+  navigation?: { setParams: (params: NotesStackParamList['NotesHome']) => void };
 };
 
 export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {

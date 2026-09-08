@@ -84,7 +84,7 @@ function TabIcon({
 function PlanNavigator() {
   return (
     <PlanStack.Navigator screenOptions={{ headerShown: false }}>
-      <PlanStack.Screen name="Plan" component={PlanScreen} />
+      <PlanStack.Screen name="PlanHome" component={PlanScreen} />
       <PlanStack.Screen name="Goals" component={GoalsScreen} />
       <PlanStack.Screen name="Tasks" component={TasksScreen} />
       <PlanStack.Screen name="GoalDetail" component={GoalDetailScreen} />
@@ -98,7 +98,7 @@ function PlanNavigator() {
 function CalendarNavigator() {
   return (
     <CalendarStack.Navigator screenOptions={{ headerShown: false }}>
-      <CalendarStack.Screen name="Calendar" component={CalendarScreen} />
+      <CalendarStack.Screen name="CalendarHome" component={CalendarScreen} />
       <CalendarStack.Screen name="EventDetail" component={NavigationPlaceholderScreen} />
       <CalendarStack.Screen name="CalendarSources" component={CalendarSourcesScreen} />
       <CalendarStack.Screen name="CreateEvent" component={CreateEventScreen} />
@@ -110,7 +110,7 @@ function CalendarNavigator() {
 function NotesNavigator() {
   return (
     <NotesStack.Navigator screenOptions={{ headerShown: false }}>
-      <NotesStack.Screen name="Notes" component={NotesScreen} />
+      <NotesStack.Screen name="NotesHome" component={NotesScreen} />
       <NotesStack.Screen name="CreateNote" component={CreateNoteScreen} />
       <NotesStack.Screen name="NoteEditor" component={CreateNoteScreen} />
       <NotesStack.Screen name="CreateGoalFromNote" component={NavigationPlaceholderScreen} />
@@ -123,7 +123,7 @@ function NotesNavigator() {
 function ProfileNavigator({ onPressSignOut, isSignOutPending }: AppTabsProps) {
   return (
     <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
-      <ProfileStack.Screen name="Profile">
+      <ProfileStack.Screen name="ProfileHome">
         {() => (
           <ProfileScreen onPressSignOut={onPressSignOut} isSignOutPending={isSignOutPending} />
         )}
