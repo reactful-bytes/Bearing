@@ -31,7 +31,7 @@ const config: ExpoConfig = {
       'expo-splash-screen',
       {
         backgroundColor: '#0B162E',
-        image: './assets/launch-mark.png',
+        image: './assets/launch-mark-white.png',
         imageWidth: 220,
         resizeMode: 'contain',
       },

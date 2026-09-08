@@ -24,6 +24,16 @@ import { signOutCurrentUser } from './src/services/firebase/firebaseAuthActions'
 import { ThemeProvider, useTheme } from './src/design/ThemeProvider';
 import { useThemedStyles } from './src/design/useThemedStyles';
 
+const topographicBackgrounds = {
+  dark: require('./assets/topographic-dark.png'),
+  light: require('./assets/topographic-light.png'),
+} as const;
+
+const bearingMarks = {
+  dark: require('./assets/launch-mark-white.png'),
+  light: require('./assets/launch-mark-blue.png'),
+} as const;
+
 function AppContent() {
   const { status, user, error, retry } = useAuthBootstrap();
   const { preference, isHydrated } = useTheme();
@@ -104,7 +114,7 @@ function AppContent() {
       <Image
         accessibilityElementsHidden
         resizeMode="cover"
-        source={require('./assets/topography.png')}
+        source={topographicBackgrounds[preference]}
         style={styles.authBackdrop}
       />
       <KeyboardAvoidingView
@@ -141,6 +151,7 @@ function AppContent() {
 }
 
 function StartupOverlay() {
+  const { preference } = useTheme();
   const styles = useThemedStyles(createStyles);
 
   return (
@@ -148,12 +159,12 @@ function StartupOverlay() {
       <Image
         accessibilityElementsHidden
         resizeMode="cover"
-        source={require('./assets/topography.png')}
+        source={topographicBackgrounds[preference]}
         style={styles.startupBackdrop}
       />
       <Image
         accessibilityLabel="Bearing logo"
-        source={require('./assets/launch-mark.png')}
+        source={bearingMarks[preference]}
         style={styles.startupLogo}
       />
       <ActivityIndicator accessibilityLabel="Loading" color={styles.startupSpinner.color} />

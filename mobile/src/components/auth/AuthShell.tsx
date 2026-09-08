@@ -5,6 +5,12 @@ import { ReactNode } from 'react';
 
 import { spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
+import { useTheme } from '../../design/ThemeProvider';
+
+const bearingMarks = {
+  dark: require('../../../assets/launch-mark-white.png'),
+  light: require('../../../assets/launch-mark-blue.png'),
+} as const;
 
 type AuthShellProps = {
   heading: string;
@@ -13,6 +19,7 @@ type AuthShellProps = {
 };
 
 export function AuthShell({ heading, description, children }: AuthShellProps) {
+  const { preference } = useTheme();
   const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.shell}>
@@ -20,7 +27,7 @@ export function AuthShell({ heading, description, children }: AuthShellProps) {
         <View style={styles.brandRow}>
           <Image
             accessibilityLabel="Bearing logo"
-            source={require('../../../assets/launch-mark.png')}
+            source={bearingMarks[preference]}
             style={styles.logo}
           />
           <View style={styles.brandCopy}>
