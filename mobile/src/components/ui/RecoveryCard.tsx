@@ -1,4 +1,4 @@
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { spacing, typography } from '../../design/tokens';
@@ -15,11 +15,13 @@ type RecoveryCardProps = {
 export function RecoveryCard({ title, description, onRetry }: RecoveryCardProps) {
   const styles = useThemedStyles(createStyles);
   return (
-    <AppCard style={styles.card}>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.description}>{description}</Text>
-      <AppButton label="Try Again" variant="secondary" onPress={onRetry} />
-    </AppCard>
+    <View testID="recovery-card" accessibilityRole="alert" accessibilityLiveRegion="polite">
+      <AppCard style={styles.card}>
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.description}>{description}</Text>
+        <AppButton label="Try Again" variant="secondary" onPress={onRetry} />
+      </AppCard>
+    </View>
   );
 }
 

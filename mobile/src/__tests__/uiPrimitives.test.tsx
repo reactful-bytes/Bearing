@@ -7,6 +7,7 @@ import { AppModal } from '../components/ui/AppModal';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { FormField } from '../components/ui/FormField';
 import { ListItem } from '../components/ui/ListItem';
+import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { SectionHeading } from '../components/ui/SectionHeading';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
@@ -117,6 +118,24 @@ describe('UI primitives', () => {
       expect.objectContaining({ disabled: true, busy: true }),
     );
     expect(screen.getByText('Deleting...')).toBeTruthy();
+  });
+
+  it('announces recovery content as a polite alert', () => {
+    render(
+      <RecoveryCard
+        title="Unable to load goals."
+        description="Check your connection, then retry."
+        onRetry={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId('recovery-card').props).toEqual(
+      expect.objectContaining({
+        accessibilityRole: 'alert',
+        accessibilityLiveRegion: 'polite',
+      }),
+    );
+    expect(screen.getByText('Unable to load goals.')).toBeTruthy();
   });
 
   it('associates field helper and error copy with the input', () => {

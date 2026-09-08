@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { CalendarDisplayEvent } from '../features/calendar/calendarTypes';
 import { GoalWithSteps } from '../features/goals/goalTypes';
@@ -157,7 +157,12 @@ function mockReadyState(events: CalendarDisplayEvent[] = [makeEvent(1)]): void {
 describe('PlanScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useFakeTimers({ now: new Date(2026, 8, 7, 10, 0, 0) });
     mockReadyState();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('composes the live daily command center and limits today events to five', () => {

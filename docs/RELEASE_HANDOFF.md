@@ -115,6 +115,23 @@ npm run quality
 
 Attach command logs, commit SHA, dependency lock hashes, Node/npm versions, and any approved exception.
 
+## M36 UI V2 Validation Evidence
+
+As of 2026-09-08, the automated M36 checks pass for 63 mobile Jest suites (438 tests), mobile
+typecheck, lint, touched-file formatting, Firestore rules (16 tests), Expo web export, public Expo
+configuration, and Functions quality. The repository-wide mobile format check still reports the
+pre-existing `src/design/icons.ts` baseline, and Expo Doctor reports patch-level SDK dependency
+drift. Responsive screenshots across both themes, native builds, physical-device checks, and store
+handoff remain owner-operated manual gates.
+
+The implementation follows the accessibility and responsive refinement guidance in
+`docs/UX_V2_FLOW_MAP_AND_SPEC.md` and the approved references in `docs/mockups/`. Delivery commits
+use the documented subject format from `docs/COMMIT_CONVENTIONS.md`:
+
+```text
+type(scope): imperative message
+```
+
 ## Store Metadata Source
 
 | Field                      | Candidate copy or action                                                                                |

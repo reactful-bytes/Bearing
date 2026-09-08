@@ -392,21 +392,21 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M33 - Focus Mode
 
-| Task ID | Status      | Description                          | Exit Criteria                                                             |
-| ------- | ----------- | ------------------------------------ | ------------------------------------------------------------------------- |
+| Task ID | Status    | Description                          | Exit Criteria                                                                         |
+| ------- | --------- | ------------------------------------ | ------------------------------------------------------------------------------------- |
 | M33.1   | completed | Extract Focus behavior to route      | Plan-owned route retains tested timer, Idea Dump, hold exit, audio, and DND semantics |
-| M33.2   | completed | Add contextual Focus start state     | Typed event/task context and planned end appear before Start                  |
-| M33.3   | completed | Build active Focus hierarchy         | Countdown, end time, Idea Dump, utilities, and truthful distraction state render |
-| M33.4   | completed | Remove bypass controls               | Back, gesture, and modal dismissal cannot bypass hold-to-exit while active    |
-| M33.5   | completed | Save Idea Dump in place              | In-place note save, Saved confirmation, clear behavior, and count are covered |
-| M33.6   | completed | Add details and supported settings   | Session Details and supported Focus Settings are labeled and truthful         |
-| M33.7   | completed | Implement hold-only exit and summary | Interrupted/released holds cancel; completion renders a summary before return |
-| M33.8   | completed | Validate Focus                       | 62 suites/432 tests, typecheck, lint, format, and diff checks pass             |
+| M33.2   | completed | Add contextual Focus start state     | Typed event/task context and planned end appear before Start                          |
+| M33.3   | completed | Build active Focus hierarchy         | Countdown, end time, Idea Dump, utilities, and truthful distraction state render      |
+| M33.4   | completed | Remove bypass controls               | Back, gesture, and modal dismissal cannot bypass hold-to-exit while active            |
+| M33.5   | completed | Save Idea Dump in place              | In-place note save, Saved confirmation, clear behavior, and count are covered         |
+| M33.6   | completed | Add details and supported settings   | Session Details and supported Focus Settings are labeled and truthful                 |
+| M33.7   | completed | Implement hold-only exit and summary | Interrupted/released holds cancel; completion renders a summary before return         |
+| M33.8   | completed | Validate Focus                       | 62 suites/432 tests, typecheck, lint, format, and diff checks pass                    |
 
 ### M34 - Notes
 
-| Task ID | Status      | Description                     | Exit Criteria                                                                     |
-| ------- | ----------- | ------------------------------- | --------------------------------------------------------------------------------- |
+| Task ID | Status    | Description                     | Exit Criteria                                                                     |
+| ------- | --------- | ------------------------------- | --------------------------------------------------------------------------------- |
 | M34.1   | completed | Restyle Notes List              | Search/filter controls and compact NoteCard layout work                           |
 | M34.2   | completed | Define note section ordering    | Pinned, Recent, and All membership avoids unintended duplicates                   |
 | M34.3   | completed | Route Note Editor               | Create, update, archive, and delete parity replaces detail modal                  |
@@ -416,25 +416,25 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M35 - Profile and Settings
 
-| Task ID | Status      | Description                             | Exit Criteria                                                                      |
-| ------- | ----------- | --------------------------------------- | ---------------------------------------------------------------------------------- |
-| M35.1   | completed | Recompose Profile groups                | Account, services, preferences, billing, legal, and actions use shared primitives  |
-| M35.2   | completed | Route profile subsections               | Typed routes render focused sections while status remains visible                   |
-| M35.3   | completed | Preserve all profile behavior           | Account, calendar, purchase, credits, privacy, legal, and logout remain reachable  |
-| M35.4   | completed | Wire appearance preference              | ThemeProvider is the only appearance state and persists the selected preference      |
+| Task ID | Status    | Description                             | Exit Criteria                                                                         |
+| ------- | --------- | --------------------------------------- | ------------------------------------------------------------------------------------- |
+| M35.1   | completed | Recompose Profile groups                | Account, services, preferences, billing, legal, and actions use shared primitives     |
+| M35.2   | completed | Route profile subsections               | Typed routes render focused sections while status remains visible                     |
+| M35.3   | completed | Preserve all profile behavior           | Account, calendar, purchase, credits, privacy, legal, and logout remain reachable     |
+| M35.4   | completed | Wire appearance preference              | ThemeProvider is the only appearance state and persists the selected preference       |
 | M35.5   | completed | Add truthful status and danger handling | Connection/subscription status and destructive actions remain accurate and restrained |
-| M35.6   | completed | Validate Profile                        | Navigation, persistence, status, errors, and responsive tests pass                 |
+| M35.6   | completed | Validate Profile                        | Navigation, persistence, status, errors, and responsive tests pass                    |
 
 ### M36 - Responsive, Accessibility, and Release Polish
 
-| Task ID | Status      | Description                       | Exit Criteria                                                                                         |
-| ------- | ----------- | --------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| M36.1   | not-started | Audit required UI states          | Redesigned screens cover loading, empty, error, offline, permission, disabled, and destructive states |
-| M36.2   | not-started | Complete accessibility audit      | Dynamic Type, targets, names, focus, live regions, keyboard, motion, and contrast pass                |
-| M36.3   | not-started | Complete responsive visual review | Both themes are reviewed on phones, tablet, and wide web                                              |
-| M36.4   | not-started | Profile expensive rendering       | List/timeline jank is measured and only demonstrated regressions are fixed                            |
-| M36.5   | not-started | Run complete release quality gate | Mobile tests, typecheck, lint, format, rules, web export, and representative native builds pass       |
-| M36.6   | not-started | Reconcile release documents       | Model, deployment, release, and platform-limit documentation is current                               |
+| Task ID | Status          | Description                       | Exit Criteria                                                                                                                                              |
+| ------- | --------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M36.1   | completed       | Audit required UI states          | Loading, empty, error, permission, unavailable, disabled, and destructive states are covered                                                               |
+| M36.2   | completed       | Complete accessibility audit      | Shared controls expose targets, names, states, form errors, modal actions, and polite recovery alerts                                                      |
+| M36.3   | manual-handoff  | Complete responsive visual review | Web export and existing responsive coverage pass; owner review remains for both themes and devices                                                         |
+| M36.4   | manual-handoff  | Profile expensive rendering       | No demonstrated Profile/list/timeline jank; native/web profiling remains owner-operated                                                                    |
+| M36.5   | passed-with-gap | Run complete release quality gate | 63 suites/438 tests, typecheck, lint, rules, web export, Expo config, and Functions quality pass; package drift, format baseline, and native builds remain |
+| M36.6   | completed       | Reconcile release documents       | Release handoff records automated evidence, manual gates, mockup/spec references, and commit style                                                         |
 
 ## Dependency Order Summary
 
