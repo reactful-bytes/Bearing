@@ -304,18 +304,18 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M26 - Authentication and Splash
 
-**Status:** in-progress
+**Status:** in-progress (manual native validation remains)
 
-| Task ID | Status      | Description                                  | Exit Criteria                                                                              |
-| ------- | ----------- | -------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| M26.1   | not-started | Audit and export launch artwork              | Transparent launch mark uses sharp approved source, not a square or grid crop              |
-| M26.2   | not-started | Configure deterministic native splash        | Dark background and transparent mark are configured in Expo and native rebuild is recorded |
-| M26.3   | not-started | Match React bootstrap frame                  | Loading and startup-error surfaces match splash background, mark, and status bar           |
-| M26.4   | not-started | Recompose responsive auth shell              | Shared screen, tokens, safe areas, keyboard, and constrained web layout work               |
-| M26.5   | not-started | Restyle all auth states                      | Sign-in, registration, reset, conflict, loading, and retry retain current Firebase actions |
-| M26.6   | not-started | Replace handmade Google mark                 | Official unmodified Google mark or compliant provider button passes platform checks        |
-| M26.7   | not-started | Add password visibility and feedback styling | FormField trailing action and accessible validation/busy feedback work                     |
-| M26.8   | not-started | Validate auth and splash                     | Focused auth tests, web check, and iOS/Android cold/warm-start evidence pass               |
+| Task ID | Status          | Description                                  | Exit Criteria                                                                                 |
+| ------- | --------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| M26.1   | completed       | Audit and export launch artwork              | Transparent launch mark uses sharp approved source, not a square or grid crop               |
+| M26.2   | completed       | Configure deterministic native splash        | Dark background and transparent mark are configured in Expo and native rebuild is recorded  |
+| M26.3   | completed       | Match React bootstrap frame                  | Loading and startup-error surfaces match splash background, mark, and status bar            |
+| M26.4   | completed       | Recompose responsive auth shell              | Shared screen, tokens, safe areas, keyboard, and constrained web layout work               |
+| M26.5   | completed       | Restyle all auth states                      | Sign-in, registration, reset, conflict, loading, and retry retain current Firebase actions |
+| M26.6   | completed       | Replace handmade Google mark                 | Official unmodified Google mark or compliant provider button passes platform checks         |
+| M26.7   | completed       | Add password visibility and feedback styling | FormField trailing action and accessible validation/busy feedback work                      |
+| M26.8   | manual-handoff | Validate auth and splash                     | Repository checks pass; signed iOS/Android cold/warm-start evidence remains                 |
 
 ### M27 - Data Contracts and Persistence
 

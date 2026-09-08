@@ -7,6 +7,37 @@ calendar, premium, privacy, telemetry, and Focus behavior. The supplied design
 references are visual input only; production screens must use live hook data and
 existing persistence services.
 
+## Phase 1-9 Plan Reconciliation
+
+The completed phase records map to the architecture plan as follows:
+
+- Phase 1 / M22, Theme and Icon Infrastructure: completed. The implemented icon system uses
+   `react-native-svg`, supplied Bearing PNG assets, and the semantic `AppIcon` registry. The plan's
+   earlier `@expo/vector-icons` and MaterialIcons direction was not adopted; do not reintroduce it
+   without a new architecture decision.
+- Phase 2 / M23, Shared UI Primitives: completed. `AppScreen`, `AppHeader`, `SectionHeader`,
+   `Card`, `ProgressBar`, `EmptyState`, `BottomSheet`, and compatibility wrappers are implemented
+   and tested.
+- Phase 3 / M24, Reusable Domain Presentation: completed. Goal, event, navigation, and create
+   presentation are consolidated into domain modules where that preserves the callback-only and
+   data-source-agnostic contracts; a one-file-per-prompt-component layout is not required.
+- Phase 4 / M25, Foundation Validation: completed. Automated gates and the two-theme foundation
+   gallery review passed; native-device evidence remains an explicit manual handoff where recorded.
+- Phase 5 / M26, Authentication and Splash: M26.1-M26.7 completed; M26.8 remains
+   `manual-handoff` for signed iOS/Android cold and warm starts and native Google rendering.
+- Phase 6 / M27, Data Contracts and Persistence: completed, including legacy-safe decoding,
+   rules/index compatibility, export/delete coverage, and the process-local Focus decision.
+- Phase 7 / M28, Navigation Architecture: completed as an architecture boundary. Typed placeholder
+   routes intentionally remain for later feature milestones; their registration is not feature parity.
+- Phase 8 / M29, Plan Dashboard: completed with live hook data, state coverage, typed routes, and
+   process-local Focus integration.
+- Phase 9 / M30, Goals and Tasks: completed with routed Goal Detail, linked task mutations,
+   operational timeline rendering, standalone task access, and focused/full validation.
+
+The post-M30 visual alignment commits refine shared presentation surfaces but do not close M31-M35.
+Calendar, routed creation, full Focus Mode, Note Editor, and Profile subsection work remain governed
+by their later milestones.
+
 ## Status and Update Protocol
 
 1. Before implementation, set one leaf ticket to `in-progress` in this file.
