@@ -3,7 +3,7 @@ import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import type { Theme } from '../../design/tokens';
 import { useThemedStyles } from '../../design/useThemedStyles';
 
-export type ProgressBarAccent = 'brand' | 'success' | 'warning' | 'danger';
+export type ProgressBarAccent = 'brand' | 'success' | 'warning' | 'danger' | 'neutral';
 
 export type ProgressBarProps = {
   value: number;
@@ -11,6 +11,7 @@ export type ProgressBarProps = {
   accent?: ProgressBarAccent;
   showPercentage?: boolean;
   accessibilityLabel?: string;
+  accessibilityValueText?: string;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 };
@@ -21,6 +22,7 @@ export function ProgressBar({
   accent = 'brand',
   showPercentage = false,
   accessibilityLabel = 'Progress',
+  accessibilityValueText,
   style,
   testID,
 }: ProgressBarProps) {
@@ -35,7 +37,12 @@ export function ProgressBar({
         testID={testID}
         accessibilityRole="progressbar"
         accessibilityLabel={accessibilityLabel}
-        accessibilityValue={{ min: 0, max: safeMax, now: clampedValue, text: `${percentage}%` }}
+        accessibilityValue={{
+          min: 0,
+          max: safeMax,
+          now: clampedValue,
+          text: accessibilityValueText ?? `${percentage}%`,
+        }}
         style={styles.track}
       >
         <View
@@ -71,6 +78,7 @@ const createStyles = (theme: Theme) =>
     success: { backgroundColor: theme.colors.success },
     warning: { backgroundColor: theme.colors.warning },
     danger: { backgroundColor: theme.colors.danger },
+    neutral: { backgroundColor: theme.colors.textSecondary },
     percentage: {
       ...theme.typography.helper,
       color: theme.colors.textSecondary,

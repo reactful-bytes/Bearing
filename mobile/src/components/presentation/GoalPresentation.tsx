@@ -7,7 +7,7 @@ import { Card } from '../ui/Card';
 import { ProgressBar } from '../ui/ProgressBar';
 import { SegmentedControl, SegmentedControlOption } from '../ui/SegmentedControl';
 
-export type GoalFilter = 'active' | 'completed' | 'all';
+export type GoalFilter = 'active' | 'completed' | 'archived' | 'all';
 
 export function getGoalProgressPercent(
   goal: Pick<GoalWithSteps, 'status' | 'completedStepCount' | 'totalStepCount'>,
@@ -27,7 +27,20 @@ export function GoalCard({ goal, formatDate, onPress }: GoalCardProps) {
   const styles = useThemedStyles(createStyles);
   const progressPercent = getGoalProgressPercent(goal);
   const nextStep =
-    goal.nextStep?.title ?? (goal.status === 'completed' ? 'Completed' : 'Add a step');
+    goal.nextStep?.title ??
+    (goal.status === 'completed'
+      ? 'Completed'
+      : goal.status === 'archived'
+        ? 'Archived'
+        : 'Add a step');
+  const statusStyle =
+    goal.status === 'completed'
+      ? styles.completed
+      : goal.status === 'archived'
+        ? styles.archived
+        : styles.active;
+  const statusLabel =
+    goal.status === 'active' ? 'Current' : `${goal.status[0].toUpperCase()}${goal.status.slice(1)}`;
 
   return (
     <Card accessibilityLabel={`Open goal ${goal.title}`} onPress={onPress} style={styles.card}>
@@ -35,9 +48,7 @@ export function GoalCard({ goal, formatDate, onPress }: GoalCardProps) {
         <Text numberOfLines={2} style={styles.title}>
           {goal.title}
         </Text>
-        <Text style={goal.status === 'completed' ? styles.completed : styles.active}>
-          {goal.status === 'completed' ? 'Completed' : 'Active'}
-        </Text>
+        <Text style={statusStyle}>{statusLabel}</Text>
       </View>
       <Text style={styles.meta}>Target: {formatDate(goal.estimatedCompletionDate)}</Text>
       <Text numberOfLines={1} style={styles.nextStep}>
@@ -48,7 +59,10 @@ export function GoalCard({ goal, formatDate, onPress }: GoalCardProps) {
         accessibilityLabel={`Goal progress ${goal.title}`}
         value={progressPercent}
         max={100}
-        accent={goal.status === 'completed' ? 'success' : 'brand'}
+        accent={
+          goal.status === 'completed' ? 'success' : goal.status === 'archived' ? 'neutral' : 'brand'
+        }
+        accessibilityValueText={goal.progressText}
         showPercentage
       />
     </Card>
@@ -59,12 +73,18 @@ type GoalStatusTabsProps = {
   value: GoalFilter;
   options: readonly SegmentedControlOption<GoalFilter>[];
   onChange: (value: GoalFilter) => void;
+  accessibilityLabel?: string;
 };
 
-export function GoalStatusTabs({ value, options, onChange }: GoalStatusTabsProps) {
+export function GoalStatusTabs({
+  value,
+  options,
+  onChange,
+  accessibilityLabel = 'Goal filter',
+}: GoalStatusTabsProps) {
   return (
     <SegmentedControl
-      accessibilityLabel="Goal filter"
+      accessibilityLabel={accessibilityLabel}
       options={options}
       value={value}
       onChange={onChange}
@@ -75,9 +95,10 @@ export function GoalStatusTabs({ value, options, onChange }: GoalStatusTabsProps
 type GoalTimelineProps = {
   steps: readonly GoalStepRecord[];
   onPressStep?: (step: GoalStepRecord) => void;
+  taskCountsByStepId?: Readonly<Record<string, number>>;
 };
 
-export function GoalTimeline({ steps, onPressStep }: GoalTimelineProps) {
+export function GoalTimeline({ steps, onPressStep, taskCountsByStepId = {} }: GoalTimelineProps) {
   const styles = useThemedStyles(createStyles);
 
   return (
@@ -103,6 +124,9 @@ export function GoalTimeline({ steps, onPressStep }: GoalTimelineProps) {
             <Text style={styles.timelineTitle}>{step.title}</Text>
             <Text style={styles.meta}>
               {step.status === 'completed' ? 'Completed' : 'Upcoming'}
+              {taskCountsByStepId[step.id]
+                ? ` · ${taskCountsByStepId[step.id]} task${taskCountsByStepId[step.id] === 1 ? '' : 's'}`
+                : ''}
             </Text>
           </View>
         </Pressable>
@@ -137,6 +161,7 @@ const createStyles = (theme: Theme) =>
     title: { ...theme.typography.cardTitle, color: theme.colors.text, flex: 1 },
     active: { ...theme.typography.caption, color: theme.colors.brand },
     completed: { ...theme.typography.caption, color: theme.colors.success },
+    archived: { ...theme.typography.caption, color: theme.colors.textSecondary },
     meta: { ...theme.typography.caption, color: theme.colors.textSecondary },
     nextStep: { ...theme.typography.helper, color: theme.colors.text },
     timeline: { gap: theme.spacing.sm },

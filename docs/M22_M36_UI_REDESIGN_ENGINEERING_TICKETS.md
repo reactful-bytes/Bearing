@@ -126,15 +126,17 @@ auth, navigation, or feature-screen redesign begins before it passes.
 
 ## M30 - Goals and Tasks
 
+**Status:** completed
+
 | Ticket | Status      | Deliverable                      | Acceptance                                                                       |
 | ------ | ----------- | -------------------------------- | -------------------------------------------------------------------------------- |
-| M30.1  | not-started | Restyle Goals List               | Current maps to persisted active and all three filters have deterministic states |
-| M30.2  | not-started | Add goal list actions and states | Goal cards, Create Goal, and loading/empty/error states use shared components    |
-| M30.3  | not-started | Route Goal Detail                | Tasks and Timeline tabs replace modal only after mutation parity                 |
-| M30.4  | not-started | Link tasks to goals and steps    | Next Up/task lists support all required mutations and display context            |
-| M30.5  | not-started | Render operational timeline      | Ordered steps show state and linked tasks without duplicate milestone data       |
-| M30.6  | not-started | Preserve standalone task access  | Plan and Create can open unlinked task flows                                     |
-| M30.7  | not-started | Validate goals and tasks         | Filters, mutations, ordering, and navigation tests pass                          |
+| M30.1  | completed | Restyle Goals List               | Current maps to persisted active and all three filters have deterministic states |
+| M30.2  | completed | Add goal list actions and states | Goal cards, Create Goal, and loading/empty/error states use shared components    |
+| M30.3  | completed | Route Goal Detail                | Tasks and Timeline tabs replace modal only after mutation parity                 |
+| M30.4  | completed | Link tasks to goals and steps    | Next Up/task lists support all required mutations and display context            |
+| M30.5  | completed | Render operational timeline      | Ordered steps show state and linked tasks without duplicate milestone data       |
+| M30.6  | completed | Preserve standalone task access  | Plan and Create can open unlinked task flows                                     |
+| M30.7  | completed | Validate goals and tasks         | Filters, mutations, ordering, and navigation tests pass                          |
 
 ## M31 - Calendar
 
@@ -233,3 +235,4 @@ auth, navigation, or feature-screen redesign begins before it passes.
 | 2026-09-06 | M27.6-M27.7         | passed         | `npm run test:rules` (16 emulator tests); full mobile Jest (57 suites, 410 tests); mobile typecheck; touched-slice lint (0 errors, 2 pre-existing `FoundationGallery.tsx` warnings); Functions build/tests and format check; existing privacy/export/deletion collection coverage and ownership rules remain compatible. Deployment handoff: deploy `firestore.rules` and `firestore.indexes.json` before releasing clients that write the additive fields; no speculative index was added because no new query requires one. |
 | 2026-09-07 | M28.1-M28.6         | passed         | `npm run typecheck`; full mobile Jest (57 suites, 411 tests); focused AppTabs, CalendarNavigation, GoalsScreen, TasksScreen, NotesScreen, and CalendarScreen suites; `npm run lint` (0 errors, 2 pre-existing `FoundationGallery.tsx` warnings). Nested Plan, Calendar, Notes, and Profile native stacks, typed detail/settings/Focus params, Create-sheet interception, responsive rail behavior, and legacy Focus/modal flows are covered. |
 | 2026-09-07 | M29.1-M29.7         | passed         | Plan uses live profile, calendar, goals, and notes hooks; chronological five-event preview, contextual and active process-local Focus states, goal preview, Idea Dump count, recovery states, and typed routes are covered by `src/__tests__/PlanScreen.test.tsx`. Focus overlay timer/DND suites remain green. Full mobile Jest (58 suites, 416 tests), `npm run typecheck`, `npm run lint`, targeted Prettier check, and `git diff --check` pass. Focus remains process-local per M27.5; the dashboard reads the active session while the app is running and does not promise restart restoration. |
+| 2026-09-07 | M30.1-M30.7         | passed         | `npm --prefix mobile test -- --runInBand` (59 suites, 420 tests); `npm --prefix mobile run typecheck`; `npm --prefix mobile run lint`; focused Goal Detail, Goals, Tasks, Plan, and presentation suites (30 tests). Current maps to persisted `active`, Completed and Archived are deterministic, Goal Detail owns Tasks/Timeline tabs, linked task mutations preserve `goalId`/`stepId`, operational steps remain the timeline source, and Plan/Create retain standalone task entry points. Implementation follows `docs/UX_V2_FLOW_MAP_AND_SPEC.md` Goals List and Goal Detail sections plus the supplied references in `docs/mockups/`. |

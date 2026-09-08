@@ -12,6 +12,7 @@ import { useThemedStyles } from '../design/useThemedStyles';
 import { AppIconName } from '../design/icons';
 import { CalendarScreen } from '../screens/CalendarScreen';
 import { GoalsScreen } from '../screens/GoalsScreen';
+import { GoalDetailScreen } from '../screens/GoalDetailScreen';
 import { NotesScreen } from '../screens/NotesScreen';
 import { PlanScreen } from '../screens/PlanScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
@@ -79,7 +80,7 @@ function PlanNavigator() {
       <PlanStack.Screen name="Plan" component={PlanScreen} />
       <PlanStack.Screen name="Goals" component={GoalsScreen} />
       <PlanStack.Screen name="Tasks" component={TasksScreen} />
-      <PlanStack.Screen name="GoalDetail" component={NavigationPlaceholderScreen} />
+      <PlanStack.Screen name="GoalDetail" component={GoalDetailScreen} />
       <PlanStack.Screen name="FocusMode" component={NavigationPlaceholderScreen} />
       <PlanStack.Screen name="CreateGoal" component={NavigationPlaceholderScreen} />
     </PlanStack.Navigator>

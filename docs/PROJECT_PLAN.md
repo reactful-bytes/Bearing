@@ -474,15 +474,17 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 ### M30 - Goals and Tasks
 
+**Status:** completed
+
 | Task ID | Status      | Description                      | Notes                                                                         |
 | ------- | ----------- | -------------------------------- | ----------------------------------------------------------------------------- |
-| M30.1   | not-started | Restyle Goals List               | Map Current to existing persisted `active` status                             |
-| M30.2   | not-started | Add goal list actions and states | Use GoalCard plus Create Goal and explicit loading/empty/error states         |
-| M30.3   | not-started | Route Goal Detail                | Replace modal only after task/timeline and mutation parity exists             |
-| M30.4   | not-started | Link tasks to goals and steps    | Support toggle, edit, delete, due/schedule, and optional step context         |
-| M30.5   | not-started | Render operational timeline      | Use ordered operational steps with linked tasks; no duplicate milestone model |
-| M30.6   | not-started | Preserve standalone task access  | Keep unlinked task access from Plan and Create                                |
-| M30.7   | not-started | Validate goals and tasks         | Cover filters, mutations, ordering, and navigation                            |
+| M30.1   | completed | Restyle Goals List               | Map Current to existing persisted `active` status                             |
+| M30.2   | completed | Add goal list actions and states | Use GoalCard plus Create Goal and explicit loading/empty/error states         |
+| M30.3   | completed | Route Goal Detail                | Replace modal only after task/timeline and mutation parity exists             |
+| M30.4   | completed | Link tasks to goals and steps    | Support toggle, edit, delete, due/schedule, and optional step context         |
+| M30.5   | completed | Render operational timeline      | Use ordered operational steps with linked tasks; no duplicate milestone model |
+| M30.6   | completed | Preserve standalone task access  | Keep unlinked task access from Plan and Create                                |
+| M30.7   | completed | Validate goals and tasks         | Cover filters, mutations, ordering, and navigation                            |
 
 ### M31 - Calendar
 

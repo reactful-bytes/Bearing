@@ -297,6 +297,28 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
           : null}
       </PlanSection>
 
+      <PlanSection title="Tasks">
+        <AppCard style={styles.taskAccessCard}>
+          <View style={styles.taskAccessCopy}>
+            <Text style={styles.cardTitle}>Unscheduled work</Text>
+            <Text style={styles.cardDescription}>
+              Keep standalone tasks visible until they have a place on the calendar or a goal.
+            </Text>
+          </View>
+          <View style={styles.taskAccessActions}>
+            <AppButton
+              label="Open tasks"
+              variant="secondary"
+              onPress={() => navigation.navigate('Tasks')}
+            />
+            <AppButton
+              label="New task"
+              onPress={() => navigation.navigate('Tasks', { createTask: true })}
+            />
+          </View>
+        </AppCard>
+      </PlanSection>
+
       <PlanSection title="Idea Dump">
         <AppCard style={styles.ideaCard}>
           <AppIcon name="note" size={28} decorative />
@@ -370,6 +392,9 @@ const createStyles = (theme: Theme) =>
     focusCopy: { gap: theme.spacing.xs },
     ideaCard: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
     ideaCopy: { flex: 1, gap: theme.spacing.xs },
+    taskAccessCard: { gap: theme.spacing.md },
+    taskAccessCopy: { gap: theme.spacing.xs },
+    taskAccessActions: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
     cardTitle: { ...theme.typography.cardTitle, color: theme.colors.text },
     cardDescription: { ...theme.typography.body, color: theme.colors.textSecondary },
     stateTitle: { ...theme.typography.cardTitle, color: theme.colors.text },

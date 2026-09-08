@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Text } from 'react-native';
 
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
@@ -9,9 +10,19 @@ type AddTaskModalProps = {
   visible: boolean;
   onClose: () => void;
   onSave: (input: CreateTaskInput) => Promise<void>;
+  initialGoalId?: string | null;
+  initialStepId?: string | null;
+  contextLabel?: string;
 };
 
-export function AddTaskModal({ visible, onClose, onSave }: AddTaskModalProps) {
+export function AddTaskModal({
+  visible,
+  onClose,
+  onSave,
+  initialGoalId = null,
+  initialStepId = null,
+  contextLabel,
+}: AddTaskModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +54,8 @@ export function AddTaskModal({ visible, onClose, onSave }: AddTaskModalProps) {
       await onSave({
         title: trimmedTitle,
         description: description.trim(),
+        ...(initialGoalId ? { goalId: initialGoalId } : {}),
+        ...(initialStepId ? { stepId: initialStepId } : {}),
       });
       handleClose();
     } catch {
@@ -71,6 +84,8 @@ export function AddTaskModal({ visible, onClose, onSave }: AddTaskModalProps) {
         onChangeText={setDescription}
         multiline
       />
+
+      {contextLabel ? <Text accessibilityLabel="Task context">{contextLabel}</Text> : null}
 
       <AppButton
         label="Save Task"

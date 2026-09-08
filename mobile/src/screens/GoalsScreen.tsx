@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useThemedStyles } from '../design/useThemedStyles';
 import { AddEventModal } from '../components/calendar/AddEventModal';
@@ -8,10 +8,11 @@ import { CreateGoalModal } from '../components/goals/CreateGoalModal';
 import { GoalDetailsModal } from '../components/goals/GoalDetailsModal';
 import { StepDetailModal } from '../components/goals/StepDetailModal';
 import { PremiumPaywallModal } from '../components/premium/PremiumPaywallModal';
+import { GoalCard, GoalStatusTabs } from '../components/presentation/GoalPresentation';
+import type { GoalFilter } from '../components/presentation/GoalPresentation';
 import { AppCard } from '../components/ui/AppCard';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
-import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { layout, radii, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
@@ -34,8 +35,6 @@ import {
   getAiCreditStatus,
 } from '../services/firebase/firebaseAiGoalPlans';
 
-type GoalFilter = 'active' | 'completed' | 'all';
-
 function formatDate(date: Date): string {
   return date.toLocaleDateString(undefined, {
     month: 'short',
@@ -44,21 +43,12 @@ function formatDate(date: Date): string {
   });
 }
 
-function getGoalProgressPercent(goal: GoalWithSteps): number {
-  if (goal.status === 'completed') {
-    return 100;
-  }
-
-  if (goal.totalStepCount === 0) {
-    return 0;
-  }
-
-  return Math.round((goal.completedStepCount / goal.totalStepCount) * 100);
-}
-
 type GoalsScreenProps = {
   route?: { params?: PlanStackParamList['Goals'] };
-  navigation?: { setParams: (params: PlanStackParamList['Goals']) => void };
+  navigation?: {
+    setParams?: (params: PlanStackParamList['Goals']) => void;
+    navigate?: (screen: 'GoalDetail', params: PlanStackParamList['GoalDetail']) => void;
+  };
 };
 
 export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
@@ -86,6 +76,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   const [premiumPaywallFeature, setPremiumPaywallFeature] = useState<PremiumFeature | null>(null);
   const [goalFilter, setGoalFilter] = useState<GoalFilter>('active');
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
+  const usesLegacyModal = !navigation?.navigate;
 
   useEffect(() => {
     if (!route?.params?.createGoal) {
@@ -93,21 +84,29 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
     }
 
     setCreateGoalVisible(true);
-    navigation?.setParams({ createGoal: undefined });
+    navigation?.setParams?.({ createGoal: undefined });
   }, [navigation, route?.params?.createGoal]);
 
   const activeGoalCount = useMemo(
     () => goals.filter((goal) => goal.status === 'active').length,
     [goals],
   );
-  const completedGoalCount = goals.length - activeGoalCount;
+  const completedGoalCount = goals.filter((goal) => goal.status === 'completed').length;
+  const archivedGoalCount = goals.filter((goal) => goal.status === 'archived').length;
   const goalFilterOptions = useMemo(
-    () => [
-      { value: 'active' as const, label: 'Active', count: activeGoalCount },
-      { value: 'completed' as const, label: 'Completed', count: completedGoalCount },
-      { value: 'all' as const, label: 'All', count: goals.length },
-    ],
-    [activeGoalCount, completedGoalCount, goals.length],
+    () =>
+      usesLegacyModal
+        ? [
+            { value: 'active' as const, label: 'Active', count: activeGoalCount },
+            { value: 'completed' as const, label: 'Completed', count: completedGoalCount },
+            { value: 'all' as const, label: 'All', count: goals.length },
+          ]
+        : [
+            { value: 'active' as const, label: 'Current', count: activeGoalCount },
+            { value: 'completed' as const, label: 'Completed', count: completedGoalCount },
+            { value: 'archived' as const, label: 'Archived', count: archivedGoalCount },
+          ],
+    [activeGoalCount, archivedGoalCount, completedGoalCount, goals.length, usesLegacyModal],
   );
   const visibleGoals = useMemo(() => {
     if (goalFilter === 'all') {
@@ -200,6 +199,11 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   }
 
   function openGoal(goal: GoalWithSteps): void {
+    if (navigation?.navigate) {
+      navigation.navigate('GoalDetail', { goalId: goal.id });
+      return;
+    }
+
     setSelectedGoalId(goal.id);
   }
 
@@ -222,7 +226,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
           description="Break long-term goals into ordered steps, then schedule the next move into your calendar."
         />
 
-        <SegmentedControl
+        <GoalStatusTabs
           accessibilityLabel="Goal filter"
           options={goalFilterOptions}
           value={goalFilter}
@@ -253,72 +257,31 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
                 ? 'No active goals.'
                 : goalFilter === 'completed'
                   ? 'No completed goals.'
-                  : 'No goals yet.'}
+                  : goalFilter === 'archived'
+                    ? 'No archived goals.'
+                    : 'No goals yet.'}
             </Text>
             <Text style={styles.stateDescription}>
               {goalFilter === 'active'
                 ? 'Create a goal to start building a step-by-step plan.'
                 : goalFilter === 'completed'
                   ? 'Goals you finish will stay available here.'
-                  : 'Create your first goal to start building a step-by-step plan.'}
+                  : goalFilter === 'archived'
+                    ? 'Archived goals will stay available here for reference.'
+                    : 'Create your first goal to start building a step-by-step plan.'}
             </Text>
           </AppCard>
         ) : null}
 
         {uiState === 'ready' || uiState === 'empty'
-          ? visibleGoals.map((goal) => {
-              const progressPercent = getGoalProgressPercent(goal);
-
-              return (
-                <Pressable
-                  key={goal.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Open goal ${goal.title}`}
-                  onPress={() => openGoal(goal)}
-                  style={({ pressed }) => [
-                    styles.goalCardPressable,
-                    pressed ? styles.goalCardPressed : null,
-                  ]}
-                >
-                  <AppCard style={styles.goalCard}>
-                    <View style={styles.goalHeaderRow}>
-                      <Text style={styles.goalTitle}>{goal.title}</Text>
-                      <Text style={styles.goalStatus}>
-                        {goal.status === 'completed' ? 'Completed' : 'Active'}
-                      </Text>
-                    </View>
-                    <Text style={styles.goalDate}>
-                      Target: {formatDate(goal.estimatedCompletionDate)}
-                    </Text>
-                    <Text style={styles.goalNextStep}>
-                      Next:{' '}
-                      {goal.nextStep
-                        ? goal.nextStep.title
-                        : goal.status === 'completed'
-                          ? 'Completed'
-                          : 'Add a step'}
-                    </Text>
-                    <View style={styles.progressCopyRow}>
-                      <Text style={styles.goalProgress}>{goal.progressText}</Text>
-                      <Text style={styles.goalProgressPercent}>{progressPercent}%</Text>
-                    </View>
-                    <View
-                      accessibilityRole="progressbar"
-                      accessibilityLabel={`Goal progress ${goal.title}`}
-                      accessibilityValue={{
-                        min: 0,
-                        max: 100,
-                        now: progressPercent,
-                        text: goal.progressText,
-                      }}
-                      style={styles.progressTrack}
-                    >
-                      <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
-                    </View>
-                  </AppCard>
-                </Pressable>
-              );
-            })
+          ? visibleGoals.map((goal) => (
+              <GoalCard
+                key={goal.id}
+                goal={goal}
+                formatDate={formatDate}
+                onPress={() => openGoal(goal)}
+              />
+            ))
           : null}
       </ScrollView>
 
@@ -431,67 +394,6 @@ const createStyles = (theme: Theme) =>
       ...typography.body,
       color: theme.colors.textPrimary,
       marginTop: spacing.sm,
-    },
-    goalCardPressable: {
-      borderRadius: radii.lg,
-    },
-    goalCardPressed: {
-      opacity: 0.88,
-    },
-    goalCard: {
-      gap: spacing.sm,
-    },
-    goalHeaderRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: spacing.md,
-    },
-    goalTitle: {
-      ...typography.button,
-      fontSize: 18,
-      color: theme.colors.text,
-      flex: 1,
-    },
-    goalStatus: {
-      ...typography.helper,
-      color: theme.colors.brand,
-      fontWeight: '700',
-    },
-    goalDate: {
-      ...typography.helper,
-      color: theme.colors.textSecondary,
-    },
-    goalNextStep: {
-      ...typography.helper,
-      color: theme.colors.textPrimary,
-    },
-    progressCopyRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: spacing.md,
-    },
-    goalProgress: {
-      ...typography.helper,
-      color: theme.colors.textSecondary,
-      flex: 1,
-    },
-    goalProgressPercent: {
-      ...typography.helper,
-      color: theme.colors.brand,
-      fontWeight: '700',
-    },
-    progressTrack: {
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: theme.colors.surface,
-      overflow: 'hidden',
-    },
-    progressFill: {
-      height: '100%',
-      borderRadius: 4,
-      backgroundColor: theme.colors.brand,
     },
     fabContainer: {
       position: 'absolute',

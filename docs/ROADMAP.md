@@ -354,15 +354,17 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 ### M30 - Goals and Tasks
 
+**Status:** completed
+
 | Task ID | Status      | Description                      | Exit Criteria                                                                    |
 | ------- | ----------- | -------------------------------- | -------------------------------------------------------------------------------- |
-| M30.1   | not-started | Restyle Goals List               | Current maps to persisted active and all three filters have deterministic states |
-| M30.2   | not-started | Add goal list actions and states | Goal cards, Create Goal, and loading/empty/error states use shared components    |
-| M30.3   | not-started | Route Goal Detail                | Tasks and Timeline tabs replace modal only after mutation parity                 |
-| M30.4   | not-started | Link tasks to goals and steps    | Next Up/task lists support all required mutations and display context            |
-| M30.5   | not-started | Render operational timeline      | Ordered steps show state and linked tasks without duplicate milestone data       |
-| M30.6   | not-started | Preserve standalone task access  | Plan and Create can open unlinked task flows                                     |
-| M30.7   | not-started | Validate goals and tasks         | Filters, mutations, ordering, and navigation tests pass                          |
+| M30.1   | completed | Restyle Goals List               | Current maps to persisted active and all three filters have deterministic states |
+| M30.2   | completed | Add goal list actions and states | Goal cards, Create Goal, and loading/empty/error states use shared components    |
+| M30.3   | completed | Route Goal Detail                | Tasks and Timeline tabs replace modal only after mutation parity                 |
+| M30.4   | completed | Link tasks to goals and steps    | Next Up/task lists support all required mutations and display context            |
+| M30.5   | completed | Render operational timeline      | Ordered steps show state and linked tasks without duplicate milestone data       |
+| M30.6   | completed | Preserve standalone task access  | Plan and Create can open unlinked task flows                                     |
+| M30.7   | completed | Validate goals and tasks         | Filters, mutations, ordering, and navigation tests pass                          |
 
 ### M31 - Calendar
 
