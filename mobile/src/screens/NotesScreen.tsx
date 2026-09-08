@@ -7,8 +7,8 @@ import { NoteDetailModal } from '../components/notes/NoteDetailModal';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { AppIcon } from '../components/ui/AppIcon';
 import { AppCard } from '../components/ui/AppCard';
+import { BearingHeader } from '../components/ui/BearingHeader';
 import { IconButton } from '../components/ui/IconButton';
-import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { layout, radii, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
@@ -37,6 +37,7 @@ type NotesScreenProps = {
   navigation?: {
     setParams: (params: NotesStackParamList['NotesHome']) => void;
     navigate?: (screen: 'NoteEditor', params?: NotesStackParamList['NoteEditor']) => void;
+    getParent?: () => { navigate?: (screen: string) => void } | undefined;
   };
 };
 
@@ -107,9 +108,13 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
 
   return (
     <View style={styles.screen}>
+      <BearingHeader
+        leadingAccessibilityLabel="Open navigation"
+        onPressLeading={() => navigation?.getParent?.()?.navigate?.('Plan')}
+        trailingAccessibilityLabel="Open profile"
+        onPressTrailing={() => navigation?.getParent?.()?.navigate?.('Profile')}
+      />
       <ScrollView contentContainerStyle={styles.contentContainer}>
-        <ScreenHeader eyebrow="Notes" title="Notes" />
-
         <View style={styles.searchRow}>
           <View style={styles.searchField}>
             <AppIcon name="search" size={18} color={styles.searchIcon.color} decorative />
@@ -169,7 +174,7 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
                 onPress={() => openNoteEditor(note.id)}
                 style={({ pressed }) => [pressed ? styles.noteCardPressed : null]}
               >
-                <AppCard style={styles.noteCard}>
+                <AppCard style={[styles.noteCard, styles.ideaNote]}>
                   <View style={styles.noteMetaRow}>
                     <Text style={styles.noteSource}>{noteSourceLabel(note)}</Text>
                     <Text style={styles.noteDate}>
@@ -194,7 +199,7 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
                 onPress={() => openNoteEditor(note.id)}
                 style={({ pressed }) => [pressed ? styles.noteCardPressed : null]}
               >
-                <AppCard style={styles.noteCard}>
+                <AppCard style={[styles.noteCard, styles.ideaNote]}>
                   <View style={styles.noteMetaRow}>
                     <Text style={styles.noteSource}>{noteSourceLabel(note)}</Text>
                     <Text style={styles.noteDate}>
@@ -219,7 +224,7 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
                 onPress={() => openNoteEditor(note.id)}
                 style={({ pressed }) => [pressed ? styles.noteCardPressed : null]}
               >
-                <AppCard style={styles.noteCard}>
+                <AppCard style={[styles.noteCard, styles.manualNote]}>
                   <View style={styles.noteMetaRow}>
                     <Text style={styles.noteSource}>{noteSourceLabel(note)}</Text>
                     <Text style={styles.noteDate}>
@@ -280,7 +285,7 @@ const createStyles = (theme: Theme) =>
       flexGrow: 1,
       paddingHorizontal: layout.pagePaddingHorizontal,
       paddingVertical: layout.pagePaddingVertical,
-      gap: spacing.xl,
+      gap: spacing.lg,
       paddingBottom: 120,
     },
     stateTitle: {
@@ -293,8 +298,11 @@ const createStyles = (theme: Theme) =>
       marginTop: spacing.sm,
     },
     noteCard: {
-      gap: spacing.md,
+      gap: spacing.sm,
+      borderLeftWidth: 2,
     },
+    ideaNote: { borderLeftColor: theme.colors.warning },
+    manualNote: { borderLeftColor: theme.colors.brand },
     searchRow: {
       flexDirection: 'row',
       alignItems: 'center',

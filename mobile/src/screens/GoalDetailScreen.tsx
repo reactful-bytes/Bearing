@@ -483,8 +483,9 @@ const createStyles = (theme: Theme) =>
     content: {
       flexGrow: 1,
       padding: theme.layout.pagePaddingHorizontal,
+      paddingTop: theme.spacing.sm,
       paddingBottom: theme.spacing['3xl'],
-      gap: theme.spacing.xl,
+      gap: theme.spacing.lg,
     },
     stateCard: { margin: theme.layout.pagePaddingHorizontal, gap: theme.spacing.sm },
     stateTitle: { ...theme.typography.cardTitle, color: theme.colors.text },
@@ -509,13 +510,13 @@ const createStyles = (theme: Theme) =>
     tabActive: { borderBottomColor: theme.colors.brand },
     tabLabel: { ...theme.typography.helper, color: theme.colors.textSecondary },
     tabLabelActive: { color: theme.colors.brand, fontWeight: '700' },
-    section: { gap: theme.spacing.md },
+    section: { gap: theme.spacing.sm },
     sectionHeader: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: theme.spacing.md,
     },
-    sectionTitle: { ...theme.typography.sectionTitle, color: theme.colors.text, flex: 1 },
+    sectionTitle: { ...theme.typography.label, color: theme.colors.textSecondary, flex: 1 },
     nextTaskCard: { paddingVertical: theme.spacing.sm },
   });

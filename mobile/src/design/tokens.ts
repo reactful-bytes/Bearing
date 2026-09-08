@@ -69,8 +69,8 @@ export const typography = {
 };
 
 export const layout = {
-  pagePaddingHorizontal: spacing['2xl'],
-  pagePaddingVertical: spacing['3xl'],
+  pagePaddingHorizontal: spacing.lg,
+  pagePaddingVertical: spacing.xl,
   tabBarHeight: 72,
   tabBarPaddingVertical: spacing.md,
   tabIconSize: 28,
@@ -156,7 +156,7 @@ function createComponentTokens(colors: ThemeColors) {
     card: {
       borderRadius: radii.md,
       backgroundColor: colors.surfaceMuted,
-      padding: spacing['2xl'],
+      padding: spacing.md,
     },
     tabBar: {
       backgroundColor: colors.surface,

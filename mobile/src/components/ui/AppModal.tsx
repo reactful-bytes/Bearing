@@ -11,6 +11,7 @@ import {
 
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AppIcon } from './AppIcon';
 
 import { radii, spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
@@ -61,19 +62,37 @@ export function AppModal({
           style={fullScreen ? styles.fullScreenSheet : styles.sheet}
         >
           <View style={styles.header}>
-            <Text accessibilityRole="header" accessibilityLabel={title} style={styles.title}>
-              {title}
-            </Text>
-            <View style={styles.headerActions}>
-              {headerAccessory}
+            {fullScreen ? (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`${closeLabel} ${title}`}
                 onPress={onClose}
-                style={styles.closeButton}
+                style={styles.closeIconButton}
               >
-                <Text style={styles.closeButtonText}>{closeLabel}</Text>
+                <AppIcon name="back" size={20} decorative />
               </Pressable>
+            ) : null}
+            <Text
+              accessibilityRole="header"
+              accessibilityLabel={title}
+              style={[styles.title, fullScreen && styles.fullScreenTitle]}
+            >
+              {title}
+            </Text>
+            <View style={styles.headerActions}>
+              {headerAccessory}
+              {!fullScreen ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${closeLabel} ${title}`}
+                  onPress={onClose}
+                  style={styles.closeButton}
+                >
+                  <Text style={styles.closeButtonText}>{closeLabel}</Text>
+                </Pressable>
+              ) : (
+                <View style={styles.headerPlaceholder} />
+              )}
             </View>
           </View>
           <View style={[styles.body, fullScreen && styles.fullScreenBody]}>{children}</View>
@@ -122,6 +141,21 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.text,
       flex: 1,
     },
+    fullScreenTitle: {
+      ...typography.cardTitle,
+      textAlign: 'center',
+    },
+    closeIconButton: {
+      width: 44,
+      height: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    headerPlaceholder: {
+      width: 44,
+      height: 44,
+    },
     closeButton: {
       minWidth: 44,
       minHeight: 44,
@@ -144,8 +178,8 @@ const createStyles = (theme: Theme) =>
     fullScreenSheet: {
       flex: 1,
       backgroundColor: theme.colors.background,
-      paddingHorizontal: spacing['2xl'],
-      paddingTop: spacing['2xl'],
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.md,
       gap: spacing.lg,
     },
     fullScreenBody: {

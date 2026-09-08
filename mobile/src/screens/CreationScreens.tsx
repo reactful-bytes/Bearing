@@ -123,6 +123,7 @@ export function CreateTaskScreen({ route, navigation }: CreateTaskScreenProps) {
         visible
         onClose={() => dismissCreationScreen(navigation, 'PlanHome')}
         onSave={createTask}
+        fullScreen
         initialGoalId={params?.goalId ?? null}
         initialStepId={params?.stepId ?? null}
       />
@@ -139,6 +140,7 @@ export function CreateNoteScreen({ route, navigation }: CreateNoteScreenProps) {
       <AddNoteModal
         visible
         onClose={() => dismissCreationScreen(navigation, 'NotesHome')}
+        fullScreen
         sourceEventId={params?.sourceEventId ?? null}
         sourceStepId={params?.sourceStepId ?? null}
         onSave={createNote}
@@ -157,6 +159,7 @@ export function CreateEventScreen({ route, navigation }: CreateEventScreenProps)
       <AddEventModal
         visible
         initialDate={new Date()}
+        fullScreen
         initialValues={{
           goalId: params?.goalId ?? null,
           stepId: params?.stepId ?? null,

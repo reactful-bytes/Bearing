@@ -11,8 +11,8 @@ import { PremiumPaywallModal } from '../components/premium/PremiumPaywallModal';
 import { GoalCard, GoalStatusTabs } from '../components/presentation/GoalPresentation';
 import type { GoalFilter } from '../components/presentation/GoalPresentation';
 import { AppCard } from '../components/ui/AppCard';
+import { BearingHeader } from '../components/ui/BearingHeader';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
-import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { layout, radii, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
@@ -48,6 +48,7 @@ type GoalsScreenProps = {
   navigation?: {
     setParams?: (params: PlanStackParamList['Goals']) => void;
     navigate?: (screen: 'GoalDetail', params: PlanStackParamList['GoalDetail']) => void;
+    getParent?: () => { navigate?: (screen: string) => void } | undefined;
   };
 };
 
@@ -219,13 +220,13 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
 
   return (
     <View style={styles.screen}>
+      <BearingHeader
+        leadingAccessibilityLabel="Open navigation"
+        onPressLeading={() => navigation?.getParent?.()?.navigate?.('Plan')}
+        trailingAccessibilityLabel="Open profile"
+        onPressTrailing={() => navigation?.getParent?.()?.navigate?.('Profile')}
+      />
       <ScrollView contentContainerStyle={styles.contentContainer}>
-        <ScreenHeader
-          eyebrow="Goals"
-          title="Goals"
-          description="Break long-term goals into ordered steps, then schedule the next move into your calendar."
-        />
-
         <GoalStatusTabs
           accessibilityLabel="Goal filter"
           options={goalFilterOptions}

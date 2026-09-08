@@ -15,6 +15,7 @@ type AddEventModalProps = {
   timeFormat?: TimeFormat;
   onClose: () => void;
   onSave: (input: CreateEventInput, options: CreateEventOptions) => Promise<void>;
+  fullScreen?: boolean;
 };
 
 export function AddEventModal({
@@ -27,6 +28,7 @@ export function AddEventModal({
   timeFormat,
   onClose,
   onSave,
+  fullScreen = false,
 }: AddEventModalProps) {
   async function handleSave(input: CreateEventInput, options: CreateEventOptions): Promise<void> {
     await onSave(input, options);
@@ -34,7 +36,7 @@ export function AddEventModal({
   }
 
   return (
-    <AppModal visible={visible} title={modalTitle} onClose={onClose}>
+    <AppModal visible={visible} title={modalTitle} onClose={onClose} fullScreen={fullScreen}>
       <EventForm
         active={visible}
         initialDate={initialDate}

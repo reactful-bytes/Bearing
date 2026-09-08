@@ -33,12 +33,13 @@ type EventRowProps = {
 export function EventRow({ event, dateTime, timezone, onPress }: EventRowProps) {
   const styles = useThemedStyles(createStyles);
   const sourceLabel = event.ownership === 'bearing' ? 'Bearing' : event.calendarTitle;
+  const accentStyle = event.ownership === 'device' ? styles.deviceAccent : styles.bearingAccent;
   return (
     <Card
       accessibilityLabel={`Open event ${event.title}`}
       onPress={onPress}
       variant="outlined"
-      style={styles.row}
+      style={[styles.row, accentStyle]}
     >
       <View style={styles.titleRow}>
         <Text numberOfLines={1} style={styles.title}>
@@ -66,12 +67,13 @@ export function EventCard({
 }: EventCardProps) {
   const styles = useThemedStyles(createStyles);
   const sourceLabel = event.ownership === 'bearing' ? 'Bearing' : event.calendarTitle;
+  const accentStyle = event.ownership === 'device' ? styles.deviceAccent : styles.bearingAccent;
   return (
     <Card
       accessibilityLabel={`Open event ${event.title}`}
       onPress={onPress}
       variant="outlined"
-      style={styles.row}
+      style={[styles.row, accentStyle]}
     >
       <View style={styles.titleRow}>
         <Text numberOfLines={1} style={styles.title}>
@@ -89,7 +91,9 @@ export function EventCard({
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
-    row: { gap: theme.spacing.xs },
+    row: { gap: theme.spacing.xs, borderLeftWidth: 2 },
+    bearingAccent: { borderLeftColor: theme.colors.brand },
+    deviceAccent: { borderLeftColor: theme.colors.textSecondary },
     titleRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
     title: { ...theme.typography.cardTitle, color: theme.colors.text, flex: 1 },
     kindLabel: { ...theme.typography.caption, color: theme.colors.textSecondary },
@@ -97,11 +101,7 @@ const createStyles = (theme: Theme) =>
     description: { ...theme.typography.helper, color: theme.colors.text },
     sourceChip: {
       ...theme.typography.caption,
-      color: theme.colors.onBrand,
-      backgroundColor: theme.colors.brand,
-      borderRadius: theme.radii.xl,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs,
+      color: theme.colors.textSecondary,
     },
-    deviceChip: { color: theme.colors.text, backgroundColor: theme.colors.surfaceMuted },
+    deviceChip: { color: theme.colors.textSecondary },
   });

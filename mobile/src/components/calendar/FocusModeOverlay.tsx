@@ -14,8 +14,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppButton } from '../ui/AppButton';
+import { AppIcon } from '../ui/AppIcon';
 import { FormField } from '../ui/FormField';
-import { radii, spacing, typography } from '../../design/tokens';
+import { useTheme } from '../../design/ThemeProvider';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import type { Theme } from '../../design/tokens';
 import { CalendarDisplayEvent } from '../../features/calendar/calendarTypes';
 import { clearFocusSession, setFocusSession } from '../../features/focus/focusSession';
 import { CreateNoteInput } from '../../features/notes/noteTypes';
@@ -78,6 +81,8 @@ export function FocusModeOverlay({
   dndService = androidFocusDndService,
   onDndStatusChange,
 }: FocusModeOverlayProps) {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [now, setNow] = useState<Date>(new Date());
   const [ideaBody, setIdeaBody] = useState('');
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -476,7 +481,7 @@ export function FocusModeOverlay({
               error={saveError}
               accessibilityLabel="Idea dump input"
               placeholder="Write the thought you do not want to lose..."
-              placeholderTextColor="#7E9AAA"
+              placeholderTextColor={styles.ideaInput.color}
               value={ideaBody}
               onChangeText={setIdeaBody}
               multiline
@@ -510,9 +515,9 @@ export function FocusModeOverlay({
                     : 'Distraction protection unavailable on this device'}
             </Text>
             <View style={styles.utilityButtons}>
-              <AppButton
-                label="Session Details"
-                variant="secondary"
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Session Details"
                 onPress={() =>
                   Alert.alert(
                     'Session Details',
@@ -526,11 +531,16 @@ export function FocusModeOverlay({
                     }`,
                   )
                 }
-                style={styles.utilityButton}
-              />
-              <AppButton
-                label="Focus Settings"
-                variant="secondary"
+                style={({ pressed }) => [
+                  styles.utilityIconButton,
+                  pressed ? styles.utilityIconButtonPressed : null,
+                ]}
+              >
+                <AppIcon name="duration" size={20} color={theme.colors.textPrimary} decorative />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Focus Settings"
                 onPress={() =>
                   Alert.alert(
                     'Focus Settings',
@@ -548,13 +558,18 @@ export function FocusModeOverlay({
                       : [{ text: 'Done' }],
                   )
                 }
-                style={styles.utilityButton}
-              />
+                style={({ pressed }) => [
+                  styles.utilityIconButton,
+                  pressed ? styles.utilityIconButtonPressed : null,
+                ]}
+              >
+                <AppIcon name="settings" size={20} color={theme.colors.textPrimary} decorative />
+              </Pressable>
             </View>
           </View>
 
           <View style={styles.exitBlock}>
-            <Text style={styles.exitLabel}>Return to Calendar</Text>
+            <Text style={styles.exitLabel}>Hold to exit Focus Mode</Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Hold to return to calendar"
@@ -579,145 +594,169 @@ export function FocusModeOverlay({
   );
 }
 
-const styles = StyleSheet.create({
-  keyboardView: {
-    flex: 1,
-    backgroundColor: '#07161F',
-  },
-  screen: {
-    flex: 1,
-    backgroundColor: '#07161F',
-    paddingHorizontal: spacing['2xl'],
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
-    justifyContent: 'space-between',
-    gap: spacing.xl,
-  },
-  heroBlock: {
-    gap: spacing.sm,
-  },
-  eyebrow: {
-    ...typography.label,
-    color: '#8DB8CC',
-  },
-  eventTitle: {
-    fontSize: 32,
-    lineHeight: 38,
-    fontWeight: '700',
-    color: '#F4F8FA',
-  },
-  eventSubtitle: {
-    ...typography.body,
-    color: '#B7D0DC',
-  },
-  timerCard: {
-    borderRadius: radii.xl,
-    backgroundColor: '#0D2430',
-    borderWidth: 1,
-    borderColor: '#184255',
-    padding: spacing['2xl'],
-    gap: spacing.xs,
-  },
-  timerLabel: {
-    ...typography.label,
-    color: '#8DB8CC',
-  },
-  timerValue: {
-    fontSize: 42,
-    lineHeight: 48,
-    fontWeight: '700',
-    color: '#F4F8FA',
-  },
-  endTime: {
-    ...typography.body,
-    color: '#B7D0DC',
-  },
-  ideaBlock: {
-    gap: spacing.md,
-  },
-  ideaField: {},
-  ideaTitle: {
-    ...typography.screenTitle,
-    color: '#F4F8FA',
-  },
-  ideaDescription: {
-    ...typography.body,
-    color: '#B7D0DC',
-  },
-  ideaInput: {
-    height: 144,
-    borderRadius: radii.xl,
-    backgroundColor: '#0D2430',
-    borderWidth: 1,
-    borderColor: '#184255',
-    color: '#F4F8FA',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-  },
-  errorText: {
-    ...typography.helper,
-    color: '#FFB3B3',
-  },
-  ideaMeta: {
-    minHeight: 22,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  ideaCount: {
-    ...typography.helper,
-    color: '#B7D0DC',
-  },
-  savedText: {
-    ...typography.helper,
-    color: '#A8E6C1',
-  },
-  utilityBlock: {
-    gap: spacing.sm,
-  },
-  distractionStatus: {
-    ...typography.body,
-    color: '#B7D0DC',
-  },
-  utilityButtons: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  utilityButton: {
-    flex: 1,
-  },
-  exitBlock: {
-    gap: spacing.sm,
-  },
-  exitLabel: {
-    ...typography.label,
-    color: '#8DB8CC',
-  },
-  exitButton: {
-    borderRadius: radii.xl,
-    borderWidth: 1,
-    borderColor: '#376277',
-    backgroundColor: '#0D2430',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    gap: spacing.md,
-  },
-  exitButtonPressed: {
-    opacity: 0.92,
-  },
-  exitProgressTrack: {
-    height: 8,
-    borderRadius: radii.sm,
-    overflow: 'hidden',
-    backgroundColor: '#173847',
-  },
-  exitProgressFill: {
-    height: '100%',
-    backgroundColor: '#8DB8CC',
-  },
-  exitButtonText: {
-    ...typography.button,
-    color: '#F4F8FA',
-    textAlign: 'center',
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    keyboardView: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    screen: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+      paddingHorizontal: theme.spacing.lg,
+      paddingTop: theme.spacing.sm,
+      paddingBottom: theme.spacing.lg,
+      justifyContent: 'space-between',
+      gap: theme.spacing.xl,
+    },
+    heroBlock: {
+      gap: theme.spacing.sm,
+      alignItems: 'center',
+    },
+    eyebrow: {
+      ...theme.typography.label,
+      color: theme.colors.success,
+    },
+    eventTitle: {
+      ...theme.typography.sectionTitle,
+      fontSize: 20,
+      lineHeight: 26,
+      color: theme.colors.text,
+      textAlign: 'center',
+    },
+    eventSubtitle: {
+      ...theme.typography.body,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+    },
+    timerCard: {
+      alignItems: 'center',
+      paddingVertical: theme.spacing.md,
+      gap: theme.spacing.xs,
+    },
+    timerLabel: {
+      ...theme.typography.label,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+    },
+    timerValue: {
+      fontSize: 42,
+      lineHeight: 48,
+      fontWeight: '700',
+      color: theme.colors.text,
+    },
+    endTime: {
+      ...theme.typography.body,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+    },
+    ideaBlock: {
+      gap: theme.spacing.md,
+      borderRadius: theme.radii.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+      padding: theme.spacing.md,
+    },
+    ideaField: {},
+    ideaTitle: {
+      ...theme.typography.sectionTitle,
+      color: theme.colors.text,
+    },
+    ideaDescription: {
+      ...theme.typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    ideaInput: {
+      height: 112,
+      borderRadius: theme.radii.sm,
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      color: theme.colors.text,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.lg,
+    },
+    errorText: {
+      ...theme.typography.helper,
+      color: theme.colors.dangerText,
+    },
+    ideaMeta: {
+      minHeight: 22,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    ideaCount: {
+      ...theme.typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    savedText: {
+      ...theme.typography.helper,
+      color: theme.colors.success,
+    },
+    utilityBlock: {
+      gap: theme.spacing.sm,
+    },
+    distractionStatus: {
+      ...theme.typography.body,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+    },
+    utilityButtons: {
+      flexDirection: 'row',
+      gap: theme.spacing.sm,
+      justifyContent: 'center',
+    },
+    utilityIconButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    utilityIconButtonPressed: {
+      opacity: 0.75,
+    },
+    exitBlock: {
+      gap: theme.spacing.sm,
+    },
+    exitLabel: {
+      ...theme.typography.label,
+      color: theme.colors.textSecondary,
+    },
+    exitButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderRadius: 28,
+      borderWidth: 1,
+      borderColor: theme.colors.success,
+      backgroundColor: theme.colors.surfaceBrand,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      gap: theme.spacing.md,
+    },
+    exitButtonPressed: {
+      opacity: 0.92,
+    },
+    exitProgressTrack: {
+      width: 32,
+      height: 32,
+      flexShrink: 0,
+      borderRadius: 16,
+      overflow: 'hidden',
+      backgroundColor: theme.colors.surfaceMuted,
+    },
+    exitProgressFill: {
+      height: '100%',
+      backgroundColor: theme.colors.success,
+    },
+    exitButtonText: {
+      ...theme.typography.button,
+      color: theme.colors.text,
+      textAlign: 'center',
+    },
+  });

@@ -6,6 +6,7 @@ import { AppButton } from '../components/ui/AppButton';
 import { AppCard } from '../components/ui/AppCard';
 import { AppScreen } from '../components/ui/AppScreen';
 import { FormField } from '../components/ui/FormField';
+import { IconButton } from '../components/ui/IconButton';
 import { useThemedStyles } from '../design/useThemedStyles';
 import type { Theme } from '../design/tokens';
 import { useNotes } from '../features/notes/useNotes';
@@ -181,20 +182,29 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
     <AppScreen mode="scroll" testID="note-editor-screen">
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>{isEditing ? 'Edit Note' : 'New Note'}</Text>
-          <Text accessibilityRole="header" style={styles.title}>
-            {isEditing
-              ? 'Shape the thought into something useful.'
-              : 'Capture the thought while it is clear.'}
-          </Text>
-          {note ? (
-            <Text style={styles.updatedAt}>
-              Updated {formatDateTime(note.updatedAt, profile?.locale)}
+          <IconButton
+            name="back"
+            accessibilityLabel="Back to Notes"
+            onPress={() => navigation?.goBack?.()}
+          />
+          <View style={styles.headerCopy}>
+            <Text accessibilityRole="header" numberOfLines={1} style={styles.title}>
+              {note?.title || (isEditing ? 'Edit Note' : 'New Note')}
             </Text>
-          ) : null}
+            {note ? (
+              <Text style={styles.updatedAt}>
+                Updated {formatDateTime(note.updatedAt, profile?.locale)}
+              </Text>
+            ) : null}
+          </View>
+          <IconButton
+            name="complete"
+            accessibilityLabel={isEditing ? 'Save note changes' : 'Save note'}
+            onPress={() => void handleSave()}
+          />
         </View>
 
-        <AppCard style={styles.formCard}>
+        <View style={styles.form}>
           <FormField
             label="Title"
             accessibilityLabel="Note title"
@@ -219,14 +229,7 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
             loading={pinning}
             loadingLabel="Updating..."
           />
-          <AppButton
-            label={isEditing ? 'Save Changes' : 'Save Note'}
-            accessibilityLabel={isEditing ? 'Save note changes' : 'Save note'}
-            onPress={handleSave}
-            loading={saving}
-            loadingLabel="Saving..."
-          />
-        </AppCard>
+        </View>
 
         {note ? (
           <AppCard style={styles.actionsCard}>
@@ -299,12 +302,19 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
-    content: { gap: theme.spacing.lg },
-    header: { gap: theme.spacing.sm },
-    eyebrow: { ...theme.typography.label, color: theme.colors.brand },
-    title: { ...theme.typography.screenTitle, color: theme.colors.text },
+    content: { gap: theme.spacing.md },
+    header: {
+      minHeight: 52,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.border,
+    },
+    headerCopy: { flex: 1, alignItems: 'center', gap: theme.spacing.xs },
+    title: { ...theme.typography.cardTitle, color: theme.colors.text },
     updatedAt: { ...theme.typography.helper, color: theme.colors.textSecondary },
-    formCard: { gap: theme.spacing.md },
+    form: { gap: theme.spacing.md, paddingTop: theme.spacing.sm },
     actionsCard: { gap: theme.spacing.md },
     sectionTitle: { ...theme.typography.cardTitle, color: theme.colors.text },
     sectionDescription: { ...theme.typography.body, color: theme.colors.textSecondary },

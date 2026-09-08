@@ -491,9 +491,21 @@ export function CreateGoalModal({
       >
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.stepLabel}>{wizardLabel}</Text>
+          <View accessibilityLabel={wizardLabel} style={styles.progressDots}>
+            {WIZARD_TITLES.map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.progressDot,
+                  index === wizardIndex ? styles.progressDotActive : null,
+                ]}
+              />
+            ))}
+          </View>
 
           {wizardIndex === 0 ? (
             <AppCard style={styles.card}>
+              <Text style={styles.smartIntroTitle}>Let&apos;s create a SMART goal</Text>
               <Text style={styles.cardTitle}>Build a SMART goal before you plan it.</Text>
               <Text style={styles.cardBody}>
                 Specific, measurable, achievable, relevant, and time-bound goals make the next step
@@ -873,6 +885,20 @@ const createStyles = (theme: Theme) =>
       ...typography.label,
       color: theme.colors.brand,
     },
+    progressDots: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    progressDot: {
+      flex: 1,
+      height: 4,
+      borderRadius: radii.sm,
+      backgroundColor: theme.colors.surfaceMuted,
+    },
+    progressDotActive: {
+      backgroundColor: theme.colors.brand,
+    },
     card: {
       gap: spacing.md,
     },
@@ -882,6 +908,12 @@ const createStyles = (theme: Theme) =>
     },
     cardTitle: {
       ...typography.button,
+      color: theme.colors.text,
+    },
+    smartIntroTitle: {
+      ...typography.sectionTitle,
+      fontSize: 20,
+      lineHeight: 26,
       color: theme.colors.text,
     },
     cardBody: {

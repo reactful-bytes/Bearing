@@ -72,7 +72,9 @@ const createStyles = (theme: Theme) =>
       alignItems: 'stretch',
       gap: spacing.xs,
       borderRadius: radii.md,
-      backgroundColor: theme.colors.surfaceMuted,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
       padding: spacing.xs,
     },
     option: {
@@ -88,7 +90,7 @@ const createStyles = (theme: Theme) =>
       paddingVertical: spacing.sm,
     },
     optionSelected: {
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.brand,
     },
     optionPressed: {
       opacity: 0.82,
@@ -100,7 +102,7 @@ const createStyles = (theme: Theme) =>
       flexShrink: 1,
     },
     labelSelected: {
-      color: theme.colors.text,
+      color: theme.colors.onBrand,
     },
     count: {
       ...typography.helper,
@@ -109,6 +111,6 @@ const createStyles = (theme: Theme) =>
       flexShrink: 0,
     },
     countSelected: {
-      color: theme.colors.brand,
+      color: theme.colors.onBrand,
     },
   });

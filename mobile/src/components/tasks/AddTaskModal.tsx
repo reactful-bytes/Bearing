@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { EventDateTimePickerField } from '../calendar/EventDateTimePickerField';
 import { AppButton } from '../ui/AppButton';
@@ -21,6 +21,7 @@ type AddTaskModalProps = {
   initialTitle?: string;
   initialDescription?: string;
   contextLabel?: string;
+  fullScreen?: boolean;
 };
 
 export function AddTaskModal({
@@ -32,6 +33,7 @@ export function AddTaskModal({
   initialTitle = '',
   initialDescription = '',
   contextLabel,
+  fullScreen = false,
 }: AddTaskModalProps) {
   const styles = useThemedStyles(createStyles);
   const { profile } = useUserProfile();
@@ -138,130 +140,173 @@ export function AddTaskModal({
   }
 
   return (
-    <AppModal visible={visible} title="New Task" onClose={handleClose}>
-      <FormField
-        label="Title"
-        accessibilityLabel="Task title"
-        placeholder="Add the task"
-        value={title}
-        onChangeText={setTitle}
-        error={error}
-      />
+    <AppModal visible={visible} title="New Task" onClose={handleClose} fullScreen={fullScreen}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
+        <FormField
+          label="Title"
+          accessibilityLabel="Task title"
+          placeholder="Add the task"
+          value={title}
+          onChangeText={setTitle}
+          error={error}
+          labelStyle={styles.fieldLabel}
+          inputStyle={styles.input}
+        />
 
-      <FormField
-        label="Description"
-        accessibilityLabel="Task description"
-        placeholder="Optional details"
-        value={description}
-        onChangeText={setDescription}
-        multiline
-      />
+        <FormField
+          label="Description"
+          accessibilityLabel="Task description"
+          placeholder="Optional details"
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          labelStyle={styles.fieldLabel}
+          inputStyle={styles.textArea}
+        />
 
-      <AppButton
-        label={scheduleVisible ? 'Hide schedule details' : 'Add schedule details'}
-        variant="secondary"
-        accessibilityLabel={scheduleVisible ? 'Hide schedule details' : 'Add schedule details'}
-        onPress={() => setScheduleVisible((current) => !current)}
-      />
+        <AppButton
+          label={scheduleVisible ? 'Hide schedule details' : 'Add schedule details'}
+          variant="secondary"
+          accessibilityLabel={scheduleVisible ? 'Hide schedule details' : 'Add schedule details'}
+          onPress={() => setScheduleVisible((current) => !current)}
+        />
 
-      {scheduleVisible ? (
-        <View style={styles.scheduleSection}>
-          <EventDateTimePickerField
-            label="Due date"
-            accessibilityLabel="Task due date"
-            mode="date"
-            value={dueDate}
-            dateValue={dueDate}
-            timeValue="12:00"
-            timezone={profile?.timezone ?? 'UTC'}
-            locale={profile?.locale}
-            timeFormat={profile?.timeFormat}
-            allowClear
-            onChange={setDueDate}
-          />
-          <Pressable
-            accessibilityRole="checkbox"
-            accessibilityLabel="All-day task"
-            accessibilityState={{ checked: allDay }}
-            onPress={() => setAllDay((current) => !current)}
-            style={styles.allDayToggle}
-          >
-            <Text style={styles.allDayToggleText}>{allDay ? 'All day: On' : 'All day: Off'}</Text>
-          </Pressable>
-          <EventDateTimePickerField
-            label="Schedule start date"
-            accessibilityLabel="Task schedule start date"
-            mode="date"
-            value={scheduledStartDate}
-            dateValue={scheduledStartDate}
-            timeValue={scheduledStartTime}
-            timezone={profile?.timezone ?? 'UTC'}
-            locale={profile?.locale}
-            timeFormat={profile?.timeFormat}
-            allowClear
-            onChange={setScheduledStartDate}
-          />
-          {!allDay ? (
+        {scheduleVisible ? (
+          <View style={styles.scheduleSection}>
             <EventDateTimePickerField
-              label="Schedule start time"
-              accessibilityLabel="Task schedule start time"
-              mode="time"
-              value={scheduledStartTime}
+              label="Due date"
+              accessibilityLabel="Task due date"
+              mode="date"
+              value={dueDate}
+              dateValue={dueDate}
+              timeValue="12:00"
+              timezone={profile?.timezone ?? 'UTC'}
+              locale={profile?.locale}
+              timeFormat={profile?.timeFormat}
+              allowClear
+              compact
+              onChange={setDueDate}
+            />
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityLabel="All-day task"
+              accessibilityState={{ checked: allDay }}
+              onPress={() => setAllDay((current) => !current)}
+              style={styles.allDayToggle}
+            >
+              <Text style={styles.allDayToggleText}>{allDay ? 'All day: On' : 'All day: Off'}</Text>
+            </Pressable>
+            <EventDateTimePickerField
+              label="Schedule start date"
+              accessibilityLabel="Task schedule start date"
+              mode="date"
+              value={scheduledStartDate}
               dateValue={scheduledStartDate}
               timeValue={scheduledStartTime}
               timezone={profile?.timezone ?? 'UTC'}
               locale={profile?.locale}
               timeFormat={profile?.timeFormat}
               allowClear
-              onChange={setScheduledStartTime}
+              compact
+              onChange={setScheduledStartDate}
             />
-          ) : null}
-          <EventDateTimePickerField
-            label="Schedule end date"
-            accessibilityLabel="Task schedule end date"
-            mode="date"
-            value={scheduledEndDate}
-            dateValue={scheduledEndDate}
-            timeValue={scheduledEndTime}
-            timezone={profile?.timezone ?? 'UTC'}
-            locale={profile?.locale}
-            timeFormat={profile?.timeFormat}
-            allowClear
-            onChange={setScheduledEndDate}
-          />
-          {!allDay ? (
+            {!allDay ? (
+              <EventDateTimePickerField
+                label="Schedule start time"
+                accessibilityLabel="Task schedule start time"
+                mode="time"
+                value={scheduledStartTime}
+                dateValue={scheduledStartDate}
+                timeValue={scheduledStartTime}
+                timezone={profile?.timezone ?? 'UTC'}
+                locale={profile?.locale}
+                timeFormat={profile?.timeFormat}
+                allowClear
+                compact
+                onChange={setScheduledStartTime}
+              />
+            ) : null}
             <EventDateTimePickerField
-              label="Schedule end time"
-              accessibilityLabel="Task schedule end time"
-              mode="time"
-              value={scheduledEndTime}
+              label="Schedule end date"
+              accessibilityLabel="Task schedule end date"
+              mode="date"
+              value={scheduledEndDate}
               dateValue={scheduledEndDate}
               timeValue={scheduledEndTime}
               timezone={profile?.timezone ?? 'UTC'}
               locale={profile?.locale}
               timeFormat={profile?.timeFormat}
               allowClear
-              onChange={setScheduledEndTime}
+              compact
+              onChange={setScheduledEndDate}
             />
-          ) : null}
-        </View>
-      ) : null}
+            {!allDay ? (
+              <EventDateTimePickerField
+                label="Schedule end time"
+                accessibilityLabel="Task schedule end time"
+                mode="time"
+                value={scheduledEndTime}
+                dateValue={scheduledEndDate}
+                timeValue={scheduledEndTime}
+                timezone={profile?.timezone ?? 'UTC'}
+                locale={profile?.locale}
+                timeFormat={profile?.timeFormat}
+                allowClear
+                compact
+                onChange={setScheduledEndTime}
+              />
+            ) : null}
+          </View>
+        ) : null}
 
-      {contextLabel ? <Text accessibilityLabel="Task context">{contextLabel}</Text> : null}
+        {contextLabel ? (
+          <Text accessibilityLabel="Task context" style={styles.contextLabel}>
+            {contextLabel}
+          </Text>
+        ) : null}
 
-      <AppButton
-        label="Save Task"
-        accessibilityLabel="Save task"
-        onPress={handleSave}
-        loading={saving}
-        loadingLabel="Saving..."
-      />
+        <AppButton
+          label="Save Task"
+          accessibilityLabel="Save task"
+          onPress={handleSave}
+          loading={saving}
+          loadingLabel="Saving..."
+        />
+      </ScrollView>
     </AppModal>
   );
 }
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
+    scrollView: {
+      flexShrink: 1,
+    },
+    content: {
+      gap: spacing.md,
+      paddingBottom: spacing.sm,
+    },
+    fieldLabel: {
+      ...typography.caption,
+      color: theme.colors.textSecondary,
+      fontWeight: '700',
+      letterSpacing: 0.4,
+      textTransform: 'uppercase',
+    },
+    input: {
+      minHeight: 40,
+      borderRadius: radii.sm,
+      paddingVertical: spacing.sm,
+    },
+    textArea: {
+      minHeight: 76,
+      borderRadius: radii.sm,
+      paddingVertical: spacing.sm,
+    },
     scheduleSection: {
       gap: spacing.md,
     },
@@ -277,5 +322,9 @@ const createStyles = (theme: Theme) =>
     allDayToggleText: {
       ...typography.body,
       color: theme.colors.text,
+    },
+    contextLabel: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
     },
   });

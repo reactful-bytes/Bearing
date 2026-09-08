@@ -779,15 +779,10 @@ export function ProfileScreen({
             <ScreenHeader
               eyebrow="Profile"
               title={profileSection ? PROFILE_SECTION_LABELS[profileSection] : 'Profile'}
-              description="Manage this part of your Bearing account."
             />
           </View>
-        ) : (
-          <ScreenHeader
-            eyebrow="Profile"
-            title="Profile"
-            description="Manage your account, settings, sounds, and a few small prompts that keep the app useful every day."
-          />
+        ) : profile ? null : (
+          <ScreenHeader eyebrow="Profile" title="Profile" />
         )}
 
         {uiState === 'loading' ? (
@@ -811,22 +806,34 @@ export function ProfileScreen({
           <>
             {shouldRenderSection('account') ? (
               <View style={styles.section}>
-                <SectionHeading title="Account" description="Your identity in Bearing." />
-                <View style={styles.identitySummary}>
-                  <View style={styles.identityMark}>
-                    <Text style={styles.identityInitial}>
-                      {(displayName || email || '?').trim().charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={styles.identityCopy}>
-                    <Text numberOfLines={1} style={styles.identityName}>
-                      {displayName || 'Unnamed account'}
-                    </Text>
-                    <Text numberOfLines={1} style={styles.identityEmail}>
-                      {email || 'Anonymous session'}
-                    </Text>
+                <View style={profileSection === undefined ? styles.profileHero : null}>
+                  <View
+                    style={[
+                      styles.identitySummary,
+                      profileSection === undefined ? styles.profileHeroIdentity : null,
+                    ]}
+                  >
+                    <View style={styles.identityMark}>
+                      <Text style={styles.identityInitial}>
+                        {(displayName || email || '?').trim().charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.identityCopy,
+                        profileSection === undefined ? styles.profileHeroCopy : null,
+                      ]}
+                    >
+                      <Text numberOfLines={1} style={styles.identityName}>
+                        {displayName || 'Unnamed account'}
+                      </Text>
+                      <Text numberOfLines={1} style={styles.identityEmail}>
+                        {email || 'Anonymous session'}
+                      </Text>
+                    </View>
                   </View>
                 </View>
+                <SectionHeading title="Account" description="Your identity in Bearing." />
                 <FormField
                   label="Display name"
                   accessibilityLabel="Profile display name"
@@ -1666,7 +1673,7 @@ const createStyles = (theme: Theme) =>
       flexGrow: 1,
       paddingHorizontal: layout.pagePaddingHorizontal,
       paddingVertical: layout.pagePaddingVertical,
-      gap: spacing.xl,
+      gap: spacing.lg,
       paddingBottom: 120,
     },
     routeHeader: {
@@ -1683,7 +1690,7 @@ const createStyles = (theme: Theme) =>
     },
     section: {
       gap: spacing.md,
-      paddingBottom: spacing.xl,
+      paddingBottom: spacing.lg,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,
     },
@@ -1742,15 +1749,22 @@ const createStyles = (theme: Theme) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.md,
-      borderRadius: radii.md,
-      backgroundColor: theme.colors.surfaceMuted,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
     },
+    profileHero: {
+      alignItems: 'center',
+      paddingBottom: spacing.sm,
+    },
+    profileHeroIdentity: {
+      flexDirection: 'column',
+      paddingHorizontal: 0,
+      paddingVertical: 0,
+    },
     identityMark: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 72,
+      height: 72,
+      borderRadius: 36,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.brand,
@@ -1763,6 +1777,10 @@ const createStyles = (theme: Theme) =>
       flex: 1,
       minWidth: 0,
       gap: spacing.xs,
+    },
+    profileHeroCopy: {
+      flex: 0,
+      alignItems: 'center',
     },
     identityName: {
       ...typography.button,

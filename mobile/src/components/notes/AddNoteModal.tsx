@@ -1,8 +1,12 @@
 import { useState } from 'react';
+import { ScrollView, StyleSheet } from 'react-native';
 
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { FormField } from '../ui/FormField';
+import { radii, spacing, typography } from '../../design/tokens';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import type { Theme } from '../../design/tokens';
 import { CreateNoteInput } from '../../features/notes/noteTypes';
 
 type AddNoteModalProps = {
@@ -11,6 +15,7 @@ type AddNoteModalProps = {
   onSave: (input: CreateNoteInput) => Promise<void>;
   sourceEventId?: string | null;
   sourceStepId?: string | null;
+  fullScreen?: boolean;
 };
 
 export function AddNoteModal({
@@ -19,7 +24,9 @@ export function AddNoteModal({
   onSave,
   sourceEventId = null,
   sourceStepId = null,
+  fullScreen = false,
 }: AddNoteModalProps) {
+  const styles = useThemedStyles(createStyles);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -64,32 +71,70 @@ export function AddNoteModal({
   }
 
   return (
-    <AppModal visible={visible} title="New Note" onClose={handleClose}>
-      <FormField
-        label="Title"
-        accessibilityLabel="Note title"
-        placeholder="Optional title"
-        value={title}
-        onChangeText={setTitle}
-      />
+    <AppModal visible={visible} title="New Note" onClose={handleClose} fullScreen={fullScreen}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
+        <FormField
+          label="Title"
+          accessibilityLabel="Note title"
+          placeholder="Optional title"
+          value={title}
+          onChangeText={setTitle}
+          labelStyle={styles.fieldLabel}
+          inputStyle={styles.input}
+        />
 
-      <FormField
-        label="Body"
-        accessibilityLabel="Note body"
-        placeholder="Write your note..."
-        value={body}
-        onChangeText={setBody}
-        multiline
-        error={error}
-      />
+        <FormField
+          label="Body"
+          accessibilityLabel="Note body"
+          placeholder="Write your note..."
+          value={body}
+          onChangeText={setBody}
+          multiline
+          error={error}
+          labelStyle={styles.fieldLabel}
+          inputStyle={styles.textArea}
+        />
 
-      <AppButton
-        label="Save Note"
-        accessibilityLabel="Save note"
-        onPress={handleSave}
-        loading={saving}
-        loadingLabel="Saving..."
-      />
+        <AppButton
+          label="Save Note"
+          accessibilityLabel="Save note"
+          onPress={handleSave}
+          loading={saving}
+          loadingLabel="Saving..."
+        />
+      </ScrollView>
     </AppModal>
   );
 }
+
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    scrollView: {
+      flexShrink: 1,
+    },
+    content: {
+      gap: spacing.md,
+      paddingBottom: spacing.sm,
+    },
+    fieldLabel: {
+      ...typography.caption,
+      color: theme.colors.textSecondary,
+      fontWeight: '700',
+      letterSpacing: 0.4,
+      textTransform: 'uppercase',
+    },
+    input: {
+      minHeight: 40,
+      borderRadius: radii.sm,
+      paddingVertical: spacing.sm,
+    },
+    textArea: {
+      minHeight: 180,
+      borderRadius: radii.sm,
+      paddingVertical: spacing.md,
+    },
+  });

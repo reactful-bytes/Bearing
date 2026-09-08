@@ -20,7 +20,7 @@ describe('AppScreen', () => {
     });
     expect(screen.getByTestId('screen-content').props.style).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ paddingHorizontal: 24, paddingVertical: 32 }),
+        expect.objectContaining({ paddingHorizontal: 16, paddingVertical: 20 }),
       ]),
     );
   });

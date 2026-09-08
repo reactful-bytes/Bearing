@@ -206,6 +206,8 @@ export function EventForm({
         autoCapitalize="sentences"
         returnKeyType="next"
         accessibilityLabel="Event title"
+        labelStyle={styles.compactLabel}
+        inputStyle={styles.input}
       />
 
       <FormField
@@ -216,6 +218,8 @@ export function EventForm({
         placeholderTextColor={theme.colors.textSecondary}
         multiline
         accessibilityLabel="Event description"
+        labelStyle={styles.compactLabel}
+        inputStyle={styles.textArea}
       />
 
       <View style={styles.switchRow}>
@@ -241,6 +245,7 @@ export function EventForm({
           timezone={values.timezone}
           locale={locale}
           timeFormat={timeFormat}
+          compact
           onChange={(value) => updateValue('startDate', value)}
         />
         <EventDateTimePickerField
@@ -254,6 +259,7 @@ export function EventForm({
           timezone={values.timezone}
           locale={locale}
           timeFormat={timeFormat}
+          compact
           onChange={(value) => updateValue('endDate', value)}
         />
       </View>
@@ -271,6 +277,7 @@ export function EventForm({
             timezone={values.timezone}
             locale={locale}
             timeFormat={timeFormat}
+            compact
             onChange={(value) => updateValue('startTime', value)}
           />
           <EventDateTimePickerField
@@ -284,6 +291,7 @@ export function EventForm({
             timezone={values.timezone}
             locale={locale}
             timeFormat={timeFormat}
+            compact
             onChange={(value) => updateValue('endTime', value)}
           />
         </View>
@@ -326,6 +334,8 @@ export function EventForm({
             autoCapitalize="none"
             autoCorrect={false}
             accessibilityLabel="Event timezone"
+            labelStyle={styles.compactLabel}
+            inputStyle={styles.input}
           />
 
           <FormField
@@ -335,6 +345,8 @@ export function EventForm({
             placeholder="Add a location"
             placeholderTextColor={theme.colors.textSecondary}
             accessibilityLabel="Event location"
+            labelStyle={styles.compactLabel}
+            inputStyle={styles.input}
           />
 
           <View style={styles.fieldGroup}>
@@ -405,6 +417,8 @@ export function EventForm({
                 onChangeText={(value) => updateValue('recurrenceInterval', value)}
                 keyboardType="number-pad"
                 accessibilityLabel="Recurrence interval"
+                labelStyle={styles.compactLabel}
+                inputStyle={styles.input}
               />
               <View style={styles.dateRow}>
                 <EventDateTimePickerField
@@ -419,6 +433,7 @@ export function EventForm({
                   timezone={values.timezone}
                   locale={locale}
                   timeFormat={timeFormat}
+                  compact
                   allowClear
                   onChange={(value) => updateValue('recurrenceEndDate', value)}
                 />
@@ -429,6 +444,8 @@ export function EventForm({
                   onChangeText={(value) => updateValue('recurrenceOccurrenceCount', value)}
                   keyboardType="number-pad"
                   accessibilityLabel="Recurrence occurrences"
+                  labelStyle={styles.compactLabel}
+                  inputStyle={styles.input}
                 />
               </View>
             </>
@@ -541,6 +558,8 @@ export function EventForm({
             autoCapitalize="none"
             autoCorrect={false}
             accessibilityLabel="Event URL"
+            labelStyle={styles.compactLabel}
+            inputStyle={styles.input}
           />
         </View>
       ) : null}
@@ -574,6 +593,13 @@ const createStyles = (theme: Theme) =>
       ...typography.label,
       color: theme.colors.textSecondary,
     },
+    compactLabel: {
+      ...typography.caption,
+      color: theme.colors.textSecondary,
+      fontWeight: '700',
+      letterSpacing: 0.4,
+      textTransform: 'uppercase',
+    },
     input: {
       ...typography.body,
       color: theme.colors.text,
@@ -587,6 +613,11 @@ const createStyles = (theme: Theme) =>
     inputMultiline: {
       minHeight: 72,
       textAlignVertical: 'top',
+    },
+    textArea: {
+      minHeight: 72,
+      borderRadius: radii.sm,
+      paddingVertical: spacing.sm,
     },
     switchRow: {
       minHeight: 44,

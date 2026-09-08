@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GoalMilestone, GoalStepRecord, GoalWithSteps } from '../../features/goals/goalTypes';
+import { useTheme } from '../../design/ThemeProvider';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import type { Theme } from '../../design/tokens';
 import { AppIcon } from '../ui/AppIcon';
@@ -119,6 +120,7 @@ type GoalTimelineProps = {
 
 export function GoalTimeline({ steps, onPressStep, taskCountsByStepId = {} }: GoalTimelineProps) {
   const styles = useThemedStyles(createStyles);
+  const { theme } = useTheme();
 
   return (
     <View accessibilityLabel="Goal timeline" style={styles.timeline}>
@@ -131,16 +133,31 @@ export function GoalTimeline({ steps, onPressStep, taskCountsByStepId = {} }: Go
           onPress={() => onPressStep?.(step)}
           style={styles.timelineItem}
         >
-          <View
-            style={[
-              styles.timelineMarker,
-              step.status === 'completed' ? styles.timelineMarkerComplete : null,
-            ]}
-          >
-            <Text style={styles.timelineIndex}>{index + 1}</Text>
+          <View style={styles.timelineMarkerColumn}>
+            <View
+              style={[
+                styles.timelineMarker,
+                step.status === 'completed' ? styles.timelineMarkerComplete : null,
+              ]}
+            >
+              {step.status === 'completed' ? (
+                <AppIcon name="complete" size={12} color={theme.colors.onBrand} decorative />
+              ) : null}
+            </View>
+            {index < steps.length - 1 ? <View style={styles.timelineConnector} /> : null}
           </View>
           <View style={styles.timelineCopy}>
-            <Text style={styles.timelineTitle}>{step.title}</Text>
+            <View style={styles.timelineTitleRow}>
+              <Text style={styles.timelineTitle}>{step.title}</Text>
+              {step.estimatedFinishDate ? (
+                <Text style={styles.timelineDate}>
+                  {step.estimatedFinishDate.toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </Text>
+              ) : null}
+            </View>
             <Text style={styles.meta}>
               {step.status === 'completed' ? 'Completed' : 'Upcoming'}
               {taskCountsByStepId[step.id]
@@ -175,12 +192,12 @@ export function GoalMilestones({ milestones }: GoalMilestonesProps) {
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
-    card: { padding: theme.spacing.lg },
+    card: { padding: theme.spacing.md },
     cardRow: { flexDirection: 'row', alignItems: 'flex-start', gap: theme.spacing.md },
     iconContainer: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
@@ -196,23 +213,45 @@ const createStyles = (theme: Theme) =>
     nextStep: { ...theme.typography.caption, color: theme.colors.textSecondary },
     timeline: { gap: theme.spacing.sm },
     timelineItem: {
-      minHeight: theme.layout.minimumTouchTarget,
+      minHeight: 48,
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'stretch',
       gap: theme.spacing.md,
     },
+    timelineMarkerColumn: {
+      width: 20,
+      alignItems: 'center',
+    },
     timelineMarker: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
+      width: 16,
+      height: 16,
+      borderRadius: 8,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: theme.colors.surfaceBrand,
+      borderWidth: 1,
+      borderColor: theme.colors.brand,
+      backgroundColor: theme.colors.background,
     },
     timelineMarkerComplete: { backgroundColor: theme.colors.success },
-    timelineIndex: { ...theme.typography.caption, color: theme.colors.onBrand, fontWeight: '700' },
-    timelineCopy: { flex: 1, gap: theme.spacing.xs },
-    timelineTitle: { ...theme.typography.cardTitle, color: theme.colors.text },
+    timelineConnector: {
+      flex: 1,
+      width: 1,
+      backgroundColor: theme.colors.border,
+      marginVertical: theme.spacing.xs,
+    },
+    timelineCopy: { flex: 1, gap: theme.spacing.xs, paddingBottom: theme.spacing.sm },
+    timelineTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: theme.spacing.sm,
+    },
+    timelineTitle: {
+      ...theme.typography.helper,
+      color: theme.colors.text,
+      fontWeight: '600',
+      flex: 1,
+    },
+    timelineDate: { ...theme.typography.caption, color: theme.colors.textSecondary },
     milestones: { gap: theme.spacing.md },
     milestone: { gap: theme.spacing.xs },
     milestoneLabel: { ...theme.typography.label, color: theme.colors.purple },

@@ -1,6 +1,6 @@
 import { ReactNode, useMemo } from 'react';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { EventRow } from '../components/presentation/EventPresentation';
 import { GoalCard } from '../components/presentation/GoalPresentation';
@@ -56,26 +56,21 @@ function formatEventTime(
   });
 }
 
-function formatFocusTimeRemaining(endAt: Date): string {
-  const totalSeconds = Math.max(0, Math.ceil((endAt.getTime() - Date.now()) / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${String(seconds).padStart(2, '0')} remaining`;
-}
-
 function PlanSection({
   title,
   action,
   children,
+  style,
 }: {
   title: string;
   action?: ReactNode;
   children: ReactNode;
+  style?: object;
 }) {
   const styles = useThemedStyles(createStyles);
 
   return (
-    <View style={styles.section}>
+    <View style={[styles.section, style]}>
       <View style={styles.sectionHeader}>
         <Text accessibilityRole="header" style={styles.sectionTitle}>
           {title}
@@ -150,195 +145,182 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
   return (
     <AppScreen mode="scroll" testID="plan-screen" contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <View style={styles.headerCopy}>
-          <Text style={styles.eyebrow}>Plan</Text>
-          <Text accessibilityRole="header" style={styles.title}>
-            {greeting}
-            {displayName ? `, ${displayName}` : ''}
-          </Text>
-          <Text style={styles.subtitle}>Your day, your direction, one clear next step.</Text>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open profile"
+        <IconButton
+          name="menu"
+          accessibilityLabel="Open navigation"
           onPress={() => rootNavigation.navigate('Profile')}
-          style={styles.avatar}
-        >
-          <Text style={styles.avatarText}>{(displayName || '?').charAt(0).toUpperCase()}</Text>
-        </Pressable>
+          style={styles.headerAction}
+        />
+        <View style={styles.brandMark}>
+          <AppIcon name="bearingMark" size={38} decorative />
+        </View>
+        <View style={styles.headerCopy}>
+          <IconButton
+            name="more"
+            accessibilityLabel="Open profile"
+            onPress={() => rootNavigation.navigate('Profile')}
+          />
+        </View>
       </View>
 
-      <PlanSection
-        title="Today's plan"
-        action={
-          <IconButton
-            name="next"
-            accessibilityLabel="More events"
-            onPress={() => rootNavigation.navigate('Calendar')}
-          />
-        }
-      >
-        {eventsState === 'loading' ? (
-          <AppCard>
-            <Text style={styles.stateTitle}>Loading today&apos;s events...</Text>
-          </AppCard>
-        ) : null}
-        {eventsState === 'error' ? (
-          <RecoveryCard
-            title="Unable to load today's events."
-            description="Check your connection, then retry."
-            onRetry={() => void refreshEvents()}
-          />
-        ) : null}
-        {eventsState === 'empty' || (eventsState === 'ready' && todayEvents.length === 0) ? (
-          <EmptyState
-            icon="calendar"
-            title="Nothing scheduled today"
-            description="Your calendar is clear. Use Create to shape the day."
-            presentation="compact"
-          />
-        ) : null}
-        {eventsState === 'ready'
-          ? todayEvents.map((event) => (
-              <EventRow
-                key={`${event.ownership}-${event.id}`}
-                event={event}
-                dateTime={formatEventTime(event, locale, timeFormat)}
-                timezone={event.timezone}
-                onPress={() => rootNavigation.navigate('Calendar', { screen: 'CalendarHome' })}
-              />
-            ))
-          : null}
-      </PlanSection>
+      <View style={styles.greetingBlock}>
+        <Text accessibilityRole="header" style={styles.title}>
+          {greeting}
+          {displayName ? `, ${displayName}.` : '.'}
+        </Text>
+        <Text style={styles.subtitle}>Stay focused. Make it count.</Text>
+      </View>
 
-      <PlanSection title="Focus mode">
-        <AppCard style={styles.focusCard}>
-          <View style={styles.focusIcon}>
-            <AppIcon name="focus" size={28} decorative />
-          </View>
-          <View style={styles.focusCopy}>
-            <Text style={styles.cardTitle}>
+      <View style={styles.dailyGrid}>
+        <PlanSection
+          title="Today's plan"
+          action={
+            <IconButton
+              name="next"
+              accessibilityLabel="More events"
+              onPress={() => rootNavigation.navigate('Calendar')}
+            />
+          }
+          style={styles.todaySection}
+        >
+          {eventsState === 'loading' ? (
+            <AppCard>
+              <Text style={styles.stateTitle}>Loading today&apos;s events...</Text>
+            </AppCard>
+          ) : null}
+          {eventsState === 'error' ? (
+            <RecoveryCard
+              title="Unable to load today's events."
+              description="Check your connection, then retry."
+              onRetry={() => void refreshEvents()}
+            />
+          ) : null}
+          {eventsState === 'empty' || (eventsState === 'ready' && todayEvents.length === 0) ? (
+            <EmptyState
+              icon="calendar"
+              title="Nothing scheduled today"
+              description="Your calendar is clear. Use Create to shape the day."
+              presentation="compact"
+            />
+          ) : null}
+          {eventsState === 'ready'
+            ? todayEvents.map((event) => (
+                <EventRow
+                  key={`${event.ownership}-${event.id}`}
+                  event={event}
+                  dateTime={formatEventTime(event, locale, timeFormat)}
+                  timezone={event.timezone}
+                  onPress={() => rootNavigation.navigate('Calendar', { screen: 'CalendarHome' })}
+                />
+              ))
+            : null}
+        </PlanSection>
+
+        <PlanSection title="Focus mode" style={styles.focusSection}>
+          <AppCard style={styles.focusCard}>
+            <View style={styles.focusIcon}>
+              <AppIcon name="focus" size={28} decorative />
+            </View>
+            <Text style={styles.focusStatus}>
+              {focusSession ? 'ACTIVE' : currentEvent ? 'READY' : 'OPEN'}
+            </Text>
+            <Text style={styles.focusDescription}>
               {focusSession
                 ? `Focus active: ${focusSession.title}`
                 : currentEvent
                   ? `Focus on ${currentEvent.title}`
-                  : 'No active focus session'}
+                  : 'Start a focused session'}
             </Text>
-            <Text style={styles.cardDescription}>
-              {focusSession
-                ? formatFocusTimeRemaining(focusSession.endAt)
-                : currentEvent
-                  ? 'Give the next block your full attention.'
-                  : 'Start with the next thing that matters.'}
-            </Text>
-          </View>
-          <AppButton
-            label={focusSession ? 'Open Focus' : currentEvent ? 'Focus' : 'Start Focus'}
-            onPress={openFocus}
-          />
-        </AppCard>
-      </PlanSection>
-
-      <PlanSection
-        title="Active goals"
-        action={
-          <IconButton
-            name="next"
-            accessibilityLabel="View all"
-            onPress={() => navigation.navigate('Goals')}
-          />
-        }
-      >
-        {goalsState === 'loading' ? (
-          <AppCard>
-            <Text style={styles.stateTitle}>Loading goals...</Text>
+            <AppButton
+              label={focusSession ? 'Open Focus' : currentEvent ? 'Focus' : 'Start Focus'}
+              onPress={openFocus}
+              style={styles.focusButton}
+            />
           </AppCard>
-        ) : null}
-        {goalsState === 'error' ? (
-          <RecoveryCard
-            title="Unable to load goals."
-            description="Check your connection, then retry."
-            onRetry={retryGoals}
-          />
-        ) : null}
-        {goalsState === 'empty' || (goalsState === 'ready' && activeGoals.length === 0) ? (
-          <EmptyState
-            icon="goal"
-            title="No active goals"
-            description="Create a goal to give your next steps a home."
-            presentation="compact"
-            actionLabel="Open goals"
-            onPressAction={() => navigation.navigate('Goals')}
-          />
-        ) : null}
-        {goalsState === 'ready'
-          ? activeGoals.map((goal) => (
-              <GoalCard
-                key={goal.id}
-                goal={goal}
-                formatDate={(date) =>
-                  date.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
-                }
-                onPress={() => navigation.navigate('GoalDetail', { goalId: goal.id })}
-              />
-            ))
-          : null}
-      </PlanSection>
+        </PlanSection>
+      </View>
 
-      <PlanSection title="Tasks">
-        <AppCard style={styles.taskAccessCard}>
-          <View style={styles.taskAccessCopy}>
-            <Text style={styles.cardTitle}>Unscheduled work</Text>
-            <Text style={styles.cardDescription}>
-              Keep standalone tasks visible until they have a place on the calendar or a goal.
-            </Text>
-          </View>
-          <View style={styles.taskAccessActions}>
+      <View style={styles.lowerGrid}>
+        <PlanSection
+          title="Active goals"
+          action={
+            <IconButton
+              name="next"
+              accessibilityLabel="View all"
+              onPress={() => navigation.navigate('Goals')}
+            />
+          }
+          style={styles.goalsSection}
+        >
+          {goalsState === 'loading' ? (
+            <AppCard>
+              <Text style={styles.stateTitle}>Loading goals...</Text>
+            </AppCard>
+          ) : null}
+          {goalsState === 'error' ? (
+            <RecoveryCard
+              title="Unable to load goals."
+              description="Check your connection, then retry."
+              onRetry={retryGoals}
+            />
+          ) : null}
+          {goalsState === 'empty' || (goalsState === 'ready' && activeGoals.length === 0) ? (
+            <EmptyState
+              icon="goal"
+              title="No active goals"
+              description="Create a goal to give your next steps a home."
+              presentation="compact"
+              actionLabel="Open goals"
+              onPressAction={() => navigation.navigate('Goals')}
+            />
+          ) : null}
+          {goalsState === 'ready'
+            ? activeGoals.map((goal) => (
+                <GoalCard
+                  key={goal.id}
+                  goal={goal}
+                  formatDate={(date) =>
+                    date.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
+                  }
+                  onPress={() => navigation.navigate('GoalDetail', { goalId: goal.id })}
+                />
+              ))
+            : null}
+        </PlanSection>
+
+        <PlanSection title="Idea Dump" style={styles.ideaSection}>
+          <AppCard style={styles.ideaCard}>
+            <AppIcon name="note" size={28} decorative />
+            <View style={styles.ideaCopy}>
+              {notesState === 'loading' ? (
+                <Text style={styles.cardTitle}>Checking your notes...</Text>
+              ) : null}
+              {notesState === 'error' ? (
+                <Text style={styles.cardTitle}>Notes are unavailable</Text>
+              ) : null}
+              {notesState === 'empty' || notesState === 'ready' ? (
+                <Text style={styles.cardTitle}>
+                  {notes.filter((note) => note.source === 'idea_dump').length} unprocessed ideas
+                </Text>
+              ) : null}
+              <Text style={styles.cardDescription}>Capture a thought before it gets away.</Text>
+            </View>
             <AppButton
-              label="Open tasks"
+              label="Open Notes"
               variant="secondary"
-              onPress={() => navigation.navigate('Tasks')}
+              onPress={() =>
+                rootNavigation.navigate('Notes', {
+                  screen: 'NotesHome',
+                  params: { createNote: true },
+                })
+              }
             />
-            <AppButton
-              label="New task"
-              onPress={() => navigation.navigate('Tasks', { createTask: true })}
-            />
-          </View>
-        </AppCard>
-      </PlanSection>
-
-      <PlanSection title="Idea Dump">
-        <AppCard style={styles.ideaCard}>
-          <AppIcon name="note" size={28} decorative />
-          <View style={styles.ideaCopy}>
-            {notesState === 'loading' ? (
-              <Text style={styles.cardTitle}>Checking your notes...</Text>
-            ) : null}
-            {notesState === 'error' ? (
-              <Text style={styles.cardTitle}>Notes are unavailable</Text>
-            ) : null}
-            {notesState === 'empty' || notesState === 'ready' ? (
-              <Text style={styles.cardTitle}>
-                {notes.filter((note) => note.source === 'idea_dump').length} unprocessed ideas
-              </Text>
-            ) : null}
-            <Text style={styles.cardDescription}>Capture a thought before it gets away.</Text>
-          </View>
-          <AppButton
-            label="Open Notes"
-            variant="secondary"
-            onPress={() =>
-              rootNavigation.navigate('Notes', {
-                screen: 'NotesHome',
-                params: { createNote: true },
-              })
-            }
-          />
-        </AppCard>
-        {notesState === 'error' ? (
-          <AppButton label="Retry" variant="secondary" onPress={retryNotes} />
-        ) : null}
-      </PlanSection>
+          </AppCard>
+          {notesState === 'error' ? (
+            <AppButton label="Retry" variant="secondary" onPress={retryNotes} />
+          ) : null}
+        </PlanSection>
+      </View>
     </AppScreen>
   );
 }
@@ -351,13 +333,22 @@ const createStyles = (theme: Theme) =>
     },
     header: {
       flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: theme.spacing.md,
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      minHeight: 48,
     },
-    headerCopy: { flex: 1, gap: theme.spacing.xs },
+    headerAction: { marginLeft: -theme.spacing.sm },
+    brandMark: {
+      width: 48,
+      height: 48,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerCopy: { flex: 1, alignItems: 'flex-end' },
     eyebrow: { ...theme.typography.caption, color: theme.colors.brand },
     title: { ...theme.typography.screenTitle, color: theme.colors.text },
     subtitle: { ...theme.typography.body, color: theme.colors.textSecondary },
+    greetingBlock: { gap: theme.spacing.xs, alignItems: 'center' },
     avatar: {
       width: 44,
       height: 44,
@@ -368,6 +359,20 @@ const createStyles = (theme: Theme) =>
     },
     avatarText: { ...theme.typography.button, color: theme.colors.onBrand },
     section: { gap: theme.spacing.md },
+    dailyGrid: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      gap: theme.spacing.md,
+    },
+    todaySection: { flex: 1, minWidth: 0 },
+    focusSection: { width: 116 },
+    lowerGrid: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: theme.spacing.md,
+    },
+    goalsSection: { flex: 1, minWidth: 0 },
+    ideaSection: { flex: 1, minWidth: 0 },
     sectionHeader: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -375,14 +380,21 @@ const createStyles = (theme: Theme) =>
       gap: theme.spacing.md,
     },
     sectionTitle: { ...theme.typography.sectionTitle, color: theme.colors.text, flex: 1 },
-    focusCard: { gap: theme.spacing.md },
-    focusIcon: { alignSelf: 'flex-start' },
-    focusCopy: { gap: theme.spacing.xs },
+    focusCard: { gap: theme.spacing.sm, padding: theme.spacing.md, flex: 1 },
+    focusIcon: { alignSelf: 'center' },
+    focusStatus: {
+      ...theme.typography.label,
+      color: theme.colors.success,
+      textAlign: 'center',
+    },
+    focusDescription: {
+      ...theme.typography.caption,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+    },
+    focusButton: { paddingHorizontal: theme.spacing.sm },
     ideaCard: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
     ideaCopy: { flex: 1, gap: theme.spacing.xs },
-    taskAccessCard: { gap: theme.spacing.md },
-    taskAccessCopy: { gap: theme.spacing.xs },
-    taskAccessActions: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
     cardTitle: { ...theme.typography.cardTitle, color: theme.colors.text },
     cardDescription: { ...theme.typography.body, color: theme.colors.textSecondary },
     stateTitle: { ...theme.typography.cardTitle, color: theme.colors.text },

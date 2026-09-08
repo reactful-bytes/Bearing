@@ -23,6 +23,7 @@ import { AddEventModal } from '../components/calendar/AddEventModal';
 import { EventDetailModal } from '../components/calendar/EventDetailModal';
 import { FocusModeOverlay } from '../components/calendar/FocusModeOverlay';
 import { EventRow } from '../components/presentation/EventPresentation';
+import { AppIcon } from '../components/ui/AppIcon';
 import { IconButton } from '../components/ui/IconButton';
 import { layout, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
@@ -445,6 +446,19 @@ export function CalendarScreen({
 
   return (
     <SafeAreaView style={styles.screen}>
+      <View style={styles.calendarHeader}>
+        <IconButton
+          name="menu"
+          accessibilityLabel="Open navigation"
+          onPress={() => navigation?.navigate?.('Plan')}
+        />
+        <AppIcon name="bearingMark" size={34} decorative />
+        <IconButton
+          name="settings"
+          accessibilityLabel="Open Calendar Sources"
+          onPress={() => navigation?.navigate?.('CalendarSources')}
+        />
+      </View>
       <View style={styles.calendarToolbar}>
         <ViewModeToggle
           mode={viewMode}
@@ -462,18 +476,10 @@ export function CalendarScreen({
               <Text style={styles.todayButtonText}>Today</Text>
             </Pressable>
           ) : null}
-          <Pressable
-            accessibilityRole="button"
+          <IconButton
+            name="today"
             accessibilityLabel="Refresh calendar events"
             onPress={handleRefreshCalendar}
-            style={({ pressed }) => [styles.refreshButton, pressed ? styles.buttonPressed : null]}
-          >
-            <Text style={styles.refreshButtonText}>Refresh</Text>
-          </Pressable>
-          <IconButton
-            name="settings"
-            accessibilityLabel="Open Calendar Sources"
-            onPress={() => navigation?.navigate?.('CalendarSources')}
           />
         </View>
       </View>
@@ -632,13 +638,16 @@ export function CalendarScreen({
       <View style={styles.fabContainer}>
         <FloatingActionButton
           label="Focus"
-          labelColor="#153748"
-          showIcon={false}
+          accessibilityLabel="Focus"
+          icon="focusMode"
+          size="small"
+          labelColor={styles.focusLabel.color}
           onPress={handlePressFocusMode}
           style={styles.secondaryFab}
         />
         <FloatingActionButton
-          label="Add"
+          accessibilityLabel="Add"
+          icon="add"
           onPress={handlePressAddEvent}
           disabled={uiState === 'loading'}
           style={styles.primaryFab}
@@ -688,21 +697,22 @@ const createStyles = (theme: Theme) =>
       justifyContent: 'space-between',
       paddingRight: spacing.md,
     },
+    calendarHeader: {
+      minHeight: 52,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.sm,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.border,
+    },
     toolbarActions: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
     },
-    refreshButton: {
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-    },
     buttonPressed: {
       opacity: 0.65,
-    },
-    refreshButtonText: {
-      ...typography.button,
-      color: theme.colors.brand,
     },
     deviceErrorText: {
       ...typography.helper,
@@ -821,4 +831,5 @@ const createStyles = (theme: Theme) =>
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
+    focusLabel: { color: theme.colors.text },
   });

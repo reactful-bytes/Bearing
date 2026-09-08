@@ -47,20 +47,21 @@ const createStyles = (theme: Theme) =>
       borderRadius: radii.md,
       padding: 3,
       alignSelf: 'center',
-      marginVertical: spacing.md,
+      marginVertical: spacing.sm,
     },
     segment: {
-      paddingHorizontal: spacing.xl,
-      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
       borderRadius: radii.sm,
       alignItems: 'center',
-      minWidth: 72,
+      minWidth: 56,
     },
     segmentActive: {
       backgroundColor: theme.colors.brand,
     },
     label: {
-      ...typography.button,
+      ...typography.caption,
+      fontWeight: '600',
       color: theme.colors.textSecondary,
     },
     labelActive: {

@@ -25,12 +25,9 @@ export function TaskRow({ task, onPress, onToggleComplete, context }: TaskRowPro
         onPress={onToggleComplete}
         style={styles.toggle}
       >
-        <AppIcon
-          name="task"
-          size={20}
-          color={completed ? styles.toggleComplete.color : styles.toggle.color}
-          decorative
-        />
+        {completed ? (
+          <AppIcon name="complete" size={12} color={styles.toggleComplete.color} decorative />
+        ) : null}
       </Pressable>
       <Pressable
         accessibilityRole="button"
@@ -61,12 +58,12 @@ const createStyles = (theme: Theme) =>
     },
     rowCompleted: { opacity: 0.68 },
     toggle: {
-      width: theme.layout.minimumTouchTarget,
-      height: theme.layout.minimumTouchTarget,
+      width: 20,
+      height: 20,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
-      borderRadius: theme.radii.md,
+      borderRadius: 10,
       borderColor: theme.colors.border,
       color: theme.colors.textSecondary,
     },
@@ -81,7 +78,7 @@ const createStyles = (theme: Theme) =>
       justifyContent: 'center',
       gap: theme.spacing.xs,
     },
-    title: { ...theme.typography.cardTitle, color: theme.colors.text },
+    title: { ...theme.typography.helper, color: theme.colors.text, fontWeight: '600' },
     titleCompleted: { textDecorationLine: 'line-through' },
     context: { ...theme.typography.caption, color: theme.colors.textSecondary },
   });

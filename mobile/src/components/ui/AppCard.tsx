@@ -1,11 +1,11 @@
 import { ReactNode } from 'react';
-import { ViewStyle } from 'react-native';
+import { StyleProp, ViewStyle } from 'react-native';
 
 import { Card } from './Card';
 
 type AppCardProps = {
   children: ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 };
 
 export function AppCard({ children, style }: AppCardProps) {

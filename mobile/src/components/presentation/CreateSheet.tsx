@@ -58,7 +58,12 @@ const createActions: readonly {
 export function CreateSheet(props: CreateSheetProps) {
   const styles = useThemedStyles(createStyles);
   return (
-    <BottomSheet visible={props.visible} onDismiss={props.onDismiss} accessibilityLabel="Create">
+    <BottomSheet
+      visible={props.visible}
+      onDismiss={props.onDismiss}
+      accessibilityLabel="Create"
+      style={styles.sheet}
+    >
       <Text style={styles.title}>Create</Text>
       <View style={styles.actionsPanel}>
         {createActions.map((action) => (
@@ -85,7 +90,19 @@ export function CreateSheet(props: CreateSheetProps) {
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
-    title: { ...theme.typography.sectionTitle, color: theme.colors.text },
+    sheet: {
+      width: '86%',
+      maxWidth: 340,
+      alignSelf: 'center',
+      borderRadius: theme.radii.md,
+      paddingHorizontal: theme.spacing.md,
+      paddingBottom: theme.spacing.lg,
+    },
+    title: {
+      ...theme.typography.cardTitle,
+      color: theme.colors.text,
+      textAlign: 'center',
+    },
     actionsPanel: {
       borderRadius: theme.radii.md,
       backgroundColor: theme.colors.surface,
@@ -94,20 +111,20 @@ const createStyles = (theme: Theme) =>
       overflow: 'hidden',
     },
     action: {
-      minHeight: 64,
+      minHeight: 56,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.md,
-      paddingHorizontal: theme.spacing.lg,
+      gap: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,
     },
     actionPressed: { backgroundColor: theme.colors.surfaceBrand },
     iconCircle: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -116,6 +133,6 @@ const createStyles = (theme: Theme) =>
     noteIcon: { backgroundColor: theme.colors.warning },
     eventIcon: { backgroundColor: theme.colors.purple },
     actionCopy: { flex: 1, gap: theme.spacing.xs },
-    label: { ...theme.typography.cardTitle, color: theme.colors.text },
+    label: { ...theme.typography.helper, color: theme.colors.text },
     description: { ...theme.typography.caption, color: theme.colors.textSecondary },
   });

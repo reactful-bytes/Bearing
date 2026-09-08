@@ -8,8 +8,8 @@ import { AddTaskModal } from '../components/tasks/AddTaskModal';
 import { StartNowModal } from '../components/tasks/StartNowModal';
 import { TaskDetailModal } from '../components/tasks/TaskDetailModal';
 import { AppCard } from '../components/ui/AppCard';
+import { BearingHeader } from '../components/ui/BearingHeader';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
-import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { layout, radii, spacing, typography } from '../design/tokens';
@@ -197,13 +197,13 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
 
   return (
     <View style={styles.screen}>
+      <BearingHeader
+        leadingAccessibilityLabel="Open navigation"
+        onPressLeading={() => navigation.navigate('Plan')}
+        trailingAccessibilityLabel="Open profile"
+        onPressTrailing={() => navigation.navigate('Profile')}
+      />
       <ScrollView contentContainerStyle={styles.contentContainer}>
-        <ScreenHeader
-          eyebrow="Tasks"
-          title="Tasks"
-          description="Keep unscheduled work in one list, then either schedule it or start a focused session immediately."
-        />
-
         <SegmentedControl
           accessibilityLabel="Task filter"
           options={taskFilterOptions}
@@ -360,7 +360,8 @@ const createStyles = (theme: Theme) =>
       opacity: 0.92,
     },
     taskCard: {
-      gap: spacing.sm,
+      gap: spacing.xs,
+      padding: spacing.md,
     },
     taskHeaderRow: {
       flexDirection: 'row',
@@ -382,7 +383,7 @@ const createStyles = (theme: Theme) =>
       flex: 1,
     },
     taskDescription: {
-      ...typography.body,
+      ...typography.helper,
       color: theme.colors.textPrimary,
     },
     fabContainer: {

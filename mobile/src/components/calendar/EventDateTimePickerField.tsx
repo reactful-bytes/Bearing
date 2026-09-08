@@ -32,6 +32,7 @@ type EventDateTimePickerFieldProps = {
   timeFormat?: TimeFormat;
   fallbackDateValue?: string;
   allowClear?: boolean;
+  compact?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
   onChange: (value: string) => void;
 };
@@ -84,6 +85,7 @@ export function EventDateTimePickerField({
   timeFormat = DEFAULT_TIME_FORMAT,
   fallbackDateValue,
   allowClear = false,
+  compact = false,
   containerStyle,
   onChange,
 }: EventDateTimePickerFieldProps) {
@@ -133,15 +135,26 @@ export function EventDateTimePickerField({
 
   return (
     <View style={[styles.container, containerStyle]}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, compact ? styles.compactLabel : null]}>{label}</Text>
       <View style={styles.controlRow}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={accessibilityLabel}
           onPress={handleOpen}
-          style={({ pressed }) => [styles.fieldButton, pressed ? styles.pressed : null]}
+          style={({ pressed }) => [
+            styles.fieldButton,
+            compact ? styles.compactFieldButton : null,
+            pressed ? styles.pressed : null,
+          ]}
         >
-          <Text style={[styles.value, !value ? styles.placeholder : null]} numberOfLines={1}>
+          <Text
+            style={[
+              styles.value,
+              compact ? styles.compactValue : null,
+              !value ? styles.placeholder : null,
+            ]}
+            numberOfLines={1}
+          >
             {formatPickerValue(mode, value, timeFormat, locale)}
           </Text>
         </Pressable>
@@ -150,7 +163,11 @@ export function EventDateTimePickerField({
             accessibilityRole="button"
             accessibilityLabel={`Clear ${label.toLowerCase()}`}
             onPress={() => onChange('')}
-            style={({ pressed }) => [styles.clearButton, pressed ? styles.pressed : null]}
+            style={({ pressed }) => [
+              styles.clearButton,
+              compact ? styles.compactClearButton : null,
+              pressed ? styles.pressed : null,
+            ]}
           >
             <Text style={styles.clearText}>Clear</Text>
           </Pressable>
@@ -192,6 +209,13 @@ const createStyles = (theme: Theme) =>
       ...typography.label,
       color: theme.colors.textSecondary,
     },
+    compactLabel: {
+      ...typography.caption,
+      color: theme.colors.textSecondary,
+      fontWeight: '700',
+      letterSpacing: 0.4,
+      textTransform: 'uppercase',
+    },
     controlRow: {
       flexDirection: 'row',
       gap: spacing.sm,
@@ -208,8 +232,16 @@ const createStyles = (theme: Theme) =>
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
     },
+    compactFieldButton: {
+      minHeight: 40,
+      paddingVertical: spacing.xs,
+    },
     value: {
       ...typography.body,
+      color: theme.colors.text,
+    },
+    compactValue: {
+      ...typography.helper,
       color: theme.colors.text,
     },
     placeholder: {
@@ -223,6 +255,9 @@ const createStyles = (theme: Theme) =>
       minHeight: 44,
       justifyContent: 'center',
       paddingHorizontal: spacing.sm,
+    },
+    compactClearButton: {
+      minHeight: 40,
     },
     clearText: {
       ...typography.helper,

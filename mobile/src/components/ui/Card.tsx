@@ -77,15 +77,14 @@ const createStyles = (theme: Theme) =>
       padding: theme.componentTokens.card.padding,
     },
     standard: {
-      backgroundColor: theme.componentTokens.card.backgroundColor,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
     },
     elevated: {
       backgroundColor: theme.colors.elevated,
-      shadowColor: theme.colors.text,
-      shadowOpacity: 0.14,
-      shadowRadius: theme.spacing.sm,
-      shadowOffset: { width: 0, height: theme.spacing.xs },
-      elevation: 2,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
     },
     outlined: {
       backgroundColor: theme.colors.surface,
