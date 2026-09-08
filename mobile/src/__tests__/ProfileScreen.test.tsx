@@ -340,6 +340,27 @@ describe('ProfileScreen', () => {
     expect(retry).toHaveBeenCalledTimes(1);
   });
 
+  it('renders a focused profile section with a route back action', () => {
+    mockProfileHooks();
+    const onPressBack = jest.fn();
+
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="account"
+        onPressBack={onPressBack}
+      />,
+    );
+
+    expect(screen.getByRole('header', { name: 'Personal Information' })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Account' })).toBeTruthy();
+    expect(screen.queryByRole('header', { name: 'Security' })).toBeNull();
+
+    fireEvent.press(screen.getByLabelText('Back to Profile'));
+    expect(onPressBack).toHaveBeenCalledTimes(1);
+  });
+
   it('saves account settings and sends a password reset email', async () => {
     const { updateProfile, sendPasswordReset } = mockProfileHooks();
 

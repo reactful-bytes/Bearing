@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import { useThemedStyles } from '../design/useThemedStyles';
+import { useTheme } from '../design/ThemeProvider';
 import { AppButton } from '../components/ui/AppButton';
 import { GoogleAuthButton } from '../components/auth/GoogleAuthButton';
 import { AppModal } from '../components/ui/AppModal';
@@ -28,8 +29,10 @@ import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { SectionHeading } from '../components/ui/SectionHeading';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
+import { IconButton } from '../components/ui/IconButton';
 import { layout, radii, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
+import type { ThemePreference } from '../design/ThemeProvider';
 import {
   buildIcsFilename,
   downloadIcsFileOnWeb,
@@ -87,13 +90,39 @@ import {
 import { recordTelemetryEvent } from '../services/telemetry/telemetry';
 import { showPremiumSubscriptionManagement } from '../services/purchases/revenueCatClient';
 
+export type ProfileSection =
+  'account' | 'security' | 'preferences' | 'connectedServices' | 'plan' | 'legal' | 'session';
+
 type ProfileScreenProps = {
   onPressSignOut: () => Promise<void> | void;
   isSignOutPending: boolean;
+  section?: ProfileSection;
+  onPressBack?: () => void;
 };
 
-export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScreenProps) {
+const PROFILE_SECTION_LABELS: Record<ProfileSection, string> = {
+  account: 'Personal Information',
+  security: 'Security',
+  preferences: 'Preferences',
+  connectedServices: 'Connected Services',
+  plan: 'Plan & Billing',
+  legal: 'Privacy & Legal',
+  session: 'Session',
+};
+
+const THEME_OPTIONS: readonly { value: ThemePreference; label: string }[] = [
+  { value: 'dark', label: 'Dark' },
+  { value: 'light', label: 'Light' },
+];
+
+export function ProfileScreen({
+  onPressSignOut,
+  isSignOutPending,
+  section: profileSection,
+  onPressBack,
+}: ProfileScreenProps) {
   const styles = useThemedStyles(createStyles);
+  const { preference: themePreference, setPreference: setThemePreference } = useTheme();
   const {
     authUser,
     profile,
@@ -124,6 +153,8 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   const [accountPending, setAccountPending] = useState(false);
   const [accountFeedback, setAccountFeedback] = useState<string | null>(null);
   const [accountError, setAccountError] = useState<string | null>(null);
+  const [themePreferencePending, setThemePreferencePending] = useState(false);
+  const [themePreferenceError, setThemePreferenceError] = useState<string | null>(null);
   const [linkDisplayName, setLinkDisplayName] = useState('');
   const [linkEmail, setLinkEmail] = useState('');
   const [linkPassword, setLinkPassword] = useState('');
@@ -168,6 +199,24 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   const [legalDocumentId, setLegalDocumentId] = useState<LegalDocumentId | null>(null);
   const [legalError, setLegalError] = useState<string | null>(null);
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
+  const shouldRenderSection = (section: ProfileSection): boolean =>
+    profileSection === undefined || profileSection === section;
+
+  const handleThemePreferenceChange = async (nextPreference: ThemePreference) => {
+    setThemePreferencePending(true);
+    setThemePreferenceError(null);
+    try {
+      await setThemePreference(nextPreference);
+    } catch (preferenceError) {
+      setThemePreferenceError(
+        preferenceError instanceof Error
+          ? preferenceError.message
+          : 'Appearance preference could not be saved. Please retry.',
+      );
+    } finally {
+      setThemePreferencePending(false);
+    }
+  };
 
   useEffect(() => {
     if (!profile) {
@@ -705,11 +754,22 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.contentContainer}>
-        <ScreenHeader
-          eyebrow="Profile"
-          title="Profile"
-          description="Manage your account, settings, sounds, and a few small prompts that keep the app useful every day."
-        />
+        {onPressBack ? (
+          <View style={styles.routeHeader}>
+            <IconButton name="back" accessibilityLabel="Back to Profile" onPress={onPressBack} />
+            <ScreenHeader
+              eyebrow="Profile"
+              title={profileSection ? PROFILE_SECTION_LABELS[profileSection] : 'Profile'}
+              description="Manage this part of your Bearing account."
+            />
+          </View>
+        ) : (
+          <ScreenHeader
+            eyebrow="Profile"
+            title="Profile"
+            description="Manage your account, settings, sounds, and a few small prompts that keep the app useful every day."
+          />
+        )}
 
         {uiState === 'loading' ? (
           <AppCard>
@@ -730,357 +790,386 @@ export function ProfileScreen({ onPressSignOut, isSignOutPending }: ProfileScree
 
         {profile ? (
           <>
-            <View style={styles.section}>
-              <SectionHeading title="Account" description="Your identity in Bearing." />
-              <View style={styles.identitySummary}>
-                <View style={styles.identityMark}>
-                  <Text style={styles.identityInitial}>
-                    {(displayName || email || '?').trim().charAt(0).toUpperCase()}
-                  </Text>
+            {shouldRenderSection('account') ? (
+              <View style={styles.section}>
+                <SectionHeading title="Account" description="Your identity in Bearing." />
+                <View style={styles.identitySummary}>
+                  <View style={styles.identityMark}>
+                    <Text style={styles.identityInitial}>
+                      {(displayName || email || '?').trim().charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.identityCopy}>
+                    <Text numberOfLines={1} style={styles.identityName}>
+                      {displayName || 'Unnamed account'}
+                    </Text>
+                    <Text numberOfLines={1} style={styles.identityEmail}>
+                      {email || 'Anonymous session'}
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.identityCopy}>
-                  <Text numberOfLines={1} style={styles.identityName}>
-                    {displayName || 'Unnamed account'}
-                  </Text>
-                  <Text numberOfLines={1} style={styles.identityEmail}>
-                    {email || 'Anonymous session'}
-                  </Text>
-                </View>
+                <FormField
+                  label="Display name"
+                  accessibilityLabel="Profile display name"
+                  value={displayName}
+                  onChangeText={setDisplayName}
+                  placeholder="Your name"
+                />
               </View>
-              <FormField
-                label="Display name"
-                accessibilityLabel="Profile display name"
-                value={displayName}
-                onChangeText={setDisplayName}
-                placeholder="Your name"
-              />
-            </View>
+            ) : null}
 
-            <View style={styles.section}>
-              <SectionHeading title="Security" description="Protect access to this account." />
-              {isAnonymous ? (
-                <View style={styles.sectionBody}>
-                  <Text style={styles.sectionTitle}>Secure this anonymous session</Text>
-                  <Text style={styles.stateDescription}>
-                    Add Google or email and password while keeping this Firebase user ID and its
-                    existing app data.
-                  </Text>
+            {shouldRenderSection('security') ? (
+              <View style={styles.section}>
+                <SectionHeading title="Security" description="Protect access to this account." />
+                {isAnonymous ? (
+                  <View style={styles.sectionBody}>
+                    <Text style={styles.sectionTitle}>Secure this anonymous session</Text>
+                    <Text style={styles.stateDescription}>
+                      Add Google or email and password while keeping this Firebase user ID and its
+                      existing app data.
+                    </Text>
 
-                  <GoogleAuthButton
-                    label="Secure with Google"
-                    disabled={!isGoogleAuthReady || linkPending}
-                    loading={googleLinkPending}
-                    onPress={() => void handleLinkGoogleAccount()}
-                  />
-
-                  <Text style={styles.sectionTitle}>Or use email and password</Text>
-
-                  <FormField
-                    label="Display name"
-                    accessibilityLabel="Secure account display name"
-                    value={linkDisplayName}
-                    onChangeText={setLinkDisplayName}
-                    placeholder="Your name"
-                  />
-
-                  <FormField
-                    label="Email"
-                    accessibilityLabel="Secure account email"
-                    value={linkEmail}
-                    onChangeText={setLinkEmail}
-                    placeholder="you@example.com"
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                  />
-
-                  <FormField
-                    label="Password"
-                    accessibilityLabel="Secure account password"
-                    value={linkPassword}
-                    onChangeText={setLinkPassword}
-                    secureTextEntry
-                    placeholder="At least 6 characters"
-                  />
-
-                  <FormField
-                    label="Confirm password"
-                    accessibilityLabel="Secure account confirm password"
-                    value={linkPasswordConfirm}
-                    onChangeText={setLinkPasswordConfirm}
-                    secureTextEntry
-                    placeholder="Re-enter password"
-                  />
-
-                  {linkError ? <Text style={styles.errorText}>{linkError}</Text> : null}
-
-                  <AppButton
-                    label="Secure Account"
-                    accessibilityLabel="Secure anonymous account"
-                    onPress={() => void handleLinkAnonymousAccount()}
-                    loading={linkPending}
-                    loadingLabel="Securing..."
-                  />
-                </View>
-              ) : (
-                <View style={styles.sectionBody}>
-                  {hasGoogleProvider ? (
-                    <ListItem
-                      onPress={
-                        hasPasswordProvider
-                          ? () => {
-                              setGoogleDisconnectError(null);
-                              setDisconnectGoogleVisible(true);
-                            }
-                          : undefined
-                      }
-                      title="Google Sign-In"
-                      description={
-                        hasPasswordProvider
-                          ? 'Connected. Disconnecting Google will keep email and password access.'
-                          : 'Connected. Add a password before disconnecting Google.'
-                      }
-                      trailingText={hasPasswordProvider ? 'Disconnect' : 'Connected'}
-                    />
-                  ) : (
                     <GoogleAuthButton
-                      label="Add Google Sign-In"
-                      disabled={!isGoogleAuthReady}
+                      label="Secure with Google"
+                      disabled={!isGoogleAuthReady || linkPending}
                       loading={googleLinkPending}
                       onPress={() => void handleLinkGoogleAccount()}
                     />
-                  )}
 
-                  {hasPasswordProvider ? (
-                    <ListItem
-                      onPress={() => void handleSendPasswordReset()}
-                      title="Reset password"
-                      description="Send a Firebase reset email to the current account address."
-                      trailingText={passwordResetPending ? 'Working...' : 'Send'}
-                      disabled={passwordResetPending}
+                    <Text style={styles.sectionTitle}>Or use email and password</Text>
+
+                    <FormField
+                      label="Display name"
+                      accessibilityLabel="Secure account display name"
+                      value={linkDisplayName}
+                      onChangeText={setLinkDisplayName}
+                      placeholder="Your name"
                     />
-                  ) : null}
 
-                  {linkError ? <Text style={styles.errorText}>{linkError}</Text> : null}
+                    <FormField
+                      label="Email"
+                      accessibilityLabel="Secure account email"
+                      value={linkEmail}
+                      onChangeText={setLinkEmail}
+                      placeholder="you@example.com"
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                    />
+
+                    <FormField
+                      label="Password"
+                      accessibilityLabel="Secure account password"
+                      value={linkPassword}
+                      onChangeText={setLinkPassword}
+                      secureTextEntry
+                      placeholder="At least 6 characters"
+                    />
+
+                    <FormField
+                      label="Confirm password"
+                      accessibilityLabel="Secure account confirm password"
+                      value={linkPasswordConfirm}
+                      onChangeText={setLinkPasswordConfirm}
+                      secureTextEntry
+                      placeholder="Re-enter password"
+                    />
+
+                    {linkError ? <Text style={styles.errorText}>{linkError}</Text> : null}
+
+                    <AppButton
+                      label="Secure Account"
+                      accessibilityLabel="Secure anonymous account"
+                      onPress={() => void handleLinkAnonymousAccount()}
+                      loading={linkPending}
+                      loadingLabel="Securing..."
+                    />
+                  </View>
+                ) : (
+                  <View style={styles.sectionBody}>
+                    {hasGoogleProvider ? (
+                      <ListItem
+                        onPress={
+                          hasPasswordProvider
+                            ? () => {
+                                setGoogleDisconnectError(null);
+                                setDisconnectGoogleVisible(true);
+                              }
+                            : undefined
+                        }
+                        title="Google Sign-In"
+                        description={
+                          hasPasswordProvider
+                            ? 'Connected. Disconnecting Google will keep email and password access.'
+                            : 'Connected. Add a password before disconnecting Google.'
+                        }
+                        trailingText={hasPasswordProvider ? 'Disconnect' : 'Connected'}
+                      />
+                    ) : (
+                      <GoogleAuthButton
+                        label="Add Google Sign-In"
+                        disabled={!isGoogleAuthReady}
+                        loading={googleLinkPending}
+                        onPress={() => void handleLinkGoogleAccount()}
+                      />
+                    )}
+
+                    {hasPasswordProvider ? (
+                      <ListItem
+                        onPress={() => void handleSendPasswordReset()}
+                        title="Reset password"
+                        description="Send a Firebase reset email to the current account address."
+                        trailingText={passwordResetPending ? 'Working...' : 'Send'}
+                        disabled={passwordResetPending}
+                      />
+                    ) : null}
+
+                    {linkError ? <Text style={styles.errorText}>{linkError}</Text> : null}
+                  </View>
+                )}
+              </View>
+            ) : null}
+
+            {shouldRenderSection('preferences') ? (
+              <View style={styles.section}>
+                <SectionHeading
+                  title="Preferences"
+                  description="Set your region, prompts, and alert sounds."
+                />
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>Timezone</Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Open timezone picker"
+                    onPress={() => setSelectionPicker('timezone')}
+                    style={({ pressed }) => [
+                      styles.selectionButton,
+                      pressed ? styles.buttonPressed : null,
+                    ]}
+                  >
+                    <Text style={styles.selectionLabel}>Timezone</Text>
+                    <Text style={styles.selectionValue}>
+                      {getProfileSelectionLabel(
+                        PROFILE_TIMEZONE_OPTIONS,
+                        timezone,
+                        timezone || 'Select a timezone',
+                      )}
+                    </Text>
+                    <Text style={styles.selectionMeta}>{timezone || 'Select a timezone'}</Text>
+                  </Pressable>
                 </View>
-              )}
-            </View>
 
-            <View style={styles.section}>
-              <SectionHeading
-                title="Preferences"
-                description="Set your region, prompts, and alert sounds."
-              />
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Timezone</Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Open timezone picker"
-                  onPress={() => setSelectionPicker('timezone')}
-                  style={({ pressed }) => [
-                    styles.selectionButton,
-                    pressed ? styles.buttonPressed : null,
-                  ]}
-                >
-                  <Text style={styles.selectionLabel}>Timezone</Text>
-                  <Text style={styles.selectionValue}>
-                    {getProfileSelectionLabel(
-                      PROFILE_TIMEZONE_OPTIONS,
-                      timezone,
-                      timezone || 'Select a timezone',
-                    )}
-                  </Text>
-                  <Text style={styles.selectionMeta}>{timezone || 'Select a timezone'}</Text>
-                </Pressable>
-              </View>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>Locale</Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Open locale picker"
+                    onPress={() => setSelectionPicker('locale')}
+                    style={({ pressed }) => [
+                      styles.selectionButton,
+                      pressed ? styles.buttonPressed : null,
+                    ]}
+                  >
+                    <Text style={styles.selectionLabel}>Locale</Text>
+                    <Text style={styles.selectionValue}>
+                      {getProfileSelectionLabel(
+                        PROFILE_LOCALE_OPTIONS,
+                        locale,
+                        locale || 'Select a locale',
+                      )}
+                    </Text>
+                    <Text style={styles.selectionMeta}>{locale || 'Select a locale'}</Text>
+                  </Pressable>
+                </View>
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Locale</Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Open locale picker"
-                  onPress={() => setSelectionPicker('locale')}
-                  style={({ pressed }) => [
-                    styles.selectionButton,
-                    pressed ? styles.buttonPressed : null,
-                  ]}
-                >
-                  <Text style={styles.selectionLabel}>Locale</Text>
-                  <Text style={styles.selectionValue}>
-                    {getProfileSelectionLabel(
-                      PROFILE_LOCALE_OPTIONS,
-                      locale,
-                      locale || 'Select a locale',
-                    )}
-                  </Text>
-                  <Text style={styles.selectionMeta}>{locale || 'Select a locale'}</Text>
-                </Pressable>
-              </View>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>Time format</Text>
+                  <SegmentedControl
+                    accessibilityLabel="Time format"
+                    options={TIME_FORMAT_OPTIONS}
+                    value={timeFormat}
+                    onChange={setTimeFormat}
+                  />
+                </View>
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Time format</Text>
-                <SegmentedControl
-                  accessibilityLabel="Time format"
-                  options={TIME_FORMAT_OPTIONS}
-                  value={timeFormat}
-                  onChange={setTimeFormat}
-                />
-              </View>
-
-              <AppButton
-                label="Tips & Wisdom"
-                variant="secondary"
-                accessibilityLabel="Tips and wisdom"
-                onPress={handleOpenTipModal}
-                style={styles.tipsButton}
-                textStyle={styles.tipsButtonText}
-              />
-
-              <ListItem
-                onPress={() => setSoundPicker('alarm')}
-                title="Timer sound"
-                description="Pick the sound used when timer-style alerts finish."
-                trailingText={getProfileSoundOption(profile.alarmSoundId).label}
-              />
-              <ListItem
-                onPress={() => setSoundPicker('reminder')}
-                title="Reminder sound"
-                description="Pick the sound used before scheduled events."
-                trailingText={getProfileSoundOption(profile.reminderSoundId).label}
-              />
-              {soundError ? <Text style={styles.errorText}>{soundError}</Text> : null}
-
-              {accountError ? <Text style={styles.errorText}>{accountError}</Text> : null}
-              {accountFeedback ? <Text style={styles.successText}>{accountFeedback}</Text> : null}
-
-              <AppButton
-                label="Save Preferences"
-                accessibilityLabel="Save account settings"
-                onPress={() => void handleSaveAccountSettings()}
-                loading={accountPending}
-                loadingLabel="Saving..."
-              />
-            </View>
-
-            <View style={styles.section}>
-              <SectionHeading
-                title="Calendars & Data"
-                description="Connect device calendars and take your events with you."
-              />
-              <ListItem
-                onPress={() => setDeviceCalendarsModalVisible(true)}
-                title="Device calendars"
-                description={getDeviceCalendarDescription()}
-                trailingText={getDeviceCalendarTrailingText()}
-              />
-              <ListItem
-                onPress={() => setIcsModalVisible(true)}
-                title="Export calendar"
-                description="Export Bearing events to a general .ics file."
-                trailingText="Export"
-              />
-              <ListItem
-                onPress={() => setDataExportVisible(true)}
-                title="Export all data"
-                description="Download your profile, plan, events, goals, notes, and tasks as JSON."
-                trailingText="Export"
-              />
-            </View>
-
-            <View style={styles.section}>
-              <SectionHeading title="Plan" description="Review your current Bearing access." />
-              <ListItem
-                onPress={() => void handlePremiumAction()}
-                title="Bearing 360 access"
-                description={getPremiumAccessDescription()}
-                trailingText={
-                  premiumManagementPending
-                    ? 'Opening...'
-                    : hasPremiumAccess
-                      ? 'Manage'
-                      : 'View plans'
-                }
-                disabled={premiumManagementPending}
-              />
-              {hasPremiumAccess && authUser && !isAnonymous ? (
-                <ListItem
-                  onPress={() => setCreditPackVisible(true)}
-                  title="AI planning credits"
-                  description={
-                    aiCreditBalanceLoading
-                      ? 'Checking your current balance...'
-                      : (aiCreditBalanceError ??
-                        (aiCreditBalance === null
-                          ? 'Current balance unavailable.'
-                          : `${aiCreditBalance} available`))
-                  }
-                  trailingText="Get more"
-                />
-              ) : null}
-              {premiumManagementError ? (
-                <Text style={styles.errorText}>{premiumManagementError}</Text>
-              ) : null}
-            </View>
-
-            <View style={styles.section}>
-              <SectionHeading
-                title="Privacy & Legal"
-                description="Review policies, contact support, and control diagnostics."
-              />
-              <ListItem
-                onPress={() => setLegalDocumentId('privacy')}
-                title="Privacy policy"
-                description="How Bearing handles account, planning, calendar, AI, and diagnostic data."
-                trailingText="Read"
-              />
-              <ListItem
-                onPress={() => setLegalDocumentId('terms')}
-                title="Terms of service"
-                description="Rules for accounts, content, AI, calendars, and future subscriptions."
-                trailingText="Read"
-              />
-              <ListItem
-                onPress={() => void handleOpenSupport()}
-                title="Support"
-                description="Get help or make a privacy request."
-                trailingText="Email"
-              />
-              {legalError ? <Text style={styles.errorText}>{legalError}</Text> : null}
-              <View style={styles.telemetryPreferenceRow}>
-                <View style={styles.telemetryPreferenceCopy}>
-                  <Text style={styles.sectionTitle}>Share product diagnostics</Text>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>Appearance</Text>
+                  <SegmentedControl
+                    accessibilityLabel="Appearance"
+                    options={THEME_OPTIONS}
+                    value={themePreference}
+                    onChange={(nextPreference) => void handleThemePreferenceChange(nextPreference)}
+                  />
                   <Text style={styles.selectionMeta}>
-                    Sends fixed outcome events only. Bearing excludes account IDs, content, calendar
-                    details, locations, and raw errors.
+                    {themePreferencePending
+                      ? 'Saving appearance preference...'
+                      : (themePreferenceError ?? 'Saved to this device.')}
                   </Text>
                 </View>
-                <Switch
-                  accessibilityLabel="Share product diagnostics"
-                  value={telemetryConsent.enabled}
-                  disabled={telemetryConsent.pending}
-                  onValueChange={(enabled) => void telemetryConsent.updateConsent(enabled)}
+
+                <AppButton
+                  label="Tips & Wisdom"
+                  variant="secondary"
+                  accessibilityLabel="Tips and wisdom"
+                  onPress={handleOpenTipModal}
+                  style={styles.tipsButton}
+                  textStyle={styles.tipsButtonText}
+                />
+
+                <ListItem
+                  onPress={() => setSoundPicker('alarm')}
+                  title="Timer sound"
+                  description="Pick the sound used when timer-style alerts finish."
+                  trailingText={getProfileSoundOption(profile.alarmSoundId).label}
+                />
+                <ListItem
+                  onPress={() => setSoundPicker('reminder')}
+                  title="Reminder sound"
+                  description="Pick the sound used before scheduled events."
+                  trailingText={getProfileSoundOption(profile.reminderSoundId).label}
+                />
+                {soundError ? <Text style={styles.errorText}>{soundError}</Text> : null}
+
+                {accountError ? <Text style={styles.errorText}>{accountError}</Text> : null}
+                {accountFeedback ? <Text style={styles.successText}>{accountFeedback}</Text> : null}
+
+                <AppButton
+                  label="Save Preferences"
+                  accessibilityLabel="Save account settings"
+                  onPress={() => void handleSaveAccountSettings()}
+                  loading={accountPending}
+                  loadingLabel="Saving..."
                 />
               </View>
-              {telemetryConsent.error ? (
-                <Text style={styles.errorText}>{telemetryConsent.error}</Text>
-              ) : null}
-            </View>
+            ) : null}
 
-            <View style={styles.section}>
-              <SectionHeading title="Session" description="Manage this device session." />
-              <ListItem
-                onPress={onPressSignOut}
-                title="Sign Out"
-                description="End the current session on this device."
-                trailingText={isSignOutPending ? 'Working...' : 'Action'}
-                disabled={isSignOutPending}
-              />
-              <ListItem
-                onPress={() => setDeleteAccountVisible(true)}
-                title="Delete account"
-                description="Permanently delete this account and its Bearing data."
-                trailingText="Delete"
-              />
-            </View>
+            {shouldRenderSection('connectedServices') ? (
+              <View style={styles.section}>
+                <SectionHeading
+                  title="Calendars & Data"
+                  description="Connect device calendars and take your events with you."
+                />
+                <ListItem
+                  onPress={() => setDeviceCalendarsModalVisible(true)}
+                  title="Device calendars"
+                  description={getDeviceCalendarDescription()}
+                  trailingText={getDeviceCalendarTrailingText()}
+                />
+                <ListItem
+                  onPress={() => setIcsModalVisible(true)}
+                  title="Export calendar"
+                  description="Export Bearing events to a general .ics file."
+                  trailingText="Export"
+                />
+                <ListItem
+                  onPress={() => setDataExportVisible(true)}
+                  title="Export all data"
+                  description="Download your profile, plan, events, goals, notes, and tasks as JSON."
+                  trailingText="Export"
+                />
+              </View>
+            ) : null}
+
+            {shouldRenderSection('plan') ? (
+              <View style={styles.section}>
+                <SectionHeading title="Plan" description="Review your current Bearing access." />
+                <ListItem
+                  onPress={() => void handlePremiumAction()}
+                  title="Bearing 360 access"
+                  description={getPremiumAccessDescription()}
+                  trailingText={
+                    premiumManagementPending
+                      ? 'Opening...'
+                      : hasPremiumAccess
+                        ? 'Manage'
+                        : 'View plans'
+                  }
+                  disabled={premiumManagementPending}
+                />
+                {hasPremiumAccess && authUser && !isAnonymous ? (
+                  <ListItem
+                    onPress={() => setCreditPackVisible(true)}
+                    title="AI planning credits"
+                    description={
+                      aiCreditBalanceLoading
+                        ? 'Checking your current balance...'
+                        : (aiCreditBalanceError ??
+                          (aiCreditBalance === null
+                            ? 'Current balance unavailable.'
+                            : `${aiCreditBalance} available`))
+                    }
+                    trailingText="Get more"
+                  />
+                ) : null}
+                {premiumManagementError ? (
+                  <Text style={styles.errorText}>{premiumManagementError}</Text>
+                ) : null}
+              </View>
+            ) : null}
+
+            {shouldRenderSection('legal') ? (
+              <View style={styles.section}>
+                <SectionHeading
+                  title="Privacy & Legal"
+                  description="Review policies, contact support, and control diagnostics."
+                />
+                <ListItem
+                  onPress={() => setLegalDocumentId('privacy')}
+                  title="Privacy policy"
+                  description="How Bearing handles account, planning, calendar, AI, and diagnostic data."
+                  trailingText="Read"
+                />
+                <ListItem
+                  onPress={() => setLegalDocumentId('terms')}
+                  title="Terms of service"
+                  description="Rules for accounts, content, AI, calendars, and future subscriptions."
+                  trailingText="Read"
+                />
+                <ListItem
+                  onPress={() => void handleOpenSupport()}
+                  title="Support"
+                  description="Get help or make a privacy request."
+                  trailingText="Email"
+                />
+                {legalError ? <Text style={styles.errorText}>{legalError}</Text> : null}
+                <View style={styles.telemetryPreferenceRow}>
+                  <View style={styles.telemetryPreferenceCopy}>
+                    <Text style={styles.sectionTitle}>Share product diagnostics</Text>
+                    <Text style={styles.selectionMeta}>
+                      Sends fixed outcome events only. Bearing excludes account IDs, content,
+                      calendar details, locations, and raw errors.
+                    </Text>
+                  </View>
+                  <Switch
+                    accessibilityLabel="Share product diagnostics"
+                    value={telemetryConsent.enabled}
+                    disabled={telemetryConsent.pending}
+                    onValueChange={(enabled) => void telemetryConsent.updateConsent(enabled)}
+                  />
+                </View>
+                {telemetryConsent.error ? (
+                  <Text style={styles.errorText}>{telemetryConsent.error}</Text>
+                ) : null}
+              </View>
+            ) : null}
+
+            {shouldRenderSection('session') ? (
+              <View style={styles.section}>
+                <SectionHeading title="Session" description="Manage this device session." />
+                <ListItem
+                  onPress={onPressSignOut}
+                  title="Sign Out"
+                  description="End the current session on this device."
+                  trailingText={isSignOutPending ? 'Working...' : 'Action'}
+                  disabled={isSignOutPending}
+                />
+                <ListItem
+                  onPress={() => setDeleteAccountVisible(true)}
+                  title="Delete account"
+                  description="Permanently delete this account and its Bearing data."
+                  trailingText="Delete"
+                />
+              </View>
+            ) : null}
           </>
         ) : null}
       </ScrollView>
@@ -1461,6 +1550,9 @@ const createStyles = (theme: Theme) =>
       paddingVertical: layout.pagePaddingVertical,
       gap: spacing.xl,
       paddingBottom: 120,
+    },
+    routeHeader: {
+      gap: spacing.sm,
     },
     stateTitle: {
       ...typography.button,

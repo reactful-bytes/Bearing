@@ -538,12 +538,12 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 | Task ID | Status      | Description                             | Notes                                                                                    |
 | ------- | ----------- | --------------------------------------- | ---------------------------------------------------------------------------------------- |
-| M35.1   | not-started | Recompose Profile groups                | Group account, services, preferences, billing, legal, and actions with shared primitives |
-| M35.2   | not-started | Route profile subsections               | Move dense controls to typed routes; retain high-value status on Profile                 |
-| M35.3   | not-started | Preserve all profile behavior           | Retain account, calendar, purchases, credits, privacy, legal, and logout flows           |
-| M35.4   | not-started | Wire appearance preference              | ThemeProvider is the only appearance state and persists selection                        |
-| M35.5   | not-started | Add truthful status and danger handling | Use accurate connected/subscription status and restrained destructive treatment          |
-| M35.6   | not-started | Validate Profile                        | Cover routes, persistence, status, errors, and responsive layout                         |
+| M35.1   | completed | Recompose Profile groups                | Group account, services, preferences, billing, legal, and actions with shared primitives |
+| M35.2   | completed | Route profile subsections               | Typed routes render focused sections and retain high-value status on Profile            |
+| M35.3   | completed | Preserve all profile behavior           | Account, calendar, purchases, credits, privacy, legal, and logout remain reachable      |
+| M35.4   | completed | Wire appearance preference              | ThemeProvider preference is exposed in Profile and persists selection                   |
+| M35.5   | completed | Add truthful status and danger handling | Existing connected/subscription status and destructive flows remain accurate             |
+| M35.6   | completed | Validate Profile                        | Focused/full tests, typecheck, lint, format, and diff validation pass                   |
 
 ### M36 - Responsive, Accessibility, and Release Polish
 

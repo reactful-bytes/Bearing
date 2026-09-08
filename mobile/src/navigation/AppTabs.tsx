@@ -27,6 +27,7 @@ import { FocusModeScreen } from '../screens/FocusModeScreen';
 import { NotesScreen } from '../screens/NotesScreen';
 import { PlanScreen } from '../screens/PlanScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import type { ProfileSection } from '../screens/ProfileScreen';
 import { TasksScreen } from '../screens/TasksScreen';
 import { NoteEditorScreen } from '../screens/NoteEditorScreen';
 import { NavigationPlaceholderScreen } from './NavigationPlaceholderScreen';
@@ -126,6 +127,19 @@ function NotesNavigator() {
 }
 
 function ProfileNavigator({ onPressSignOut, isSignOutPending }: AppTabsProps) {
+  function renderSection(section: ProfileSection) {
+    return function ProfileSectionRoute({ navigation }: { navigation: { goBack: () => void } }) {
+      return (
+        <ProfileScreen
+          onPressSignOut={onPressSignOut}
+          isSignOutPending={isSignOutPending}
+          section={section}
+          onPressBack={navigation.goBack}
+        />
+      );
+    };
+  }
+
   return (
     <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
       <ProfileStack.Screen name="ProfileHome">
@@ -133,15 +147,21 @@ function ProfileNavigator({ onPressSignOut, isSignOutPending }: AppTabsProps) {
           <ProfileScreen onPressSignOut={onPressSignOut} isSignOutPending={isSignOutPending} />
         )}
       </ProfileStack.Screen>
-      <ProfileStack.Screen name="PersonalInformation" component={NavigationPlaceholderScreen} />
-      <ProfileStack.Screen name="Security" component={NavigationPlaceholderScreen} />
-      <ProfileStack.Screen name="ConnectedServices" component={NavigationPlaceholderScreen} />
-      <ProfileStack.Screen name="Notifications" component={NavigationPlaceholderScreen} />
-      <ProfileStack.Screen name="FocusPreferences" component={NavigationPlaceholderScreen} />
-      <ProfileStack.Screen name="Appearance" component={NavigationPlaceholderScreen} />
-      <ProfileStack.Screen name="PlanBilling" component={NavigationPlaceholderScreen} />
-      <ProfileStack.Screen name="Legal" component={NavigationPlaceholderScreen} />
-      <ProfileStack.Screen name="Subscription" component={NavigationPlaceholderScreen} />
+      <ProfileStack.Screen name="PersonalInformation">
+        {renderSection('account')}
+      </ProfileStack.Screen>
+      <ProfileStack.Screen name="Security">{renderSection('security')}</ProfileStack.Screen>
+      <ProfileStack.Screen name="ConnectedServices">
+        {renderSection('connectedServices')}
+      </ProfileStack.Screen>
+      <ProfileStack.Screen name="Notifications">{renderSection('preferences')}</ProfileStack.Screen>
+      <ProfileStack.Screen name="FocusPreferences">
+        {renderSection('preferences')}
+      </ProfileStack.Screen>
+      <ProfileStack.Screen name="Appearance">{renderSection('preferences')}</ProfileStack.Screen>
+      <ProfileStack.Screen name="PlanBilling">{renderSection('plan')}</ProfileStack.Screen>
+      <ProfileStack.Screen name="Legal">{renderSection('legal')}</ProfileStack.Screen>
+      <ProfileStack.Screen name="Subscription">{renderSection('plan')}</ProfileStack.Screen>
     </ProfileStack.Navigator>
   );
 }

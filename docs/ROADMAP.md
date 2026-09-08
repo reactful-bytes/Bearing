@@ -418,12 +418,12 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 | Task ID | Status      | Description                             | Exit Criteria                                                                      |
 | ------- | ----------- | --------------------------------------- | ---------------------------------------------------------------------------------- |
-| M35.1   | not-started | Recompose Profile groups                | Account, services, preferences, billing, legal, and actions use shared primitives  |
-| M35.2   | not-started | Route profile subsections               | Dense controls move to typed routes while status remains visible                   |
-| M35.3   | not-started | Preserve all profile behavior           | Account, calendar, purchase, credits, privacy, legal, and logout remain reachable  |
-| M35.4   | not-started | Wire appearance preference              | ThemeProvider is the only theme state and persistence is visible                   |
-| M35.5   | not-started | Add truthful status and danger handling | Connection/subscription status and destructive actions are accurate and restrained |
-| M35.6   | not-started | Validate Profile                        | Navigation, persistence, status, errors, and responsive tests pass                 |
+| M35.1   | completed | Recompose Profile groups                | Account, services, preferences, billing, legal, and actions use shared primitives  |
+| M35.2   | completed | Route profile subsections               | Typed routes render focused sections while status remains visible                   |
+| M35.3   | completed | Preserve all profile behavior           | Account, calendar, purchase, credits, privacy, legal, and logout remain reachable  |
+| M35.4   | completed | Wire appearance preference              | ThemeProvider is the only appearance state and persists the selected preference      |
+| M35.5   | completed | Add truthful status and danger handling | Connection/subscription status and destructive actions remain accurate and restrained |
+| M35.6   | completed | Validate Profile                        | Navigation, persistence, status, errors, and responsive tests pass                 |
 
 ### M36 - Responsive, Accessibility, and Release Polish
 
