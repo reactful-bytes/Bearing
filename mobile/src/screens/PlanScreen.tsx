@@ -8,6 +8,7 @@ import { AppButton } from '../components/ui/AppButton';
 import { AppCard } from '../components/ui/AppCard';
 import { AppScreen } from '../components/ui/AppScreen';
 import { EmptyState } from '../components/ui/EmptyState';
+import { IconButton } from '../components/ui/IconButton';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { AppIcon } from '../components/ui/AppIcon';
 import { useThemedStyles } from '../design/useThemedStyles';
@@ -183,9 +184,9 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
       <PlanSection
         title="Today's plan"
         action={
-          <AppButton
-            label="More events"
-            variant="secondary"
+          <IconButton
+            name="next"
+            accessibilityLabel="More events"
             onPress={() => rootNavigation.navigate('Calendar')}
           />
         }
@@ -254,9 +255,9 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
       <PlanSection
         title="Active goals"
         action={
-          <AppButton
-            label="View all"
-            variant="secondary"
+          <IconButton
+            name="next"
+            accessibilityLabel="View all"
             onPress={() => navigation.navigate('Goals')}
           />
         }
