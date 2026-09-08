@@ -39,6 +39,7 @@ function makeUseNotesReturn(
     uiState: 'empty',
     createNote: async () => undefined,
     updateNote: async () => undefined,
+    pinNote: async () => undefined,
     archiveNote: async () => undefined,
     deleteNote: async () => undefined,
     retry: jest.fn(),

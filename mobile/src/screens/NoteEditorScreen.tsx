@@ -37,6 +37,7 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
     uiState,
     createNote: createFromCollection,
     updateNote,
+    pinNote,
     archiveNote,
     deleteNote,
   } = useNotes();
@@ -47,6 +48,7 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
   const [body, setBody] = useState('');
   const [pinned, setPinned] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [pinning, setPinning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
@@ -111,6 +113,27 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
       setError('Failed to archive note.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleTogglePinned(): Promise<void> {
+    if (!note) {
+      setPinned((current) => !current);
+      return;
+    }
+
+    const nextPinned = !note.pinned;
+    setPinned(nextPinned);
+    setPinning(true);
+    setError(null);
+
+    try {
+      await pinNote(note.id, nextPinned);
+    } catch {
+      setPinned(note.pinned);
+      setError('Failed to update note pin.');
+    } finally {
+      setPinning(false);
     }
   }
 
@@ -192,7 +215,9 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
             label={pinned ? 'Unpin note' : 'Pin note'}
             variant="secondary"
             accessibilityLabel={pinned ? 'Unpin note' : 'Pin note'}
-            onPress={() => setPinned((current) => !current)}
+            onPress={handleTogglePinned}
+            loading={pinning}
+            loadingLabel="Updating..."
           />
           <AppButton
             label={isEditing ? 'Save Changes' : 'Save Note'}

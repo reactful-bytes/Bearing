@@ -4,6 +4,7 @@ import { getFirebaseAuth } from '../../services/firebase/firebaseAuth';
 import {
   createNote as createFirebaseNote,
   deleteNote as deleteFirebaseNote,
+  pinNote as pinFirebaseNote,
   subscribeToNotes,
   updateNote as updateFirebaseNote,
 } from '../../services/firebase/firebaseNotes';
@@ -14,6 +15,7 @@ export type UseNotesReturn = {
   uiState: NoteUiState;
   createNote: (input: CreateNoteInput) => Promise<void>;
   updateNote: (noteId: string, fields: UpdateNoteInput) => Promise<void>;
+  pinNote: (noteId: string, pinned: boolean) => Promise<void>;
   archiveNote: (noteId: string, fields: UpdateNoteInput) => Promise<void>;
   deleteNote: (noteId: string) => Promise<void>;
   retry: () => void;
@@ -84,6 +86,15 @@ export function useNotes(): UseNotesReturn {
     await deleteFirebaseNote(userId, noteId);
   }, []);
 
+  const pinNote = useCallback(async (noteId: string, pinned: boolean): Promise<void> => {
+    const userId = getFirebaseAuth().currentUser?.uid;
+    if (!userId) {
+      throw new Error('User is not authenticated.');
+    }
+
+    await pinFirebaseNote(userId, noteId, pinned);
+  }, []);
+
   const archiveNote = useCallback(
     async (noteId: string, fields: UpdateNoteInput): Promise<void> => {
       await updateNote(noteId, { ...fields, archived: true });
@@ -91,5 +102,5 @@ export function useNotes(): UseNotesReturn {
     [updateNote],
   );
 
-  return { notes, uiState, createNote, updateNote, archiveNote, deleteNote, retry };
+  return { notes, uiState, createNote, updateNote, pinNote, archiveNote, deleteNote, retry };
 }

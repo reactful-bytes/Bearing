@@ -39,6 +39,7 @@ function makeNote(): NoteRecord {
 describe('NoteEditorScreen', () => {
   it('updates, archives, deletes with confirmation, and opens conversions', async () => {
     const updateNote = jest.fn(async (_noteId: string, _fields: UpdateNoteInput) => undefined);
+    const pinNote = jest.fn(async (_noteId: string, _pinned: boolean) => undefined);
     const archiveNote = jest.fn(async (_noteId: string, _fields: UpdateNoteInput) => undefined);
     const deleteNote = jest.fn(async (_noteId: string) => undefined);
     const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
@@ -47,6 +48,7 @@ describe('NoteEditorScreen', () => {
       uiState: 'ready',
       createNote: jest.fn(async () => undefined),
       updateNote,
+      pinNote,
       archiveNote,
       deleteNote,
       retry: jest.fn(),
@@ -84,5 +86,35 @@ describe('NoteEditorScreen', () => {
 
     fireEvent.press(screen.getByText('Create Task'));
     expect(mockNavigate).toHaveBeenCalledWith('CreateTaskFromNote', { noteId: 'note-1' });
+  });
+
+  it('persists pinning immediately without saving the editor form', async () => {
+    const pinNote = jest.fn(async (_noteId: string, _pinned: boolean) => undefined);
+    const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
+    mockedUseNotes.mockReturnValue({
+      notes: [makeNote()],
+      uiState: 'ready',
+      createNote: jest.fn(async () => undefined),
+      updateNote: jest.fn(async () => undefined),
+      pinNote,
+      archiveNote: jest.fn(async () => undefined),
+      deleteNote: jest.fn(async () => undefined),
+      retry: jest.fn(),
+    });
+
+    render(
+      <NoteEditorScreen
+        route={{ params: { noteId: 'note-1' } }}
+        navigation={{ goBack: jest.fn() }}
+      />,
+    );
+
+    fireEvent.changeText(screen.getByLabelText('Note body'), 'Unsaved body stays local.');
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Pin note'));
+    });
+
+    expect(pinNote).toHaveBeenCalledWith('note-1', true);
+    expect(screen.getByLabelText('Unpin note')).toBeTruthy();
   });
 });

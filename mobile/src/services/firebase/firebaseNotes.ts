@@ -128,6 +128,14 @@ export async function updateNote(
   await updateDoc(doc(db, 'notes', noteId), updatePayload);
 }
 
+export async function pinNote(_userId: string, noteId: string, pinned: boolean): Promise<void> {
+  const db = getFirebaseFirestore();
+  await updateDoc(doc(db, 'notes', noteId), {
+    pinned,
+    updatedAt: Timestamp.now(),
+  });
+}
+
 export async function deleteNote(_userId: string, noteId: string): Promise<void> {
   const db = getFirebaseFirestore();
   await deleteDoc(doc(db, 'notes', noteId));
