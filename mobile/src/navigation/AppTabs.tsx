@@ -369,6 +369,11 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       borderTopColor: theme.componentTokens.tabBar.borderTopColor,
       borderTopWidth: StyleSheet.hairlineWidth,
       overflow: 'visible',
+      // React Navigation's default native drop shadow reads as a solid dark
+      // band above the bar on Android's dark theme; the hairline border above is enough.
+      elevation: 0,
+      shadowOpacity: 0,
+      shadowColor: 'transparent',
     },
     tabBarLabel: {
       ...theme.typography.tabLabel,
