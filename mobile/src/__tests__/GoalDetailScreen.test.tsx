@@ -185,7 +185,7 @@ describe('GoalDetailScreen', () => {
     render(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'timeline' } }} />);
 
     expect(screen.getAllByText('Timeline')).toHaveLength(2);
-    expect(screen.getByText('Upcoming · 1 task')).toBeTruthy();
+    expect(screen.getByText('Current · 1 task')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Open step Choose a race date' })).toBeTruthy();
   });
 });

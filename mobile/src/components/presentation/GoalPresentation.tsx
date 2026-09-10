@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GoalMilestone, GoalStepRecord, GoalWithSteps } from '../../features/goals/goalTypes';
@@ -35,21 +36,22 @@ export function GoalCard({ goal, formatDate, onPress }: GoalCardProps) {
       : goal.status === 'archived'
         ? 'Archived'
         : 'Add a step');
-  const statusStyle =
+  const badgeStyle =
     goal.status === 'completed'
-      ? styles.completed
+      ? styles.badgeCompleted
       : goal.status === 'archived'
-        ? styles.archived
-        : styles.active;
+        ? styles.badgeArchived
+        : styles.badgeActive;
+  const badgeTextStyle =
+    goal.status === 'completed'
+      ? styles.badgeTextCompleted
+      : goal.status === 'archived'
+        ? styles.badgeTextArchived
+        : styles.badgeTextActive;
   const statusLabel =
     goal.status === 'active' ? 'Current' : `${goal.status[0].toUpperCase()}${goal.status.slice(1)}`;
   const statusIcon = goal.status === 'completed' ? 'complete' : 'goalsOutline';
-  const statusColor =
-    goal.status === 'completed'
-      ? styles.completed.color
-      : goal.status === 'archived'
-        ? styles.archived.color
-        : styles.active.color;
+  const statusColor = badgeTextStyle.color;
 
   return (
     <Card accessibilityLabel={`Open goal ${goal.title}`} onPress={onPress} style={styles.card}>
@@ -62,7 +64,9 @@ export function GoalCard({ goal, formatDate, onPress }: GoalCardProps) {
             <Text numberOfLines={2} style={styles.title}>
               {goal.title}
             </Text>
-            <Text style={statusStyle}>{statusLabel}</Text>
+            <View style={[styles.badge, badgeStyle]}>
+              <Text style={[styles.badgeText, badgeTextStyle]}>{statusLabel}</Text>
+            </View>
           </View>
           <Text style={styles.meta}>Target: {formatDate(goal.estimatedCompletionDate)}</Text>
           <Text numberOfLines={1} style={styles.nextStep}>
@@ -81,6 +85,7 @@ export function GoalCard({ goal, formatDate, onPress }: GoalCardProps) {
                   : 'brand'
             }
             accessibilityValueText={goal.progressText}
+            style={styles.progressBar}
             showPercentage
           />
         </View>
@@ -118,55 +123,71 @@ type GoalTimelineProps = {
   taskCountsByStepId?: Readonly<Record<string, number>>;
 };
 
+// Nearest incomplete step by order, mirroring the goal's own nextStep/nextTask derivation.
+function getCurrentStepId(steps: readonly GoalStepRecord[]): string | null {
+  const ordered = [...steps].sort((left, right) => left.order - right.order);
+  return ordered.find((step) => step.status !== 'completed')?.id ?? null;
+}
+
 export function GoalTimeline({ steps, onPressStep, taskCountsByStepId = {} }: GoalTimelineProps) {
   const styles = useThemedStyles(createStyles);
   const { theme } = useTheme();
+  const currentStepId = useMemo(() => getCurrentStepId(steps), [steps]);
 
   return (
     <View accessibilityLabel="Goal timeline" style={styles.timeline}>
-      {steps.map((step, index) => (
-        <Pressable
-          key={step.id}
-          accessibilityRole={onPressStep ? 'button' : undefined}
-          accessibilityLabel={onPressStep ? `Open step ${step.title}` : undefined}
-          disabled={!onPressStep}
-          onPress={() => onPressStep?.(step)}
-          style={styles.timelineItem}
-        >
-          <View style={styles.timelineMarkerColumn}>
-            <View
-              style={[
-                styles.timelineMarker,
-                step.status === 'completed' ? styles.timelineMarkerComplete : null,
-              ]}
-            >
-              {step.status === 'completed' ? (
-                <AppIcon name="complete" size={12} color={theme.colors.onBrand} decorative />
-              ) : null}
+      {steps.map((step, index) => {
+        const isCompleted = step.status === 'completed';
+        const isCurrent = !isCompleted && step.id === currentStepId;
+
+        return (
+          <Pressable
+            key={step.id}
+            accessibilityRole={onPressStep ? 'button' : undefined}
+            accessibilityLabel={onPressStep ? `Open step ${step.title}` : undefined}
+            disabled={!onPressStep}
+            onPress={() => onPressStep?.(step)}
+            style={styles.timelineItem}
+          >
+            <View style={styles.timelineMarkerColumn}>
+              <View
+                style={[
+                  styles.timelineMarker,
+                  isCompleted
+                    ? styles.timelineMarkerComplete
+                    : isCurrent
+                      ? styles.timelineMarkerCurrent
+                      : styles.timelineMarkerUpcoming,
+                ]}
+              >
+                {isCompleted ? (
+                  <AppIcon name="complete" size={12} color={theme.colors.onBrand} decorative />
+                ) : null}
+              </View>
+              {index < steps.length - 1 ? <View style={styles.timelineConnector} /> : null}
             </View>
-            {index < steps.length - 1 ? <View style={styles.timelineConnector} /> : null}
-          </View>
-          <View style={styles.timelineCopy}>
-            <View style={styles.timelineTitleRow}>
-              <Text style={styles.timelineTitle}>{step.title}</Text>
-              {step.estimatedFinishDate ? (
-                <Text style={styles.timelineDate}>
-                  {step.estimatedFinishDate.toLocaleDateString(undefined, {
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </Text>
-              ) : null}
+            <View style={styles.timelineCopy}>
+              <View style={styles.timelineTitleRow}>
+                <Text style={styles.timelineTitle}>{step.title}</Text>
+                {step.estimatedFinishDate ? (
+                  <Text style={styles.timelineDate}>
+                    {step.estimatedFinishDate.toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </Text>
+                ) : null}
+              </View>
+              <Text style={styles.meta}>
+                {isCompleted ? 'Completed' : isCurrent ? 'Current' : 'Upcoming'}
+                {taskCountsByStepId[step.id]
+                  ? ` · ${taskCountsByStepId[step.id]} task${taskCountsByStepId[step.id] === 1 ? '' : 's'}`
+                  : ''}
+              </Text>
             </View>
-            <Text style={styles.meta}>
-              {step.status === 'completed' ? 'Completed' : 'Upcoming'}
-              {taskCountsByStepId[step.id]
-                ? ` · ${taskCountsByStepId[step.id]} task${taskCountsByStepId[step.id] === 1 ? '' : 's'}`
-                : ''}
-            </Text>
-          </View>
-        </Pressable>
-      ))}
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -192,7 +213,7 @@ export function GoalMilestones({ milestones }: GoalMilestonesProps) {
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
-    card: { padding: theme.spacing.md },
+    card: { padding: theme.spacing.lg },
     cardRow: { flexDirection: 'row', alignItems: 'flex-start', gap: theme.spacing.md },
     iconContainer: {
       width: 36,
@@ -206,11 +227,21 @@ const createStyles = (theme: Theme) =>
     cardCopy: { flex: 1, gap: theme.spacing.xs },
     titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: theme.spacing.md },
     title: { ...theme.typography.cardTitle, color: theme.colors.text, flex: 1 },
-    active: { ...theme.typography.caption, color: theme.colors.brand },
-    completed: { ...theme.typography.caption, color: theme.colors.success },
-    archived: { ...theme.typography.caption, color: theme.colors.textSecondary },
+    badge: {
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 2,
+      borderRadius: theme.radii.xl,
+    },
+    badgeText: { ...theme.typography.caption, fontWeight: '700' },
+    badgeActive: { backgroundColor: theme.colors.surfaceBrand },
+    badgeCompleted: { backgroundColor: `${theme.colors.success}26` },
+    badgeArchived: { backgroundColor: theme.colors.surfacePressed },
+    badgeTextActive: { color: theme.colors.brand },
+    badgeTextCompleted: { color: theme.colors.success },
+    badgeTextArchived: { color: theme.colors.textSecondary },
     meta: { ...theme.typography.caption, color: theme.colors.textSecondary },
     nextStep: { ...theme.typography.caption, color: theme.colors.textSecondary },
+    progressBar: { marginTop: theme.spacing.xs },
     timeline: { gap: theme.spacing.sm },
     timelineItem: {
       minHeight: 48,
@@ -229,10 +260,16 @@ const createStyles = (theme: Theme) =>
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
-      borderColor: theme.colors.brand,
+      borderColor: theme.colors.border,
       backgroundColor: theme.colors.background,
     },
-    timelineMarkerComplete: { backgroundColor: theme.colors.success },
+    timelineMarkerComplete: { backgroundColor: theme.colors.success, borderColor: theme.colors.success },
+    timelineMarkerCurrent: {
+      borderWidth: 2,
+      borderColor: theme.colors.brand,
+      backgroundColor: theme.colors.surfaceBrand,
+    },
+    timelineMarkerUpcoming: { borderColor: theme.colors.border },
     timelineConnector: {
       flex: 1,
       width: 1,
