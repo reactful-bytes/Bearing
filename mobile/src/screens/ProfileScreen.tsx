@@ -1280,19 +1280,23 @@ export function ProfileScreen({
             {shouldRenderSection('session') ? (
               <View style={styles.section}>
                 <SectionHeading title="Session" description="Manage this device session." />
-                <ListItem
-                  onPress={onPressSignOut}
-                  title="Sign Out"
-                  description="End the current session on this device."
-                  trailingText={isSignOutPending ? 'Working...' : 'Action'}
-                  disabled={isSignOutPending}
-                />
-                <ListItem
-                  onPress={() => setDeleteAccountVisible(true)}
-                  title="Delete account"
-                  description="Permanently delete this account and its Bearing data."
-                  trailingText="Delete"
-                />
+                <View style={styles.dangerActionWrapper}>
+                  <ListItem
+                    onPress={onPressSignOut}
+                    title="Sign Out"
+                    description="End the current session on this device."
+                    trailingText={isSignOutPending ? 'Working...' : 'Action'}
+                    disabled={isSignOutPending}
+                  />
+                </View>
+                <View style={styles.dangerActionWrapper}>
+                  <ListItem
+                    onPress={() => setDeleteAccountVisible(true)}
+                    title="Delete account"
+                    description="Permanently delete this account and its Bearing data."
+                    trailingText="Delete"
+                  />
+                </View>
               </View>
             ) : null}
           </>
@@ -1690,9 +1694,11 @@ const createStyles = (theme: Theme) =>
     },
     section: {
       gap: spacing.md,
-      paddingBottom: spacing.lg,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
+      padding: spacing.lg,
+      borderRadius: radii.lg,
+      backgroundColor: theme.colors.surfaceRaised,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
     },
     sectionBody: {
       gap: spacing.md,
@@ -1715,7 +1721,7 @@ const createStyles = (theme: Theme) =>
     input: {
       minHeight: 44,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderStrong,
       borderRadius: radii.md,
       backgroundColor: theme.colors.surface,
       color: theme.colors.text,
@@ -1725,7 +1731,7 @@ const createStyles = (theme: Theme) =>
     selectionButton: {
       minHeight: 44,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderStrong,
       borderRadius: radii.md,
       backgroundColor: theme.colors.surface,
       paddingHorizontal: spacing.md,
@@ -1807,6 +1813,12 @@ const createStyles = (theme: Theme) =>
     },
     buttonDisabled: {
       opacity: 0.6,
+    },
+    dangerActionWrapper: {
+      borderRadius: radii.md,
+      borderLeftWidth: 2,
+      borderLeftColor: theme.colors.dangerText,
+      overflow: 'hidden',
     },
     errorText: {
       ...typography.helper,
