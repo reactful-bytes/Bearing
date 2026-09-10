@@ -765,6 +765,8 @@ const createStyles = (theme: Theme) =>
     },
     monthAgendaTitle: {
       ...typography.sectionTitle,
+      fontSize: 17,
+      lineHeight: 22,
       color: theme.colors.text,
       flex: 1,
     },

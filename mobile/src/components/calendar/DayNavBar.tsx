@@ -56,9 +56,6 @@ const createStyles = (theme: Theme) =>
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
       gap: spacing.sm,
-      backgroundColor: theme.colors.surfaceRaised,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: theme.colors.borderStrong,
     },
     label: {
       ...typography.sectionTitle,

@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
+import { useTheme } from '../../design/ThemeProvider';
 import { spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
 
@@ -79,6 +80,7 @@ export function MonthGrid({
   width,
 }: MonthGridProps) {
   const styles = useThemedStyles(createStyles);
+  const { theme } = useTheme();
   const weeks = buildWeeks(year, month);
   const today = new Date();
   const cellWidth = Math.floor(width / 7);
@@ -118,6 +120,7 @@ export function MonthGrid({
                 accessibilityState={{ selected: isSelected }}
                 onPress={() => onSelectDate(new Date(year, month, day))}
                 style={[styles.cell, { width: cellWidth }]}
+                android_ripple={{ color: theme.colors.brand, borderless: true, radius: DAY_CIRCLE_SIZE / 2 }}
               >
                 <View
                   style={[
