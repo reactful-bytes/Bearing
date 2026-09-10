@@ -446,7 +446,7 @@ Second UI redesign pass driven by an updated mockup spec after M36 closed: premi
 | M37.2   | completed   | Remap icon registry to Tabler           | `icons.ts`/`AppIcon.tsx` fully remapped to the canonical Tabler set; custom SVG icons removed        |
 | M37.3   | completed   | Replace Create sheet with speed-dial FAB | `CreateFabGroup` replaces `CreateSheet`; `+`/`×` morph and restyled tab bar ship with updated tests   |
 | M37.4   | completed   | Polish Plan dashboard                   | `PlanScreen` surfaces, Focus Mode, and Idea Dump cards restyled with no logic/testID changes          |
-| M37.5   | not-started | Polish Goals list and Goal Detail       | `GoalCard`, `GoalStatusTabs`, and `GoalTimeline` states restyled; 3 distinct timeline states visible  |
+| M37.5   | completed   | Polish Goals list and Goal Detail       | `GoalCard`, `GoalStatusTabs`, and `GoalTimeline` states restyled; 3 distinct timeline states visible  |
 | M37.6   | not-started | Reskin Goal creation wizard             | `CreateGoalModal` restyled in place; existing 5-step structure and validation logic unchanged         |
 | M37.7   | not-started | Polish Calendar screen                  | Day/month views, nav bar, and imported-event color restyled                                           |
 | M37.8   | not-started | Polish task/event/note creation flows   | `AddTaskModal`, `AddEventModal`, `AddNoteModal` restyled; back-navigation unaffected                   |
