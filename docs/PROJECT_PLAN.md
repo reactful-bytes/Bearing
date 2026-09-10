@@ -556,6 +556,25 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M36.5   | passed-with-gap | Run complete release quality gate | 63 suites/438 tests, typecheck, lint, rules, web export, Expo config, and Functions quality pass; package drift, format baseline, and native builds remain |
 | M36.6   | completed       | Reconcile release documents       | Release handoff records automated evidence, manual gates, mockup/spec references, and commit style                                                         |
 
+### M37 - Premium Dark Palette Redesign and Create Speed-Dial
+
+Second UI redesign pass driven by an updated mockup spec after M36 closed: premium dark palette tokens, a full Tabler icon remap, a Create speed-dial FAB replacing the bottom sheet, and per-screen polish. Each phase is style/interaction only and preserves existing navigation, data models, and Firebase/RevenueCat behavior.
+
+| Task ID | Status      | Description                            | Notes                                                                                                |
+| ------- | ----------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| M37.1   | completed   | Apply premium dark palette tokens       | Dark/light `tokens.ts` palettes updated to spec hex values; all `theme.colors.*` call sites verified   |
+| M37.2   | completed   | Remap icon registry to Tabler           | `icons.ts`/`AppIcon.tsx` fully remapped to the canonical Tabler set; custom SVG icons removed          |
+| M37.3   | completed   | Replace Create sheet with speed-dial FAB | `CreateFabGroup` replaces `CreateSheet`; `+`/`×` morph and restyled tab bar ship with updated tests     |
+| M37.4   | completed   | Polish Plan dashboard                   | `PlanScreen` surfaces, Focus Mode, and Idea Dump cards restyled with no logic/testID changes            |
+| M37.5   | not-started | Polish Goals list and Goal Detail       | `GoalCard`, `GoalStatusTabs`, and `GoalTimeline` states restyled; 3 distinct timeline states visible    |
+| M37.6   | not-started | Reskin Goal creation wizard             | `CreateGoalModal` restyled in place; existing 5-step structure and validation logic unchanged           |
+| M37.7   | not-started | Polish Calendar screen                  | Day/month views, nav bar, and imported-event color restyled                                             |
+| M37.8   | not-started | Polish task/event/note creation flows   | `AddTaskModal`, `AddEventModal`, `AddNoteModal` restyled; back-navigation unaffected                     |
+| M37.9   | not-started | Polish Focus Mode                       | Start/summary states and hold-to-exit visuals restyled; hold-only exit behavior unchanged               |
+| M37.10  | not-started | Polish Notes screen                     | Search, section cards, and note editor restyled; pin/archive/delete/convert actions unaffected          |
+| M37.11  | not-started | Polish Profile screen                   | Section restyle only; RevenueCat/premium/entitlement logic untouched                                    |
+| M37.12  | not-started | Cross-cutting consistency pass          | Icon/spacing/typography/color consistency verified; Create FAB, hold-to-exit, and timeline invariants reconfirmed |
+
 ## Update Rules
 
 - Read this file before starting a task.
