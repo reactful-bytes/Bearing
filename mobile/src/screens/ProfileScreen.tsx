@@ -220,6 +220,7 @@ export function ProfileScreen({
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
   const shouldRenderSection = (section: ProfileSection): boolean =>
     profileSection === undefined || profileSection === section;
+  const isHubRoute = Boolean(navigation) && profileSection === undefined;
 
   const handleThemePreferenceChange = async (nextPreference: ThemePreference) => {
     setThemePreferencePending(true);
@@ -804,7 +805,145 @@ export function ProfileScreen({
 
         {profile ? (
           <>
-            {shouldRenderSection('account') ? (
+            {isHubRoute ? (
+              <>
+                <View style={styles.section}>
+                  <View style={styles.profileHero}>
+                    <View style={[styles.identitySummary, styles.profileHeroIdentity]}>
+                      <View style={styles.identityMark}>
+                        <Text style={styles.identityInitial}>
+                          {(displayName || email || '?').trim().charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={[styles.identityCopy, styles.profileHeroCopy]}>
+                        <Text numberOfLines={1} style={styles.identityName}>
+                          {displayName || 'Unnamed account'}
+                        </Text>
+                        <Text numberOfLines={1} style={styles.identityEmail}>
+                          {email || 'Anonymous session'}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                <View style={styles.section}>
+                  <SectionHeading title="Account" description="Identity and sign-in security." />
+                  <ListItem
+                    icon="personalInformation"
+                    onPress={() => navigation?.navigate('PersonalInformation')}
+                    title="Personal Information"
+                    description="Name, timezone, locale, and time format."
+                    trailingText="Open"
+                  />
+                  <ListItem
+                    icon="security"
+                    onPress={() => navigation?.navigate('Security')}
+                    title="Security"
+                    description="Passwords and sign-in methods."
+                    trailingText="Open"
+                  />
+                </View>
+
+                <View style={styles.section}>
+                  <SectionHeading
+                    title="Connected Services"
+                    description="Device calendars and data export."
+                  />
+                  <ListItem
+                    icon="integrations"
+                    onPress={() => navigation?.navigate('ConnectedServices')}
+                    title="Connected Services"
+                    description="Manage device calendars, exports, and integrations."
+                    trailingText="Open"
+                  />
+                </View>
+
+                <View style={styles.section}>
+                  <SectionHeading
+                    title="Preferences"
+                    description="Notifications, focus, and appearance."
+                  />
+                  <ListItem
+                    icon="notifications"
+                    onPress={() => navigation?.navigate('Notifications')}
+                    title="Notifications"
+                    description="Choose the sound used for reminders."
+                    trailingText="Open"
+                  />
+                  <ListItem
+                    icon="focusMode"
+                    onPress={() => navigation?.navigate('FocusPreferences')}
+                    title="Focus preferences"
+                    description="Choose the sound used when Focus Mode finishes."
+                    trailingText="Open"
+                  />
+                  <ListItem
+                    icon="appearance"
+                    onPress={() => navigation?.navigate('Appearance')}
+                    title="Appearance"
+                    description="Choose the light or dark app theme."
+                    trailingText="Open"
+                  />
+                  <ListItem
+                    icon="idea"
+                    onPress={handleOpenTipModal}
+                    title="Tips & Wisdom"
+                    description="See a rotating tip about getting the most out of Bearing."
+                    trailingText="Open"
+                  />
+                </View>
+
+                <View style={styles.section}>
+                  <SectionHeading
+                    title="Plan & Billing"
+                    description="Bearing 360 access and AI credits."
+                  />
+                  <ListItem
+                    icon="billing"
+                    onPress={() => navigation?.navigate('PlanBilling')}
+                    title="Plan & Billing"
+                    description={getPremiumAccessDescription()}
+                    trailingText="Open"
+                  />
+                </View>
+
+                <View style={styles.section}>
+                  <SectionHeading
+                    title="Account Actions"
+                    description="Legal, sign-out, and account deletion."
+                  />
+                  <ListItem
+                    icon="legal"
+                    onPress={() => navigation?.navigate('Legal')}
+                    title="Privacy & Legal"
+                    description="Policies, support, and diagnostics preferences."
+                    trailingText="Open"
+                  />
+                  <View style={styles.dangerActionWrapper}>
+                    <ListItem
+                      icon="logout"
+                      onPress={onPressSignOut}
+                      title="Sign Out"
+                      description="End the current session on this device."
+                      trailingText={isSignOutPending ? 'Working...' : 'Action'}
+                      disabled={isSignOutPending}
+                    />
+                  </View>
+                  <View style={styles.dangerActionWrapper}>
+                    <ListItem
+                      icon="delete"
+                      onPress={() => setDeleteAccountVisible(true)}
+                      title="Delete account"
+                      description="Permanently delete this account and its Bearing data."
+                      trailingText="Delete"
+                    />
+                  </View>
+                </View>
+              </>
+            ) : null}
+
+            {shouldRenderSection('account') && !isHubRoute ? (
               <View style={styles.section}>
                 <View style={profileSection === undefined ? styles.profileHero : null}>
                   <View
@@ -844,7 +983,7 @@ export function ProfileScreen({
               </View>
             ) : null}
 
-            {shouldRenderSection('security') ? (
+            {shouldRenderSection('security') && !isHubRoute ? (
               <View style={styles.section}>
                 <SectionHeading title="Security" description="Protect access to this account." />
                 {isAnonymous ? (
@@ -955,34 +1094,12 @@ export function ProfileScreen({
               </View>
             ) : null}
 
-            {shouldRenderSection('preferences') ? (
+            {shouldRenderSection('preferences') && !isHubRoute ? (
               <View style={styles.section}>
                 <SectionHeading
                   title="Preferences"
                   description="Set your region, prompts, and alert sounds."
                 />
-                {profileSection === undefined && navigation ? (
-                  <>
-                    <ListItem
-                      onPress={() => navigation.navigate('Notifications')}
-                      title="Notifications"
-                      description="Choose the sound used for reminders."
-                      trailingText="Open"
-                    />
-                    <ListItem
-                      onPress={() => navigation.navigate('FocusPreferences')}
-                      title="Focus preferences"
-                      description="Choose the sound used when Focus Mode finishes."
-                      trailingText="Open"
-                    />
-                    <ListItem
-                      onPress={() => navigation.navigate('Appearance')}
-                      title="Appearance"
-                      description="Choose the light or dark app theme."
-                      trailingText="Open"
-                    />
-                  </>
-                ) : null}
                 <View style={styles.fieldGroup}>
                   <Text style={styles.label}>Timezone</Text>
                   <Pressable
@@ -1142,7 +1259,7 @@ export function ProfileScreen({
               </View>
             ) : null}
 
-            {shouldRenderSection('connectedServices') ? (
+            {shouldRenderSection('connectedServices') && !isHubRoute ? (
               <View style={styles.section}>
                 <SectionHeading
                   title="Calendars & Data"
@@ -1169,7 +1286,7 @@ export function ProfileScreen({
               </View>
             ) : null}
 
-            {shouldRenderSection('plan') ? (
+            {shouldRenderSection('plan') && !isHubRoute ? (
               <View style={styles.section}>
                 <SectionHeading title="Plan" description="Review your current Bearing access." />
                 <ListItem
@@ -1231,7 +1348,7 @@ export function ProfileScreen({
               </View>
             ) : null}
 
-            {shouldRenderSection('legal') ? (
+            {shouldRenderSection('legal') && !isHubRoute ? (
               <View style={styles.section}>
                 <SectionHeading
                   title="Privacy & Legal"
@@ -1277,7 +1394,7 @@ export function ProfileScreen({
               </View>
             ) : null}
 
-            {shouldRenderSection('session') ? (
+            {shouldRenderSection('session') && !isHubRoute ? (
               <View style={styles.section}>
                 <SectionHeading title="Session" description="Manage this device session." />
                 <View style={styles.dangerActionWrapper}>

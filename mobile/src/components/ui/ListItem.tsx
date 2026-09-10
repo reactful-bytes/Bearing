@@ -3,11 +3,14 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
+import { AppIcon } from './AppIcon';
+import type { AppIconName } from '../../design/icons';
 
 type ListItemProps = {
   title: string;
   description?: string;
   trailingText?: string;
+  icon?: AppIconName;
   onPress?: () => void;
   disabled?: boolean;
 };
@@ -16,10 +19,17 @@ export function ListItem({
   title,
   description,
   trailingText,
+  icon,
   onPress,
   disabled = false,
 }: ListItemProps) {
   const styles = useThemedStyles(createStyles);
+  const leadingIcon = icon ? (
+    <View style={styles.iconMark}>
+      <AppIcon name={icon} size={18} color={styles.icon.color} decorative />
+    </View>
+  ) : null;
+
   if (onPress) {
     return (
       <Pressable
@@ -33,6 +43,7 @@ export function ListItem({
           disabled ? styles.itemDisabled : null,
         ]}
       >
+        {leadingIcon}
         <View style={styles.copyBlock}>
           <Text style={styles.title}>{title}</Text>
           {description ? <Text style={styles.description}>{description}</Text> : null}
@@ -44,6 +55,7 @@ export function ListItem({
 
   return (
     <View style={[styles.item, disabled ? styles.itemDisabled : null]}>
+      {leadingIcon}
       <View style={styles.copyBlock}>
         <Text style={styles.title}>{title}</Text>
         {description ? <Text style={styles.description}>{description}</Text> : null}
@@ -72,6 +84,17 @@ const createStyles = (theme: Theme) =>
     },
     itemDisabled: {
       opacity: 0.6,
+    },
+    iconMark: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.surfaceRaised,
+    },
+    icon: {
+      color: theme.colors.textSecondary,
     },
     copyBlock: {
       flex: 1,
