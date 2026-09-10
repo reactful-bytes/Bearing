@@ -258,7 +258,7 @@ function AppTabsNavigator({
 }) {
   const navigation = useNavigation<NavigationProp<AppTabParamList>>();
 
-  function navigateToCreate(action: 'goal' | 'task' | 'note' | 'event'): void {
+  function navigateToCreate(action: 'goal' | 'task' | 'note' | 'event' | 'focus'): void {
     setCreateVisible(false);
 
     if (action === 'goal') {
@@ -267,6 +267,8 @@ function AppTabsNavigator({
       navigation.navigate('Plan', { screen: 'CreateTask' });
     } else if (action === 'note') {
       navigation.navigate('Notes', { screen: 'NoteEditor' });
+    } else if (action === 'focus') {
+      navigation.navigate('Plan', { screen: 'FocusMode' });
     } else {
       navigation.navigate('Calendar', { screen: 'CreateEvent' });
     }
@@ -352,6 +354,7 @@ function AppTabsNavigator({
         onCreateTask={() => navigateToCreate('task')}
         onCreateNote={() => navigateToCreate('note')}
         onCreateEvent={() => navigateToCreate('event')}
+        onCreateFocus={() => navigateToCreate('focus')}
       />
     </>
   );

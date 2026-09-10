@@ -13,7 +13,6 @@ import {
 import { useThemedStyles } from '../design/useThemedStyles';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { DayNavBar } from '../components/calendar/DayNavBar';
 import { ViewModeToggle } from '../components/calendar/ViewModeToggle';
 import { HourlyTimeline } from '../components/calendar/HourlyTimeline';
@@ -390,32 +389,6 @@ export function CalendarScreen({
     }
   }
 
-  function handlePressAddEvent(): void {
-    if (navigation?.navigate) {
-      navigation.navigate('CreateEvent', { returnTo: 'CalendarHome' });
-      return;
-    }
-
-    setAddEventVisible(true);
-  }
-
-  function handlePressFocusMode(): void {
-    const now = new Date();
-    const event =
-      focusEvents.find((candidate) => now >= candidate.startAt && now < candidate.endAt) ??
-      focusEvents.find((candidate) => candidate.startAt > now);
-
-    if (navigation?.navigate) {
-      navigation.navigate('Plan', {
-        screen: 'FocusMode',
-        params: event ? { eventId: event.id } : undefined,
-      });
-      return;
-    }
-
-    setFocusModeVisible(true);
-  }
-
   function handleCloseFocusMode(): void {
     setFocusModeVisible(false);
     setPreferredFocusEventId(null);
@@ -559,6 +532,7 @@ export function CalendarScreen({
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
+            style={styles.monthCarousel}
             initialScrollIndex={initialMonthIndex}
             initialNumToRender={1}
             maxToRenderPerBatch={2}
@@ -633,26 +607,6 @@ export function CalendarScreen({
           </View>
         </View>
       )}
-
-      {/* Floating action button */}
-      <View style={styles.fabContainer}>
-        <FloatingActionButton
-          label="Focus"
-          accessibilityLabel="Focus"
-          icon="focusMode"
-          size="small"
-          labelColor={styles.focusLabel.color}
-          onPress={handlePressFocusMode}
-          style={styles.secondaryFab}
-        />
-        <FloatingActionButton
-          accessibilityLabel="Add"
-          icon="add"
-          onPress={handlePressAddEvent}
-          disabled={uiState === 'loading'}
-          style={styles.primaryFab}
-        />
-      </View>
 
       {/* Modals */}
       <AddEventModal
@@ -767,8 +721,11 @@ const createStyles = (theme: Theme) =>
     monthNavRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: spacing.md,
+      paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
+      backgroundColor: theme.colors.surfaceRaised,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.borderStrong,
     },
     monthArrow: {
       paddingHorizontal: spacing.md,
@@ -777,10 +734,16 @@ const createStyles = (theme: Theme) =>
       alignItems: 'center',
     },
     monthNavTitle: {
-      ...typography.button,
+      ...typography.sectionTitle,
+      fontSize: 17,
+      lineHeight: 22,
       color: theme.colors.text,
       flex: 1,
       textAlign: 'center',
+    },
+    monthCarousel: {
+      flexGrow: 0,
+      flexShrink: 0,
     },
     monthAgenda: {
       flex: 1,
@@ -814,22 +777,4 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.textSecondary,
       paddingVertical: spacing.lg,
     },
-    fabContainer: {
-      position: 'absolute',
-      bottom: layout.pagePaddingVertical,
-      right: layout.pagePaddingHorizontal,
-      alignItems: 'flex-end',
-      gap: spacing.md,
-    },
-    primaryFab: {
-      alignSelf: 'flex-end',
-      backgroundColor: theme.colors.textPrimary,
-    },
-    secondaryFab: {
-      alignSelf: 'flex-end',
-      backgroundColor: theme.colors.surface,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-    },
-    focusLabel: { color: theme.colors.text },
   });

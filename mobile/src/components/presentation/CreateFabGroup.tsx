@@ -7,7 +7,12 @@ import { useTheme } from '../../design/ThemeProvider';
 import { AppIcon } from '../ui/AppIcon';
 import { AppIconName } from '../../design/icons';
 
-type CreateFabActionKey = 'onCreateGoal' | 'onCreateTask' | 'onCreateNote' | 'onCreateEvent';
+type CreateFabActionKey =
+  | 'onCreateGoal'
+  | 'onCreateTask'
+  | 'onCreateNote'
+  | 'onCreateEvent'
+  | 'onCreateFocus';
 
 type CreateFabGroupProps = {
   visible: boolean;
@@ -17,21 +22,24 @@ type CreateFabGroupProps = {
   onCreateTask: () => void;
   onCreateNote: () => void;
   onCreateEvent: () => void;
+  onCreateFocus: () => void;
 };
 
 const ACTION_SPACING = 62;
 const ANIMATION_DURATION_MS = 200;
 
+// Declared in on-screen "stack" order (top to bottom); the last entry renders closest to the button.
 const createFabActions: readonly {
   label: string;
   icon: AppIconName;
-  tone: 'goal' | 'task' | 'note' | 'event';
+  tone: 'goal' | 'task' | 'note' | 'event' | 'focus';
   key: CreateFabActionKey;
 }[] = [
   { label: 'Event', icon: 'calendar', tone: 'event', key: 'onCreateEvent' },
   { label: 'Note', icon: 'note', tone: 'note', key: 'onCreateNote' },
   { label: 'Task', icon: 'task', tone: 'task', key: 'onCreateTask' },
   { label: 'Goal', icon: 'goal', tone: 'goal', key: 'onCreateGoal' },
+  { label: 'Focus', icon: 'focusMode', tone: 'focus', key: 'onCreateFocus' },
 ];
 
 export function CreateFabGroup(props: CreateFabGroupProps) {
@@ -64,9 +72,10 @@ export function CreateFabGroup(props: CreateFabGroupProps) {
         testID="create-fab-group"
       >
         {createFabActions.map((action, index) => {
+          const distanceFromButton = createFabActions.length - index;
           const translateY = progress.interpolate({
             inputRange: [0, 1],
-            outputRange: [0, -((index + 1) * ACTION_SPACING)],
+            outputRange: [0, -(distanceFromButton * ACTION_SPACING)],
           });
 
           return (
@@ -131,4 +140,5 @@ const createStyles = (theme: Theme) =>
     taskAction: { backgroundColor: theme.colors.brand },
     noteAction: { backgroundColor: theme.colors.warning },
     eventAction: { backgroundColor: theme.colors.purple },
+    focusAction: { backgroundColor: theme.colors.focusGreen },
   });

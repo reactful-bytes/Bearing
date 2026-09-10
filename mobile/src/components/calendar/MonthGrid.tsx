@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
-import { radii, spacing, typography } from '../../design/tokens';
+import { spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
 
 type MonthGridProps = {
@@ -137,9 +137,7 @@ const createStyles = (theme: Theme) =>
   StyleSheet.create({
     container: {
       paddingTop: spacing.sm,
-      paddingBottom: spacing.lg,
-      backgroundColor: theme.colors.surfaceRaised,
-      borderRadius: radii.lg,
+      paddingBottom: spacing.sm,
     },
     headerRow: {
       flexDirection: 'row',

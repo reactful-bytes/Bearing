@@ -72,12 +72,14 @@ jest.mock('../components/presentation/CreateFabGroup', () => {
       onCreateTask,
       onCreateNote,
       onCreateEvent,
+      onCreateFocus,
     }: {
       visible: boolean;
       onCreateGoal: () => void;
       onCreateTask: () => void;
       onCreateNote: () => void;
       onCreateEvent: () => void;
+      onCreateFocus: () => void;
     }) =>
       visible
         ? ReactModule.createElement(
@@ -99,6 +101,10 @@ jest.mock('../components/presentation/CreateFabGroup', () => {
             ReactModule.createElement(Pressable, {
               testID: 'create-event-action',
               onPress: onCreateEvent,
+            }),
+            ReactModule.createElement(Pressable, {
+              testID: 'create-focus-action',
+              onPress: onCreateFocus,
             }),
           )
         : null,
@@ -242,6 +248,7 @@ describe('AppTabs', () => {
     ['task', 'create-task-action', { screen: 'CreateTask' }],
     ['note', 'create-note-action', { screen: 'NoteEditor' }],
     ['event', 'create-event-action', { screen: 'CreateEvent' }],
+    ['focus', 'create-focus-action', { screen: 'FocusMode' }],
   ])('routes the global %s action to its typed screen', (_action, testID, target) => {
     mockNavigate.mockClear();
     const { getByTestId } = render(

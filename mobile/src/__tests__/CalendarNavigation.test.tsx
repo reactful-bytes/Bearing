@@ -174,32 +174,6 @@ describe('CalendarScreen navigation', () => {
     expect(screen.queryByLabelText('Previous day')).toBeNull();
   });
 
-  it('opens Focus Mode from the secondary FAB', () => {
-    render(<CalendarScreen initialDateOverride={FIXED_DATE} />);
-
-    fireEvent.press(screen.getByText('Focus'));
-
-    expect(screen.getByLabelText('Idea dump input')).toBeTruthy();
-    expect(screen.getByLabelText('Hold to return to calendar')).toBeTruthy();
-  });
-
-  it('returns to Calendar after holding the exit control for three seconds', () => {
-    jest.useFakeTimers();
-    render(<CalendarScreen initialDateOverride={FIXED_DATE} />);
-
-    fireEvent.press(screen.getByText('Focus'));
-
-    const holdButton = screen.getByLabelText('Hold to return to calendar');
-    fireEvent(holdButton, 'pressIn');
-
-    act(() => {
-      jest.advanceTimersByTime(3000);
-    });
-
-    expect(screen.queryByLabelText('Idea dump input')).toBeNull();
-    jest.useRealTimers();
-  });
-
   it('opens Focus Mode for a Start Now launch from the Tasks tab', () => {
     jest.useFakeTimers();
     const startAt = new Date(2026, 6, 17, 10, 0, 0);

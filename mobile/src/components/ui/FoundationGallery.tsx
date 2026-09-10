@@ -466,6 +466,10 @@ export function FoundationGallery() {
           dismissOverlays();
           announce('Create event selected.');
         }}
+        onCreateFocus={() => {
+          dismissOverlays();
+          announce('Create focus selected.');
+        }}
       />
     </AppScreen>
   );

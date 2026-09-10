@@ -204,6 +204,7 @@ describe('domain presentation', () => {
     const onCreateTask = jest.fn();
     const onCreateNote = jest.fn();
     const onCreateEvent = jest.fn();
+    const onCreateFocus = jest.fn();
     render(
       <CreateFabGroup
         visible
@@ -213,16 +214,19 @@ describe('domain presentation', () => {
         onCreateTask={onCreateTask}
         onCreateNote={onCreateNote}
         onCreateEvent={onCreateEvent}
+        onCreateFocus={onCreateFocus}
       />,
     );
     fireEvent.press(screen.getByRole('button', { name: 'Create Goal' }));
     fireEvent.press(screen.getByRole('button', { name: 'Create Task' }));
     fireEvent.press(screen.getByRole('button', { name: 'Create Note' }));
     fireEvent.press(screen.getByRole('button', { name: 'Create Event' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Create Focus' }));
     expect(onCreateGoal).toHaveBeenCalledTimes(1);
     expect(onCreateTask).toHaveBeenCalledTimes(1);
     expect(onCreateNote).toHaveBeenCalledTimes(1);
     expect(onCreateEvent).toHaveBeenCalledTimes(1);
+    expect(onCreateFocus).toHaveBeenCalledTimes(1);
   });
 
   it('renders domain components with the default dark fallback and persisted light theme', async () => {
