@@ -162,7 +162,7 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
 
   if (isEditing && uiState === 'loading' && !note) {
     return (
-      <AppScreen mode="scroll" testID="note-editor-loading">
+      <AppScreen mode="scroll" edges={['top', 'left', 'right']} testID="note-editor-loading">
         <Text style={styles.stateTitle}>Loading note...</Text>
       </AppScreen>
     );
@@ -170,7 +170,7 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
 
   if (isEditing && !note) {
     return (
-      <AppScreen mode="scroll" testID="note-editor-missing">
+      <AppScreen mode="scroll" edges={['top', 'left', 'right']} testID="note-editor-missing">
         <Text style={styles.stateTitle}>Note unavailable.</Text>
         <Text style={styles.stateDescription}>This note may have been deleted or archived.</Text>
         <AppButton label="Back to Notes" onPress={navigation?.goBack} />
@@ -179,7 +179,7 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
   }
 
   return (
-    <AppScreen mode="scroll" testID="note-editor-screen">
+    <AppScreen mode="scroll" edges={['top', 'left', 'right']} testID="note-editor-screen">
       <View style={styles.content}>
         <View style={styles.header}>
           <IconButton
