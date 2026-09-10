@@ -36,6 +36,13 @@ export function AppModal({
   children,
 }: AppModalProps) {
   const styles = useThemedStyles(createStyles);
+
+  // Android renders a translucent window per mounted <Modal>, even when `visible={false}`;
+  // keeping closed modals out of the tree avoids stray dark bars stacking behind the tab bar.
+  if (!visible) {
+    return null;
+  }
+
   return (
     <Modal
       visible={visible}
