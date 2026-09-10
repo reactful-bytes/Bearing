@@ -76,11 +76,13 @@ function TabIcon({
   focused,
   isDesktop,
   createExpanded,
+  dimmed,
 }: {
   routeName: keyof AppTabParamList;
   focused: boolean;
   isDesktop: boolean;
   createExpanded: boolean;
+  dimmed: boolean;
 }) {
   const styles = useThemedStyles(createStyles);
   const rotation = useRef(new Animated.Value(0)).current;
@@ -110,7 +112,13 @@ function TabIcon({
   }
 
   return (
-    <View style={[styles.iconSlot, focused ? styles.iconSlotFocused : null]}>
+    <View
+      style={[
+        styles.iconSlot,
+        focused ? styles.iconSlotFocused : null,
+        dimmed ? styles.iconSlotDimmed : null,
+      ]}
+    >
       <AppIcon name={TAB_ICONS[routeName]} size={isDesktop ? 20 : 22} decorative />
     </View>
   );
@@ -268,35 +276,42 @@ function AppTabsNavigator({
     <>
       <Tab.Navigator
         initialRouteName="Plan"
-        screenOptions={({ route }) => ({
-          headerShown: false,
-          tabBarPosition: isDesktopNavigation ? 'left' : 'bottom',
-          tabBarActiveTintColor: theme.colors.brand,
-          tabBarInactiveTintColor: theme.colors.textSecondary,
-          tabBarStyle: isDesktopNavigation
-            ? styles.desktopTabBar
-            : [
-                styles.tabBar,
-                {
-                  height: theme.layout.tabBarHeight + insets.bottom,
-                  paddingBottom: insets.bottom,
-                },
-              ],
-          tabBarItemStyle: isDesktopNavigation ? styles.desktopTabBarItem : undefined,
-          tabBarLabelStyle: [
-            styles.tabBarLabel,
-            isDesktopNavigation ? styles.desktopTabLabel : null,
-          ],
-          tabBarLabelPosition: isDesktopNavigation ? 'beside-icon' : 'below-icon',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon
-              routeName={route.name as keyof AppTabParamList}
-              focused={focused}
-              isDesktop={isDesktopNavigation}
-              createExpanded={route.name === 'Create' && createVisible}
-            />
-          ),
-        })}
+        screenOptions={({ route }) => {
+          const isDimmed = createVisible && route.name !== 'Create';
+
+          return {
+            headerShown: false,
+            tabBarPosition: isDesktopNavigation ? 'left' : 'bottom',
+            tabBarActiveTintColor: theme.colors.brand,
+            tabBarInactiveTintColor: theme.colors.textSecondary,
+            tabBarStyle: isDesktopNavigation
+              ? styles.desktopTabBar
+              : [
+                  styles.tabBar,
+                  {
+                    height: theme.layout.tabBarHeight + insets.bottom,
+                    paddingBottom: insets.bottom,
+                  },
+                  createVisible ? styles.tabBarDimmed : null,
+                ],
+            tabBarItemStyle: isDesktopNavigation ? styles.desktopTabBarItem : undefined,
+            tabBarLabelStyle: [
+              styles.tabBarLabel,
+              isDesktopNavigation ? styles.desktopTabLabel : null,
+              isDimmed ? styles.tabBarLabelDimmed : null,
+            ],
+            tabBarLabelPosition: isDesktopNavigation ? 'beside-icon' : 'below-icon',
+            tabBarIcon: ({ focused }) => (
+              <TabIcon
+                routeName={route.name as keyof AppTabParamList}
+                focused={focused}
+                isDesktop={isDesktopNavigation}
+                createExpanded={route.name === 'Create' && createVisible}
+                dimmed={isDimmed}
+              />
+            ),
+          };
+        }}
       >
         <Tab.Screen name="Plan" component={PlanNavigator} />
         <Tab.Screen name="Calendar" component={CalendarNavigator} />
@@ -355,6 +370,12 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
     tabBarLabel: {
       ...theme.typography.tabLabel,
     },
+    tabBarLabelDimmed: {
+      opacity: 0.35,
+    },
+    tabBarDimmed: {
+      backgroundColor: theme.colors.background,
+    },
     desktopTabBar: {
       width: DESKTOP_NAVIGATION_WIDTH,
       paddingHorizontal: theme.spacing.sm,
@@ -381,6 +402,9 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
     },
     iconSlotFocused: {
       opacity: 1,
+    },
+    iconSlotDimmed: {
+      opacity: 0.35,
     },
     createIconCircle: {
       width: theme.layout.tabIconSize + 12,

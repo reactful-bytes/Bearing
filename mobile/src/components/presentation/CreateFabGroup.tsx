@@ -50,12 +50,13 @@ export function CreateFabGroup(props: CreateFabGroupProps) {
   return (
     <>
       {props.visible ? (
-        <Pressable
+        <Animated.View
           testID="create-fab-backdrop"
           accessibilityLabel="Dismiss create menu"
-          style={StyleSheet.absoluteFill}
-          onPress={props.onDismiss}
-        />
+          style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: progress }]}
+        >
+          <Pressable style={StyleSheet.absoluteFill} onPress={props.onDismiss} />
+        </Animated.View>
       ) : null}
       <View
         pointerEvents="box-none"
@@ -103,6 +104,9 @@ const createStyles = (theme: Theme) =>
       right: 0,
       alignItems: 'center',
     },
+    backdrop: {
+      backgroundColor: 'rgba(2, 6, 14, 0.72)',
+    },
     actionRow: {
       position: 'absolute',
       bottom: 0,
@@ -112,13 +116,8 @@ const createStyles = (theme: Theme) =>
       gap: theme.spacing.sm,
     },
     label: {
-      ...theme.typography.helper,
+      ...theme.typography.button,
       color: theme.colors.text,
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.radii.sm,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs,
-      overflow: 'hidden',
     },
     actionButton: {
       width: 48,

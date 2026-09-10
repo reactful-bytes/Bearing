@@ -62,6 +62,14 @@ const WIZARD_TITLES = [
   'Steps',
 ] as const;
 
+const SMART_ITEMS = [
+  { letter: 'S', label: 'Specific', description: 'Clear and well-defined', tone: 'brand' },
+  { letter: 'M', label: 'Measurable', description: 'Track progress and quantity', tone: 'success' },
+  { letter: 'A', label: 'Achievable', description: 'Realistic and attainable', tone: 'warning' },
+  { letter: 'R', label: 'Relevant', description: 'Aligned with your values', tone: 'purple' },
+  { letter: 'T', label: 'Time-bound', description: 'Has a clear deadline', tone: 'importedCyan' },
+] as const;
+
 function makeEmptyDraftStep(index: number, baseDate: Date): DraftGoalStep {
   const defaultDateParts = buildDefaultGoalDateParts(baseDate);
 
@@ -493,24 +501,58 @@ export function CreateGoalModal({
           <Text style={styles.stepLabel}>{wizardLabel}</Text>
           <View accessibilityLabel={wizardLabel} style={styles.progressDots}>
             {WIZARD_TITLES.map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.progressDot,
-                  index === wizardIndex ? styles.progressDotActive : null,
-                ]}
-              />
+              <View key={index} style={styles.progressStep}>
+                <View
+                  style={[
+                    styles.progressCircle,
+                    index < wizardIndex ? styles.progressCircleComplete : null,
+                    index === wizardIndex ? styles.progressCircleActive : null,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.progressCircleText,
+                      index < wizardIndex ? styles.progressCircleTextActive : null,
+                      index === wizardIndex ? styles.progressCircleTextCurrent : null,
+                    ]}
+                  >
+                    {index + 1}
+                  </Text>
+                </View>
+                {index < WIZARD_TITLES.length - 1 ? (
+                  <View
+                    style={[
+                      styles.progressConnector,
+                      index < wizardIndex ? styles.progressConnectorComplete : null,
+                    ]}
+                  />
+                ) : null}
+              </View>
             ))}
           </View>
 
           {wizardIndex === 0 ? (
             <AppCard style={styles.card}>
               <Text style={styles.smartIntroTitle}>Let&apos;s create a SMART goal</Text>
-              <Text style={styles.cardTitle}>Build a SMART goal before you plan it.</Text>
               <Text style={styles.cardBody}>
                 Specific, measurable, achievable, relevant, and time-bound goals make the next step
                 clear.
               </Text>
+              <View style={styles.smartList}>
+                {SMART_ITEMS.map((item) => (
+                  <View key={item.letter} style={styles.smartRow}>
+                    <View
+                      style={[styles.smartBadge, { backgroundColor: theme.colors[item.tone] }]}
+                    >
+                      <Text style={styles.smartBadgeText}>{item.letter}</Text>
+                    </View>
+                    <View style={styles.smartCopy}>
+                      <Text style={styles.smartLabel}>{item.label}</Text>
+                      <Text style={styles.smartDescription}>{item.description}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
             </AppCard>
           ) : null}
 
@@ -888,16 +930,82 @@ const createStyles = (theme: Theme) =>
     progressDots: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.xs,
     },
-    progressDot: {
+    progressStep: {
+      flexDirection: 'row',
+      alignItems: 'center',
       flex: 1,
-      height: 6,
-      borderRadius: radii.xl,
-      backgroundColor: theme.colors.surfaceMuted,
     },
-    progressDotActive: {
+    progressCircle: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      borderWidth: 2,
+      borderColor: theme.colors.surfaceMuted,
+      backgroundColor: theme.colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    progressCircleActive: {
+      borderColor: theme.colors.brand,
       backgroundColor: theme.colors.brand,
+    },
+    progressCircleComplete: {
+      borderColor: theme.colors.brand,
+      backgroundColor: theme.colors.surfaceBrand,
+    },
+    progressCircleText: {
+      ...typography.helper,
+      fontWeight: '700',
+      color: theme.colors.textSecondary,
+    },
+    progressCircleTextActive: {
+      color: theme.colors.brand,
+    },
+    progressCircleTextCurrent: {
+      color: theme.colors.onBrand,
+    },
+    progressConnector: {
+      flex: 1,
+      height: 2,
+      backgroundColor: theme.colors.surfaceMuted,
+      marginHorizontal: spacing.xs,
+    },
+    progressConnectorComplete: {
+      backgroundColor: theme.colors.brand,
+    },
+    smartList: {
+      gap: spacing.md,
+    },
+    smartRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.md,
+    },
+    smartBadge: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    smartBadgeText: {
+      ...typography.button,
+      color: theme.colors.onBrand,
+    },
+    smartCopy: {
+      flex: 1,
+      gap: 2,
+    },
+    smartLabel: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    smartDescription: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
     },
     card: {
       gap: spacing.md,
