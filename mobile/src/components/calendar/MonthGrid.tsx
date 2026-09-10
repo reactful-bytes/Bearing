@@ -53,6 +53,23 @@ function buildWeeks(year: number, month: number): (number | null)[][] {
 
 const DAY_CIRCLE_SIZE = 34;
 
+// Exact pixel accounting for the styles below, so the carousel can be sized to
+// fit the visible month with no leftover/wasted vertical space.
+const HEADER_ROW_HEIGHT = 20 + spacing.xs * 2; // dayHeader lineHeight + cell paddingVertical
+const HEADER_ROW_MARGIN_BOTTOM = spacing.xs;
+const WEEK_ROW_HEIGHT = DAY_CIRCLE_SIZE + 7 + spacing.xs * 2; // circle + event dot + cell paddingVertical
+const CONTAINER_VERTICAL_PADDING = spacing.sm * 2;
+
+export function getMonthGridHeight(year: number, month: number): number {
+  const weekCount = buildWeeks(year, month).length;
+  return (
+    CONTAINER_VERTICAL_PADDING +
+    HEADER_ROW_HEIGHT +
+    HEADER_ROW_MARGIN_BOTTOM +
+    weekCount * WEEK_ROW_HEIGHT
+  );
+}
+
 export function MonthGrid({
   year,
   month,

@@ -17,7 +17,7 @@ import { DayNavBar } from '../components/calendar/DayNavBar';
 import { ViewModeToggle } from '../components/calendar/ViewModeToggle';
 import { HourlyTimeline } from '../components/calendar/HourlyTimeline';
 import { WeekTimeline } from '../components/calendar/WeekTimeline';
-import { MonthGrid, MONTH_NAMES } from '../components/calendar/MonthGrid';
+import { MonthGrid, MONTH_NAMES, getMonthGridHeight } from '../components/calendar/MonthGrid';
 import { AddEventModal } from '../components/calendar/AddEventModal';
 import { EventDetailModal } from '../components/calendar/EventDetailModal';
 import { FocusModeOverlay } from '../components/calendar/FocusModeOverlay';
@@ -532,7 +532,12 @@ export function CalendarScreen({
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
-            style={styles.monthCarousel}
+            style={[
+              styles.monthCarousel,
+              visibleMonth
+                ? { height: getMonthGridHeight(visibleMonth.year, visibleMonth.month) }
+                : null,
+            ]}
             initialScrollIndex={initialMonthIndex}
             initialNumToRender={1}
             maxToRenderPerBatch={2}
@@ -649,6 +654,7 @@ const createStyles = (theme: Theme) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      paddingLeft: spacing.md,
       paddingRight: spacing.md,
     },
     calendarHeader: {
@@ -723,9 +729,6 @@ const createStyles = (theme: Theme) =>
       alignItems: 'center',
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
-      backgroundColor: theme.colors.surfaceRaised,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: theme.colors.borderStrong,
     },
     monthArrow: {
       paddingHorizontal: spacing.md,
