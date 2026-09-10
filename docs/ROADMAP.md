@@ -449,7 +449,7 @@ Second UI redesign pass driven by an updated mockup spec after M36 closed: premi
 | M37.5   | completed   | Polish Goals list and Goal Detail       | `GoalCard`, `GoalStatusTabs`, and `GoalTimeline` states restyled; 3 distinct timeline states visible  |
 | M37.6   | completed   | Reskin Goal creation wizard             | `CreateGoalModal` restyled in place; existing 5-step structure and validation logic unchanged         |
 | M37.7   | completed   | Polish Calendar screen                  | Day/month views, nav bar, and imported-event color restyled                                           |
-| M37.8   | not-started | Polish task/event/note creation flows   | `AddTaskModal`, `AddEventModal`, `AddNoteModal` restyled; back-navigation unaffected                   |
+| M37.8   | completed   | Polish task/event/note creation flows   | `AddTaskModal`, `AddEventModal`, `AddNoteModal` restyled; back-navigation unaffected                   |
 | M37.9   | not-started | Polish Focus Mode                       | Start/summary states and hold-to-exit visuals restyled; hold-only exit behavior unchanged             |
 | M37.10  | not-started | Polish Notes screen                     | Search, section cards, and note editor restyled; pin/archive/delete/convert actions unaffected        |
 | M37.11  | not-started | Polish Profile screen                   | Section restyle only; RevenueCat/premium/entitlement logic untouched                                  |
