@@ -621,7 +621,7 @@ const createStyles = (theme: Theme) =>
     },
     eyebrow: {
       ...theme.typography.label,
-      color: theme.colors.success,
+      color: theme.colors.focusGreen,
     },
     eventTitle: {
       ...theme.typography.sectionTitle,
@@ -637,8 +637,12 @@ const createStyles = (theme: Theme) =>
     },
     timerCard: {
       alignItems: 'center',
-      paddingVertical: theme.spacing.md,
+      paddingVertical: theme.spacing.lg,
       gap: theme.spacing.xs,
+      borderRadius: theme.radii.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.focusGreen,
+      backgroundColor: theme.colors.surfaceRaised,
     },
     timerLabel: {
       ...theme.typography.label,
@@ -649,7 +653,7 @@ const createStyles = (theme: Theme) =>
       fontSize: 42,
       lineHeight: 48,
       fontWeight: '700',
-      color: theme.colors.text,
+      color: theme.colors.focusGreen,
     },
     endTime: {
       ...theme.typography.body,
@@ -675,10 +679,10 @@ const createStyles = (theme: Theme) =>
     },
     ideaInput: {
       height: 112,
-      borderRadius: theme.radii.sm,
+      borderRadius: theme.radii.md,
       backgroundColor: 'transparent',
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderStrong,
       color: theme.colors.text,
       paddingHorizontal: theme.spacing.lg,
       paddingVertical: theme.spacing.lg,
@@ -699,7 +703,7 @@ const createStyles = (theme: Theme) =>
     },
     savedText: {
       ...theme.typography.helper,
-      color: theme.colors.success,
+      color: theme.colors.focusGreen,
     },
     utilityBlock: {
       gap: theme.spacing.sm,
@@ -739,8 +743,8 @@ const createStyles = (theme: Theme) =>
       alignItems: 'center',
       borderRadius: 28,
       borderWidth: 1,
-      borderColor: theme.colors.success,
-      backgroundColor: theme.colors.surfaceBrand,
+      borderColor: theme.colors.focusGreen,
+      backgroundColor: theme.colors.surfaceRaised,
       paddingHorizontal: theme.spacing.lg,
       paddingVertical: theme.spacing.md,
       gap: theme.spacing.md,
@@ -749,16 +753,16 @@ const createStyles = (theme: Theme) =>
       opacity: 0.92,
     },
     exitProgressTrack: {
-      width: 32,
-      height: 32,
+      width: 56,
+      height: 8,
       flexShrink: 0,
-      borderRadius: 16,
+      borderRadius: 4,
       overflow: 'hidden',
       backgroundColor: theme.colors.surfaceMuted,
     },
     exitProgressFill: {
       height: '100%',
-      backgroundColor: theme.colors.success,
+      backgroundColor: theme.colors.focusGreen,
     },
     exitButtonText: {
       ...theme.typography.button,

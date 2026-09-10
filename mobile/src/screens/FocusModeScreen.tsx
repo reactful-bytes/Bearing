@@ -213,13 +213,24 @@ export function FocusModeScreen({ route, navigation }: FocusModeScreenProps) {
             {focusEvent?.title ?? 'Focused work'} is complete.
           </Text>
           <AppCard style={styles.summaryCard}>
-            <Text style={styles.summaryRow}>Duration: {sessionDuration}</Text>
-            <Text style={styles.summaryRow}>Ideas captured: {ideasCaptured}</Text>
-            <Text style={styles.summaryRow}>
-              {dndStatus === 'blocked'
-                ? 'Distractions blocked: Android priority mode'
-                : 'Distractions blocked: unavailable'}
-            </Text>
+            <View style={styles.summaryStatRow}>
+              <AppIcon name="timer" size={20} decorative />
+              <Text style={styles.summaryStatValue}>Duration: {sessionDuration}</Text>
+            </View>
+            <View style={styles.summaryStatDivider} />
+            <View style={styles.summaryStatRow}>
+              <AppIcon name="idea" size={20} decorative />
+              <Text style={styles.summaryStatValue}>Ideas captured: {ideasCaptured}</Text>
+            </View>
+            <View style={styles.summaryStatDivider} />
+            <View style={styles.summaryStatRow}>
+              <AppIcon name="security" size={20} decorative />
+              <Text style={styles.summaryStatValue}>
+                {dndStatus === 'blocked'
+                  ? 'Distractions blocked: Android priority mode'
+                  : 'Distractions blocked: unavailable'}
+              </Text>
+            </View>
           </AppCard>
           <AppButton label="Done" onPress={navigation.goBack} />
         </View>
@@ -284,12 +295,12 @@ const createStyles = (theme: Theme) =>
       justifyContent: 'center',
       borderRadius: 56,
       borderWidth: 2,
-      borderColor: theme.colors.success,
-      backgroundColor: 'transparent',
+      borderColor: theme.colors.focusGreen,
+      backgroundColor: theme.colors.surfaceRaised,
     },
     eyebrow: {
       ...theme.typography.label,
-      color: theme.colors.success,
+      color: theme.colors.focusGreen,
       textAlign: 'center',
     },
     startTitle: {
@@ -301,6 +312,8 @@ const createStyles = (theme: Theme) =>
     },
     contextCard: {
       gap: theme.spacing.sm,
+      borderColor: theme.colors.focusGreen,
+      borderWidth: 1,
     },
     contextLabel: {
       ...theme.typography.label,
@@ -335,8 +348,8 @@ const createStyles = (theme: Theme) =>
       justifyContent: 'center',
       borderRadius: 36,
       borderWidth: 2,
-      borderColor: theme.colors.success,
-      backgroundColor: 'transparent',
+      borderColor: theme.colors.focusGreen,
+      backgroundColor: theme.colors.surfaceRaised,
     },
     summaryTitle: {
       ...theme.typography.sectionTitle,
@@ -351,10 +364,20 @@ const createStyles = (theme: Theme) =>
       textAlign: 'center',
     },
     summaryCard: {
+      gap: theme.spacing.md,
+    },
+    summaryStatRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
       gap: theme.spacing.sm,
     },
-    summaryRow: {
+    summaryStatValue: {
       ...theme.typography.body,
+      fontWeight: '600',
       color: theme.colors.textPrimary,
+    },
+    summaryStatDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.colors.border,
     },
   });
