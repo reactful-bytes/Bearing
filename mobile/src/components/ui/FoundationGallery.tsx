@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { BottomNavigation, BottomNavigationDestination } from '../presentation/BottomNavigation';
-import { CreateSheet } from '../presentation/CreateSheet';
+import { CreateFabGroup } from '../presentation/CreateFabGroup';
 import {
   GoalCard,
   GoalFilter,
@@ -17,8 +17,6 @@ import { GoalStepRecord, GoalWithSteps } from '../../features/goals/goalTypes';
 import { TaskRecord } from '../../features/tasks/taskTypes';
 import { useTheme } from '../../design/ThemeProvider';
 import { icons } from '../../design/icons';
-import { iconLibraryExtraction } from '../../design/iconLibraryExtraction';
-import { legacyIconAssets } from '../../design/legacyIconAssets';
 import type { Theme } from '../../design/tokens';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppCard } from './AppCard';
@@ -108,7 +106,7 @@ const fixtureEvent: CalendarDisplayEvent = {
 };
 
 const iconNames = Object.keys(icons) as (keyof typeof icons)[];
-const svgIconNames = iconNames.filter((name) => icons[name].kind === 'svg');
+const libraryIconNames = iconNames.filter((name) => icons[name].kind !== 'image');
 const featureIconNames = iconNames.filter((name) => icons[name].kind === 'image');
 
 function formatIconName(name: string): string {
@@ -203,12 +201,12 @@ export function FoundationGallery() {
         <SectionHeading title="Upcoming" description="Compatibility wrapper" />
 
         <SectionHeader
-          title="SVG icon library"
-          description="Every custom vector glyph from the approved icon-library mock."
+          title="Icon library"
+          description="Tabler components and Bearing custom paths for semantic interface icons."
           variant="uppercase-accent"
         />
         <View accessibilityLabel="Icon library" style={styles.iconGrid}>
-          {svgIconNames.map((name) => (
+          {libraryIconNames.map((name) => (
             <View key={name} style={styles.iconCell}>
               <AppIcon name={name} size={30} accessibilityLabel={`${name} icon`} />
               <Text numberOfLines={1} style={styles.iconLabel}>
@@ -219,7 +217,7 @@ export function FoundationGallery() {
         </View>
         <SectionHeader
           title="Feature artwork"
-          description="Approved full-color navigation and brand assets."
+          description="Bearing-specific artwork retained outside the icon library."
           variant="uppercase-accent"
         />
         <View accessibilityLabel="Feature artwork" style={styles.iconGrid}>
@@ -232,47 +230,6 @@ export function FoundationGallery() {
             </View>
           ))}
         </View>
-        <SectionHeader
-          title="Icon-library mock extraction"
-          description="Every glyph cropped from the icon-library mock, including names not yet wired into the semantic icon registry."
-          variant="uppercase-accent"
-        />
-        <View accessibilityLabel="Icon-library mock extraction" style={styles.iconGrid}>
-          {iconLibraryExtraction.map(({ name, source }) => (
-            <View key={name} style={styles.iconCell}>
-              <Image
-                source={source}
-                resizeMode="contain"
-                style={styles.extractionIcon}
-                accessibilityLabel={`${name} mock icon`}
-              />
-              <Text numberOfLines={1} style={styles.iconLabel}>
-                {formatIconName(name)}
-              </Text>
-            </View>
-          ))}
-        </View>
-        <SectionHeader
-          title="Legacy icon assets"
-          description="Older hand/AI-generated files still in assets/icons/, not wired into the registry."
-          variant="uppercase-accent"
-        />
-        <View accessibilityLabel="Legacy icon assets" style={styles.iconGrid}>
-          {legacyIconAssets.map(({ name, source }) => (
-            <View key={name} style={styles.iconCell}>
-              <Image
-                source={source}
-                resizeMode="contain"
-                style={styles.extractionIcon}
-                accessibilityLabel={`${name} legacy icon`}
-              />
-              <Text numberOfLines={1} style={styles.iconLabel}>
-                {formatIconName(name)}
-              </Text>
-            </View>
-          ))}
-        </View>
-
         <SectionHeader
           title="Actions and feedback"
           description="Buttons, links, cards, and progress."
@@ -489,8 +446,9 @@ export function FoundationGallery() {
         <Text style={styles.copy}>This is the reusable bottom-sheet surface.</Text>
         <AppButton label="Dismiss sheet" onPress={dismissOverlays} />
       </BottomSheet>
-      <CreateSheet
+      <CreateFabGroup
         visible={createVisible}
+        bottomOffset={24}
         onDismiss={dismissOverlays}
         onCreateGoal={() => {
           dismissOverlays();

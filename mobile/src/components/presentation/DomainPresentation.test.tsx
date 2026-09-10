@@ -6,7 +6,7 @@ import { GoalCard, GoalMilestones, GoalStatusTabs, GoalTimeline } from './GoalPr
 import { TaskRow } from './TaskRow';
 import { EventCard, EventRow, EventSourceChip } from './EventPresentation';
 import { BottomNavigation } from './BottomNavigation';
-import { CreateSheet } from './CreateSheet';
+import { CreateFabGroup } from './CreateFabGroup';
 import { CalendarDisplayEvent } from '../../features/calendar/calendarTypes';
 import { ThemeProvider } from '../../design/ThemeProvider';
 import { GoalStepRecord, GoalWithSteps } from '../../features/goals/goalTypes';
@@ -199,14 +199,15 @@ describe('domain presentation', () => {
     expect(screen.getAllByRole('tab', { name: 'Calendar', selected: true })).toHaveLength(1);
   });
 
-  it('delegates every create-sheet action without navigation or data dependencies', () => {
+  it('delegates every create-fab-group action without navigation or data dependencies', () => {
     const onCreateGoal = jest.fn();
     const onCreateTask = jest.fn();
     const onCreateNote = jest.fn();
     const onCreateEvent = jest.fn();
     render(
-      <CreateSheet
+      <CreateFabGroup
         visible
+        bottomOffset={0}
         onDismiss={jest.fn()}
         onCreateGoal={onCreateGoal}
         onCreateTask={onCreateTask}

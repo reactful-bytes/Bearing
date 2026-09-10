@@ -61,12 +61,12 @@ jest.mock('../screens/CreationScreens', () => ({
   CreateTaskFromNoteScreen: () => null,
 }));
 
-jest.mock('../components/presentation/CreateSheet', () => {
+jest.mock('../components/presentation/CreateFabGroup', () => {
   const ReactModule = jest.requireActual<typeof import('react')>('react');
   const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native');
 
   return {
-    CreateSheet: ({
+    CreateFabGroup: ({
       visible,
       onCreateGoal,
       onCreateTask,
@@ -83,7 +83,7 @@ jest.mock('../components/presentation/CreateSheet', () => {
         ? ReactModule.createElement(
             ReactModule.Fragment,
             null,
-            ReactModule.createElement(Text, { testID: 'create-sheet' }, 'Create'),
+            ReactModule.createElement(Text, { testID: 'create-fab-group' }, 'Create'),
             ReactModule.createElement(Pressable, {
               testID: 'create-goal-action',
               onPress: onCreateGoal,
@@ -227,14 +227,14 @@ describe('AppTabs', () => {
     );
   });
 
-  it('opens the global Create sheet without selecting the Create destination', () => {
+  it('expands the global Create FAB group without selecting the Create destination', () => {
     const { getByTestId } = render(
       <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
     );
 
     fireEvent.press(getByTestId('create-tab-button'));
 
-    expect(getByTestId('create-sheet')).toBeTruthy();
+    expect(getByTestId('create-fab-group')).toBeTruthy();
   });
 
   it.each([

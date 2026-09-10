@@ -1,11 +1,18 @@
 import { NavigationContainer, NavigationProp, useNavigation } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CreateSheet } from '../components/presentation/CreateSheet';
+import { CreateFabGroup } from '../components/presentation/CreateFabGroup';
 import { AppIcon } from '../components/ui/AppIcon';
 import { useTheme } from '../design/ThemeProvider';
 import { useThemedStyles } from '../design/useThemedStyles';
@@ -68,20 +75,42 @@ function TabIcon({
   routeName,
   focused,
   isDesktop,
+  createExpanded,
 }: {
   routeName: keyof AppTabParamList;
   focused: boolean;
   isDesktop: boolean;
+  createExpanded: boolean;
 }) {
   const styles = useThemedStyles(createStyles);
+  const rotation = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (routeName !== 'Create') {
+      return;
+    }
+
+    Animated.timing(rotation, {
+      toValue: createExpanded ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [createExpanded, rotation, routeName]);
+
+  if (routeName === 'Create') {
+    const rotate = rotation.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '45deg'] });
+
+    return (
+      <View style={styles.createIconCircle}>
+        <Animated.View style={{ transform: [{ rotate }] }}>
+          <AppIcon name={TAB_ICONS.Create} size={isDesktop ? 20 : 22} decorative />
+        </Animated.View>
+      </View>
+    );
+  }
 
   return (
-    <View
-      style={[
-        routeName === 'Create' ? styles.createIconCircle : styles.iconSlot,
-        routeName !== 'Create' && focused ? styles.iconSlotFocused : null,
-      ]}
-    >
+    <View style={[styles.iconSlot, focused ? styles.iconSlotFocused : null]}>
       <AppIcon name={TAB_ICONS[routeName]} size={isDesktop ? 20 : 22} decorative />
     </View>
   );
@@ -264,6 +293,7 @@ function AppTabsNavigator({
               routeName={route.name as keyof AppTabParamList}
               focused={focused}
               isDesktop={isDesktopNavigation}
+              createExpanded={route.name === 'Create' && createVisible}
             />
           ),
         })}
@@ -299,8 +329,9 @@ function AppTabsNavigator({
           )}
         </Tab.Screen>
       </Tab.Navigator>
-      <CreateSheet
+      <CreateFabGroup
         visible={createVisible}
+        bottomOffset={theme.layout.tabBarHeight + insets.bottom + theme.spacing.sm}
         onDismiss={() => setCreateVisible(false)}
         onCreateGoal={() => navigateToCreate('goal')}
         onCreateTask={() => navigateToCreate('task')}
@@ -316,8 +347,9 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
     tabBar: {
       height: theme.layout.tabBarHeight,
       paddingTop: theme.layout.tabBarPaddingVertical,
-      backgroundColor: theme.componentTokens.tabBar.backgroundColor,
+      backgroundColor: theme.colors.surfaceRaised,
       borderTopColor: theme.componentTokens.tabBar.borderTopColor,
+      borderTopWidth: StyleSheet.hairlineWidth,
       overflow: 'visible',
     },
     tabBarLabel: {
@@ -355,6 +387,8 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       height: theme.layout.tabIconSize + 12,
       borderRadius: (theme.layout.tabIconSize + 12) / 2,
       backgroundColor: theme.componentTokens.tabIcon.focusedBackgroundColor,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.borderStrong,
       alignItems: 'center',
       justifyContent: 'center',
     },
