@@ -888,12 +888,12 @@ const createStyles = (theme: Theme) =>
     progressDots: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.sm,
+      gap: spacing.xs,
     },
     progressDot: {
       flex: 1,
-      height: 4,
-      borderRadius: radii.sm,
+      height: 6,
+      borderRadius: radii.xl,
       backgroundColor: theme.colors.surfaceMuted,
     },
     progressDotActive: {
@@ -901,6 +901,7 @@ const createStyles = (theme: Theme) =>
     },
     card: {
       gap: spacing.md,
+      padding: spacing.lg,
     },
     exampleCard: {
       gap: spacing.xs,
@@ -914,7 +915,7 @@ const createStyles = (theme: Theme) =>
       ...typography.sectionTitle,
       fontSize: 20,
       lineHeight: 26,
-      color: theme.colors.text,
+      color: theme.colors.brand,
     },
     cardBody: {
       ...typography.body,
