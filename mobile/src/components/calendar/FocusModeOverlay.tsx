@@ -447,6 +447,12 @@ export function FocusModeOverlay({
 
   const holdSecondsRemaining = Math.max(0, Math.ceil((1 - holdProgress) * 3));
 
+  // Match AppModal: unmount the native Modal entirely while closed instead of
+  // leaving a hidden window, which Android can render as a stray dark bar.
+  if (!visible) {
+    return null;
+  }
+
   return (
     <Modal visible={visible} animationType="fade" onRequestClose={() => {}}>
       <KeyboardAvoidingView
