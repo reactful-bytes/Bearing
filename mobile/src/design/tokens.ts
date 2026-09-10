@@ -80,66 +80,84 @@ export const layout = {
 
 type ThemeColors = {
   background: string;
+  backgroundRaised: string;
   surface: string;
   surfaceMuted: string;
   surfaceBrand: string;
+  surfaceRaised: string;
+  surfacePressed: string;
   elevated: string;
   border: string;
+  borderStrong: string;
   text: string;
   textPrimary: string;
   textSecondary: string;
   textMuted: string;
   brand: string;
   success: string;
+  focusGreen: string;
   warning: string;
   purple: string;
   danger: string;
   dangerSurface: string;
   dangerText: string;
+  importedCyan: string;
   scrim: string;
   onBrand: string;
 };
 
 const darkColors: ThemeColors = {
-  background: '#0B162E',
+  background: '#061220',
+  backgroundRaised: '#0B162E',
   surface: '#111F35',
   surfaceMuted: '#1E293B',
   surfaceBrand: '#172B4D',
+  surfaceRaised: '#16233D',
+  surfacePressed: '#0C1B30',
   elevated: '#1E293B',
-  border: '#334155',
+  border: 'rgba(255, 255, 255, 0.10)',
+  borderStrong: '#334155',
   text: '#E2E8F0',
   textPrimary: '#E2E8F0',
   textSecondary: '#94A3B8',
   textMuted: '#64748B',
-  brand: '#2563EB',
-  success: '#22C55E',
-  warning: '#FBBF24',
-  purple: '#A855F7',
-  danger: '#EF4444',
+  brand: '#2F7FE8',
+  success: '#43B977',
+  focusGreen: '#6DBA72',
+  warning: '#F5B83D',
+  purple: '#9B6BE8',
+  danger: '#E45A5A',
   dangerSurface: '#3F1D2A',
   dangerText: '#FCA5A5',
+  importedCyan: '#29D1E3',
   scrim: 'rgba(11, 31, 42, 0.42)',
   onBrand: '#FFFFFF',
 };
 
 const lightColors: ThemeColors = {
   background: '#F4F8FA',
+  backgroundRaised: '#EAF1F4',
   surface: '#FCFEFF',
   surfaceMuted: '#E4EEF3',
   surfaceBrand: '#D7E6ED',
+  surfaceRaised: '#FFFFFF',
+  surfacePressed: '#DCE8ED',
   elevated: '#FFFFFF',
   border: '#D3E1E8',
+  borderStrong: '#B7CBD4',
   text: '#0B1F2A',
   textPrimary: '#153748',
   textSecondary: '#496879',
   textMuted: '#6B7D88',
   brand: '#0E5E85',
   success: '#16803A',
+  focusGreen: '#227A46',
   warning: '#A86500',
   purple: '#7E22CE',
   danger: '#B42318',
   dangerSurface: '#FDEAEA',
   dangerText: '#8A1E1E',
+  importedCyan: '#0E7C8C',
   scrim: 'rgba(11, 31, 42, 0.42)',
   onBrand: '#FFFFFF',
 };

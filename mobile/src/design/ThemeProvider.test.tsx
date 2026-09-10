@@ -33,7 +33,7 @@ describe('ThemeProvider', () => {
   it('uses dark as the provider-free default', () => {
     render(<ThemeProbe />);
 
-    expect(screen.getByTestId('theme-probe')).toHaveTextContent('dark:#0B162E:true');
+    expect(screen.getByTestId('theme-probe')).toHaveTextContent('dark:#061220:true');
   });
 
   it('restores a persisted light preference after hydration', async () => {
