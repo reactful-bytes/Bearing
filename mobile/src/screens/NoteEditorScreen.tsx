@@ -211,6 +211,7 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
             placeholder="Optional title"
             value={title}
             onChangeText={setTitle}
+            inputStyle={styles.titleInput}
           />
           <FormField
             label="Content"
@@ -220,6 +221,7 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
             onChangeText={setBody}
             multiline
             error={error}
+            inputStyle={styles.bodyInput}
           />
           <AppButton
             label={pinned ? 'Unpin note' : 'Pin note'}
@@ -228,6 +230,7 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
             onPress={handleTogglePinned}
             loading={pinning}
             loadingLabel="Updating..."
+            style={pinned ? styles.pinToggleActive : null}
           />
         </View>
 
@@ -240,19 +243,22 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
             <View style={styles.actionRow}>
               <AppButton
                 label="Create Task"
+                variant="secondary"
                 onPress={() => openConversion('CreateTaskFromNote')}
-                style={styles.actionButton}
+                style={[styles.actionButton, styles.createTaskAccent]}
               />
               <AppButton
                 label="Create Goal"
+                variant="secondary"
                 onPress={() => openConversion('CreateGoalFromNote')}
-                style={styles.actionButton}
+                style={[styles.actionButton, styles.createGoalAccent]}
               />
             </View>
             <AppButton
               label="Create Event"
               variant="secondary"
               onPress={() => openConversion('CreateEventFromNote')}
+              style={styles.createEventAccent}
             />
           </AppCard>
         ) : null}
@@ -315,11 +321,27 @@ const createStyles = (theme: Theme) =>
     title: { ...theme.typography.cardTitle, color: theme.colors.text },
     updatedAt: { ...theme.typography.helper, color: theme.colors.textSecondary },
     form: { gap: theme.spacing.md, paddingTop: theme.spacing.sm },
+    titleInput: {
+      minHeight: 48,
+      borderRadius: theme.radii.md,
+    },
+    bodyInput: {
+      minHeight: 160,
+      borderRadius: theme.radii.md,
+      paddingVertical: theme.spacing.md,
+    },
+    pinToggleActive: {
+      backgroundColor: theme.colors.surfaceBrand,
+      borderColor: theme.colors.brand,
+    },
     actionsCard: { gap: theme.spacing.md },
     sectionTitle: { ...theme.typography.cardTitle, color: theme.colors.text },
     sectionDescription: { ...theme.typography.body, color: theme.colors.textSecondary },
     actionRow: { flexDirection: 'row', gap: theme.spacing.sm },
     actionButton: { flex: 1 },
+    createTaskAccent: { borderWidth: 1, borderColor: theme.colors.brand },
+    createGoalAccent: { borderWidth: 1, borderColor: theme.colors.success },
+    createEventAccent: { borderColor: theme.colors.purple },
     dangerActions: { gap: theme.spacing.sm },
     confirmBlock: { gap: theme.spacing.sm },
     confirmText: { ...theme.typography.body, color: theme.colors.text },

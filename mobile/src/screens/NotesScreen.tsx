@@ -174,7 +174,7 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
                 onPress={() => openNoteEditor(note.id)}
                 style={({ pressed }) => [pressed ? styles.noteCardPressed : null]}
               >
-                <AppCard style={[styles.noteCard, styles.ideaNote]}>
+                <AppCard style={[styles.noteCard, styles.pinnedNoteCard, styles.ideaNote]}>
                   <View style={styles.noteMetaRow}>
                     <Text style={styles.noteSource}>{noteSourceLabel(note)}</Text>
                     <Text style={styles.noteDate}>
@@ -199,7 +199,7 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
                 onPress={() => openNoteEditor(note.id)}
                 style={({ pressed }) => [pressed ? styles.noteCardPressed : null]}
               >
-                <AppCard style={[styles.noteCard, styles.ideaNote]}>
+                <AppCard style={[styles.noteCard, styles.recentNoteCard, styles.ideaNote]}>
                   <View style={styles.noteMetaRow}>
                     <Text style={styles.noteSource}>{noteSourceLabel(note)}</Text>
                     <Text style={styles.noteDate}>
@@ -224,7 +224,7 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
                 onPress={() => openNoteEditor(note.id)}
                 style={({ pressed }) => [pressed ? styles.noteCardPressed : null]}
               >
-                <AppCard style={[styles.noteCard, styles.manualNote]}>
+                <AppCard style={[styles.noteCard, styles.allNoteCard, styles.manualNote]}>
                   <View style={styles.noteMetaRow}>
                     <Text style={styles.noteSource}>{noteSourceLabel(note)}</Text>
                     <Text style={styles.noteDate}>
@@ -303,6 +303,19 @@ const createStyles = (theme: Theme) =>
     },
     ideaNote: { borderLeftColor: theme.colors.warning },
     manualNote: { borderLeftColor: theme.colors.brand },
+    pinnedNoteCard: {
+      backgroundColor: theme.colors.surfaceRaised,
+      borderRadius: radii.lg,
+      borderColor: theme.colors.brand,
+    },
+    recentNoteCard: {
+      backgroundColor: theme.colors.surfaceRaised,
+      borderRadius: radii.lg,
+    },
+    allNoteCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: radii.md,
+    },
     searchRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -316,9 +329,9 @@ const createStyles = (theme: Theme) =>
       gap: spacing.sm,
       paddingHorizontal: spacing.md,
       borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: radii.md,
-      backgroundColor: theme.colors.surface,
+      borderColor: theme.colors.borderStrong,
+      borderRadius: radii.lg,
+      backgroundColor: theme.colors.surfaceRaised,
     },
     searchIcon: { color: theme.colors.textSecondary },
     searchPlaceholder: { color: theme.colors.textMuted },
