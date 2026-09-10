@@ -1,5 +1,4 @@
 import { Image, ImageStyle, StyleProp, View, ViewStyle } from 'react-native';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { AppIconDefinition, AppIconName, icons } from '../../design/icons';
 import { useTheme } from '../../design/ThemeProvider';
@@ -25,7 +24,7 @@ export function AppIcon({
   imageStyle,
   testID,
 }: AppIconProps) {
-  const { theme } = useTheme();
+  const { preference, theme } = useTheme();
   const icon: AppIconDefinition = icons[name];
   const accessibilityProps = decorative
     ? { accessible: false }
@@ -33,10 +32,12 @@ export function AppIcon({
   const containerStyle = [{ width: size, height: size }, style];
 
   if (icon.kind === 'image') {
+    const source = icon.themeSources?.[preference] ?? icon.source;
+
     return (
       <View testID={testID} style={containerStyle} {...accessibilityProps}>
         <Image
-          source={icon.source}
+          source={source}
           resizeMode="contain"
           style={[
             { width: size, height: size },
@@ -49,26 +50,11 @@ export function AppIcon({
   }
 
   const iconColor = color ?? theme.colors.textPrimary;
+  const IconComponent = icon.component;
+
   return (
     <View testID={testID} style={containerStyle} {...accessibilityProps}>
-      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-        {icon.rects?.map((rect, index) => (
-          <Rect key={`rect-${index}`} {...rect} stroke={iconColor} strokeWidth={1.8} />
-        ))}
-        {icon.circles?.map((circle, index) => (
-          <Circle key={`circle-${index}`} {...circle} stroke={iconColor} strokeWidth={1.8} />
-        ))}
-        {icon.paths.map((path, index) => (
-          <Path
-            key={`path-${index}`}
-            {...path}
-            stroke={iconColor}
-            strokeWidth={1.8}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        ))}
-      </Svg>
+      <IconComponent size={size} color={iconColor} strokeWidth={2} />
     </View>
   );
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { render, screen } from '@testing-library/react-native';
+import Svg from 'react-native-svg';
 
 import { icons } from '../../design/icons';
 import { AppIcon } from './AppIcon';
@@ -38,7 +39,7 @@ describe('AppIcon', () => {
     );
   });
 
-  it('uses the icon-library crop as primary artwork and retains SVG glyphs as secondary', () => {
+  it('renders Tabler icons as SVG and retains the Bearing mark as image artwork', () => {
     render(
       <>
         <AppIcon name="calendar" testID="calendar-icon" />
@@ -46,12 +47,19 @@ describe('AppIcon', () => {
       </>,
     );
 
-    expect(screen.getByTestId('calendar-icon').findByType('Image')).toBeTruthy();
+    expect(screen.getByTestId('calendar-icon').findByType(Svg)).toBeTruthy();
+    expect(screen.getByTestId('calendar-outline-icon').findByType(Svg)).toBeTruthy();
+  });
 
-    expect(
-      screen.getByTestId('calendar-outline-icon').findAllByProps({
-        d: 'M7 2v4M17 2v4M3 9h18M7 13h.01M11 13h.01M15 13h.01M7 17h.01M11 17h.01M15 17h.01',
-      }),
-    ).not.toHaveLength(0);
+  it('renders the focus and idea icons as Tabler SVG icons', () => {
+    render(
+      <>
+        <AppIcon name="focus" testID="focus-custom-icon" />
+        <AppIcon name="idea" testID="idea-custom-icon" />
+      </>,
+    );
+
+    expect(screen.getByTestId('focus-custom-icon').findByType(Svg)).toBeTruthy();
+    expect(screen.getByTestId('idea-custom-icon').findByType(Svg)).toBeTruthy();
   });
 });
