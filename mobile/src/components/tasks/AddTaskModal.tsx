@@ -287,7 +287,7 @@ const createStyles = (theme: Theme) =>
       flexShrink: 1,
     },
     content: {
-      gap: spacing.md,
+      gap: spacing.lg,
       paddingBottom: spacing.sm,
     },
     fieldLabel: {
@@ -299,24 +299,27 @@ const createStyles = (theme: Theme) =>
     },
     input: {
       minHeight: 40,
-      borderRadius: radii.sm,
+      borderRadius: radii.md,
       paddingVertical: spacing.sm,
     },
     textArea: {
       minHeight: 76,
-      borderRadius: radii.sm,
+      borderRadius: radii.md,
       paddingVertical: spacing.sm,
     },
     scheduleSection: {
       gap: spacing.md,
+      padding: spacing.md,
+      borderRadius: radii.lg,
+      backgroundColor: theme.colors.surfaceRaised,
     },
     allDayToggle: {
       minHeight: layout.minimumTouchTarget,
       justifyContent: 'center',
       paddingHorizontal: spacing.md,
       borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: radii.sm,
+      borderColor: theme.colors.borderStrong,
+      borderRadius: radii.md,
       backgroundColor: theme.colors.surface,
     },
     allDayToggleText: {

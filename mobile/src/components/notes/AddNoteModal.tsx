@@ -117,7 +117,7 @@ const createStyles = (theme: Theme) =>
       flexShrink: 1,
     },
     content: {
-      gap: spacing.md,
+      gap: spacing.lg,
       paddingBottom: spacing.sm,
     },
     fieldLabel: {
@@ -129,12 +129,12 @@ const createStyles = (theme: Theme) =>
     },
     input: {
       minHeight: 40,
-      borderRadius: radii.sm,
+      borderRadius: radii.md,
       paddingVertical: spacing.sm,
     },
     textArea: {
       minHeight: 180,
-      borderRadius: radii.sm,
+      borderRadius: radii.md,
       paddingVertical: spacing.md,
     },
   });
