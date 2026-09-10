@@ -498,10 +498,16 @@ export function CreateGoalModal({
         fullScreen
       >
         <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.stepLabel}>{wizardLabel}</Text>
+          <Text style={[styles.stepLabel, styles.stepLabelCentered]}>{wizardLabel}</Text>
           <View accessibilityLabel={wizardLabel} style={styles.progressDots}>
             {WIZARD_TITLES.map((_, index) => (
-              <View key={index} style={styles.progressStep}>
+              <View
+                key={index}
+                style={[
+                  styles.progressStep,
+                  index === WIZARD_TITLES.length - 1 ? styles.progressStepLast : null,
+                ]}
+              >
                 <View
                   style={[
                     styles.progressCircle,
@@ -927,14 +933,21 @@ const createStyles = (theme: Theme) =>
       ...typography.label,
       color: theme.colors.brand,
     },
+    stepLabelCentered: {
+      textAlign: 'center',
+    },
     progressDots: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
     },
     progressStep: {
       flexDirection: 'row',
       alignItems: 'center',
       flex: 1,
+    },
+    progressStepLast: {
+      flex: 0,
     },
     progressCircle: {
       width: 28,
