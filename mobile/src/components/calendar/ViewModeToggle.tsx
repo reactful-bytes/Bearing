@@ -43,16 +43,18 @@ const createStyles = (theme: Theme) =>
   StyleSheet.create({
     container: {
       flexDirection: 'row',
-      backgroundColor: theme.colors.surfaceMuted,
-      borderRadius: radii.md,
-      padding: 3,
+      backgroundColor: theme.colors.surfaceRaised,
+      borderRadius: radii.lg,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.colors.borderStrong,
+      padding: 4,
       alignSelf: 'center',
       marginVertical: spacing.sm,
     },
     segment: {
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.xs,
-      borderRadius: radii.sm,
+      borderRadius: radii.md,
       alignItems: 'center',
       minWidth: 56,
     },

@@ -51,9 +51,10 @@ function formatHourLabel(hour: number, timeFormat: TimeFormat): string {
   return `${displayHour} ${period}`;
 }
 
-function getEventBgColor(status: EventStatus, theme: Theme): string {
+function getEventBgColor(status: EventStatus, ownership: CalendarDisplayEvent['ownership'], theme: Theme): string {
   if (status === 'completed') return theme.colors.textSecondary;
   if (status === 'canceled') return theme.colors.surfaceMuted;
+  if (ownership === 'device') return theme.colors.importedCyan;
   return theme.colors.brand;
 }
 
@@ -139,7 +140,7 @@ export function HourlyTimeline({
               const backgroundColor =
                 event.ownership === 'device' && event.calendarColor
                   ? event.calendarColor
-                  : getEventBgColor(event.status, theme);
+                  : getEventBgColor(event.status, event.ownership, theme);
               const textColor = getEventTextColor(event.status, theme);
               return (
                 <Pressable
@@ -198,7 +199,7 @@ export function HourlyTimeline({
                 const bgColor =
                   event.ownership === 'device' && event.calendarColor
                     ? event.calendarColor
-                    : getEventBgColor(event.status, theme);
+                    : getEventBgColor(event.status, event.ownership, theme);
                 const textColor = getEventTextColor(event.status, theme);
                 return (
                   <Pressable
@@ -266,11 +267,10 @@ const createStyles = (theme: Theme) =>
       flexDirection: 'row',
       alignItems: 'flex-start',
       paddingHorizontal: EVENT_PADDING_H,
-      paddingVertical: spacing.xs,
-      borderTopWidth: StyleSheet.hairlineWidth,
+      paddingVertical: spacing.sm,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
+      borderColor: theme.colors.borderStrong,
+      backgroundColor: theme.colors.surfaceRaised,
     },
     allDayLabel: {
       ...typography.helper,
@@ -340,7 +340,7 @@ const createStyles = (theme: Theme) =>
     },
     eventBlock: {
       position: 'absolute',
-      borderRadius: radii.sm,
+      borderRadius: radii.md,
       paddingHorizontal: spacing.sm,
       paddingVertical: spacing.xs,
       overflow: 'hidden',
