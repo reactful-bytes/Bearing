@@ -422,6 +422,7 @@ const createStyles = (theme: Theme) =>
   StyleSheet.create({
     providerSection: {
       gap: spacing.sm,
+      paddingTop: spacing.sm,
     },
     formSection: {
       gap: spacing.md,

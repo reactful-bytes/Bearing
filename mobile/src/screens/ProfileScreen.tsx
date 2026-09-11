@@ -63,6 +63,7 @@ import {
   PROFILE_LOCALE_OPTIONS,
   PROFILE_TIMEZONE_OPTIONS,
 } from '../features/profile/profileOptions';
+import { TIME_FORMAT_OPTIONS, TimeFormat } from '../features/profile/timeFormat';
 import { PremiumFeature, hasActivePremiumStatus } from '../features/premium/premiumAccess';
 import {
   clearAiCreditBalance,
@@ -76,11 +77,6 @@ import { useSoundPreview } from '../features/profile/useSoundPreview';
 import { useTelemetryConsent } from '../features/profile/useTelemetryConsent';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { ProfileTip } from '../features/profile/profileTypes';
-import {
-  DEFAULT_TIME_FORMAT,
-  TIME_FORMAT_OPTIONS,
-  TimeFormat,
-} from '../features/profile/timeFormat';
 import { listUserEvents } from '../services/firebase/firebaseEvents';
 import { getAiCreditStatus } from '../services/firebase/firebaseAiGoalPlans';
 import { reauthenticateCurrentUser } from '../services/firebase/firebaseAuthActions';
@@ -95,15 +91,13 @@ import type { ProfileStackParamList } from '../navigation/navigationTypes';
 export type ProfileSection =
   | 'account'
   | 'security'
-  | 'preferences'
   | 'notifications'
   | 'focusPreferences'
   | 'appearance'
   | 'connectedServices'
   | 'plan'
   | 'subscription'
-  | 'legal'
-  | 'session';
+  | 'legal';
 
 export type ProfileNavigationTarget = Exclude<keyof ProfileStackParamList, 'ProfileHome'>;
 
@@ -116,8 +110,8 @@ type ProfileScreenProps = {
 };
 
 const THEME_OPTIONS: readonly { value: ThemePreference; label: string }[] = [
-  { value: 'dark', label: 'Dark' },
   { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
 ];
 
 export function ProfileScreen({
@@ -128,7 +122,11 @@ export function ProfileScreen({
   navigation,
 }: ProfileScreenProps) {
   const styles = useThemedStyles(createStyles);
-  const { preference: themePreference, setPreference: setThemePreference } = useTheme();
+  const {
+    preference: themePreference,
+    setPreference: setThemePreference,
+    theme,
+  } = useTheme();
   const {
     authUser,
     profile,
@@ -154,10 +152,17 @@ export function ProfileScreen({
   const telemetryConsent = useTelemetryConsent(authUser?.uid ?? null);
   const [displayName, setDisplayName] = useState('');
   const [timezone, setTimezone] = useState('');
+  const [timezonePickerVisible, setTimezonePickerVisible] = useState(false);
+  const [timezonePending, setTimezonePending] = useState(false);
+  const [timezoneError, setTimezoneError] = useState<string | null>(null);
   const [locale, setLocale] = useState('');
-  const [timeFormat, setTimeFormat] = useState<TimeFormat>(DEFAULT_TIME_FORMAT);
-  const [accountPending, setAccountPending] = useState(false);
-  const [accountFeedback, setAccountFeedback] = useState<string | null>(null);
+  const [localePickerVisible, setLocalePickerVisible] = useState(false);
+  const [localePending, setLocalePending] = useState(false);
+  const [localeError, setLocaleError] = useState<string | null>(null);
+  const [timeFormat, setTimeFormat] = useState<TimeFormat>('12-hour');
+  const [timeFormatError, setTimeFormatError] = useState<string | null>(null);
+  const [displayNamePending, setDisplayNamePending] = useState(false);
+  const [displayNameError, setDisplayNameError] = useState<string | null>(null);
   const [accountError, setAccountError] = useState<string | null>(null);
   const [themePreferencePending, setThemePreferencePending] = useState(false);
   const [themePreferenceError, setThemePreferenceError] = useState<string | null>(null);
@@ -172,7 +177,6 @@ export function ProfileScreen({
   const [googleDisconnectError, setGoogleDisconnectError] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
   const [soundPicker, setSoundPicker] = useState<'alarm' | 'reminder' | null>(null);
-  const [selectionPicker, setSelectionPicker] = useState<'timezone' | 'locale' | null>(null);
   const [tipModalVisible, setTipModalVisible] = useState(false);
   const [activeTip, setActiveTip] = useState<ProfileTip | null>(null);
   const [soundPending, setSoundPending] = useState(false);
@@ -205,9 +209,7 @@ export function ProfileScreen({
   const [legalDocumentId, setLegalDocumentId] = useState<LegalDocumentId | null>(null);
   const [legalError, setLegalError] = useState<string | null>(null);
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
-  const shouldRenderSection = (section: ProfileSection): boolean =>
-    profileSection === undefined || profileSection === section;
-  const isHubRoute = Boolean(navigation) && profileSection === undefined;
+  const isHubRoute = profileSection === undefined;
 
   const handleThemePreferenceChange = async (nextPreference: ThemePreference) => {
     setThemePreferencePending(true);
@@ -237,6 +239,78 @@ export function ProfileScreen({
     setLinkDisplayName((current) => current || profile.displayName);
   }, [profile]);
 
+  async function handleSelectTimezone(nextValue: string): Promise<void> {
+    setTimezone(nextValue);
+    setTimezonePickerVisible(false);
+    setTimezonePending(true);
+    setTimezoneError(null);
+
+    try {
+      await updateProfile({ timezone: nextValue });
+    } catch (selectionError) {
+      setTimezoneError(
+        selectionError instanceof Error
+          ? selectionError.message
+          : 'Failed to save timezone preference.',
+      );
+    } finally {
+      setTimezonePending(false);
+    }
+  }
+
+  async function handleSelectLocale(nextValue: string): Promise<void> {
+    setLocale(nextValue);
+    setLocalePickerVisible(false);
+    setLocalePending(true);
+    setLocaleError(null);
+
+    try {
+      await updateProfile({ locale: nextValue });
+    } catch (selectionError) {
+      setLocaleError(
+        selectionError instanceof Error
+          ? selectionError.message
+          : 'Failed to save locale preference.',
+      );
+    } finally {
+      setLocalePending(false);
+    }
+  }
+
+  async function handleTimeFormatChange(nextValue: TimeFormat): Promise<void> {
+    setTimeFormat(nextValue);
+    setTimeFormatError(null);
+
+    try {
+      await updateProfile({ timeFormat: nextValue });
+    } catch (selectionError) {
+      setTimeFormatError(
+        selectionError instanceof Error
+          ? selectionError.message
+          : 'Failed to save time format preference.',
+      );
+    }
+  }
+
+  async function handleDisplayNameBlur(): Promise<void> {
+    const nextDisplayName = displayName.trim();
+    if (!nextDisplayName || nextDisplayName === profile?.displayName) {
+      return;
+    }
+
+    setDisplayNamePending(true);
+    setDisplayNameError(null);
+    try {
+      await updateProfile({ displayName: nextDisplayName });
+    } catch (saveError) {
+      setDisplayNameError(
+        saveError instanceof Error ? saveError.message : 'Failed to save display name.',
+      );
+    } finally {
+      setDisplayNamePending(false);
+    }
+  }
+
   useEffect(() => {
     if (!authUser || isAnonymous || !hasPremiumAccess) {
       clearAiCreditBalance();
@@ -262,42 +336,6 @@ export function ProfileScreen({
       current = false;
     };
   }, [authUser, hasPremiumAccess, isAnonymous]);
-
-  async function handleSaveAccountSettings(): Promise<void> {
-    if (!profile) {
-      return;
-    }
-
-    if (!timezone.trim()) {
-      setAccountError('Timezone is required.');
-      return;
-    }
-
-    if (!locale.trim()) {
-      setAccountError('Locale is required.');
-      return;
-    }
-
-    setAccountPending(true);
-    setAccountFeedback(null);
-    setAccountError(null);
-
-    try {
-      await updateProfile({
-        displayName,
-        timezone,
-        locale,
-        timeFormat,
-      });
-      setAccountFeedback('Account settings saved.');
-    } catch (saveError) {
-      setAccountError(
-        saveError instanceof Error ? saveError.message : 'Failed to save account settings.',
-      );
-    } finally {
-      setAccountPending(false);
-    }
-  }
 
   function handleOpenTipModal(): void {
     setActiveTip((currentTip) => currentTip ?? getDifferentRandomProfileTip(null));
@@ -467,16 +505,6 @@ export function ProfileScreen({
     } finally {
       setSoundPending(false);
     }
-  }
-
-  function handleSelectTimezone(nextValue: string): void {
-    setTimezone(nextValue);
-    setSelectionPicker(null);
-  }
-
-  function handleSelectLocale(nextValue: string): void {
-    setLocale(nextValue);
-    setSelectionPicker(null);
   }
 
   function closePremiumPaywall(): void {
@@ -872,11 +900,13 @@ export function ProfileScreen({
                   <ListItem
                     variant="row"
                     icon="billing"
+                    colorTone="purple"
                     title={hasPremiumAccess ? 'Bearing 360' : 'Free Plan'}
                     description={getPlanRenewalDescription()}
                   />
                   <ListItem
                     variant="row"
+                    icon="settings"
                     showDivider={hasPremiumAccess && Boolean(authUser) && !isAnonymous}
                     onPress={() => void handlePremiumAction()}
                     title={hasPremiumAccess ? 'Manage Subscription' : 'Upgrade to Bearing 360'}
@@ -906,9 +936,36 @@ export function ProfileScreen({
                   <ListItem
                     variant="row"
                     icon="legal"
-                    onPress={() => navigation?.navigate('Legal')}
-                    title="Privacy & Legal"
+                    onPress={() => setLegalDocumentId('privacy')}
+                    title="Privacy policy"
                   />
+                  <ListItem
+                    variant="row"
+                    icon="document"
+                    onPress={() => setLegalDocumentId('terms')}
+                    title="Terms of service"
+                  />
+                  <ListItem
+                    variant="row"
+                    icon="support"
+                    onPress={() => void handleOpenSupport()}
+                    title="Support"
+                  />
+                  <ListItem
+                    variant="row"
+                    icon="info"
+                    title="Share product diagnostics"
+                    description="Sends fixed outcome events only. Bearing excludes account IDs, content, calendar details, locations, and raw errors."
+                    trailingContent={
+                      <Switch
+                        accessibilityLabel="Share product diagnostics"
+                        value={telemetryConsent.enabled}
+                        disabled={telemetryConsent.pending}
+                        onValueChange={(enabled) => void telemetryConsent.updateConsent(enabled)}
+                      />
+                    }
+                  />
+                  {legalError ? <Text style={styles.errorText}>{legalError}</Text> : null}
                   <ListItem
                     variant="row"
                     icon="externalLink"
@@ -917,30 +974,38 @@ export function ProfileScreen({
                   />
                   <ListItem
                     variant="row"
+                    showDivider={false}
+                    icon="delete"
+                    colorTone="danger"
+                    onPress={() => setDeleteAccountVisible(true)}
+                    title="Delete account"
+                  />
+                </View>
+
+                <View style={styles.section}>
+                  <SectionHeading title="Session" variant="uppercase-accent" />
+                  <ListItem
+                    variant="row"
+                    showDivider={false}
                     icon="logout"
+                    colorTone="danger"
                     onPress={onPressSignOut}
                     title="Sign Out"
                     trailingText={isSignOutPending ? 'Working...' : undefined}
                     disabled={isSignOutPending}
                   />
-                  <ListItem
-                    variant="row"
-                    showDivider={false}
-                    icon="delete"
-                    onPress={() => setDeleteAccountVisible(true)}
-                    title="Delete account"
-                  />
                 </View>
               </>
             ) : null}
 
-            {shouldRenderSection('account') && !isHubRoute ? (
+            {profileSection === 'account' ? (
               <View style={styles.section}>
-                <View style={profileSection === undefined ? styles.profileHero : null}>
+                <SectionHeading title="Personal Information" variant="uppercase-accent" />
+                <View style={styles.personalInformationIdentity}>
                   <View
                     style={[
                       styles.identitySummary,
-                      profileSection === undefined ? styles.profileHeroIdentity : null,
+                      styles.profileHeroIdentity,
                     ]}
                   >
                     <View style={styles.identityMark}>
@@ -951,30 +1016,35 @@ export function ProfileScreen({
                     <View
                       style={[
                         styles.identityCopy,
-                        profileSection === undefined ? styles.profileHeroCopy : null,
+                        styles.profileHeroCopy,
                       ]}
                     >
                       <Text numberOfLines={1} style={styles.identityName}>
-                        {displayName || 'Unnamed account'}
+                        {displayName || profile.displayName || 'Unnamed account'}
                       </Text>
                       <Text numberOfLines={1} style={styles.identityEmail}>
-                        {email || 'Anonymous session'}
+                        {email || profile.email || 'Anonymous session'}
                       </Text>
                     </View>
                   </View>
                 </View>
-                <SectionHeading title="Account" variant="uppercase-accent" />
                 <FormField
                   label="Display name"
+                  labelStyle={styles.sectionTitle}
                   accessibilityLabel="Profile display name"
                   value={displayName}
                   onChangeText={setDisplayName}
+                  onBlur={() => void handleDisplayNameBlur()}
                   placeholder="Your name"
+                  containerStyle={styles.displayNameField}
                 />
+                {displayNamePending ? null : displayNameError ? (
+                  <Text style={styles.errorText}>{displayNameError}</Text>
+                ) : null}
               </View>
             ) : null}
 
-            {shouldRenderSection('security') && !isHubRoute ? (
+            {profileSection === 'security' ? (
               <View style={styles.section}>
                 <SectionHeading title="Security" variant="uppercase-accent" />
                 {isAnonymous ? (
@@ -1089,119 +1159,6 @@ export function ProfileScreen({
               </View>
             ) : null}
 
-            {shouldRenderSection('preferences') && !isHubRoute ? (
-              <View style={styles.section}>
-                <SectionHeading title="Preferences" variant="uppercase-accent" />
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Timezone</Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Open timezone picker"
-                    onPress={() => setSelectionPicker('timezone')}
-                    style={({ pressed }) => [
-                      styles.selectionButton,
-                      pressed ? styles.buttonPressed : null,
-                    ]}
-                  >
-                    <Text style={styles.selectionLabel}>Timezone</Text>
-                    <Text style={styles.selectionValue}>
-                      {getProfileSelectionLabel(
-                        PROFILE_TIMEZONE_OPTIONS,
-                        timezone,
-                        timezone || 'Select a timezone',
-                      )}
-                    </Text>
-                    <Text style={styles.selectionMeta}>{timezone || 'Select a timezone'}</Text>
-                  </Pressable>
-                </View>
-
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Locale</Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Open locale picker"
-                    onPress={() => setSelectionPicker('locale')}
-                    style={({ pressed }) => [
-                      styles.selectionButton,
-                      pressed ? styles.buttonPressed : null,
-                    ]}
-                  >
-                    <Text style={styles.selectionLabel}>Locale</Text>
-                    <Text style={styles.selectionValue}>
-                      {getProfileSelectionLabel(
-                        PROFILE_LOCALE_OPTIONS,
-                        locale,
-                        locale || 'Select a locale',
-                      )}
-                    </Text>
-                    <Text style={styles.selectionMeta}>{locale || 'Select a locale'}</Text>
-                  </Pressable>
-                </View>
-
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Time format</Text>
-                  <SegmentedControl
-                    accessibilityLabel="Time format"
-                    options={TIME_FORMAT_OPTIONS}
-                    value={timeFormat}
-                    onChange={setTimeFormat}
-                  />
-                </View>
-
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Appearance</Text>
-                  <SegmentedControl
-                    accessibilityLabel="Appearance"
-                    options={THEME_OPTIONS}
-                    value={themePreference}
-                    onChange={(nextPreference) => void handleThemePreferenceChange(nextPreference)}
-                  />
-                  <Text style={styles.selectionMeta}>
-                    {themePreferencePending
-                      ? 'Saving appearance preference...'
-                      : (themePreferenceError ?? 'Saved to this device.')}
-                  </Text>
-                </View>
-
-                <AppButton
-                  label="Tips & Wisdom"
-                  variant="secondary"
-                  accessibilityLabel="Tips and wisdom"
-                  onPress={handleOpenTipModal}
-                  style={styles.tipsButton}
-                  textStyle={styles.tipsButtonText}
-                />
-
-                <ListItem
-                  variant="row"
-                  onPress={() => setSoundPicker('alarm')}
-                  title="Timer sound"
-                  description="Pick the sound used when timer-style alerts finish."
-                  trailingText={getProfileSoundOption(profile.alarmSoundId).label}
-                />
-                <ListItem
-                  variant="row"
-                  showDivider={false}
-                  onPress={() => setSoundPicker('reminder')}
-                  title="Reminder sound"
-                  description="Pick the sound used before scheduled events."
-                  trailingText={getProfileSoundOption(profile.reminderSoundId).label}
-                />
-                {soundError ? <Text style={styles.errorText}>{soundError}</Text> : null}
-
-                {accountError ? <Text style={styles.errorText}>{accountError}</Text> : null}
-                {accountFeedback ? <Text style={styles.successText}>{accountFeedback}</Text> : null}
-
-                <AppButton
-                  label="Save Preferences"
-                  accessibilityLabel="Save account settings"
-                  onPress={() => void handleSaveAccountSettings()}
-                  loading={accountPending}
-                  loadingLabel="Saving..."
-                />
-              </View>
-            ) : null}
-
             {profileSection === 'notifications' ? (
               <View style={styles.section}>
                 <SectionHeading title="Notifications" variant="uppercase-accent" />
@@ -1235,21 +1192,77 @@ export function ProfileScreen({
             {profileSection === 'appearance' ? (
               <View style={styles.section}>
                 <SectionHeading title="Appearance" variant="uppercase-accent" />
-                <SegmentedControl
-                  accessibilityLabel="Appearance"
-                  options={THEME_OPTIONS}
-                  value={themePreference}
-                  onChange={(nextPreference) => void handleThemePreferenceChange(nextPreference)}
-                />
-                <Text style={styles.selectionMeta}>
-                  {themePreferencePending
-                    ? 'Saving appearance preference...'
-                    : (themePreferenceError ?? 'Saved to this device.')}
-                </Text>
+                <View style={styles.sectionBody}>
+                  <ListItem
+                    variant="row"
+                    title="Theme"
+                    trailingContentBelow
+                    trailingContent={
+                      <SegmentedControl
+                        accessibilityLabel="Theme"
+                        options={THEME_OPTIONS}
+                        value={themePreference}
+                        onChange={(nextPreference) =>
+                          void handleThemePreferenceChange(nextPreference)
+                        }
+                      />
+                    }
+                  />
+                  <ListItem
+                    variant="row"
+                    title="Time format"
+                    trailingContentBelow
+                    trailingContent={
+                      <SegmentedControl
+                        accessibilityLabel="Time format"
+                        options={TIME_FORMAT_OPTIONS}
+                        value={timeFormat}
+                        onChange={(nextValue) =>
+                          void handleTimeFormatChange(nextValue as TimeFormat)
+                        }
+                      />
+                    }
+                  />
+                  <ListItem
+                    variant="row"
+                    title="Time zone"
+                    accessibilityLabel="Open timezone picker"
+                    onPress={() => setTimezonePickerVisible(true)}
+                    disabled={timezonePending}
+                    trailingText={
+                      timezonePending
+                        ? 'Saving...'
+                        : (timezoneError ??
+                          getProfileSelectionLabel(
+                            PROFILE_TIMEZONE_OPTIONS,
+                            timezone,
+                            timezone || 'Select a time zone',
+                          ))
+                    }
+                  />
+                  <ListItem
+                    variant="row"
+                    showDivider={false}
+                    title="Locale"
+                    accessibilityLabel="Open locale picker"
+                    onPress={() => setLocalePickerVisible(true)}
+                    disabled={localePending}
+                    trailingText={
+                      localePending
+                        ? 'Saving...'
+                        : (localeError ??
+                          getProfileSelectionLabel(
+                            PROFILE_LOCALE_OPTIONS,
+                            locale,
+                            locale || 'Select a locale',
+                          ))
+                    }
+                  />
+                </View>
               </View>
             ) : null}
 
-            {shouldRenderSection('connectedServices') && !isHubRoute ? (
+            {profileSection === 'connectedServices' ? (
               <View style={styles.section}>
                 <SectionHeading title="Calendars & Data" variant="uppercase-accent" />
                 <ListItem
@@ -1277,7 +1290,7 @@ export function ProfileScreen({
               </View>
             ) : null}
 
-            {shouldRenderSection('plan') && !isHubRoute ? (
+            {profileSection === 'plan' ? (
               <View style={styles.section}>
                 <SectionHeading title="Plan" variant="uppercase-accent" />
                 <ListItem
@@ -1341,7 +1354,7 @@ export function ProfileScreen({
               </View>
             ) : null}
 
-            {shouldRenderSection('legal') && !isHubRoute ? (
+            {profileSection === 'legal' ? (
               <View style={styles.section}>
                 <SectionHeading title="Privacy & Legal" variant="uppercase-accent" />
                 <ListItem
@@ -1367,52 +1380,26 @@ export function ProfileScreen({
                   trailingText="Email"
                 />
                 {legalError ? <Text style={styles.errorText}>{legalError}</Text> : null}
-                <View style={styles.telemetryPreferenceRow}>
-                  <View style={styles.telemetryPreferenceCopy}>
-                    <Text style={styles.sectionTitle}>Share product diagnostics</Text>
-                    <Text style={styles.selectionMeta}>
-                      Sends fixed outcome events only. Bearing excludes account IDs, content,
-                      calendar details, locations, and raw errors.
-                    </Text>
-                  </View>
-                  <Switch
-                    accessibilityLabel="Share product diagnostics"
-                    value={telemetryConsent.enabled}
-                    disabled={telemetryConsent.pending}
-                    onValueChange={(enabled) => void telemetryConsent.updateConsent(enabled)}
-                  />
-                </View>
+                <ListItem
+                  variant="row"
+                  showDivider={false}
+                  title="Share product diagnostics"
+                  description="Sends fixed outcome events only. Bearing excludes account IDs, content, calendar details, locations, and raw errors."
+                  trailingContent={
+                    <Switch
+                      accessibilityLabel="Share product diagnostics"
+                      value={telemetryConsent.enabled}
+                      disabled={telemetryConsent.pending}
+                      onValueChange={(enabled) => void telemetryConsent.updateConsent(enabled)}
+                    />
+                  }
+                />
                 {telemetryConsent.error ? (
                   <Text style={styles.errorText}>{telemetryConsent.error}</Text>
                 ) : null}
               </View>
             ) : null}
 
-            {shouldRenderSection('session') && !isHubRoute ? (
-              <View style={styles.section}>
-                <SectionHeading title="Session" variant="uppercase-accent" />
-                <View style={styles.dangerActionWrapper}>
-                  <ListItem
-                    variant="row"
-                    onPress={onPressSignOut}
-                    title="Sign Out"
-                    description="End the current session on this device."
-                    trailingText={isSignOutPending ? 'Working...' : 'Action'}
-                    disabled={isSignOutPending}
-                  />
-                </View>
-                <View style={styles.dangerActionWrapper}>
-                  <ListItem
-                    variant="row"
-                    showDivider={false}
-                    onPress={() => setDeleteAccountVisible(true)}
-                    title="Delete account"
-                    description="Permanently delete this account and its Bearing data."
-                    trailingText="Delete"
-                  />
-                </View>
-              </View>
-            ) : null}
           </>
         ) : null}
       </ScrollView>
@@ -1432,23 +1419,23 @@ export function ProfileScreen({
       />
 
       <ProfileSelectionModal
-        visible={selectionPicker === 'timezone'}
-        title="Timezone"
-        searchPlaceholder="Search timezones by city or region"
+        visible={timezonePickerVisible}
+        title="Time zone"
+        searchPlaceholder="Search time zones by city or region"
         selectedValue={timezone}
         options={PROFILE_TIMEZONE_OPTIONS}
-        onClose={() => setSelectionPicker(null)}
-        onSelect={handleSelectTimezone}
+        onClose={() => setTimezonePickerVisible(false)}
+        onSelect={(value) => void handleSelectTimezone(value)}
       />
 
       <ProfileSelectionModal
-        visible={selectionPicker === 'locale'}
+        visible={localePickerVisible}
         title="Locale"
-        searchPlaceholder="Search locales by language or country"
+        searchPlaceholder="Search locales by language or region"
         selectedValue={locale}
         options={PROFILE_LOCALE_OPTIONS}
-        onClose={() => setSelectionPicker(null)}
-        onSelect={handleSelectLocale}
+        onClose={() => setLocalePickerVisible(false)}
+        onSelect={(value) => void handleSelectLocale(value)}
       />
 
       <TipsWisdomModal
@@ -1791,7 +1778,7 @@ const createStyles = (theme: Theme) =>
       flexGrow: 1,
       paddingHorizontal: layout.pagePaddingHorizontal,
       paddingVertical: layout.pagePaddingVertical,
-      gap: spacing.lg,
+      gap: spacing.md,
       paddingBottom: 120,
     },
     routeHeader: {
@@ -1807,15 +1794,24 @@ const createStyles = (theme: Theme) =>
       marginTop: spacing.sm,
     },
     section: {
-      gap: spacing.md,
-      padding: spacing.lg,
-      borderRadius: radii.lg,
+      gap: 0,
+      paddingHorizontal: 0,
+      paddingVertical: 0,
+      borderRadius: radii.md,
       backgroundColor: theme.colors.surfaceRaised,
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
     sectionBody: {
       gap: spacing.md,
+    },
+    sectionContent: {
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.md,
+    },
+    appearanceOptions: {
+      gap: spacing.lg,
+      paddingTop: spacing.md,
     },
     deletionOption: {
       gap: spacing.xs,
@@ -1824,6 +1820,13 @@ const createStyles = (theme: Theme) =>
     sectionTitle: {
       ...typography.button,
       color: theme.colors.text,
+      letterSpacing: 0,
+      textTransform: 'none',
+    },
+    displayNameField: {
+      marginTop: spacing.md,
+      marginHorizontal: spacing.md,
+      marginBottom: spacing.md,
     },
     fieldGroup: {
       gap: spacing.sm,
@@ -1831,6 +1834,10 @@ const createStyles = (theme: Theme) =>
     label: {
       ...typography.label,
       color: theme.colors.textSecondary,
+    },
+    preferenceLabel: {
+      ...typography.body,
+      color: theme.colors.text,
     },
     input: {
       minHeight: 44,
@@ -1880,6 +1887,9 @@ const createStyles = (theme: Theme) =>
       flexDirection: 'column',
       paddingHorizontal: 0,
       paddingVertical: 0,
+    },
+    personalInformationIdentity: {
+      paddingTop: spacing.lg,
     },
     identityMark: {
       width: 72,
@@ -1981,22 +1991,6 @@ const createStyles = (theme: Theme) =>
       backgroundColor: theme.colors.surfaceBrand,
     },
     calendarSelectionCopy: {
-      flex: 1,
-      gap: spacing.xs,
-    },
-    telemetryPreferenceRow: {
-      minHeight: 56,
-      borderRadius: radii.md,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.md,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.md,
-    },
-    telemetryPreferenceCopy: {
       flex: 1,
       gap: spacing.xs,
     },

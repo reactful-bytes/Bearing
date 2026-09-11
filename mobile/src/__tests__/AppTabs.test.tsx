@@ -68,6 +68,7 @@ jest.mock('../components/presentation/CreateFabGroup', () => {
   return {
     CreateFabGroup: ({
       visible,
+      onDismiss,
       onCreateGoal,
       onCreateTask,
       onCreateNote,
@@ -75,6 +76,7 @@ jest.mock('../components/presentation/CreateFabGroup', () => {
       onCreateFocus,
     }: {
       visible: boolean;
+      onDismiss: () => void;
       onCreateGoal: () => void;
       onCreateTask: () => void;
       onCreateNote: () => void;
@@ -86,6 +88,11 @@ jest.mock('../components/presentation/CreateFabGroup', () => {
             ReactModule.Fragment,
             null,
             ReactModule.createElement(Text, { testID: 'create-fab-group' }, 'Create'),
+            ReactModule.createElement(Pressable, {
+              testID: 'create-fab-close',
+              accessibilityLabel: 'Close create menu',
+              onPress: onDismiss,
+            }),
             ReactModule.createElement(Pressable, {
               testID: 'create-goal-action',
               onPress: onCreateGoal,
@@ -226,8 +233,10 @@ describe('AppTabs', () => {
       expect.arrayContaining([
         expect.objectContaining({
           height: layout.tabBarHeight + 12,
-          marginTop: -17,
-          width: 76,
+          position: 'absolute',
+          left: '50%',
+          bottom: 0,
+          width: 112,
         }),
       ]),
     );
@@ -241,6 +250,16 @@ describe('AppTabs', () => {
     fireEvent.press(getByTestId('create-tab-button'));
 
     expect(getByTestId('create-fab-group')).toBeTruthy();
+  });
+
+  it('provides a close action inside the expanded Create FAB group', () => {
+    const { getByTestId } = render(
+      <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
+    );
+
+    fireEvent.press(getByTestId('create-tab-button'));
+
+    expect(getByTestId('create-fab-close').props.accessibilityLabel).toBe('Close create menu');
   });
 
   it.each([

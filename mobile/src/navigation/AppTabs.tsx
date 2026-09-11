@@ -86,6 +86,7 @@ function TabIcon({
 }) {
   const styles = useThemedStyles(createStyles);
   const rotation = useRef(new Animated.Value(0)).current;
+  const iconColor = focused ? styles.activeIcon.color : styles.inactiveIcon.color;
 
   useEffect(() => {
     if (routeName !== 'Create') {
@@ -105,7 +106,12 @@ function TabIcon({
     return (
       <View style={styles.createIconCircle}>
         <Animated.View style={{ transform: [{ rotate }] }}>
-          <AppIcon name={TAB_ICONS.Create} size={isDesktop ? 20 : 22} decorative />
+          <AppIcon
+            name={TAB_ICONS.Create}
+            size={isDesktop ? 20 : 22}
+            color={styles.createIcon.color}
+            decorative
+          />
         </Animated.View>
       </View>
     );
@@ -119,7 +125,12 @@ function TabIcon({
         dimmed ? styles.iconSlotDimmed : null,
       ]}
     >
-      <AppIcon name={TAB_ICONS[routeName]} size={isDesktop ? 20 : 22} decorative />
+      <AppIcon
+        name={TAB_ICONS[routeName]}
+        size={isDesktop ? 20 : 22}
+        color={iconColor}
+        decorative
+      />
     </View>
   );
 }
@@ -364,6 +375,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
   StyleSheet.create({
     tabBar: {
       height: theme.layout.tabBarHeight,
+      paddingHorizontal: theme.spacing.xs,
       paddingTop: theme.layout.tabBarPaddingVertical,
       backgroundColor: theme.colors.surfaceRaised,
       borderTopColor: theme.componentTokens.tabBar.borderTopColor,
@@ -414,20 +426,32 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
     iconSlotDimmed: {
       opacity: 0.35,
     },
+    activeIcon: {
+      color: theme.colors.brand,
+    },
+    inactiveIcon: {
+      color: theme.colors.textSecondary,
+    },
     createIconCircle: {
-      width: theme.layout.tabIconSize + 12,
-      height: theme.layout.tabIconSize + 12,
-      borderRadius: (theme.layout.tabIconSize + 12) / 2,
+      width: 56,
+      height: 56,
+      borderRadius: 32,
       backgroundColor: theme.componentTokens.tabIcon.focusedBackgroundColor,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: theme.colors.borderStrong,
       alignItems: 'center',
       justifyContent: 'center',
     },
+    createIcon: {
+      color: theme.colors.onBrand,
+    },
     createTabButton: {
-      width: 76,
+      width: 112,
       height: theme.layout.tabBarHeight + 12,
-      marginTop: -17,
+      position: 'absolute',
+      left: '50%',
+      marginLeft: -56,
+      bottom: 0,
       alignItems: 'center',
       justifyContent: 'center',
       overflow: 'visible',

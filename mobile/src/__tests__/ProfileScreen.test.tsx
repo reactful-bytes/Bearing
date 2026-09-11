@@ -1,4 +1,5 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { cloneElement, ReactElement } from 'react';
+import { act, fireEvent, render as renderNative, screen, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Alert, Linking, Platform } from 'react-native';
 
@@ -36,6 +37,16 @@ import {
 } from '../services/firebase/firebasePrivacy';
 import { showPremiumSubscriptionManagement } from '../services/purchases/revenueCatClient';
 import { getAiCreditStatus } from '../services/firebase/firebaseAiGoalPlans';
+
+function render(ui: ReactElement<{ section?: string; navigation?: unknown }>) {
+  if (ui.props.section === undefined && ui.props.navigation === undefined) {
+    return renderNative(
+      cloneElement(ui, { navigation: { navigate: jest.fn() } } as never),
+    );
+  }
+
+  return renderNative(ui);
+}
 
 jest.setTimeout(10000);
 
@@ -344,7 +355,7 @@ describe('ProfileScreen', () => {
     mockProfileHooks();
     const onPressBack = jest.fn();
 
-    render(
+    const view = render(
       <ProfileScreen
         onPressSignOut={() => undefined}
         isSignOutPending={false}
@@ -353,7 +364,7 @@ describe('ProfileScreen', () => {
       />,
     );
 
-    expect(screen.getByRole('header', { name: 'Account' })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Personal Information' })).toBeTruthy();
     expect(screen.queryByRole('header', { name: 'Security' })).toBeNull();
 
     fireEvent.press(screen.getByLabelText('Back to Profile'));
@@ -384,11 +395,11 @@ describe('ProfileScreen', () => {
   it.each([
     ['notifications', 'Notifications', 'Reminder sound'],
     ['focusPreferences', 'Focus Preferences', 'Timer sound'],
-    ['appearance', 'Appearance', 'Appearance'],
+    ['appearance', 'Appearance', 'Theme'],
   ] as [
     'notifications' | 'focusPreferences' | 'appearance',
     'Notifications' | 'Focus Preferences' | 'Appearance',
-    'Reminder sound' | 'Timer sound' | 'Appearance',
+    'Reminder sound' | 'Timer sound' | 'Theme',
   ][])('renders the %s route as a focused section', (section, heading, controlLabel) => {
     mockProfileHooks();
 
@@ -401,54 +412,89 @@ describe('ProfileScreen', () => {
     expect(screen.queryByRole('header', { name: 'Preferences' })).toBeNull();
   });
 
-  it('saves account settings and sends a password reset email', async () => {
-    const { updateProfile, sendPasswordReset } = mockProfileHooks();
+  it('updates the timezone from the Appearance route', async () => {
+    const { updateProfile } = mockProfileHooks();
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="appearance"
+      />,
+    );
 
-    expect(screen.getByRole('header', { name: 'Account' })).toBeTruthy();
-    expect(screen.getByRole('header', { name: 'Security' })).toBeTruthy();
-    expect(screen.getByRole('header', { name: 'Preferences' })).toBeTruthy();
-    expect(screen.getByRole('header', { name: 'Calendars & Data' })).toBeTruthy();
-    expect(screen.getByRole('header', { name: 'Plan' })).toBeTruthy();
-    expect(screen.getByRole('header', { name: 'Privacy & Legal' })).toBeTruthy();
-    expect(screen.getByRole('header', { name: 'Session' })).toBeTruthy();
-    expect(screen.getByText('Preston')).toBeTruthy();
-    expect(screen.getAllByText('preston@example.com').length).toBeGreaterThan(0);
-
-    fireEvent.changeText(screen.getByLabelText('Profile display name'), 'Preston Bateman');
     fireEvent.press(screen.getByLabelText('Open timezone picker'));
-    fireEvent.press(screen.getByLabelText('Select Timezone America/Chicago'));
+  expect(screen.getByRole('header', { name: 'Time zone' })).toBeTruthy();
+  expect(screen.getByLabelText('Select Time zone America/Chicago')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Select Time zone America/Chicago'));
+
+    await waitFor(() => {
+      expect(updateProfile).toHaveBeenCalledWith({ timezone: 'America/Chicago' });
+    });
+  });
+
+  it('opens the locale picker from the Appearance route', () => {
+    mockProfileHooks();
+
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="appearance"
+      />,
+    );
+
     fireEvent.press(screen.getByLabelText('Open locale picker'));
-    fireEvent.press(screen.getByLabelText('Select Locale en-GB'));
-    fireEvent.press(screen.getByText('24 hour'));
 
-    await act(async () => {
-      fireEvent.press(screen.getByLabelText('Save account settings'));
-    });
+    expect(screen.getByRole('header', { name: 'Locale' })).toBeTruthy();
+    expect(screen.getByLabelText('Select Locale en-US')).toBeTruthy();
+  });
+
+  it('renders Personal Information as a focused route', () => {
+    mockProfileHooks();
+
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="account"
+      />,
+    );
+
+    expect(screen.getByRole('header', { name: 'Personal Information' })).toBeTruthy();
+    expect(screen.getByLabelText('Profile display name')).toBeTruthy();
+    expect(screen.queryByRole('header', { name: 'Security' })).toBeNull();
+  });
+
+  it('automatically saves the display name when the field loses focus', async () => {
+    const { updateProfile } = mockProfileHooks();
+
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="account"
+      />,
+    );
+
+    fireEvent.changeText(screen.getByLabelText('Profile display name'), 'Updated name');
+    fireEvent(screen.getByLabelText('Profile display name'), 'blur');
 
     await waitFor(() => {
-      expect(updateProfile).toHaveBeenCalledWith({
-        displayName: 'Preston Bateman',
-        timezone: 'America/Chicago',
-        locale: 'en-GB',
-        timeFormat: '24-hour',
-      });
-    });
-
-    await act(async () => {
-      fireEvent.press(screen.getByLabelText('Reset password'));
-    });
-
-    await waitFor(() => {
-      expect(sendPasswordReset).toHaveBeenCalled();
+      expect(updateProfile).toHaveBeenCalledWith({ displayName: 'Updated name' });
     });
   });
 
   it('lets the user opt into product diagnostics', () => {
     const { updateTelemetryConsent } = mockProfileHooks();
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        navigation={{ navigate: jest.fn() }}
+      />,
+    );
     fireEvent(screen.getByLabelText('Share product diagnostics'), 'valueChange', true);
 
     expect(updateTelemetryConsent).toHaveBeenCalledWith(true);
@@ -472,7 +518,13 @@ describe('ProfileScreen', () => {
       uiState: 'ready',
       error: null,
     });
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="plan"
+      />,
+    );
     await act(async () => {
       fireEvent.press(screen.getByText('Bearing 360 access'));
     });
@@ -481,7 +533,6 @@ describe('ProfileScreen', () => {
       screen.getByText('Unable to open the store subscription settings for this account.'),
     ).toBeTruthy();
     expect(showPremiumSubscriptionManagement).toHaveBeenCalledWith('user-1', 'web');
-    expect(screen.getByLabelText('Save account settings')).toBeTruthy();
   });
 
   it('shows the authoritative balance and credit-pack guidance for active members', async () => {
@@ -492,7 +543,13 @@ describe('ProfileScreen', () => {
       error: null,
     });
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="plan"
+      />,
+    );
 
     await waitFor(() => expect(screen.getByText('7 available')).toBeTruthy());
     fireEvent.press(screen.getByText('AI planning credits'));
@@ -522,7 +579,13 @@ describe('ProfileScreen', () => {
       error: null,
     });
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="plan"
+      />,
+    );
     await act(async () => {
       fireEvent.press(screen.getByText('Bearing 360 access'));
     });
@@ -598,9 +661,15 @@ describe('ProfileScreen', () => {
     const { previewSound, updateProfile } = mockProfileHooks();
     jest.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0.7);
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    const view = render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        navigation={{ navigate: jest.fn() }}
+      />,
+    );
 
-    fireEvent.press(screen.getByLabelText('Tips and wisdom'));
+    fireEvent.press(screen.getByLabelText('Tips & Wisdom'));
     expect(screen.getByLabelText('Refresh tip')).toBeTruthy();
     expect(screen.getByLabelText('Close tip modal')).toBeTruthy();
     expect(screen.getByText('Bearing Tip')).toBeTruthy();
@@ -608,6 +677,13 @@ describe('ProfileScreen', () => {
     fireEvent.press(screen.getByLabelText('Refresh tip'));
     expect(screen.getByText('Life Wisdom')).toBeTruthy();
 
+    view.rerender(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="focusPreferences"
+      />,
+    );
     fireEvent.press(screen.getByLabelText('Timer sound'));
 
     await act(async () => {
@@ -637,7 +713,13 @@ describe('ProfileScreen', () => {
       },
     });
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="security"
+      />,
+    );
 
     fireEvent.changeText(screen.getByLabelText('Secure account display name'), 'Preston');
     fireEvent.changeText(screen.getByLabelText('Secure account email'), 'preston@example.com');
@@ -660,7 +742,13 @@ describe('ProfileScreen', () => {
   it('adds Google Sign-In to an existing password account', async () => {
     const { linkGoogleAccount } = mockProfileHooks();
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="security"
+      />,
+    );
 
     await act(async () => {
       fireEvent.press(screen.getByRole('button', { name: 'Add Google Sign-In' }));
@@ -684,7 +772,13 @@ describe('ProfileScreen', () => {
       },
     });
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="security"
+      />,
+    );
     fireEvent.press(screen.getByRole('button', { name: 'Google Sign-In' }));
     expect(screen.getByText('Disconnect Google Sign-In')).toBeTruthy();
 
@@ -714,7 +808,13 @@ describe('ProfileScreen', () => {
       },
     });
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="security"
+      />,
+    );
 
     expect(screen.getByText(/Add a password before disconnecting Google/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Google Sign-In' })).toBeNull();
@@ -736,7 +836,13 @@ describe('ProfileScreen', () => {
       },
     });
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="connectedServices"
+      />,
+    );
     fireEvent.press(screen.getByLabelText('Device calendars'));
 
     await act(async () => {
@@ -749,7 +855,13 @@ describe('ProfileScreen', () => {
   it('updates visible and writable default device calendars', async () => {
     const { toggleCalendar, setDefaultCalendar, refreshCalendars } = mockProfileHooks();
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="connectedServices"
+      />,
+    );
     fireEvent.press(screen.getByLabelText('Device calendars'));
 
     expect(screen.getByText('Visible calendars')).toBeTruthy();
@@ -781,7 +893,13 @@ describe('ProfileScreen', () => {
       },
     });
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="connectedServices"
+      />,
+    );
     fireEvent.press(screen.getByLabelText('Export calendar'));
     expect(screen.getByText(/all-day, timezone, recurrence/)).toBeTruthy();
 
@@ -808,7 +926,13 @@ describe('ProfileScreen', () => {
       },
     });
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="connectedServices"
+      />,
+    );
     fireEvent.press(screen.getByLabelText('Export calendar'));
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Share ics file'));
@@ -832,7 +956,13 @@ describe('ProfileScreen', () => {
     });
 
     try {
-      render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+      render(
+        <ProfileScreen
+          onPressSignOut={() => undefined}
+          isSignOutPending={false}
+          section="connectedServices"
+        />,
+      );
       fireEvent.press(screen.getByLabelText('Export calendar'));
       await act(async () => {
         fireEvent.press(screen.getByLabelText('Export ics file'));

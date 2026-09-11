@@ -65,17 +65,17 @@ const createStyles = (theme: Theme) =>
       alignSelf: 'center',
     },
     brandRow: {
-      flexDirection: 'column',
+      flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.xs,
+      gap: spacing.lg,
     },
     logo: {
-      width: 76,
-      height: 76,
+      width: 112,
+      height: 112,
       resizeMode: 'contain',
     },
     brandCopy: {
-      alignItems: 'center',
+      alignItems: 'flex-start',
       gap: spacing.xs,
     },
     brandName: {
@@ -90,18 +90,19 @@ const createStyles = (theme: Theme) =>
     },
     intro: {
       gap: spacing.sm,
-      alignItems: 'center',
+      alignItems: 'flex-start',
+      paddingBottom: spacing.sm,
     },
     heading: {
       ...typography.sectionTitle,
       fontSize: 24,
       lineHeight: 30,
       color: theme.colors.text,
-      textAlign: 'center',
+      textAlign: 'left',
     },
     description: {
       ...typography.helper,
       color: theme.colors.textPrimary,
-      textAlign: 'center',
+      textAlign: 'left',
     },
   });

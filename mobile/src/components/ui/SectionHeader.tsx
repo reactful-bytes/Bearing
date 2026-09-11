@@ -36,7 +36,13 @@ export function SectionHeader({
     ) : null;
 
   return (
-    <View style={[styles.container, variant === 'compact' && styles.compactContainer]}>
+      <View
+        style={[
+          styles.container,
+          variant === 'compact' && styles.compactContainer,
+          variant === 'uppercase-accent' && styles.uppercaseAccentContainer,
+        ]}
+      >
       <View style={styles.copy}>
         <Text
           accessibilityRole="header"
@@ -65,6 +71,10 @@ const createStyles = (theme: Theme) =>
     },
     compactContainer: {
       alignItems: 'center',
+    },
+    uppercaseAccentContainer: {
+      paddingHorizontal: theme.spacing.md,
+      paddingTop: theme.spacing.md,
     },
     copy: {
       flex: 1,

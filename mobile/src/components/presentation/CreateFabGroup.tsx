@@ -25,7 +25,7 @@ type CreateFabGroupProps = {
   onCreateFocus: () => void;
 };
 
-const ACTION_SPACING = 62;
+const ACTION_SPACING = 70;
 const ANIMATION_DURATION_MS = 200;
 
 // Declared in on-screen "stack" order (top to bottom); the last entry renders closest to the button.
@@ -84,7 +84,9 @@ export function CreateFabGroup(props: CreateFabGroupProps) {
               pointerEvents={props.visible ? 'auto' : 'none'}
               style={[styles.actionRow, { transform: [{ translateY }], opacity: progress }]}
             >
-              <Text style={styles.label}>{action.label}</Text>
+              <View style={styles.labelContainer}>
+                <Text style={styles.label}>{action.label}</Text>
+              </View>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Create ${action.label}`}
@@ -100,6 +102,35 @@ export function CreateFabGroup(props: CreateFabGroupProps) {
             </Animated.View>
           );
         })}
+        {props.visible ? (
+          <Animated.View style={[styles.closeRow, { opacity: progress }]}>
+            <Pressable
+              testID="create-fab-close"
+              accessibilityRole="button"
+              accessibilityLabel="Close create menu"
+              onPress={props.onDismiss}
+              style={({ pressed }) => [
+                styles.closeButton,
+                pressed ? styles.actionPressed : null,
+              ]}
+            >
+              <Animated.View
+                style={{
+                  transform: [
+                    {
+                      rotate: progress.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['0deg', '45deg'],
+                      }),
+                    },
+                  ],
+                }}
+              >
+                <AppIcon name="create" size={22} color={theme.colors.text} decorative />
+              </Animated.View>
+            </Pressable>
+          </Animated.View>
+        ) : null}
       </View>
     </>
   );
@@ -118,15 +149,38 @@ const createStyles = (theme: Theme) =>
     },
     actionRow: {
       position: 'absolute',
-      bottom: 0,
-      alignSelf: 'center',
+      bottom: -50,
+      left: theme.spacing.md,
+      right: theme.spacing.md,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.sm,
+      justifyContent: 'center',
+    },
+    labelContainer: {
+      minWidth: 96,
+      minHeight: 44,
+      paddingHorizontal: theme.spacing.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: theme.radii.md,
+      backgroundColor: theme.colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: -20,
+      paddingRight: theme.spacing.xl,
+      zIndex: 0,
     },
     label: {
       ...theme.typography.button,
       color: theme.colors.text,
+      textAlign: 'right',
+    },
+    closeRow: {
+      position: 'absolute',
+      bottom: 28,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
     },
     actionButton: {
       width: 48,
@@ -134,6 +188,20 @@ const createStyles = (theme: Theme) =>
       borderRadius: 24,
       alignItems: 'center',
       justifyContent: 'center',
+      zIndex: 1,
+    },
+    closeButton: {
+      width: 56,
+      height: 56,
+      borderRadius: 32,
+      backgroundColor: theme.colors.background,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'absolute',
+      bottom: -94,
+
     },
     actionPressed: { opacity: 0.85 },
     goalAction: { backgroundColor: theme.colors.success },

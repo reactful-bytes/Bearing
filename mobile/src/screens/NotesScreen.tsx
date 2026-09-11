@@ -313,7 +313,7 @@ const createStyles = (theme: Theme) =>
       borderRadius: radii.lg,
     },
     allNoteCard: {
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceRaised,
       borderRadius: radii.md,
     },
     searchRow: {
