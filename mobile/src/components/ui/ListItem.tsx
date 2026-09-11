@@ -80,7 +80,7 @@ const createStyles = (theme: Theme) =>
       justifyContent: 'space-between',
     },
     itemPressed: {
-      opacity: 0.9,
+      backgroundColor: theme.colors.surfacePressed,
     },
     itemDisabled: {
       opacity: 0.6,

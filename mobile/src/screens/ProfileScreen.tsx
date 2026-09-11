@@ -23,6 +23,8 @@ import { ProfileSelectionModal } from '../components/profile/ProfileSelectionMod
 import { LegalDocumentModal } from '../components/profile/LegalDocumentModal';
 import { SoundPickerModal } from '../components/profile/SoundPickerModal';
 import { TipsWisdomModal } from '../components/profile/TipsWisdomModal';
+import { ProfileIdentityCard } from '../components/profile/ProfileIdentityCard';
+import { SubscriptionCard } from '../components/profile/SubscriptionCard';
 import { AppCard } from '../components/ui/AppCard';
 import { ListItem } from '../components/ui/ListItem';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
@@ -807,25 +809,11 @@ export function ProfileScreen({
           <>
             {isHubRoute ? (
               <>
-                <View style={styles.section}>
-                  <View style={styles.profileHero}>
-                    <View style={[styles.identitySummary, styles.profileHeroIdentity]}>
-                      <View style={styles.identityMark}>
-                        <Text style={styles.identityInitial}>
-                          {(displayName || email || '?').trim().charAt(0).toUpperCase()}
-                        </Text>
-                      </View>
-                      <View style={[styles.identityCopy, styles.profileHeroCopy]}>
-                        <Text numberOfLines={1} style={styles.identityName}>
-                          {displayName || 'Unnamed account'}
-                        </Text>
-                        <Text numberOfLines={1} style={styles.identityEmail}>
-                          {email || 'Anonymous session'}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </View>
+                <ProfileIdentityCard
+                  displayName={displayName}
+                  email={email ?? ''}
+                  isPremium={hasPremiumAccess}
+                />
 
                 <View style={styles.section}>
                   <SectionHeading title="Account" description="Identity and sign-in security." />
@@ -853,9 +841,9 @@ export function ProfileScreen({
                   <ListItem
                     icon="integrations"
                     onPress={() => navigation?.navigate('ConnectedServices')}
-                    title="Connected Services"
-                    description="Manage device calendars, exports, and integrations."
-                    trailingText="Open"
+                    title="Device Calendars"
+                    description={getDeviceCalendarDescription()}
+                    trailingText={getDeviceCalendarTrailingText()}
                   />
                 </View>
 
@@ -899,13 +887,29 @@ export function ProfileScreen({
                     title="Plan & Billing"
                     description="Bearing 360 access and AI credits."
                   />
-                  <ListItem
-                    icon="billing"
-                    onPress={() => navigation?.navigate('PlanBilling')}
-                    title="Plan & Billing"
+                  <SubscriptionCard
+                    hasPremiumAccess={hasPremiumAccess}
                     description={getPremiumAccessDescription()}
-                    trailingText="Open"
+                    actionLabel={hasPremiumAccess ? 'Manage Subscription' : 'View Plans'}
+                    actionPending={premiumManagementPending}
+                    errorMessage={premiumManagementError}
+                    onPressAction={() => void handlePremiumAction()}
                   />
+                  {hasPremiumAccess && authUser && !isAnonymous ? (
+                    <ListItem
+                      onPress={() => navigation?.navigate('PlanBilling')}
+                      title="AI planning credits"
+                      description={
+                        aiCreditBalanceLoading
+                          ? 'Checking your current balance...'
+                          : (aiCreditBalanceError ??
+                            (aiCreditBalance === null
+                              ? 'Current balance unavailable.'
+                              : `${aiCreditBalance} available`))
+                      }
+                      trailingText="Open"
+                    />
+                  ) : null}
                 </View>
 
                 <View style={styles.section}>
