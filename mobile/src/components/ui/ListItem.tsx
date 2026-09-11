@@ -13,6 +13,10 @@ type ListItemProps = {
   icon?: AppIconName;
   onPress?: () => void;
   disabled?: boolean;
+  /** 'card' (default) renders a standalone bordered card; 'row' renders a flat row for use inside a grouped section card. */
+  variant?: 'card' | 'row';
+  /** Only relevant for variant="row" — omit on the last row in a group. */
+  showDivider?: boolean;
 };
 
 export function ListItem({
@@ -22,6 +26,8 @@ export function ListItem({
   icon,
   onPress,
   disabled = false,
+  variant = 'card',
+  showDivider = true,
 }: ListItemProps) {
   const styles = useThemedStyles(createStyles);
   const leadingIcon = icon ? (
@@ -29,6 +35,8 @@ export function ListItem({
       <AppIcon name={icon} size={18} color={styles.icon.color} decorative />
     </View>
   ) : null;
+  const rowStyle =
+    variant === 'row' ? [styles.row, showDivider ? styles.rowDivider : null] : styles.item;
 
   if (onPress) {
     return (
@@ -38,7 +46,7 @@ export function ListItem({
         onPress={onPress}
         disabled={disabled}
         style={({ pressed }: { pressed?: boolean }) => [
-          styles.item,
+          rowStyle,
           pressed && !disabled ? styles.itemPressed : null,
           disabled ? styles.itemDisabled : null,
         ]}
@@ -54,7 +62,7 @@ export function ListItem({
   }
 
   return (
-    <View style={[styles.item, disabled ? styles.itemDisabled : null]}>
+    <View style={[rowStyle, disabled ? styles.itemDisabled : null]}>
       {leadingIcon}
       <View style={styles.copyBlock}>
         <Text style={styles.title}>{title}</Text>
@@ -78,6 +86,17 @@ const createStyles = (theme: Theme) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+    },
+    row: {
+      paddingVertical: spacing.md,
+      gap: spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    rowDivider: {
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
     },
     itemPressed: {
       backgroundColor: theme.colors.surfacePressed,

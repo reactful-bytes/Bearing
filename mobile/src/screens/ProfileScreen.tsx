@@ -818,6 +818,7 @@ export function ProfileScreen({
                 <View style={styles.section}>
                   <SectionHeading title="Account" description="Identity and sign-in security." />
                   <ListItem
+                    variant="row"
                     icon="personalInformation"
                     onPress={() => navigation?.navigate('PersonalInformation')}
                     title="Personal Information"
@@ -825,6 +826,8 @@ export function ProfileScreen({
                     trailingText="Open"
                   />
                   <ListItem
+                    variant="row"
+                    showDivider={false}
                     icon="security"
                     onPress={() => navigation?.navigate('Security')}
                     title="Security"
@@ -839,6 +842,8 @@ export function ProfileScreen({
                     description="Device calendars and data export."
                   />
                   <ListItem
+                    variant="row"
+                    showDivider={false}
                     icon="integrations"
                     onPress={() => navigation?.navigate('ConnectedServices')}
                     title="Device Calendars"
@@ -853,6 +858,7 @@ export function ProfileScreen({
                     description="Notifications, focus, and appearance."
                   />
                   <ListItem
+                    variant="row"
                     icon="notifications"
                     onPress={() => navigation?.navigate('Notifications')}
                     title="Notifications"
@@ -860,6 +866,7 @@ export function ProfileScreen({
                     trailingText="Open"
                   />
                   <ListItem
+                    variant="row"
                     icon="focusMode"
                     onPress={() => navigation?.navigate('FocusPreferences')}
                     title="Focus preferences"
@@ -867,6 +874,7 @@ export function ProfileScreen({
                     trailingText="Open"
                   />
                   <ListItem
+                    variant="row"
                     icon="appearance"
                     onPress={() => navigation?.navigate('Appearance')}
                     title="Appearance"
@@ -874,6 +882,8 @@ export function ProfileScreen({
                     trailingText="Open"
                   />
                   <ListItem
+                    variant="row"
+                    showDivider={false}
                     icon="idea"
                     onPress={handleOpenTipModal}
                     title="Tips & Wisdom"
@@ -897,6 +907,8 @@ export function ProfileScreen({
                   />
                   {hasPremiumAccess && authUser && !isAnonymous ? (
                     <ListItem
+                      variant="row"
+                      showDivider={false}
                       onPress={() => navigation?.navigate('PlanBilling')}
                       title="AI planning credits"
                       description={
@@ -918,31 +930,31 @@ export function ProfileScreen({
                     description="Legal, sign-out, and account deletion."
                   />
                   <ListItem
+                    variant="row"
                     icon="legal"
                     onPress={() => navigation?.navigate('Legal')}
                     title="Privacy & Legal"
                     description="Policies, support, and diagnostics preferences."
                     trailingText="Open"
                   />
-                  <View style={styles.dangerActionWrapper}>
-                    <ListItem
-                      icon="logout"
-                      onPress={onPressSignOut}
-                      title="Sign Out"
-                      description="End the current session on this device."
-                      trailingText={isSignOutPending ? 'Working...' : 'Action'}
-                      disabled={isSignOutPending}
-                    />
-                  </View>
-                  <View style={styles.dangerActionWrapper}>
-                    <ListItem
-                      icon="delete"
-                      onPress={() => setDeleteAccountVisible(true)}
-                      title="Delete account"
-                      description="Permanently delete this account and its Bearing data."
-                      trailingText="Delete"
-                    />
-                  </View>
+                  <ListItem
+                    variant="row"
+                    icon="logout"
+                    onPress={onPressSignOut}
+                    title="Sign Out"
+                    description="End the current session on this device."
+                    trailingText={isSignOutPending ? 'Working...' : 'Action'}
+                    disabled={isSignOutPending}
+                  />
+                  <ListItem
+                    variant="row"
+                    showDivider={false}
+                    icon="delete"
+                    onPress={() => setDeleteAccountVisible(true)}
+                    title="Delete account"
+                    description="Permanently delete this account and its Bearing data."
+                    trailingText="Delete"
+                  />
                 </View>
               </>
             ) : null}

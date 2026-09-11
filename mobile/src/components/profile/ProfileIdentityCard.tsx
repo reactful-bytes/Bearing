@@ -18,18 +18,16 @@ export function ProfileIdentityCard({
   const styles = useThemedStyles(createStyles);
 
   return (
-    <View style={styles.card}>
+    <View style={styles.container}>
       <View style={styles.avatarMark}>
         <Text style={styles.avatarInitial}>{(displayName || email || '?').trim().charAt(0).toUpperCase()}</Text>
       </View>
-      <View style={styles.copy}>
-        <Text numberOfLines={1} style={styles.name}>
-          {displayName || 'Unnamed account'}
-        </Text>
-        <Text numberOfLines={1} style={styles.email}>
-          {email || 'Anonymous session'}
-        </Text>
-      </View>
+      <Text numberOfLines={1} style={styles.name}>
+        {displayName || 'Unnamed account'}
+      </Text>
+      <Text numberOfLines={1} style={styles.email}>
+        {email || 'Anonymous session'}
+      </Text>
       {isPremium ? (
         <View style={styles.badge}>
           <Text style={styles.badgeText}>PRO</Text>
@@ -41,35 +39,26 @@ export function ProfileIdentityCard({
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
-    card: {
-      flexDirection: 'row',
+    container: {
       alignItems: 'center',
-      gap: spacing.md,
-      padding: spacing.lg,
-      borderRadius: radii.lg,
-      backgroundColor: theme.colors.surfaceRaised,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
+      gap: spacing.xs,
+      paddingVertical: spacing.lg,
     },
     avatarMark: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
+      width: 72,
+      height: 72,
+      borderRadius: 36,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.brand,
+      marginBottom: spacing.sm,
     },
     avatarInitial: {
-      ...typography.button,
+      ...typography.sectionTitle,
       color: theme.colors.surface,
     },
-    copy: {
-      flex: 1,
-      minWidth: 0,
-      gap: spacing.xs,
-    },
     name: {
-      ...typography.button,
+      ...typography.cardTitle,
       color: theme.colors.text,
     },
     email: {
@@ -77,12 +66,11 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.textSecondary,
     },
     badge: {
+      marginTop: spacing.sm,
       borderRadius: radii.sm,
       paddingHorizontal: spacing.sm,
       paddingVertical: spacing.xs,
       backgroundColor: theme.colors.surfaceBrand,
-      borderWidth: 1,
-      borderColor: theme.colors.brand,
     },
     badgeText: {
       ...typography.helper,
