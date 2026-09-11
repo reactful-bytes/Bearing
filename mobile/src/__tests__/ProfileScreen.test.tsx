@@ -353,7 +353,6 @@ describe('ProfileScreen', () => {
       />,
     );
 
-    expect(screen.getByRole('header', { name: 'Personal Information' })).toBeTruthy();
     expect(screen.getByRole('header', { name: 'Account' })).toBeTruthy();
     expect(screen.queryByRole('header', { name: 'Security' })).toBeNull();
 

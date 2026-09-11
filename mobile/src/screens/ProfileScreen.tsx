@@ -24,7 +24,6 @@ import { LegalDocumentModal } from '../components/profile/LegalDocumentModal';
 import { SoundPickerModal } from '../components/profile/SoundPickerModal';
 import { TipsWisdomModal } from '../components/profile/TipsWisdomModal';
 import { ProfileIdentityCard } from '../components/profile/ProfileIdentityCard';
-import { SubscriptionCard } from '../components/profile/SubscriptionCard';
 import { AppCard } from '../components/ui/AppCard';
 import { ListItem } from '../components/ui/ListItem';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
@@ -114,20 +113,6 @@ type ProfileScreenProps = {
   section?: ProfileSection;
   onPressBack?: () => void;
   navigation?: { navigate: (screen: ProfileNavigationTarget) => void };
-};
-
-const PROFILE_SECTION_LABELS: Record<ProfileSection, string> = {
-  account: 'Personal Information',
-  security: 'Security',
-  preferences: 'Preferences',
-  notifications: 'Notifications',
-  focusPreferences: 'Focus Preferences',
-  appearance: 'Appearance',
-  connectedServices: 'Connected Services',
-  plan: 'Plan & Billing',
-  subscription: 'Subscription',
-  legal: 'Privacy & Legal',
-  session: 'Session',
 };
 
 const THEME_OPTIONS: readonly { value: ThemePreference; label: string }[] = [
@@ -527,6 +512,13 @@ export function ProfileScreen({
     return 'AI goal builder access is reserved for Bearing 360. Device calendar access remains free.';
   }
 
+  function getPlanRenewalDescription(): string | undefined {
+    if (!hasPremiumAccess || !entitlement?.periodEndAt) return undefined;
+    const formattedDate = entitlement.periodEndAt.toLocaleDateString();
+    return entitlement.autoRenew ? `Renews ${formattedDate}` : `Expires ${formattedDate}`;
+  }
+
+
   async function handlePremiumAction(): Promise<void> {
     if (!hasPremiumAccess) {
       setPremiumManagementError(null);
@@ -779,10 +771,6 @@ export function ProfileScreen({
         {onPressBack ? (
           <View style={styles.routeHeader}>
             <IconButton name="back" accessibilityLabel="Back to Profile" onPress={onPressBack} />
-            <ScreenHeader
-              eyebrow="Profile"
-              title={profileSection ? PROFILE_SECTION_LABELS[profileSection] : 'Profile'}
-            />
           </View>
         ) : profile ? null : (
           <ScreenHeader eyebrow="Profile" title="Profile" />
@@ -816,14 +804,12 @@ export function ProfileScreen({
                 />
 
                 <View style={styles.section}>
-                  <SectionHeading title="Account" description="Identity and sign-in security." />
+                  <SectionHeading title="Account" variant="uppercase-accent" />
                   <ListItem
                     variant="row"
                     icon="personalInformation"
                     onPress={() => navigation?.navigate('PersonalInformation')}
                     title="Personal Information"
-                    description="Name, timezone, locale, and time format."
-                    trailingText="Open"
                   />
                   <ListItem
                     variant="row"
@@ -831,55 +817,46 @@ export function ProfileScreen({
                     icon="security"
                     onPress={() => navigation?.navigate('Security')}
                     title="Security"
-                    description="Passwords and sign-in methods."
-                    trailingText="Open"
                   />
                 </View>
 
                 <View style={styles.section}>
-                  <SectionHeading
-                    title="Connected Services"
-                    description="Device calendars and data export."
+                  <SectionHeading title="Connected Services" variant="uppercase-accent" />
+                  <ListItem
+                    variant="row"
+                    icon="integrations"
+                    onPress={() => setDeviceCalendarsModalVisible(true)}
+                    title="Device Calendars"
+                    trailingText={getDeviceCalendarTrailingText()}
                   />
                   <ListItem
                     variant="row"
                     showDivider={false}
-                    icon="integrations"
-                    onPress={() => navigation?.navigate('ConnectedServices')}
-                    title="Device Calendars"
-                    description={getDeviceCalendarDescription()}
-                    trailingText={getDeviceCalendarTrailingText()}
+                    icon="calendar"
+                    onPress={() => setIcsModalVisible(true)}
+                    title="Export Calendar"
                   />
                 </View>
 
                 <View style={styles.section}>
-                  <SectionHeading
-                    title="Preferences"
-                    description="Notifications, focus, and appearance."
-                  />
+                  <SectionHeading title="Preferences" variant="uppercase-accent" />
                   <ListItem
                     variant="row"
                     icon="notifications"
                     onPress={() => navigation?.navigate('Notifications')}
                     title="Notifications"
-                    description="Choose the sound used for reminders."
-                    trailingText="Open"
                   />
                   <ListItem
                     variant="row"
                     icon="focusMode"
                     onPress={() => navigation?.navigate('FocusPreferences')}
                     title="Focus preferences"
-                    description="Choose the sound used when Focus Mode finishes."
-                    trailingText="Open"
                   />
                   <ListItem
                     variant="row"
                     icon="appearance"
                     onPress={() => navigation?.navigate('Appearance')}
                     title="Appearance"
-                    description="Choose the light or dark app theme."
-                    trailingText="Open"
                   />
                   <ListItem
                     variant="row"
@@ -887,29 +864,30 @@ export function ProfileScreen({
                     icon="idea"
                     onPress={handleOpenTipModal}
                     title="Tips & Wisdom"
-                    description="See a rotating tip about getting the most out of Bearing."
-                    trailingText="Open"
                   />
                 </View>
 
                 <View style={styles.section}>
-                  <SectionHeading
-                    title="Plan & Billing"
-                    description="Bearing 360 access and AI credits."
+                  <SectionHeading title="Plan & Billing" variant="uppercase-accent" />
+                  <ListItem
+                    variant="row"
+                    icon="billing"
+                    title={hasPremiumAccess ? 'Bearing 360' : 'Free Plan'}
+                    description={getPlanRenewalDescription()}
                   />
-                  <SubscriptionCard
-                    hasPremiumAccess={hasPremiumAccess}
-                    description={getPremiumAccessDescription()}
-                    actionLabel={hasPremiumAccess ? 'Manage Subscription' : 'View Plans'}
-                    actionPending={premiumManagementPending}
-                    errorMessage={premiumManagementError}
-                    onPressAction={() => void handlePremiumAction()}
+                  <ListItem
+                    variant="row"
+                    showDivider={hasPremiumAccess && Boolean(authUser) && !isAnonymous}
+                    onPress={() => void handlePremiumAction()}
+                    title={hasPremiumAccess ? 'Manage Subscription' : 'Upgrade to Bearing 360'}
+                    description={premiumManagementPending ? 'Opening...' : (premiumManagementError ?? undefined)}
+                    disabled={premiumManagementPending}
                   />
                   {hasPremiumAccess && authUser && !isAnonymous ? (
                     <ListItem
                       variant="row"
                       showDivider={false}
-                      onPress={() => navigation?.navigate('PlanBilling')}
+                      onPress={() => setCreditPackVisible(true)}
                       title="AI planning credits"
                       description={
                         aiCreditBalanceLoading
@@ -919,31 +897,30 @@ export function ProfileScreen({
                               ? 'Current balance unavailable.'
                               : `${aiCreditBalance} available`))
                       }
-                      trailingText="Open"
                     />
                   ) : null}
                 </View>
 
                 <View style={styles.section}>
-                  <SectionHeading
-                    title="Account Actions"
-                    description="Legal, sign-out, and account deletion."
-                  />
+                  <SectionHeading title="Account Actions" variant="uppercase-accent" />
                   <ListItem
                     variant="row"
                     icon="legal"
                     onPress={() => navigation?.navigate('Legal')}
                     title="Privacy & Legal"
-                    description="Policies, support, and diagnostics preferences."
-                    trailingText="Open"
+                  />
+                  <ListItem
+                    variant="row"
+                    icon="externalLink"
+                    onPress={() => setDataExportVisible(true)}
+                    title="Export all data"
                   />
                   <ListItem
                     variant="row"
                     icon="logout"
                     onPress={onPressSignOut}
                     title="Sign Out"
-                    description="End the current session on this device."
-                    trailingText={isSignOutPending ? 'Working...' : 'Action'}
+                    trailingText={isSignOutPending ? 'Working...' : undefined}
                     disabled={isSignOutPending}
                   />
                   <ListItem
@@ -952,8 +929,6 @@ export function ProfileScreen({
                     icon="delete"
                     onPress={() => setDeleteAccountVisible(true)}
                     title="Delete account"
-                    description="Permanently delete this account and its Bearing data."
-                    trailingText="Delete"
                   />
                 </View>
               </>
@@ -988,7 +963,7 @@ export function ProfileScreen({
                     </View>
                   </View>
                 </View>
-                <SectionHeading title="Account" description="Your identity in Bearing." />
+                <SectionHeading title="Account" variant="uppercase-accent" />
                 <FormField
                   label="Display name"
                   accessibilityLabel="Profile display name"
@@ -1001,7 +976,7 @@ export function ProfileScreen({
 
             {shouldRenderSection('security') && !isHubRoute ? (
               <View style={styles.section}>
-                <SectionHeading title="Security" description="Protect access to this account." />
+                <SectionHeading title="Security" variant="uppercase-accent" />
                 {isAnonymous ? (
                   <View style={styles.sectionBody}>
                     <Text style={styles.sectionTitle}>Secure this anonymous session</Text>
@@ -1069,6 +1044,8 @@ export function ProfileScreen({
                   <View style={styles.sectionBody}>
                     {hasGoogleProvider ? (
                       <ListItem
+                        variant="row"
+                        showDivider={hasPasswordProvider}
                         onPress={
                           hasPasswordProvider
                             ? () => {
@@ -1096,6 +1073,8 @@ export function ProfileScreen({
 
                     {hasPasswordProvider ? (
                       <ListItem
+                        variant="row"
+                        showDivider={false}
                         onPress={() => void handleSendPasswordReset()}
                         title="Reset password"
                         description="Send a Firebase reset email to the current account address."
@@ -1112,10 +1091,7 @@ export function ProfileScreen({
 
             {shouldRenderSection('preferences') && !isHubRoute ? (
               <View style={styles.section}>
-                <SectionHeading
-                  title="Preferences"
-                  description="Set your region, prompts, and alert sounds."
-                />
+                <SectionHeading title="Preferences" variant="uppercase-accent" />
                 <View style={styles.fieldGroup}>
                   <Text style={styles.label}>Timezone</Text>
                   <Pressable
@@ -1197,12 +1173,15 @@ export function ProfileScreen({
                 />
 
                 <ListItem
+                  variant="row"
                   onPress={() => setSoundPicker('alarm')}
                   title="Timer sound"
                   description="Pick the sound used when timer-style alerts finish."
                   trailingText={getProfileSoundOption(profile.alarmSoundId).label}
                 />
                 <ListItem
+                  variant="row"
+                  showDivider={false}
                   onPress={() => setSoundPicker('reminder')}
                   title="Reminder sound"
                   description="Pick the sound used before scheduled events."
@@ -1225,11 +1204,10 @@ export function ProfileScreen({
 
             {profileSection === 'notifications' ? (
               <View style={styles.section}>
-                <SectionHeading
-                  title="Notifications"
-                  description="Choose the sound used before scheduled events."
-                />
+                <SectionHeading title="Notifications" variant="uppercase-accent" />
                 <ListItem
+                  variant="row"
+                  showDivider={false}
                   onPress={() => setSoundPicker('reminder')}
                   title="Reminder sound"
                   description="Pick the sound used before scheduled events."
@@ -1241,11 +1219,10 @@ export function ProfileScreen({
 
             {profileSection === 'focusPreferences' ? (
               <View style={styles.section}>
-                <SectionHeading
-                  title="Focus Preferences"
-                  description="Choose the sound used when a Focus timer finishes."
-                />
+                <SectionHeading title="Focus Preferences" variant="uppercase-accent" />
                 <ListItem
+                  variant="row"
+                  showDivider={false}
                   onPress={() => setSoundPicker('alarm')}
                   title="Timer sound"
                   description="Pick the sound used when timer-style alerts finish."
@@ -1257,10 +1234,7 @@ export function ProfileScreen({
 
             {profileSection === 'appearance' ? (
               <View style={styles.section}>
-                <SectionHeading
-                  title="Appearance"
-                  description="Choose how Bearing looks on this device."
-                />
+                <SectionHeading title="Appearance" variant="uppercase-accent" />
                 <SegmentedControl
                   accessibilityLabel="Appearance"
                   options={THEME_OPTIONS}
@@ -1277,23 +1251,24 @@ export function ProfileScreen({
 
             {shouldRenderSection('connectedServices') && !isHubRoute ? (
               <View style={styles.section}>
-                <SectionHeading
-                  title="Calendars & Data"
-                  description="Connect device calendars and take your events with you."
-                />
+                <SectionHeading title="Calendars & Data" variant="uppercase-accent" />
                 <ListItem
+                  variant="row"
                   onPress={() => setDeviceCalendarsModalVisible(true)}
                   title="Device calendars"
                   description={getDeviceCalendarDescription()}
                   trailingText={getDeviceCalendarTrailingText()}
                 />
                 <ListItem
+                  variant="row"
                   onPress={() => setIcsModalVisible(true)}
                   title="Export calendar"
                   description="Export Bearing events to a general .ics file."
                   trailingText="Export"
                 />
                 <ListItem
+                  variant="row"
+                  showDivider={false}
                   onPress={() => setDataExportVisible(true)}
                   title="Export all data"
                   description="Download your profile, plan, events, goals, notes, and tasks as JSON."
@@ -1304,8 +1279,9 @@ export function ProfileScreen({
 
             {shouldRenderSection('plan') && !isHubRoute ? (
               <View style={styles.section}>
-                <SectionHeading title="Plan" description="Review your current Bearing access." />
+                <SectionHeading title="Plan" variant="uppercase-accent" />
                 <ListItem
+                  variant="row"
                   onPress={() => void handlePremiumAction()}
                   title="Bearing 360 access"
                   description={getPremiumAccessDescription()}
@@ -1320,6 +1296,8 @@ export function ProfileScreen({
                 />
                 {hasPremiumAccess && authUser && !isAnonymous ? (
                   <ListItem
+                    variant="row"
+                    showDivider={false}
                     onPress={() => setCreditPackVisible(true)}
                     title="AI planning credits"
                     description={
@@ -1341,11 +1319,10 @@ export function ProfileScreen({
 
             {profileSection === 'subscription' ? (
               <View style={styles.section}>
-                <SectionHeading
-                  title="Subscription"
-                  description="Review and manage Bearing 360 access."
-                />
+                <SectionHeading title="Subscription" variant="uppercase-accent" />
                 <ListItem
+                  variant="row"
+                  showDivider={false}
                   onPress={() => void handlePremiumAction()}
                   title="Bearing 360 access"
                   description={getPremiumAccessDescription()}
@@ -1366,23 +1343,24 @@ export function ProfileScreen({
 
             {shouldRenderSection('legal') && !isHubRoute ? (
               <View style={styles.section}>
-                <SectionHeading
-                  title="Privacy & Legal"
-                  description="Review policies, contact support, and control diagnostics."
-                />
+                <SectionHeading title="Privacy & Legal" variant="uppercase-accent" />
                 <ListItem
+                  variant="row"
                   onPress={() => setLegalDocumentId('privacy')}
                   title="Privacy policy"
                   description="How Bearing handles account, planning, calendar, AI, and diagnostic data."
                   trailingText="Read"
                 />
                 <ListItem
+                  variant="row"
                   onPress={() => setLegalDocumentId('terms')}
                   title="Terms of service"
                   description="Rules for accounts, content, AI, calendars, and future subscriptions."
                   trailingText="Read"
                 />
                 <ListItem
+                  variant="row"
+                  showDivider={false}
                   onPress={() => void handleOpenSupport()}
                   title="Support"
                   description="Get help or make a privacy request."
@@ -1412,9 +1390,10 @@ export function ProfileScreen({
 
             {shouldRenderSection('session') && !isHubRoute ? (
               <View style={styles.section}>
-                <SectionHeading title="Session" description="Manage this device session." />
+                <SectionHeading title="Session" variant="uppercase-accent" />
                 <View style={styles.dangerActionWrapper}>
                   <ListItem
+                    variant="row"
                     onPress={onPressSignOut}
                     title="Sign Out"
                     description="End the current session on this device."
@@ -1424,6 +1403,8 @@ export function ProfileScreen({
                 </View>
                 <View style={styles.dangerActionWrapper}>
                   <ListItem
+                    variant="row"
+                    showDivider={false}
                     onPress={() => setDeleteAccountVisible(true)}
                     title="Delete account"
                     description="Permanently delete this account and its Bearing data."
