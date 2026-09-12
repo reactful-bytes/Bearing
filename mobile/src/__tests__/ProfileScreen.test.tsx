@@ -463,6 +463,8 @@ describe('ProfileScreen', () => {
 
     expect(screen.getByRole('header', { name: 'Personal Information' })).toBeTruthy();
     expect(screen.getByLabelText('Profile display name')).toBeTruthy();
+    expect(screen.getByText('Preston')).toBeTruthy();
+    expect(screen.getByText('preston@example.com')).toBeTruthy();
     expect(screen.queryByRole('header', { name: 'Security' })).toBeNull();
   });
 

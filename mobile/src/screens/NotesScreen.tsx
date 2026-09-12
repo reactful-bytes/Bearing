@@ -300,21 +300,19 @@ const createStyles = (theme: Theme) =>
     noteCard: {
       gap: spacing.sm,
       borderLeftWidth: 2,
+      borderRadius: radii.md,
     },
     ideaNote: { borderLeftColor: theme.colors.warning },
     manualNote: { borderLeftColor: theme.colors.brand },
     pinnedNoteCard: {
-      backgroundColor: theme.colors.surfaceRaised,
-      borderRadius: radii.lg,
+      backgroundColor: theme.colors.surfaceBrand,
       borderColor: theme.colors.brand,
     },
     recentNoteCard: {
       backgroundColor: theme.colors.surfaceRaised,
-      borderRadius: radii.lg,
     },
     allNoteCard: {
       backgroundColor: theme.colors.surfaceRaised,
-      borderRadius: radii.md,
     },
     searchRow: {
       flexDirection: 'row',
@@ -329,8 +327,8 @@ const createStyles = (theme: Theme) =>
       gap: spacing.sm,
       paddingHorizontal: spacing.md,
       borderWidth: 1,
-      borderColor: theme.colors.borderStrong,
-      borderRadius: radii.lg,
+      borderColor: theme.colors.brand,
+      borderRadius: radii.md,
       backgroundColor: theme.colors.surfaceRaised,
     },
     searchIcon: { color: theme.colors.textSecondary },
@@ -345,7 +343,7 @@ const createStyles = (theme: Theme) =>
     filterActive: { backgroundColor: theme.colors.surfaceBrand },
     sectionLabel: {
       ...typography.label,
-      color: theme.colors.textSecondary,
+      color: theme.colors.brand,
       marginTop: spacing.sm,
     },
     noteCardPressed: {

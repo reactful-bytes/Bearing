@@ -618,6 +618,7 @@ const createStyles = (theme: Theme) =>
     heroBlock: {
       gap: theme.spacing.sm,
       alignItems: 'center',
+      paddingTop: theme.spacing.sm,
     },
     eyebrow: {
       ...theme.typography.label,
@@ -637,12 +638,12 @@ const createStyles = (theme: Theme) =>
     },
     timerCard: {
       alignItems: 'center',
-      paddingVertical: theme.spacing.lg,
+      paddingVertical: theme.spacing.xl,
       gap: theme.spacing.xs,
       borderRadius: theme.radii.lg,
       borderWidth: 1,
       borderColor: theme.colors.focusGreen,
-      backgroundColor: theme.colors.surfaceRaised,
+      backgroundColor: theme.colors.surfaceBrand,
     },
     timerLabel: {
       ...theme.typography.label,
@@ -650,8 +651,8 @@ const createStyles = (theme: Theme) =>
       textAlign: 'center',
     },
     timerValue: {
-      fontSize: 42,
-      lineHeight: 48,
+      fontSize: 48,
+      lineHeight: 56,
       fontWeight: '700',
       color: theme.colors.focusGreen,
     },
@@ -664,7 +665,7 @@ const createStyles = (theme: Theme) =>
       gap: theme.spacing.md,
       borderRadius: theme.radii.md,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.focusGreen,
       backgroundColor: theme.colors.surface,
       padding: theme.spacing.md,
     },
@@ -712,6 +713,10 @@ const createStyles = (theme: Theme) =>
       ...theme.typography.body,
       color: theme.colors.textSecondary,
       textAlign: 'center',
+      borderRadius: theme.radii.sm,
+      backgroundColor: theme.colors.surfaceBrand,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
     },
     utilityButtons: {
       flexDirection: 'row',
@@ -739,8 +744,7 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.textSecondary,
     },
     exitButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'stretch',
       borderRadius: 28,
       borderWidth: 1,
       borderColor: theme.colors.focusGreen,
@@ -753,10 +757,9 @@ const createStyles = (theme: Theme) =>
       opacity: 0.92,
     },
     exitProgressTrack: {
-      width: 56,
-      height: 8,
-      flexShrink: 0,
-      borderRadius: 4,
+      width: '100%',
+      height: 6,
+      borderRadius: 3,
       overflow: 'hidden',
       backgroundColor: theme.colors.surfaceMuted,
     },

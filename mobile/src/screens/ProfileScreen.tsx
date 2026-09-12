@@ -122,11 +122,7 @@ export function ProfileScreen({
   navigation,
 }: ProfileScreenProps) {
   const styles = useThemedStyles(createStyles);
-  const {
-    preference: themePreference,
-    setPreference: setThemePreference,
-    theme,
-  } = useTheme();
+  const { preference: themePreference, setPreference: setThemePreference, theme } = useTheme();
   const {
     authUser,
     profile,
@@ -546,7 +542,6 @@ export function ProfileScreen({
     return entitlement.autoRenew ? `Renews ${formattedDate}` : `Expires ${formattedDate}`;
   }
 
-
   async function handlePremiumAction(): Promise<void> {
     if (!hasPremiumAccess) {
       setPremiumManagementError(null);
@@ -910,7 +905,11 @@ export function ProfileScreen({
                     showDivider={hasPremiumAccess && Boolean(authUser) && !isAnonymous}
                     onPress={() => void handlePremiumAction()}
                     title={hasPremiumAccess ? 'Manage Subscription' : 'Upgrade to Bearing 360'}
-                    description={premiumManagementPending ? 'Opening...' : (premiumManagementError ?? undefined)}
+                    description={
+                      premiumManagementPending
+                        ? 'Opening...'
+                        : (premiumManagementError ?? undefined)
+                    }
                     disabled={premiumManagementPending}
                   />
                   {hasPremiumAccess && authUser && !isAnonymous ? (
@@ -1001,33 +1000,10 @@ export function ProfileScreen({
             {profileSection === 'account' ? (
               <View style={styles.section}>
                 <SectionHeading title="Personal Information" variant="uppercase-accent" />
-                <View style={styles.personalInformationIdentity}>
-                  <View
-                    style={[
-                      styles.identitySummary,
-                      styles.profileHeroIdentity,
-                    ]}
-                  >
-                    <View style={styles.identityMark}>
-                      <Text style={styles.identityInitial}>
-                        {(displayName || email || '?').trim().charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                    <View
-                      style={[
-                        styles.identityCopy,
-                        styles.profileHeroCopy,
-                      ]}
-                    >
-                      <Text numberOfLines={1} style={styles.identityName}>
-                        {displayName || profile.displayName || 'Unnamed account'}
-                      </Text>
-                      <Text numberOfLines={1} style={styles.identityEmail}>
-                        {email || profile.email || 'Anonymous session'}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
+                <ProfileIdentityCard
+                  displayName={displayName || profile.displayName}
+                  email={email || profile.email}
+                />
                 <FormField
                   label="Display name"
                   labelStyle={styles.sectionTitle}
@@ -1399,7 +1375,6 @@ export function ProfileScreen({
                 ) : null}
               </View>
             ) : null}
-
           </>
         ) : null}
       </ScrollView>
@@ -1778,7 +1753,7 @@ const createStyles = (theme: Theme) =>
       flexGrow: 1,
       paddingHorizontal: layout.pagePaddingHorizontal,
       paddingVertical: layout.pagePaddingVertical,
-      gap: spacing.md,
+      gap: spacing.lg,
       paddingBottom: 120,
     },
     routeHeader: {
@@ -1798,9 +1773,9 @@ const createStyles = (theme: Theme) =>
       paddingHorizontal: 0,
       paddingVertical: 0,
       borderRadius: radii.md,
-      backgroundColor: theme.colors.surfaceRaised,
+      backgroundColor: theme.colors.surface,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderStrong,
     },
     sectionBody: {
       gap: spacing.md,
@@ -1910,15 +1885,19 @@ const createStyles = (theme: Theme) =>
     },
     profileHeroCopy: {
       flex: 0,
+      width: '100%',
+      alignSelf: 'stretch',
       alignItems: 'center',
     },
     identityName: {
       ...typography.button,
       color: theme.colors.text,
+      textAlign: 'center',
     },
     identityEmail: {
       ...typography.helper,
       color: theme.colors.textSecondary,
+      textAlign: 'center',
     },
     primaryButton: {
       minHeight: 44,

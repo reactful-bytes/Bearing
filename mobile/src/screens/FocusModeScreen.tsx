@@ -296,7 +296,7 @@ const createStyles = (theme: Theme) =>
       borderRadius: 56,
       borderWidth: 2,
       borderColor: theme.colors.focusGreen,
-      backgroundColor: theme.colors.surfaceRaised,
+      backgroundColor: theme.colors.surfaceBrand,
     },
     eyebrow: {
       ...theme.typography.label,
@@ -314,6 +314,7 @@ const createStyles = (theme: Theme) =>
       gap: theme.spacing.sm,
       borderColor: theme.colors.focusGreen,
       borderWidth: 1,
+      backgroundColor: theme.colors.surfaceBrand,
     },
     contextLabel: {
       ...theme.typography.label,
@@ -349,7 +350,7 @@ const createStyles = (theme: Theme) =>
       borderRadius: 36,
       borderWidth: 2,
       borderColor: theme.colors.focusGreen,
-      backgroundColor: theme.colors.surfaceRaised,
+      backgroundColor: theme.colors.surfaceBrand,
     },
     summaryTitle: {
       ...theme.typography.sectionTitle,
@@ -365,6 +366,8 @@ const createStyles = (theme: Theme) =>
     },
     summaryCard: {
       gap: theme.spacing.md,
+      borderColor: theme.colors.focusGreen,
+      borderWidth: 1,
     },
     summaryStatRow: {
       flexDirection: 'row',
