@@ -9,12 +9,18 @@ import { AppModal } from '../ui/AppModal';
 type LegalDocumentModalProps = {
   document: LegalDocument | null;
   onClose: () => void;
+  fullScreen?: boolean;
 };
 
-export function LegalDocumentModal({ document, onClose }: LegalDocumentModalProps) {
+export function LegalDocumentModal({ document, onClose, fullScreen = false }: LegalDocumentModalProps) {
   const styles = useThemedStyles(createStyles);
   return (
-    <AppModal visible={document !== null} title={document?.title ?? 'Legal'} onClose={onClose}>
+    <AppModal
+      visible={document !== null}
+      title={document?.title ?? 'Legal'}
+      onClose={onClose}
+      fullScreen={fullScreen}
+    >
       {document ? (
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.effectiveDate}>Effective {document.effectiveDate}</Text>

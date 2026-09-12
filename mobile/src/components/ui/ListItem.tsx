@@ -10,7 +10,7 @@ import type { AppIconName } from '../../design/icons';
 type ListItemProps = {
   title: string;
   accessibilityLabel?: string;
-  description?: string;
+  description?: ReactNode;
   trailingText?: string;
   trailingContent?: ReactNode;
   trailingContentBelow?: boolean;

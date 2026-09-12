@@ -72,7 +72,7 @@ describe('icsFileInterop', () => {
     expect(mockedShare).not.toHaveBeenCalled();
   });
 
-  it('downloads on web and cleans up its temporary URL and anchor once', async () => {
+  it('downloads on web and returns a reusable URL after removing the temporary anchor', async () => {
     const originalBlob = Object.getOwnPropertyDescriptor(globalThis, 'Blob');
     const originalUrl = Object.getOwnPropertyDescriptor(globalThis, 'URL');
     const originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
@@ -97,7 +97,9 @@ describe('icsFileInterop', () => {
     });
 
     try {
-      await downloadIcsFileOnWeb('bearing-export.ics', 'BEGIN:VCALENDAR');
+      await expect(
+        downloadIcsFileOnWeb('bearing-export.ics', 'BEGIN:VCALENDAR'),
+      ).resolves.toBe('blob:bearing-export');
     } finally {
       if (originalBlob) Object.defineProperty(globalThis, 'Blob', originalBlob);
       else Reflect.deleteProperty(globalThis, 'Blob');
@@ -115,6 +117,6 @@ describe('icsFileInterop', () => {
     expect(click).toHaveBeenCalledTimes(1);
     expect(remove).toHaveBeenCalledTimes(1);
     expect(removeChild).not.toHaveBeenCalled();
-    expect(revokeObjectURL).toHaveBeenCalledWith('blob:bearing-export');
+    expect(revokeObjectURL).not.toHaveBeenCalled();
   });
 });

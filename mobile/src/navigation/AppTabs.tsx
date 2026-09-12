@@ -7,6 +7,7 @@ import {
   Platform,
   Pressable,
   StyleSheet,
+  Text,
   View,
   useWindowDimensions,
 } from 'react-native';
@@ -176,13 +177,21 @@ function NotesNavigator() {
 
 function ProfileNavigator({ onPressSignOut, isSignOutPending }: AppTabsProps) {
   function renderSection(section: ProfileSection) {
-    return function ProfileSectionRoute({ navigation }: { navigation: { goBack: () => void } }) {
+    return function ProfileSectionRoute({
+      navigation,
+    }: {
+      navigation: {
+        goBack: () => void;
+        navigate: (screen: ProfileNavigationTarget) => void;
+      };
+    }) {
       return (
         <ProfileScreen
           onPressSignOut={onPressSignOut}
           isSignOutPending={isSignOutPending}
           section={section}
           onPressBack={navigation.goBack}
+          navigation={{ navigate: (screen: ProfileNavigationTarget) => navigation.navigate(screen) }}
         />
       );
     };
@@ -205,9 +214,6 @@ function ProfileNavigator({ onPressSignOut, isSignOutPending }: AppTabsProps) {
         {renderSection('account')}
       </ProfileStack.Screen>
       <ProfileStack.Screen name="Security">{renderSection('security')}</ProfileStack.Screen>
-      <ProfileStack.Screen name="ConnectedServices">
-        {renderSection('connectedServices')}
-      </ProfileStack.Screen>
       <ProfileStack.Screen name="Notifications">
         {renderSection('notifications')}
       </ProfileStack.Screen>
@@ -215,9 +221,18 @@ function ProfileNavigator({ onPressSignOut, isSignOutPending }: AppTabsProps) {
         {renderSection('focusPreferences')}
       </ProfileStack.Screen>
       <ProfileStack.Screen name="Appearance">{renderSection('appearance')}</ProfileStack.Screen>
-      <ProfileStack.Screen name="PlanBilling">{renderSection('plan')}</ProfileStack.Screen>
-      <ProfileStack.Screen name="Legal">{renderSection('legal')}</ProfileStack.Screen>
-      <ProfileStack.Screen name="Subscription">{renderSection('subscription')}</ProfileStack.Screen>
+      <ProfileStack.Screen name="DeviceCalendars">
+        {renderSection('deviceCalendars')}
+      </ProfileStack.Screen>
+      <ProfileStack.Screen name="CalendarExport">{renderSection('calendarExport')}</ProfileStack.Screen>
+      <ProfileStack.Screen name="TipsWisdom">{renderSection('tipsWisdom')}</ProfileStack.Screen>
+      <ProfileStack.Screen name="PremiumAccess">{renderSection('premiumAccess')}</ProfileStack.Screen>
+      <ProfileStack.Screen name="PrivacyPolicy">{renderSection('privacyPolicy')}</ProfileStack.Screen>
+      <ProfileStack.Screen name="TermsOfService">
+        {renderSection('termsOfService')}
+      </ProfileStack.Screen>
+      <ProfileStack.Screen name="DataExport">{renderSection('dataExport')}</ProfileStack.Screen>
+      <ProfileStack.Screen name="DeleteAccount">{renderSection('deleteAccount')}</ProfileStack.Screen>
     </ProfileStack.Navigator>
   );
 }
@@ -297,6 +312,7 @@ function AppTabsNavigator({
             tabBarPosition: isDesktopNavigation ? 'left' : 'bottom',
             tabBarActiveTintColor: theme.colors.brand,
             tabBarInactiveTintColor: theme.colors.textSecondary,
+            tabBarActiveBackgroundColor: isDesktopNavigation ? theme.colors.brand : undefined,
             tabBarStyle: isDesktopNavigation
               ? styles.desktopTabBar
               : [
@@ -308,11 +324,19 @@ function AppTabsNavigator({
                   createVisible ? styles.tabBarDimmed : null,
                 ],
             tabBarItemStyle: isDesktopNavigation ? styles.desktopTabBarItem : undefined,
-            tabBarLabelStyle: [
-              styles.tabBarLabel,
-              isDesktopNavigation ? styles.desktopTabLabel : null,
-              isDimmed ? styles.tabBarLabelDimmed : null,
-            ],
+            sceneStyle: Platform.OS === 'web' ? styles.webScene : undefined,
+            tabBarLabel: ({ focused }) => (
+              <Text
+                style={[
+                  styles.tabBarLabel,
+                  isDesktopNavigation ? styles.desktopTabLabel : null,
+                  { color: focused ? theme.colors.onBrand : theme.colors.textSecondary },
+                  isDimmed ? styles.tabBarLabelDimmed : null,
+                ]}
+              >
+                {route.name}
+              </Text>
+            ),
             tabBarLabelPosition: isDesktopNavigation ? 'beside-icon' : 'below-icon',
             tabBarIcon: ({ focused }) => (
               <TabIcon
@@ -410,6 +434,11 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       borderRadius: 8,
       marginVertical: theme.spacing.xs,
     },
+    webScene: {
+      width: '100%',
+      maxWidth: 860,
+      alignSelf: 'center',
+    },
     desktopTabLabel: {
       ...theme.typography.button,
       textAlign: 'left',
@@ -427,7 +456,7 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       opacity: 0.35,
     },
     activeIcon: {
-      color: theme.colors.brand,
+      color: theme.colors.onBrand,
     },
     inactiveIcon: {
       color: theme.colors.textSecondary,

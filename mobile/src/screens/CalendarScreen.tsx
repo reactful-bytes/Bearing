@@ -53,6 +53,7 @@ const MONTH_RANGE = 12; // months before and after today
 
 const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 50 };
 const DESKTOP_CALENDAR_BREAKPOINT = 1024;
+const WEB_CONTENT_MAX_WIDTH = 860;
 
 function buildMonthList(baseDate: Date): MonthItem[] {
   const items: MonthItem[] = [];
@@ -140,6 +141,8 @@ export function CalendarScreen({
 }: CalendarScreenProps) {
   const styles = useThemedStyles(createStyles);
   const { width: screenWidth } = useWindowDimensions();
+  const calendarPageWidth =
+    Platform.OS === 'web' ? Math.min(screenWidth, WEB_CONTENT_MAX_WIDTH) : screenWidth;
   const isDesktopCalendar = Platform.OS === 'web' && screenWidth >= DESKTOP_CALENDAR_BREAKPOINT;
   const [selectedDate, setSelectedDate] = useState<Date>(initialDateOverride ?? new Date());
   const [viewMode, setViewMode] = useState<ViewMode>(
@@ -546,8 +549,8 @@ export function CalendarScreen({
             windowSize={3}
             keyExtractor={({ year, month }) => `${year}-${month}`}
             getItemLayout={(_, index) => ({
-              length: screenWidth,
-              offset: screenWidth * index,
+              length: calendarPageWidth,
+              offset: calendarPageWidth * index,
               index,
             })}
             viewabilityConfig={VIEWABILITY_CONFIG}
@@ -567,7 +570,7 @@ export function CalendarScreen({
                   selectedDate={selectedDate}
                   eventDays={eventDays}
                   onSelectDate={handleSelectDate}
-                  width={screenWidth}
+                  width={calendarPageWidth}
                 />
               );
             }}

@@ -22,6 +22,8 @@ type PremiumPaywallModalProps = {
   isAnonymous: boolean;
   hasPremiumAccess: boolean;
   onClose: () => void;
+  fullScreen?: boolean;
+  embedded?: boolean;
 };
 
 function getBrandedPlanName(plan: PremiumPlan): string {
@@ -35,6 +37,8 @@ export function PremiumPaywallModal({
   isAnonymous,
   hasPremiumAccess,
   onClose,
+  fullScreen = false,
+  embedded = false,
 }: PremiumPaywallModalProps) {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -87,19 +91,8 @@ export function PremiumPaywallModal({
   const isPurchaseComplete =
     transactionPlan !== null && (purchase.feedback !== null || purchase.error !== null);
 
-  return (
-    <>
-      <AppModal
-        visible={
-          visible &&
-          legalDocumentId === null &&
-          confirmationPlan === null &&
-          transactionPlan === null
-        }
-        title="Bearing 360"
-        onClose={onClose}
-      >
-        <ScrollView contentContainerStyle={styles.content}>
+  const paywallContent = (
+    <ScrollView contentContainerStyle={styles.content}>
           <>
             <View style={styles.heroBlock}>
               <Text style={styles.badge}>{copy.badge}</Text>
@@ -264,8 +257,28 @@ export function PremiumPaywallModal({
               onPress={onClose}
             />
           </>
-        </ScrollView>
-      </AppModal>
+    </ScrollView>
+  );
+
+  return (
+    <>
+      {embedded ? (
+        paywallContent
+      ) : (
+        <AppModal
+          visible={
+            visible &&
+            legalDocumentId === null &&
+            confirmationPlan === null &&
+            transactionPlan === null
+          }
+          title="Bearing 360"
+          onClose={onClose}
+          fullScreen={fullScreen}
+        >
+          {paywallContent}
+        </AppModal>
+      )}
       <LegalDocumentModal
         document={legalDocumentId ? LEGAL_DOCUMENTS[legalDocumentId] : null}
         onClose={() => setLegalDocumentId(null)}

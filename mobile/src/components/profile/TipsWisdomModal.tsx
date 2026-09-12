@@ -13,12 +13,13 @@ type TipsWisdomModalProps = {
   tip: ProfileTip | null;
   onClose: () => void;
   onRefresh: () => void;
+  fullScreen?: boolean;
 };
 
-export function TipsWisdomModal({ visible, tip, onClose, onRefresh }: TipsWisdomModalProps) {
+export function TipsWisdomModal({ visible, tip, onClose, onRefresh, fullScreen = false }: TipsWisdomModalProps) {
   const styles = useThemedStyles(createStyles);
   return (
-    <AppModal visible={visible} title="Tips & Wisdom" onClose={onClose}>
+    <AppModal visible={visible} title="Tips & Wisdom" onClose={onClose} fullScreen={fullScreen}>
       {tip ? (
         <View style={styles.content}>
           <AppCard style={styles.tipCard}>

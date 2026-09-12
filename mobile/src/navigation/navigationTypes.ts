@@ -52,13 +52,17 @@ export type ProfileStackParamList = {
   ProfileHome: undefined;
   PersonalInformation: undefined;
   Security: undefined;
-  ConnectedServices: undefined;
   Notifications: undefined;
   FocusPreferences: undefined;
   Appearance: undefined;
-  PlanBilling: undefined;
-  Legal: undefined;
-  Subscription: undefined;
+  DeviceCalendars: undefined;
+  CalendarExport: undefined;
+  TipsWisdom: undefined;
+  PremiumAccess: undefined;
+  PrivacyPolicy: undefined;
+  TermsOfService: undefined;
+  DataExport: undefined;
+  DeleteAccount: undefined;
 };
 
 export type AppTabParamList = {

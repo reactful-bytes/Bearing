@@ -117,7 +117,7 @@ describe('UI primitives', () => {
     expect(screen.getByRole('button', { name: 'Delete' }).props.accessibilityState).toEqual(
       expect.objectContaining({ disabled: true, busy: true }),
     );
-    expect(screen.getByText('Deleting...')).toBeTruthy();
+    expect(screen.getByTestId('app-button-loading')).toBeTruthy();
   });
 
   it('announces recovery content as a polite alert', () => {

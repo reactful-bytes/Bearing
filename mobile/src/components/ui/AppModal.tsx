@@ -149,7 +149,8 @@ const createStyles = (theme: Theme) =>
       flex: 1,
     },
     fullScreenTitle: {
-      ...typography.cardTitle,
+      ...typography.label,
+      color: theme.colors.brand,
       textAlign: 'center',
     },
     closeIconButton: {

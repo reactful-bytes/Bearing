@@ -43,7 +43,7 @@ export async function shareDataExportFile(uri: string): Promise<boolean> {
   return true;
 }
 
-export async function downloadDataExportOnWeb(filename: string, content: string): Promise<void> {
+export async function downloadDataExportOnWeb(filename: string, content: string): Promise<string> {
   const globals = getWebGlobals();
   if (!globals.Blob || !globals.URL || !globals.document?.createElement) {
     throw new Error('Web file download is unavailable in this environment.');
@@ -60,6 +60,7 @@ export async function downloadDataExportOnWeb(filename: string, content: string)
   } finally {
     if (link.remove) link.remove();
     else globals.document.body?.removeChild(link);
-    globals.URL.revokeObjectURL(objectUrl);
   }
+
+  return objectUrl;
 }

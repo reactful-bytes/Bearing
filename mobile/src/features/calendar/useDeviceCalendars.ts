@@ -56,7 +56,7 @@ export function useDeviceCalendars(
 
   const refresh = useCallback(async (): Promise<void> => {
     const requestId = ++requestIdRef.current;
-    setUiState('loading');
+    setUiState((currentState) => (currentState === 'ready' ? currentState : 'loading'));
     setError(null);
 
     if (!userId) {
@@ -154,10 +154,18 @@ export function useDeviceCalendars(
       if (!userId) {
         throw new Error('User is not authenticated.');
       }
-      await saveDeviceCalendarSettings(userId, nextSettings);
+      const previousSettings = settingsRef.current;
       settingsRef.current = nextSettings;
       setSelectedCalendarIds(nextSettings.selectedCalendarIds);
       setDefaultCalendarIdState(nextSettings.defaultCalendarId);
+      try {
+        await saveDeviceCalendarSettings(userId, nextSettings);
+      } catch (saveError) {
+        settingsRef.current = previousSettings;
+        setSelectedCalendarIds(previousSettings.selectedCalendarIds);
+        setDefaultCalendarIdState(previousSettings.defaultCalendarId);
+        throw saveError;
+      }
     },
     [userId],
   );

@@ -9,6 +9,7 @@ type IconButtonProps = {
   name: AppIconName;
   accessibilityLabel: string;
   onPress: () => void;
+  disabled?: boolean;
   color?: string;
   size?: number;
   style?: StyleProp<ViewStyle>;
@@ -19,6 +20,7 @@ export function IconButton({
   name,
   accessibilityLabel,
   onPress,
+  disabled = false,
   color,
   size = 20,
   style,
@@ -31,7 +33,8 @@ export function IconButton({
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.button, pressed ? styles.pressed : null, style]}
+      disabled={disabled}
+      style={({ pressed }) => [styles.button, pressed && !disabled ? styles.pressed : null, disabled ? styles.disabled : null, style]}
       testID={testID}
     >
       <AppIcon name={name} size={size} color={color} decorative />
@@ -49,4 +52,5 @@ const createStyles = (theme: Theme) =>
       borderRadius: theme.radii.lg,
     },
     pressed: { opacity: 0.72 },
+    disabled: { opacity: 0.45 },
   });

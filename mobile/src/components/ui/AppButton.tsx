@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   PressableProps,
   StyleProp,
@@ -58,9 +59,11 @@ export function AppButton({
         style,
       ]}
     >
-      <Text style={[styles.text, styles[`${variant}Text`], textStyle]}>
-        {loading ? loadingLabel : label}
-      </Text>
+      {loading ? (
+        <ActivityIndicator testID="app-button-loading" color={styles[`${variant}Text`].color} />
+      ) : (
+        <Text style={[styles.text, styles[`${variant}Text`], textStyle]}>{label}</Text>
+      )}
     </Pressable>
   );
 }

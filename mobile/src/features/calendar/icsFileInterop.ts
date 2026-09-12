@@ -50,7 +50,7 @@ export async function shareIcsExportFile(uri: string): Promise<boolean> {
   return true;
 }
 
-export async function downloadIcsFileOnWeb(filename: string, content: string): Promise<void> {
+export async function downloadIcsFileOnWeb(filename: string, content: string): Promise<string> {
   const globals = getWebGlobals();
 
   if (!globals.Blob || !globals.URL || !globals.document?.createElement) {
@@ -68,6 +68,7 @@ export async function downloadIcsFileOnWeb(filename: string, content: string): P
   } finally {
     if (link.remove) link.remove();
     else globals.document.body?.removeChild(link);
-    globals.URL.revokeObjectURL(objectUrl);
   }
+
+  return objectUrl;
 }

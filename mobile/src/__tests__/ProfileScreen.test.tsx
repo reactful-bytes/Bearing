@@ -502,7 +502,7 @@ describe('ProfileScreen', () => {
     expect(updateTelemetryConsent).toHaveBeenCalledWith(true);
   });
 
-  it('shows subscription-management errors in the Plan section', async () => {
+  it('shows subscription-management errors from the profile hub', async () => {
     mockProfileHooks();
     (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
       entitlement: {
@@ -524,11 +524,10 @@ describe('ProfileScreen', () => {
       <ProfileScreen
         onPressSignOut={() => undefined}
         isSignOutPending={false}
-        section="plan"
       />,
     );
     await act(async () => {
-      fireEvent.press(screen.getByText('Bearing 360 access'));
+      fireEvent.press(screen.getByText('Manage Subscription'));
     });
 
     expect(
@@ -537,7 +536,7 @@ describe('ProfileScreen', () => {
     expect(showPremiumSubscriptionManagement).toHaveBeenCalledWith('user-1', 'web');
   });
 
-  it('shows the authoritative balance and credit-pack guidance for active members', async () => {
+  it('shows the authoritative balance and credit-pack guidance from the profile hub', async () => {
     mockProfileHooks();
     (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
       entitlement: { status: 'active' } as never,
@@ -549,7 +548,6 @@ describe('ProfileScreen', () => {
       <ProfileScreen
         onPressSignOut={() => undefined}
         isSignOutPending={false}
-        section="plan"
       />,
     );
 
@@ -561,7 +559,7 @@ describe('ProfileScreen', () => {
     ).toBeTruthy();
   });
 
-  it('explains that RevenueCat Test Store purchases cannot be managed', async () => {
+  it('explains that RevenueCat Test Store purchases cannot be managed from the profile hub', async () => {
     mockProfileHooks();
     (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
       entitlement: {
@@ -585,11 +583,10 @@ describe('ProfileScreen', () => {
       <ProfileScreen
         onPressSignOut={() => undefined}
         isSignOutPending={false}
-        section="plan"
       />,
     );
     await act(async () => {
-      fireEvent.press(screen.getByText('Bearing 360 access'));
+      fireEvent.press(screen.getByText('Manage Subscription'));
     });
 
     expect(
@@ -603,21 +600,35 @@ describe('ProfileScreen', () => {
   it('opens in-app legal documents and reports an unconfigured support contact', () => {
     mockProfileHooks();
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
-
-    fireEvent.press(screen.getByLabelText('Privacy policy'));
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="privacyPolicy"
+        onPressBack={jest.fn()}
+      />,
+    );
     expect(screen.getByRole('header', { name: 'How information is used' })).toBeTruthy();
     expect(
       screen.getByText('Draft for owner and legal review. Not approved for publication.'),
     ).toBeTruthy();
-    fireEvent.press(screen.getByLabelText('Close Privacy Policy'));
-
-    fireEvent.press(screen.getByLabelText('Terms of service'));
+    const termsView = renderNative(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="termsOfService"
+        onPressBack={jest.fn()}
+      />,
+    );
+    termsView.rerender(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="termsOfService"
+        onPressBack={jest.fn()}
+      />,
+    );
     expect(screen.getByText('AI-assisted features')).toBeTruthy();
-    fireEvent.press(screen.getByLabelText('Close Terms of Service'));
-
-    fireEvent.press(screen.getByLabelText('Support'));
-    expect(screen.getByText('Support contact is not configured in this build.')).toBeTruthy();
   });
 
   it('opens configured support email and reports email-app failures', async () => {
@@ -667,13 +678,13 @@ describe('ProfileScreen', () => {
       <ProfileScreen
         onPressSignOut={() => undefined}
         isSignOutPending={false}
-        navigation={{ navigate: jest.fn() }}
+        section="tipsWisdom"
+        onPressBack={jest.fn()}
       />,
     );
 
-    fireEvent.press(screen.getByLabelText('Tips & Wisdom'));
     expect(screen.getByLabelText('Refresh tip')).toBeTruthy();
-    expect(screen.getByLabelText('Close tip modal')).toBeTruthy();
+    expect(screen.getByLabelText('Back to Profile')).toBeTruthy();
     expect(screen.getByText('Bearing Tip')).toBeTruthy();
 
     fireEvent.press(screen.getByLabelText('Refresh tip'));
@@ -842,10 +853,9 @@ describe('ProfileScreen', () => {
       <ProfileScreen
         onPressSignOut={() => undefined}
         isSignOutPending={false}
-        section="connectedServices"
+        section="deviceCalendars"
       />,
     );
-    fireEvent.press(screen.getByLabelText('Device calendars'));
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Allow device calendar access'));
@@ -861,15 +871,18 @@ describe('ProfileScreen', () => {
       <ProfileScreen
         onPressSignOut={() => undefined}
         isSignOutPending={false}
-        section="connectedServices"
+        section="deviceCalendars"
       />,
     );
-    fireEvent.press(screen.getByLabelText('Device calendars'));
 
     expect(screen.getByText('Visible calendars')).toBeTruthy();
 
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('Toggle visible calendar Work'));
+      fireEvent(
+        screen.getByLabelText('Toggle visible calendar Work'),
+        'valueChange',
+        false,
+      );
       fireEvent.press(screen.getByLabelText('Use default calendar Work'));
       fireEvent.press(screen.getByLabelText('Refresh device calendars'));
     });
@@ -899,11 +912,11 @@ describe('ProfileScreen', () => {
       <ProfileScreen
         onPressSignOut={() => undefined}
         isSignOutPending={false}
-        section="connectedServices"
+        section="calendarExport"
       />,
     );
-    fireEvent.press(screen.getByLabelText('Export calendar'));
-    expect(screen.getByText(/all-day, timezone, recurrence/)).toBeTruthy();
+    expect(screen.getByText('Calendar contents')).toBeTruthy();
+    expect(screen.getByText('.ics')).toBeTruthy();
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Export ics file'));
@@ -932,10 +945,9 @@ describe('ProfileScreen', () => {
       <ProfileScreen
         onPressSignOut={() => undefined}
         isSignOutPending={false}
-        section="connectedServices"
+        section="calendarExport"
       />,
     );
-    fireEvent.press(screen.getByLabelText('Export calendar'));
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Share ics file'));
     });
@@ -962,10 +974,9 @@ describe('ProfileScreen', () => {
         <ProfileScreen
           onPressSignOut={() => undefined}
           isSignOutPending={false}
-          section="connectedServices"
+          section="calendarExport"
         />,
       );
-      fireEvent.press(screen.getByLabelText('Export calendar'));
       await act(async () => {
         fireEvent.press(screen.getByLabelText('Export ics file'));
       });
@@ -996,8 +1007,13 @@ describe('ProfileScreen', () => {
     });
     mockProfileHooks();
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
-    fireEvent.press(screen.getByLabelText('Export all data'));
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="dataExport"
+      />,
+    );
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Export JSON File'));
     });
@@ -1019,8 +1035,13 @@ describe('ProfileScreen', () => {
     });
 
     const handleSignOut = jest.fn(() => undefined);
-    render(<ProfileScreen onPressSignOut={handleSignOut} isSignOutPending={false} />);
-    fireEvent.press(screen.getByLabelText('Delete account'));
+    render(
+      <ProfileScreen
+        onPressSignOut={handleSignOut}
+        isSignOutPending={false}
+        section="deleteAccount"
+      />,
+    );
     fireEvent.changeText(screen.getByLabelText('Account deletion current password'), 'hunter2!');
     fireEvent.changeText(screen.getByLabelText('Account deletion confirmation'), 'DELETE');
     await act(async () => {
@@ -1048,9 +1069,14 @@ describe('ProfileScreen', () => {
       },
     });
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="deleteAccount"
+      />,
+    );
     expect(screen.queryByLabelText('Reset password')).toBeNull();
-    fireEvent.press(screen.getByLabelText('Delete account'));
     expect(screen.queryByLabelText('Account deletion current password')).toBeNull();
     fireEvent.changeText(screen.getByLabelText('Account deletion confirmation'), 'DELETE');
 
@@ -1062,6 +1088,32 @@ describe('ProfileScreen', () => {
     expect(reauthenticateCurrentUser).not.toHaveBeenCalled();
     expect(deleteCurrentUserAccount).toHaveBeenCalledTimes(1);
     expect(revokeGoogleAccess).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips linked calendar cleanup when the delete-events switch is off', async () => {
+    mockProfileHooks({
+      userProfile: {
+        authUser: { uid: 'user-1', isAnonymous: false, email: 'preston@example.com' } as never,
+      },
+    });
+
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="deleteAccount"
+      />,
+    );
+    fireEvent(screen.getByLabelText('Delete Bearing calendar events'), 'valueChange', false);
+    fireEvent.changeText(screen.getByLabelText('Account deletion current password'), 'hunter2!');
+    fireEvent.changeText(screen.getByLabelText('Account deletion confirmation'), 'DELETE');
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Permanently Delete Account'));
+    });
+
+    expect(cleanupLinkedCalendarCopies).not.toHaveBeenCalled();
+    expect(deleteCurrentUserAccount).toHaveBeenCalledTimes(1);
   });
 
   it('stops Google-only deletion when account verification is cancelled', async () => {
@@ -1080,8 +1132,13 @@ describe('ProfileScreen', () => {
       },
     });
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
-    fireEvent.press(screen.getByLabelText('Delete account'));
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="deleteAccount"
+      />,
+    );
     fireEvent.changeText(screen.getByLabelText('Account deletion confirmation'), 'DELETE');
 
     await act(async () => {
@@ -1106,8 +1163,13 @@ describe('ProfileScreen', () => {
       },
     });
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
-    fireEvent.press(screen.getByLabelText('Delete account'));
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="deleteAccount"
+      />,
+    );
     fireEvent.changeText(screen.getByLabelText('Account deletion current password'), 'hunter2!');
     fireEvent.changeText(screen.getByLabelText('Account deletion confirmation'), 'DELETE');
     await act(async () => {
@@ -1131,8 +1193,13 @@ describe('ProfileScreen', () => {
       },
     });
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
-    fireEvent.press(screen.getByLabelText('Delete account'));
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="deleteAccount"
+      />,
+    );
     fireEvent.changeText(screen.getByLabelText('Account deletion current password'), 'hunter2!');
     fireEvent.changeText(screen.getByLabelText('Account deletion confirmation'), 'DELETE');
     await act(async () => {

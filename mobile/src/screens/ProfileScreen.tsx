@@ -3,7 +3,6 @@ import {
   Alert,
   Linking,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Switch,
@@ -20,11 +19,8 @@ import { FormField } from '../components/ui/FormField';
 import { PremiumPaywallModal } from '../components/premium/PremiumPaywallModal';
 import { CreditPackPurchaseModal } from '../components/premium/CreditPackPurchaseModal';
 import { ProfileSelectionModal } from '../components/profile/ProfileSelectionModal';
-import { LegalDocumentModal } from '../components/profile/LegalDocumentModal';
 import { SoundPickerModal } from '../components/profile/SoundPickerModal';
-import { TipsWisdomModal } from '../components/profile/TipsWisdomModal';
 import { ProfileIdentityCard } from '../components/profile/ProfileIdentityCard';
-import { AppCard } from '../components/ui/AppCard';
 import { ListItem } from '../components/ui/ListItem';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { SectionHeading } from '../components/ui/SectionHeading';
@@ -48,7 +44,6 @@ import {
 } from '../features/profile/accountDeletionService';
 import {
   LEGAL_DOCUMENTS,
-  LegalDocumentId,
   getConfiguredSupportEmail,
 } from '../features/profile/legalDocuments';
 import {
@@ -64,7 +59,7 @@ import {
   PROFILE_TIMEZONE_OPTIONS,
 } from '../features/profile/profileOptions';
 import { TIME_FORMAT_OPTIONS, TimeFormat } from '../features/profile/timeFormat';
-import { PremiumFeature, hasActivePremiumStatus } from '../features/premium/premiumAccess';
+import { hasActivePremiumStatus } from '../features/premium/premiumAccess';
 import {
   clearAiCreditBalance,
   setAiCreditBalance,
@@ -94,10 +89,14 @@ export type ProfileSection =
   | 'notifications'
   | 'focusPreferences'
   | 'appearance'
-  | 'connectedServices'
-  | 'plan'
-  | 'subscription'
-  | 'legal';
+  | 'deviceCalendars'
+  | 'calendarExport'
+  | 'tipsWisdom'
+  | 'premiumAccess'
+  | 'privacyPolicy'
+  | 'termsOfService'
+  | 'dataExport'
+  | 'deleteAccount';
 
 export type ProfileNavigationTarget = Exclude<keyof ProfileStackParamList, 'ProfileHome'>;
 
@@ -122,7 +121,7 @@ export function ProfileScreen({
   navigation,
 }: ProfileScreenProps) {
   const styles = useThemedStyles(createStyles);
-  const { preference: themePreference, setPreference: setThemePreference, theme } = useTheme();
+  const { preference: themePreference, setPreference: setThemePreference } = useTheme();
   const {
     authUser,
     profile,
@@ -156,12 +155,8 @@ export function ProfileScreen({
   const [localePending, setLocalePending] = useState(false);
   const [localeError, setLocaleError] = useState<string | null>(null);
   const [timeFormat, setTimeFormat] = useState<TimeFormat>('12-hour');
-  const [timeFormatError, setTimeFormatError] = useState<string | null>(null);
   const [displayNamePending, setDisplayNamePending] = useState(false);
   const [displayNameError, setDisplayNameError] = useState<string | null>(null);
-  const [accountError, setAccountError] = useState<string | null>(null);
-  const [themePreferencePending, setThemePreferencePending] = useState(false);
-  const [themePreferenceError, setThemePreferenceError] = useState<string | null>(null);
   const [linkDisplayName, setLinkDisplayName] = useState('');
   const [linkEmail, setLinkEmail] = useState('');
   const [linkPassword, setLinkPassword] = useState('');
@@ -173,54 +168,71 @@ export function ProfileScreen({
   const [googleDisconnectError, setGoogleDisconnectError] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
   const [soundPicker, setSoundPicker] = useState<'alarm' | 'reminder' | null>(null);
-  const [tipModalVisible, setTipModalVisible] = useState(false);
   const [activeTip, setActiveTip] = useState<ProfileTip | null>(null);
   const [soundPending, setSoundPending] = useState(false);
   const [soundError, setSoundError] = useState<string | null>(null);
   const [passwordResetPending, setPasswordResetPending] = useState(false);
-  const [deviceCalendarsModalVisible, setDeviceCalendarsModalVisible] = useState(false);
   const [deviceCalendarPending, setDeviceCalendarPending] = useState(false);
   const [deviceCalendarError, setDeviceCalendarError] = useState<string | null>(null);
-  const [premiumPaywallFeature, setPremiumPaywallFeature] = useState<PremiumFeature | null>(null);
   const [premiumManagementPending, setPremiumManagementPending] = useState(false);
   const [premiumManagementError, setPremiumManagementError] = useState<string | null>(null);
   const [creditPackVisible, setCreditPackVisible] = useState(false);
   const aiCreditBalance = useAiCreditBalance(authUser?.uid ?? null);
   const [aiCreditBalanceLoading, setAiCreditBalanceLoading] = useState(false);
   const [aiCreditBalanceError, setAiCreditBalanceError] = useState<string | null>(null);
-  const [icsModalVisible, setIcsModalVisible] = useState(false);
-  const [icsPending, setIcsPending] = useState(false);
+  const [icsPendingAction, setIcsPendingAction] = useState<'export' | 'share' | null>(null);
   const [icsError, setIcsError] = useState<string | null>(null);
   const [icsFeedback, setIcsFeedback] = useState<string | null>(null);
-  const [dataExportVisible, setDataExportVisible] = useState(false);
-  const [dataExportPending, setDataExportPending] = useState(false);
+  const [icsFileLink, setIcsFileLink] = useState<{ filename: string; url: string } | null>(null);
+  const [dataExportPendingAction, setDataExportPendingAction] = useState<
+    'export' | 'share' | null
+  >(null);
   const [dataExportError, setDataExportError] = useState<string | null>(null);
   const [dataExportFeedback, setDataExportFeedback] = useState<string | null>(null);
-  const [deleteAccountVisible, setDeleteAccountVisible] = useState(false);
+  const [dataExportFileLink, setDataExportFileLink] = useState<
+    { filename: string; url: string } | null
+  >(null);
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [deleteLinkedCopies, setDeleteLinkedCopies] = useState(true);
   const [deletePending, setDeletePending] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [legalDocumentId, setLegalDocumentId] = useState<LegalDocumentId | null>(null);
   const [legalError, setLegalError] = useState<string | null>(null);
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
   const isHubRoute = profileSection === undefined;
+  const profileForRender =
+    profile ??
+    (authUser
+      ? {
+          userId: authUser.uid,
+          displayName: authUser.displayName ?? '',
+          email: authUser.email ?? '',
+          timezone: 'UTC',
+          locale: 'en-US',
+          timeFormat: '12-hour' as TimeFormat,
+          premiumStatus: 'free' as const,
+          premiumSource: 'none' as const,
+          tipsEnabled: true,
+          reminderSoundId: 'default',
+          alarmSoundId: 'default',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+      : null);
+
+  useEffect(() => {
+    return () => {
+      if (icsFileLink?.url.startsWith('blob:') && typeof URL !== 'undefined') {
+        URL.revokeObjectURL(icsFileLink.url);
+      }
+      if (dataExportFileLink?.url.startsWith('blob:') && typeof URL !== 'undefined') {
+        URL.revokeObjectURL(dataExportFileLink.url);
+      }
+    };
+  }, [dataExportFileLink, icsFileLink]);
 
   const handleThemePreferenceChange = async (nextPreference: ThemePreference) => {
-    setThemePreferencePending(true);
-    setThemePreferenceError(null);
-    try {
-      await setThemePreference(nextPreference);
-    } catch (preferenceError) {
-      setThemePreferenceError(
-        preferenceError instanceof Error
-          ? preferenceError.message
-          : 'Appearance preference could not be saved. Please retry.',
-      );
-    } finally {
-      setThemePreferencePending(false);
-    }
+    await setThemePreference(nextPreference);
   };
 
   useEffect(() => {
@@ -234,6 +246,12 @@ export function ProfileScreen({
     setTimeFormat(profile.timeFormat);
     setLinkDisplayName((current) => current || profile.displayName);
   }, [profile]);
+
+  useEffect(() => {
+    if (profileSection === 'tipsWisdom') {
+      setActiveTip((currentTip) => currentTip ?? getDifferentRandomProfileTip(null));
+    }
+  }, [profileSection]);
 
   async function handleSelectTimezone(nextValue: string): Promise<void> {
     setTimezone(nextValue);
@@ -275,17 +293,7 @@ export function ProfileScreen({
 
   async function handleTimeFormatChange(nextValue: TimeFormat): Promise<void> {
     setTimeFormat(nextValue);
-    setTimeFormatError(null);
-
-    try {
-      await updateProfile({ timeFormat: nextValue });
-    } catch (selectionError) {
-      setTimeFormatError(
-        selectionError instanceof Error
-          ? selectionError.message
-          : 'Failed to save time format preference.',
-      );
-    }
+    await updateProfile({ timeFormat: nextValue });
   }
 
   async function handleDisplayNameBlur(): Promise<void> {
@@ -333,18 +341,12 @@ export function ProfileScreen({
     };
   }, [authUser, hasPremiumAccess, isAnonymous]);
 
-  function handleOpenTipModal(): void {
-    setActiveTip((currentTip) => currentTip ?? getDifferentRandomProfileTip(null));
-    setTipModalVisible(true);
-  }
-
   function handleRefreshTip(): void {
     setActiveTip((currentTip) => getDifferentRandomProfileTip(currentTip?.id ?? null));
   }
 
   async function handleSendPasswordReset(): Promise<void> {
     setPasswordResetPending(true);
-    setAccountError(null);
 
     try {
       await sendPasswordReset();
@@ -358,9 +360,7 @@ export function ProfileScreen({
         operation: 'password_reset',
         outcome: 'failure',
       });
-      setAccountError(
-        resetError instanceof Error ? resetError.message : 'Failed to send password reset email.',
-      );
+      void resetError;
     } finally {
       setPasswordResetPending(false);
     }
@@ -503,10 +503,6 @@ export function ProfileScreen({
     }
   }
 
-  function closePremiumPaywall(): void {
-    setPremiumPaywallFeature(null);
-  }
-
   async function handleOpenSupport(): Promise<void> {
     const supportEmail = getConfiguredSupportEmail();
     if (!supportEmail) {
@@ -524,18 +520,6 @@ export function ProfileScreen({
     }
   }
 
-  function getPremiumAccessDescription(): string {
-    if (hasPremiumAccess) {
-      return 'Bearing 360 is active for AI goal builder access. Billing and cancellation are managed by the store account used to subscribe.';
-    }
-
-    if (entitlement?.status === 'canceled' || entitlement?.status === 'expired') {
-      return 'Bearing 360 access is not active. Rejoin or restore purchases to unlock AI goal planning.';
-    }
-
-    return 'AI goal builder access is reserved for Bearing 360. Device calendar access remains free.';
-  }
-
   function getPlanRenewalDescription(): string | undefined {
     if (!hasPremiumAccess || !entitlement?.periodEndAt) return undefined;
     const formattedDate = entitlement.periodEndAt.toLocaleDateString();
@@ -545,7 +529,7 @@ export function ProfileScreen({
   async function handlePremiumAction(): Promise<void> {
     if (!hasPremiumAccess) {
       setPremiumManagementError(null);
-      setPremiumPaywallFeature('premium_overview');
+      navigation?.navigate('PremiumAccess');
       return;
     }
     if (!authUser || isAnonymous) return;
@@ -575,15 +559,23 @@ export function ProfileScreen({
     }
   }
 
-  function closeIcsModal(): void {
-    setIcsModalVisible(false);
-    setIcsError(null);
-    setIcsFeedback(null);
+  function handlePremiumRoute(): void {
+    if (!hasPremiumAccess) {
+      navigation?.navigate('PremiumAccess');
+      return;
+    }
+
+    void handlePremiumAction();
   }
 
-  async function runDeviceCalendarAction(action: () => Promise<void>): Promise<void> {
-    setDeviceCalendarPending(true);
-    setDeviceCalendarError(null);
+  async function runDeviceCalendarAction(
+    action: () => Promise<void>,
+    showPending = true,
+  ): Promise<void> {
+    if (showPending) {
+      setDeviceCalendarPending(true);
+      setDeviceCalendarError(null);
+    }
 
     try {
       await action();
@@ -594,34 +586,9 @@ export function ProfileScreen({
           : 'Failed to update device calendar settings.',
       );
     } finally {
-      setDeviceCalendarPending(false);
-    }
-  }
-
-  function getDeviceCalendarDescription(): string {
-    if (deviceCalendars.uiState === 'unavailable') {
-      return 'Available in iOS and Android development builds.';
-    }
-    if (deviceCalendars.permission !== 'granted') {
-      return 'Grant free device calendar access to choose visible and writable calendars.';
-    }
-
-    const defaultCalendar = deviceCalendars.calendars.find(
-      (calendar) => calendar.id === deviceCalendars.defaultCalendarId,
-    );
-    return `${deviceCalendars.selectedCalendarIds.length} visible. Default: ${defaultCalendar?.title ?? 'Bearing only'}.`;
-  }
-
-  function getDeviceCalendarTrailingText(): string {
-    switch (deviceCalendars.permission) {
-      case 'granted':
-        return 'Manage';
-      case 'blocked':
-        return 'Settings';
-      case 'unavailable':
-        return 'Unavailable';
-      default:
-        return 'Allow access';
+      if (showPending) {
+        setDeviceCalendarPending(false);
+      }
     }
   }
 
@@ -631,9 +598,10 @@ export function ProfileScreen({
       return;
     }
 
-    setIcsPending(true);
+    setIcsPendingAction(shareAfterExport ? 'share' : 'export');
     setIcsError(null);
     setIcsFeedback(null);
+    setIcsFileLink(null);
 
     let outcome: 'success' | 'failure' = 'failure';
     try {
@@ -648,7 +616,8 @@ export function ProfileScreen({
       const icsContent = serializeEventsToIcs(exportableEvents);
 
       if (Platform.OS === 'web') {
-        await downloadIcsFileOnWeb(filename, icsContent);
+        const webFileUrl = await downloadIcsFileOnWeb(filename, icsContent);
+        setIcsFileLink(webFileUrl ? { filename, url: webFileUrl } : null);
         outcome = 'success';
         setIcsFeedback(
           shareAfterExport
@@ -659,6 +628,7 @@ export function ProfileScreen({
       }
 
       const fileUri = await writeIcsExportFile(filename, icsContent);
+      setIcsFileLink({ filename, url: fileUri });
 
       if (shareAfterExport) {
         const shared = await shareIcsExportFile(fileUri);
@@ -679,27 +649,54 @@ export function ProfileScreen({
         format: 'ics',
         outcome,
       });
-      setIcsPending(false);
+      setIcsPendingAction(null);
+    }
+  }
+
+  async function handleOpenIcsFile(): Promise<void> {
+    if (!icsFileLink) return;
+
+    try {
+      if (icsFileLink.url.startsWith('blob:')) {
+        await Linking.openURL(icsFileLink.url);
+        return;
+      }
+
+      const shared = await shareIcsExportFile(icsFileLink.url);
+      if (!shared) {
+        setIcsError('The system file viewer is unavailable. Use Share .ics File instead.');
+      }
+    } catch (openError) {
+      setIcsError(
+        openError instanceof Error ? openError.message : 'Unable to open the exported file.',
+      );
     }
   }
 
   async function handleExportData(shareAfterExport: boolean): Promise<void> {
-    setDataExportPending(true);
+    setDataExportPendingAction(shareAfterExport ? 'share' : 'export');
     setDataExportError(null);
     setDataExportFeedback(null);
+    setDataExportFileLink(null);
 
     let outcome: 'success' | 'failure' = 'failure';
     try {
       const content = serializeDataExport(await exportCurrentUserData());
       const filename = buildDataExportFilename();
       if (Platform.OS === 'web') {
-        await downloadDataExportOnWeb(filename, content);
+        const webFileUrl = await downloadDataExportOnWeb(filename, content);
+        setDataExportFileLink(webFileUrl ? { filename, url: webFileUrl } : null);
         outcome = 'success';
-        setDataExportFeedback(`Downloaded ${filename}.`);
+        setDataExportFeedback(
+          shareAfterExport
+            ? 'Web downloaded the JSON file because direct local-file sharing is not available there.'
+            : `Downloaded ${filename}.`,
+        );
         return;
       }
 
       const uri = await writeDataExportFile(filename, content);
+      setDataExportFileLink({ filename, url: uri });
       if (shareAfterExport) {
         const shared = await shareDataExportFile(uri);
         outcome = 'success';
@@ -718,16 +715,28 @@ export function ProfileScreen({
         format: 'json',
         outcome,
       });
-      setDataExportPending(false);
+      setDataExportPendingAction(null);
     }
   }
 
-  function closeDeleteAccount(): void {
-    if (deletePending) return;
-    setDeleteAccountVisible(false);
-    setDeletePassword('');
-    setDeleteConfirmation('');
-    setDeleteError(null);
+  async function handleOpenDataExportFile(): Promise<void> {
+    if (!dataExportFileLink) return;
+
+    try {
+      if (dataExportFileLink.url.startsWith('blob:')) {
+        await Linking.openURL(dataExportFileLink.url);
+        return;
+      }
+
+      const shared = await shareDataExportFile(dataExportFileLink.url);
+      if (!shared) {
+        setDataExportError('The system file viewer is unavailable. Use Share JSON File instead.');
+      }
+    } catch (openError) {
+      setDataExportError(
+        openError instanceof Error ? openError.message : 'Unable to open the exported file.',
+      );
+    }
   }
 
   async function handleDeleteAccount(): Promise<void> {
@@ -769,7 +778,6 @@ export function ProfileScreen({
         await revokeGoogleAccess().catch(() => undefined);
       }
       const localCleanup = await purgeLocalAccountData(authUser.uid);
-      setDeleteAccountVisible(false);
       Alert.alert(
         'Account deleted',
         localCleanup.failedCount === 0
@@ -790,23 +798,18 @@ export function ProfileScreen({
 
   return (
     <View style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.contentContainer,
+        ]}
+      >
         {onPressBack ? (
           <View style={styles.routeHeader}>
             <IconButton name="back" accessibilityLabel="Back to Profile" onPress={onPressBack} />
           </View>
-        ) : profile ? null : (
+        ) : profileForRender ? null : (
           <ScreenHeader eyebrow="Profile" title="Profile" />
         )}
-
-        {uiState === 'loading' ? (
-          <AppCard>
-            <Text style={styles.stateTitle}>Loading profile...</Text>
-            <Text style={styles.stateDescription}>
-              Fetching your account settings and sound preferences.
-            </Text>
-          </AppCard>
-        ) : null}
 
         {uiState === 'error' ? (
           <RecoveryCard
@@ -816,13 +819,13 @@ export function ProfileScreen({
           />
         ) : null}
 
-        {profile ? (
+        {profileForRender ? (
           <>
             {isHubRoute ? (
               <>
                 <ProfileIdentityCard
-                  displayName={displayName}
-                  email={email ?? ''}
+                  displayName={displayName || profileForRender.displayName}
+                  email={email || profileForRender.email}
                   isPremium={hasPremiumAccess}
                 />
 
@@ -848,15 +851,14 @@ export function ProfileScreen({
                   <ListItem
                     variant="row"
                     icon="integrations"
-                    onPress={() => setDeviceCalendarsModalVisible(true)}
+                    onPress={() => navigation?.navigate('DeviceCalendars')}
                     title="Device Calendars"
-                    trailingText={getDeviceCalendarTrailingText()}
                   />
                   <ListItem
                     variant="row"
                     showDivider={false}
                     icon="calendar"
-                    onPress={() => setIcsModalVisible(true)}
+                    onPress={() => navigation?.navigate('CalendarExport')}
                     title="Export Calendar"
                   />
                 </View>
@@ -885,7 +887,7 @@ export function ProfileScreen({
                     variant="row"
                     showDivider={false}
                     icon="idea"
-                    onPress={handleOpenTipModal}
+                    onPress={() => navigation?.navigate('TipsWisdom')}
                     title="Tips & Wisdom"
                   />
                 </View>
@@ -903,7 +905,7 @@ export function ProfileScreen({
                     variant="row"
                     icon="settings"
                     showDivider={hasPremiumAccess && Boolean(authUser) && !isAnonymous}
-                    onPress={() => void handlePremiumAction()}
+                    onPress={handlePremiumRoute}
                     title={hasPremiumAccess ? 'Manage Subscription' : 'Upgrade to Bearing 360'}
                     description={
                       premiumManagementPending
@@ -935,13 +937,13 @@ export function ProfileScreen({
                   <ListItem
                     variant="row"
                     icon="legal"
-                    onPress={() => setLegalDocumentId('privacy')}
+                    onPress={() => navigation?.navigate('PrivacyPolicy')}
                     title="Privacy policy"
                   />
                   <ListItem
                     variant="row"
                     icon="document"
-                    onPress={() => setLegalDocumentId('terms')}
+                    onPress={() => navigation?.navigate('TermsOfService')}
                     title="Terms of service"
                   />
                   <ListItem
@@ -968,7 +970,7 @@ export function ProfileScreen({
                   <ListItem
                     variant="row"
                     icon="externalLink"
-                    onPress={() => setDataExportVisible(true)}
+                    onPress={() => navigation?.navigate('DataExport')}
                     title="Export all data"
                   />
                   <ListItem
@@ -976,7 +978,7 @@ export function ProfileScreen({
                     showDivider={false}
                     icon="delete"
                     colorTone="danger"
-                    onPress={() => setDeleteAccountVisible(true)}
+                    onPress={() => navigation?.navigate('DeleteAccount')}
                     title="Delete account"
                   />
                 </View>
@@ -1001,8 +1003,8 @@ export function ProfileScreen({
               <View style={styles.section}>
                 <SectionHeading title="Personal Information" variant="uppercase-accent" />
                 <ProfileIdentityCard
-                  displayName={displayName || profile.displayName}
-                  email={email || profile.email}
+                  displayName={displayName || profileForRender.displayName}
+                  email={email || profileForRender.email}
                 />
                 <FormField
                   label="Display name"
@@ -1123,7 +1125,7 @@ export function ProfileScreen({
                         showDivider={false}
                         onPress={() => void handleSendPasswordReset()}
                         title="Reset password"
-                        description="Send a Firebase reset email to the current account address."
+                        description="Send a reset email to the current account address."
                         trailingText={passwordResetPending ? 'Working...' : 'Send'}
                         disabled={passwordResetPending}
                       />
@@ -1144,7 +1146,7 @@ export function ProfileScreen({
                   onPress={() => setSoundPicker('reminder')}
                   title="Reminder sound"
                   description="Pick the sound used before scheduled events."
-                  trailingText={getProfileSoundOption(profile.reminderSoundId).label}
+                  trailingText={getProfileSoundOption(profileForRender.reminderSoundId).label}
                 />
                 {soundError ? <Text style={styles.errorText}>{soundError}</Text> : null}
               </View>
@@ -1159,7 +1161,7 @@ export function ProfileScreen({
                   onPress={() => setSoundPicker('alarm')}
                   title="Timer sound"
                   description="Pick the sound used when timer-style alerts finish."
-                  trailingText={getProfileSoundOption(profile.alarmSoundId).label}
+                  trailingText={getProfileSoundOption(profileForRender.alarmSoundId).label}
                 />
                 {soundError ? <Text style={styles.errorText}>{soundError}</Text> : null}
               </View>
@@ -1238,152 +1240,384 @@ export function ProfileScreen({
               </View>
             ) : null}
 
-            {profileSection === 'connectedServices' ? (
+            {profileSection === 'tipsWisdom' ? (
               <View style={styles.section}>
-                <SectionHeading title="Calendars & Data" variant="uppercase-accent" />
-                <ListItem
-                  variant="row"
-                  onPress={() => setDeviceCalendarsModalVisible(true)}
-                  title="Device calendars"
-                  description={getDeviceCalendarDescription()}
-                  trailingText={getDeviceCalendarTrailingText()}
-                />
-                <ListItem
-                  variant="row"
-                  onPress={() => setIcsModalVisible(true)}
-                  title="Export calendar"
-                  description="Export Bearing events to a general .ics file."
-                  trailingText="Export"
-                />
-                <ListItem
-                  variant="row"
-                  showDivider={false}
-                  onPress={() => setDataExportVisible(true)}
-                  title="Export all data"
-                  description="Download your profile, plan, events, goals, notes, and tasks as JSON."
-                  trailingText="Export"
-                />
+                <SectionHeading title="Tips & Wisdom" variant="uppercase-accent" />
+                {activeTip ? (
+                  <>
+                    <ListItem
+                      variant="row"
+                      showDivider={false}
+                      title={activeTip.title}
+                      description={activeTip.body}
+                    />
+                    <View style={styles.sectionContent}>
+                    <AppButton
+                      label="Refresh"
+                      variant="secondary"
+                      accessibilityLabel="Refresh tip"
+                      onPress={handleRefreshTip}
+                    />
+                    </View>
+                  </>
+                ) : null}
               </View>
             ) : null}
 
-            {profileSection === 'plan' ? (
+            {profileSection === 'premiumAccess' ? (
+              <PremiumPaywallModal
+                visible
+                feature="premium_overview"
+                userId={authUser?.uid ?? null}
+                isAnonymous={isAnonymous}
+                hasPremiumAccess={hasPremiumAccess}
+                onClose={onPressBack ?? (() => undefined)}
+                embedded
+              />
+            ) : null}
+
+            {profileSection === 'privacyPolicy' || profileSection === 'termsOfService' ? (
               <View style={styles.section}>
-                <SectionHeading title="Plan" variant="uppercase-accent" />
-                <ListItem
-                  variant="row"
-                  onPress={() => void handlePremiumAction()}
-                  title="Bearing 360 access"
-                  description={getPremiumAccessDescription()}
-                  trailingText={
-                    premiumManagementPending
-                      ? 'Opening...'
-                      : hasPremiumAccess
-                        ? 'Manage'
-                        : 'View plans'
+                <SectionHeading
+                  title={
+                    profileSection === 'privacyPolicy'
+                      ? LEGAL_DOCUMENTS.privacy.title
+                      : LEGAL_DOCUMENTS.terms.title
                   }
-                  disabled={premiumManagementPending}
+                  variant="uppercase-accent"
                 />
-                {hasPremiumAccess && authUser && !isAnonymous ? (
+                <ScrollView contentContainerStyle={styles.legalContent}>
+                  {(() => {
+                    const document =
+                      profileSection === 'privacyPolicy'
+                        ? LEGAL_DOCUMENTS.privacy
+                        : LEGAL_DOCUMENTS.terms;
+                    return (
+                      <>
+                        <Text style={styles.legalMeta}>Effective {document.effectiveDate}</Text>
+                        <Text style={styles.legalNotice}>{document.notice}</Text>
+                        <Text style={styles.legalBody}>{document.introduction}</Text>
+                        {document.sections.map((section) => (
+                          <View key={section.heading} style={styles.legalSection}>
+                            <Text accessibilityRole="header" style={styles.sectionTitle}>
+                              {section.heading}
+                            </Text>
+                            <Text style={styles.legalBody}>{section.body}</Text>
+                          </View>
+                        ))}
+                      </>
+                    );
+                  })()}
+                </ScrollView>
+              </View>
+            ) : null}
+
+            {profileSection === 'deviceCalendars' ? (
+              <View style={styles.deviceCalendarRouteContent}>
+                {deviceCalendars.permission !== 'granted' &&
+                deviceCalendars.permission !== 'unavailable' &&
+                deviceCalendars.permission !== 'blocked' ? (
+                  <AppButton
+                    label="Allow Calendar Access"
+                    variant="secondary"
+                    accessibilityLabel="Allow device calendar access"
+                    onPress={() => void runDeviceCalendarAction(deviceCalendars.requestPermission)}
+                    loading={deviceCalendarPending}
+                    loadingLabel="Working..."
+                  />
+                ) : null}
+
+                {deviceCalendars.permission === 'blocked' ? (
+                  <AppButton
+                    label="Open Settings"
+                    variant="secondary"
+                    accessibilityLabel="Open device settings"
+                    onPress={() => void runDeviceCalendarAction(deviceCalendars.openSettings)}
+                    loading={deviceCalendarPending}
+                    loadingLabel="Working..."
+                  />
+                ) : null}
+
+                {deviceCalendars.permission === 'granted' ? (
+                  <>
+                    <View style={styles.section}>
+                      <SectionHeading title="Device calendars" variant="uppercase-accent" />
+                      <ListItem
+                        variant="row"
+                        title="Calendar access"
+                        description="Refresh or adjust which calendars Bearing can use."
+                        trailingContent={
+                          <IconButton
+                            name="refresh"
+                            accessibilityLabel="Refresh device calendars"
+                            onPress={() =>
+                              void runDeviceCalendarAction(deviceCalendars.refresh, false)
+                            }
+                          />
+                        }
+                      />
+                      <ListItem
+                        variant="row"
+                        title="Visible"
+                        trailingText={`${deviceCalendars.selectedCalendarIds.length}`}
+                      />
+                      <ListItem
+                        variant="row"
+                        showDivider={false}
+                        title="Write calendar"
+                        trailingText={
+                          deviceCalendars.calendars.find(
+                            (calendar) => calendar.id === deviceCalendars.defaultCalendarId,
+                          )?.title ?? 'Bearing only'
+                        }
+                      />
+                    </View>
+
+                    <View style={styles.section}>
+                      <SectionHeading title="Visible calendars" variant="uppercase-accent" />
+                      {deviceCalendars.calendars.length > 0 ? (
+                        deviceCalendars.calendars.map((calendar) => (
+                          <ListItem
+                            key={calendar.id}
+                            variant="row"
+                            title={calendar.title}
+                            description={`${calendar.sourceLabel}${calendar.isPrimary ? ' • Primary' : ''}${!calendar.allowsModifications ? ' • Read only' : ''}`}
+                            trailingContent={
+                              <Switch
+                                accessibilityLabel={`Toggle visible calendar ${calendar.title}`}
+                                value={deviceCalendars.selectedCalendarIds.includes(calendar.id)}
+                                onValueChange={() =>
+                                  void runDeviceCalendarAction(
+                                    () => deviceCalendars.toggleCalendar(calendar.id),
+                                    false,
+                                  )
+                                }
+                              />
+                            }
+                          />
+                        ))
+                      ) : (
+                        <Text style={styles.stateDescription}>No system calendars were found.</Text>
+                      )}
+                    </View>
+
+                    <View style={styles.section}>
+                      <SectionHeading title="Writable calendars" variant="uppercase-accent" />
+                      <ListItem
+                        variant="row"
+                        accessibilityLabel="Use Bearing only for event creation"
+                        title="Bearing only"
+                        description="Keep new Bearing events in the app only."
+                        trailingText={
+                          deviceCalendars.defaultCalendarId === null ? 'Selected' : undefined
+                        }
+                            onPress={() =>
+                              void runDeviceCalendarAction(
+                                () => deviceCalendars.setDefaultCalendar(null),
+                                false,
+                              )
+                            }
+                      />
+                      {deviceCalendars.calendars
+                        .filter((calendar) => calendar.allowsModifications)
+                        .map((calendar) => (
+                          <ListItem
+                            key={calendar.id}
+                            variant="row"
+                            accessibilityLabel={`Use default calendar ${calendar.title}`}
+                            title={calendar.title}
+                            description={`${calendar.sourceLabel}${calendar.isPrimary ? ' • Primary' : ''}`}
+                            trailingText={
+                              deviceCalendars.defaultCalendarId === calendar.id
+                                ? 'Selected'
+                                : undefined
+                            }
+                            onPress={() =>
+                              void runDeviceCalendarAction(
+                                () => deviceCalendars.setDefaultCalendar(calendar.id),
+                                false,
+                              )
+                            }
+                          />
+                        ))}
+                    </View>
+                  </>
+                ) : null}
+
+                {deviceCalendars.staleSelectionRecovered ? (
+                  <Text style={styles.errorText}>
+                    A saved calendar was removed or became read only. Bearing-only creation is still
+                    available.
+                  </Text>
+                ) : null}
+                {deviceCalendars.error ? (
+                  <Text style={styles.errorText}>{deviceCalendars.error.message}</Text>
+                ) : null}
+                {deviceCalendarError ? <Text style={styles.errorText}>{deviceCalendarError}</Text> : null}
+              </View>
+            ) : null}
+
+            {profileSection === 'calendarExport' ? (
+              <View style={styles.section}>
+                <SectionHeading title="Export Calendar (.ics)" variant="uppercase-accent" />
+                <View style={styles.sectionContent}>
+                  <ListItem
+                    variant="row"
+                    title="Calendar contents"
+                    description="Bearing-owned events, including recurrence, timezone, location, alarms, and links."
+                  />
+                  <ListItem
+                    variant="row"
+                    title="File format"
+                    showDivider={false}
+                    trailingText=".ics"
+                  />
+                  <AppButton
+                    label="Export .ics File"
+                    variant="secondary"
+                    accessibilityLabel="Export ics file"
+                    onPress={() => void handleExportIcs(false)}
+                    loading={icsPendingAction === 'export'}
+                    loadingLabel="Working..."
+                  />
+                  <AppButton
+                    label="Share .ics File"
+                    variant="secondary"
+                    accessibilityLabel="Share ics file"
+                    onPress={() => void handleExportIcs(true)}
+                    loading={icsPendingAction === 'share'}
+                    loadingLabel="Working..."
+                  />
+                  {icsError ? <Text style={styles.errorText}>{icsError}</Text> : null}
+                  {icsFeedback ? <Text style={styles.successText}>{icsFeedback}</Text> : null}
+                  {icsFileLink ? (
+                    <Text
+                      accessibilityRole="link"
+                      style={styles.fileLink}
+                      onPress={() => void handleOpenIcsFile()}
+                    >
+                      {icsFileLink.url.startsWith('blob:') ? 'Open' : 'Open or share'}{' '}
+                      {icsFileLink.filename}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            ) : null}
+
+            {profileSection === 'dataExport' ? (
+              <View style={styles.section}>
+                <SectionHeading title="Account Data Export" variant="uppercase-accent" />
+                <View style={styles.sectionContent}>
+                  <ListItem
+                    variant="row"
+                    title="Account contents"
+                    description="Server-held profile, events, goals, steps, notes, tasks, and subscription data."
+                  />
+                  <ListItem
+                    variant="row"
+                    title="File format"
+                    showDivider={false}
+                    trailingText="JSON"
+                  />
+                  <AppButton
+                    label="Export JSON File"
+                    variant="secondary"
+                    onPress={() => void handleExportData(false)}
+                    loading={dataExportPendingAction === 'export'}
+                    loadingLabel="Working..."
+                  />
+                  <AppButton
+                    label="Share JSON File"
+                    variant="secondary"
+                    onPress={() => void handleExportData(true)}
+                    loading={dataExportPendingAction === 'share'}
+                    loadingLabel="Working..."
+                  />
+                  {dataExportError ? <Text style={styles.errorText}>{dataExportError}</Text> : null}
+                  {dataExportFeedback ? <Text style={styles.successText}>{dataExportFeedback}</Text> : null}
+                  {dataExportFileLink ? (
+                    <Text
+                      accessibilityRole="link"
+                      style={styles.fileLink}
+                      onPress={() => void handleOpenDataExportFile()}
+                    >
+                      {dataExportFileLink.url.startsWith('blob:') ? 'Open' : 'Open or share'}{' '}
+                      {dataExportFileLink.filename}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            ) : null}
+
+            {profileSection === 'deleteAccount' ? (
+              <View style={styles.section}>
+                <SectionHeading title="Delete Account" variant="uppercase-accent" />
+                <View style={styles.sectionContent}>
+                  <Text style={styles.stateDescription}>
+                    This permanently deletes your Bearing profile, events, goals, steps, notes,
+                    tasks, and subscription record. This action cannot be undone.
+                  </Text>
+                  {hasPasswordProvider ? (
+                    <FormField
+                      label="Current password"
+                      accessibilityLabel="Account deletion current password"
+                      value={deletePassword}
+                      onChangeText={setDeletePassword}
+                      secureTextEntry
+                    />
+                  ) : hasGoogleProvider ? (
+                    <Text style={styles.stateDescription}>
+                      Google will ask you to verify this account before permanent deletion begins.
+                    </Text>
+                  ) : (
+                    <Text style={styles.stateDescription}>
+                      Anonymous sessions can only be deleted while their sign-in is recent. Secure
+                      the account first if Firebase requires verification.
+                    </Text>
+                  )}
+                  <FormField
+                    label="Type DELETE to confirm"
+                    accessibilityLabel="Account deletion confirmation"
+                    value={deleteConfirmation}
+                    onChangeText={setDeleteConfirmation}
+                    autoCapitalize="characters"
+                  />
                   <ListItem
                     variant="row"
                     showDivider={false}
-                    onPress={() => setCreditPackVisible(true)}
-                    title="AI planning credits"
-                    description={
-                      aiCreditBalanceLoading
-                        ? 'Checking your current balance...'
-                        : (aiCreditBalanceError ??
-                          (aiCreditBalance === null
-                            ? 'Current balance unavailable.'
-                            : `${aiCreditBalance} available`))
+                    title="Delete Bearing calendar events"
+                    description="Remove reachable system-calendar copies linked from this device before deletion."
+                    trailingContent={
+                      <Switch
+                        accessibilityLabel="Delete Bearing calendar events"
+                        value={deleteLinkedCopies}
+                        onValueChange={setDeleteLinkedCopies}
+                      />
                     }
-                    trailingText="Get more"
                   />
-                ) : null}
-                {premiumManagementError ? (
-                  <Text style={styles.errorText}>{premiumManagementError}</Text>
-                ) : null}
+                  <AppButton
+                    label="Permanently Delete Account"
+                    variant="danger"
+                    onPress={() => void handleDeleteAccount()}
+                    loading={deletePending}
+                    loadingLabel="Deleting..."
+                  />
+                  {deleteError ? <Text style={styles.errorText}>{deleteError}</Text> : null}
+                </View>
               </View>
             ) : null}
 
-            {profileSection === 'subscription' ? (
-              <View style={styles.section}>
-                <SectionHeading title="Subscription" variant="uppercase-accent" />
-                <ListItem
-                  variant="row"
-                  showDivider={false}
-                  onPress={() => void handlePremiumAction()}
-                  title="Bearing 360 access"
-                  description={getPremiumAccessDescription()}
-                  trailingText={
-                    premiumManagementPending
-                      ? 'Opening...'
-                      : hasPremiumAccess
-                        ? 'Manage'
-                        : 'View plans'
-                  }
-                  disabled={premiumManagementPending}
-                />
-                {premiumManagementError ? (
-                  <Text style={styles.errorText}>{premiumManagementError}</Text>
-                ) : null}
-              </View>
-            ) : null}
-
-            {profileSection === 'legal' ? (
-              <View style={styles.section}>
-                <SectionHeading title="Privacy & Legal" variant="uppercase-accent" />
-                <ListItem
-                  variant="row"
-                  onPress={() => setLegalDocumentId('privacy')}
-                  title="Privacy policy"
-                  description="How Bearing handles account, planning, calendar, AI, and diagnostic data."
-                  trailingText="Read"
-                />
-                <ListItem
-                  variant="row"
-                  onPress={() => setLegalDocumentId('terms')}
-                  title="Terms of service"
-                  description="Rules for accounts, content, AI, calendars, and future subscriptions."
-                  trailingText="Read"
-                />
-                <ListItem
-                  variant="row"
-                  showDivider={false}
-                  onPress={() => void handleOpenSupport()}
-                  title="Support"
-                  description="Get help or make a privacy request."
-                  trailingText="Email"
-                />
-                {legalError ? <Text style={styles.errorText}>{legalError}</Text> : null}
-                <ListItem
-                  variant="row"
-                  showDivider={false}
-                  title="Share product diagnostics"
-                  description="Sends fixed outcome events only. Bearing excludes account IDs, content, calendar details, locations, and raw errors."
-                  trailingContent={
-                    <Switch
-                      accessibilityLabel="Share product diagnostics"
-                      value={telemetryConsent.enabled}
-                      disabled={telemetryConsent.pending}
-                      onValueChange={(enabled) => void telemetryConsent.updateConsent(enabled)}
-                    />
-                  }
-                />
-                {telemetryConsent.error ? (
-                  <Text style={styles.errorText}>{telemetryConsent.error}</Text>
-                ) : null}
-              </View>
-            ) : null}
           </>
         ) : null}
       </ScrollView>
 
       <SoundPickerModal
-        visible={soundPicker !== null && profile !== null}
+        visible={soundPicker !== null && profileForRender !== null}
         title={soundPicker === 'alarm' ? 'Choose Timer Sound' : 'Choose Reminder Sound'}
         selectedSoundId={
-          soundPicker === 'alarm' ? (profile?.alarmSoundId ?? '') : (profile?.reminderSoundId ?? '')
+          soundPicker === 'alarm'
+            ? profileForRender?.alarmSoundId ?? ''
+            : profileForRender?.reminderSoundId ?? ''
         }
         playingSoundId={playingSoundId}
         previewError={previewError}
@@ -1413,22 +1647,6 @@ export function ProfileScreen({
         onSelect={(value) => void handleSelectLocale(value)}
       />
 
-      <TipsWisdomModal
-        visible={tipModalVisible}
-        tip={activeTip}
-        onClose={() => setTipModalVisible(false)}
-        onRefresh={handleRefreshTip}
-      />
-
-      <PremiumPaywallModal
-        visible={premiumPaywallFeature !== null}
-        feature={premiumPaywallFeature}
-        userId={authUser?.uid ?? null}
-        isAnonymous={isAnonymous}
-        hasPremiumAccess={hasPremiumAccess}
-        onClose={closePremiumPaywall}
-      />
-
       <CreditPackPurchaseModal
         visible={creditPackVisible}
         userId={!isAnonymous ? (authUser?.uid ?? null) : null}
@@ -1440,278 +1658,6 @@ export function ProfileScreen({
         }}
         onClose={() => setCreditPackVisible(false)}
       />
-
-      <LegalDocumentModal
-        document={legalDocumentId ? LEGAL_DOCUMENTS[legalDocumentId] : null}
-        onClose={() => setLegalDocumentId(null)}
-      />
-
-      <AppModal
-        visible={deviceCalendarsModalVisible}
-        title="Device Calendars"
-        onClose={() => {
-          setDeviceCalendarsModalVisible(false);
-          setDeviceCalendarError(null);
-        }}
-      >
-        <>
-          <Text style={styles.stateDescription}>{getDeviceCalendarDescription()}</Text>
-
-          {deviceCalendars.permission !== 'granted' &&
-          deviceCalendars.permission !== 'unavailable' &&
-          deviceCalendars.permission !== 'blocked' ? (
-            <AppButton
-              label="Allow Calendar Access"
-              variant="secondary"
-              accessibilityLabel="Allow device calendar access"
-              onPress={() => void runDeviceCalendarAction(deviceCalendars.requestPermission)}
-              loading={deviceCalendarPending}
-              loadingLabel="Working..."
-            />
-          ) : null}
-
-          {deviceCalendars.permission === 'blocked' ? (
-            <AppButton
-              label="Open Settings"
-              variant="secondary"
-              accessibilityLabel="Open device settings"
-              onPress={() => void runDeviceCalendarAction(deviceCalendars.openSettings)}
-              loading={deviceCalendarPending}
-              loadingLabel="Working..."
-            />
-          ) : null}
-
-          {deviceCalendars.permission === 'granted' ? (
-            <>
-              <AppButton
-                label="Refresh Calendars"
-                variant="secondary"
-                accessibilityLabel="Refresh device calendars"
-                onPress={() => void runDeviceCalendarAction(deviceCalendars.refresh)}
-                loading={deviceCalendarPending}
-                loadingLabel="Refreshing..."
-              />
-
-              <View style={styles.connectionCalendarBlock}>
-                <Text style={styles.sectionTitle}>Visible calendars</Text>
-                {deviceCalendars.calendars.length > 0 ? (
-                  deviceCalendars.calendars.map((calendar) => (
-                    <Pressable
-                      key={calendar.id}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Toggle visible calendar ${calendar.title}`}
-                      onPress={() =>
-                        void runDeviceCalendarAction(() =>
-                          deviceCalendars.toggleCalendar(calendar.id),
-                        )
-                      }
-                      disabled={deviceCalendarPending}
-                      style={({ pressed }) => [
-                        styles.calendarSelectionRow,
-                        deviceCalendars.selectedCalendarIds.includes(calendar.id)
-                          ? styles.calendarSelectionRowSelected
-                          : null,
-                        pressed && !deviceCalendarPending ? styles.buttonPressed : null,
-                        deviceCalendarPending ? styles.buttonDisabled : null,
-                      ]}
-                    >
-                      <View style={styles.calendarSelectionCopy}>
-                        <Text style={styles.selectionValue}>{calendar.title}</Text>
-                        <Text style={styles.selectionMeta}>
-                          {calendar.sourceLabel}
-                          {calendar.isPrimary ? ' • Primary' : ''}
-                          {!calendar.allowsModifications ? ' • Read only' : ''}
-                        </Text>
-                      </View>
-                      <Text style={styles.optionStateText}>
-                        {deviceCalendars.selectedCalendarIds.includes(calendar.id)
-                          ? 'Visible'
-                          : 'Hidden'}
-                      </Text>
-                    </Pressable>
-                  ))
-                ) : (
-                  <Text style={styles.stateDescription}>No system calendars were found.</Text>
-                )}
-              </View>
-
-              <View style={styles.connectionCalendarBlock}>
-                <Text style={styles.sectionTitle}>Writable default</Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Use Bearing only for event creation"
-                  onPress={() =>
-                    void runDeviceCalendarAction(() => deviceCalendars.setDefaultCalendar(null))
-                  }
-                  disabled={deviceCalendarPending}
-                  style={({ pressed }) => [
-                    styles.calendarSelectionRow,
-                    deviceCalendars.defaultCalendarId === null
-                      ? styles.calendarSelectionRowSelected
-                      : null,
-                    pressed && !deviceCalendarPending ? styles.buttonPressed : null,
-                  ]}
-                >
-                  <Text style={styles.selectionValue}>Bearing only</Text>
-                  <Text style={styles.optionStateText}>
-                    {deviceCalendars.defaultCalendarId === null ? 'Default' : 'Choose'}
-                  </Text>
-                </Pressable>
-                {deviceCalendars.calendars
-                  .filter((calendar) => calendar.allowsModifications)
-                  .map((calendar) => (
-                    <Pressable
-                      key={calendar.id}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Use default calendar ${calendar.title}`}
-                      onPress={() =>
-                        void runDeviceCalendarAction(() =>
-                          deviceCalendars.setDefaultCalendar(calendar.id),
-                        )
-                      }
-                      disabled={deviceCalendarPending}
-                      style={({ pressed }) => [
-                        styles.calendarSelectionRow,
-                        deviceCalendars.defaultCalendarId === calendar.id
-                          ? styles.calendarSelectionRowSelected
-                          : null,
-                        pressed && !deviceCalendarPending ? styles.buttonPressed : null,
-                      ]}
-                    >
-                      <View style={styles.calendarSelectionCopy}>
-                        <Text style={styles.selectionValue}>{calendar.title}</Text>
-                        <Text style={styles.selectionMeta}>{calendar.sourceLabel}</Text>
-                      </View>
-                      <Text style={styles.optionStateText}>
-                        {deviceCalendars.defaultCalendarId === calendar.id ? 'Default' : 'Choose'}
-                      </Text>
-                    </Pressable>
-                  ))}
-              </View>
-            </>
-          ) : null}
-
-          {deviceCalendars.staleSelectionRecovered ? (
-            <Text style={styles.errorText}>
-              A saved calendar was removed or became read only. Bearing-only creation is still
-              available.
-            </Text>
-          ) : null}
-          {deviceCalendars.error ? (
-            <Text style={styles.errorText}>{deviceCalendars.error.message}</Text>
-          ) : null}
-          {deviceCalendarError ? <Text style={styles.errorText}>{deviceCalendarError}</Text> : null}
-        </>
-      </AppModal>
-
-      <AppModal visible={icsModalVisible} title="Calendar Export (.ics)" onClose={closeIcsModal}>
-        <Text style={styles.stateDescription}>
-          Export Bearing-owned events to a portable .ics file with all-day, timezone, recurrence,
-          location, alarm, and link details.
-        </Text>
-
-        <AppButton
-          label="Export .ics File"
-          variant="secondary"
-          accessibilityLabel="Export ics file"
-          onPress={() => void handleExportIcs(false)}
-          loading={icsPending}
-          loadingLabel="Working..."
-        />
-
-        <AppButton
-          label="Share .ics File"
-          variant="secondary"
-          accessibilityLabel="Share ics file"
-          onPress={() => void handleExportIcs(true)}
-          loading={icsPending}
-          loadingLabel="Working..."
-        />
-
-        {icsError ? <Text style={styles.errorText}>{icsError}</Text> : null}
-        {icsFeedback ? <Text style={styles.successText}>{icsFeedback}</Text> : null}
-      </AppModal>
-
-      <AppModal
-        visible={dataExportVisible}
-        title="Account Data Export"
-        onClose={() => {
-          setDataExportVisible(false);
-          setDataExportError(null);
-          setDataExportFeedback(null);
-        }}
-      >
-        <Text style={styles.stateDescription}>
-          Export all server-held Bearing account data as portable JSON. Device-only calendar data
-          remains on this device.
-        </Text>
-        <AppButton
-          label="Export JSON File"
-          variant="secondary"
-          onPress={() => void handleExportData(false)}
-          loading={dataExportPending}
-        />
-        <AppButton
-          label="Share JSON File"
-          variant="secondary"
-          onPress={() => void handleExportData(true)}
-          loading={dataExportPending}
-        />
-        {dataExportError ? <Text style={styles.errorText}>{dataExportError}</Text> : null}
-        {dataExportFeedback ? <Text style={styles.successText}>{dataExportFeedback}</Text> : null}
-      </AppModal>
-
-      <AppModal visible={deleteAccountVisible} title="Delete Account" onClose={closeDeleteAccount}>
-        <Text style={styles.stateDescription}>
-          This permanently deletes your Bearing profile, events, goals, steps, notes, tasks, and
-          subscription record. This action cannot be undone.
-        </Text>
-        {hasPasswordProvider ? (
-          <FormField
-            label="Current password"
-            accessibilityLabel="Account deletion current password"
-            value={deletePassword}
-            onChangeText={setDeletePassword}
-            secureTextEntry
-          />
-        ) : hasGoogleProvider ? (
-          <Text style={styles.stateDescription}>
-            Google will ask you to verify this account before permanent deletion begins.
-          </Text>
-        ) : (
-          <Text style={styles.stateDescription}>
-            Anonymous sessions can only be deleted while their sign-in is recent. Secure the account
-            first if Firebase requires verification.
-          </Text>
-        )}
-        <FormField
-          label="Type DELETE to confirm"
-          accessibilityLabel="Account deletion confirmation"
-          value={deleteConfirmation}
-          onChangeText={setDeleteConfirmation}
-          autoCapitalize="characters"
-        />
-        <Pressable
-          accessibilityRole="checkbox"
-          accessibilityLabel="Remove linked system calendar copies"
-          accessibilityState={{ checked: deleteLinkedCopies }}
-          onPress={() => setDeleteLinkedCopies((current) => !current)}
-          style={styles.deletionOption}
-        >
-          <Text style={styles.optionStateText}>{deleteLinkedCopies ? 'Checked' : 'Unchecked'}</Text>
-          <Text style={styles.stateDescription}>
-            Remove reachable system-calendar copies linked from this device before deletion.
-          </Text>
-        </Pressable>
-        <AppButton
-          label="Permanently Delete Account"
-          variant="danger"
-          onPress={() => void handleDeleteAccount()}
-          loading={deletePending}
-          loadingLabel="Deleting..."
-        />
-        {deleteError ? <Text style={styles.errorText}>{deleteError}</Text> : null}
-      </AppModal>
 
       <AppModal
         visible={disconnectGoogleVisible}
@@ -1783,14 +1729,11 @@ const createStyles = (theme: Theme) =>
     sectionContent: {
       paddingHorizontal: spacing.md,
       paddingBottom: spacing.md,
+      gap: spacing.md,
     },
     appearanceOptions: {
       gap: spacing.lg,
       paddingTop: spacing.md,
-    },
-    deletionOption: {
-      gap: spacing.xs,
-      paddingVertical: spacing.sm,
     },
     sectionTitle: {
       ...typography.button,
@@ -1836,14 +1779,6 @@ const createStyles = (theme: Theme) =>
     },
     selectionLabel: {
       ...typography.label,
-      color: theme.colors.textSecondary,
-    },
-    selectionValue: {
-      ...typography.body,
-      color: theme.colors.text,
-    },
-    selectionMeta: {
-      ...typography.helper,
       color: theme.colors.textSecondary,
     },
     identitySummary: {
@@ -1931,52 +1866,16 @@ const createStyles = (theme: Theme) =>
       ...typography.helper,
       color: theme.colors.brand,
     },
+    fileLink: {
+      ...typography.helper,
+      color: theme.colors.brand,
+      textDecorationLine: 'underline',
+    },
     actionBlock: {
       gap: spacing.md,
     },
     connectionMetaBlock: {
       gap: spacing.xs,
-    },
-    connectionCalendarBlock: {
-      gap: spacing.sm,
-    },
-    secondaryActionButton: {
-      borderRadius: radii.md,
-      backgroundColor: theme.colors.surface,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      alignItems: 'center',
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.md,
-    },
-    secondaryActionButtonText: {
-      ...typography.button,
-      color: theme.colors.text,
-    },
-    calendarSelectionRow: {
-      minHeight: 44,
-      borderRadius: radii.md,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.md,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: spacing.md,
-    },
-    calendarSelectionRowSelected: {
-      backgroundColor: theme.colors.surfaceBrand,
-    },
-    calendarSelectionCopy: {
-      flex: 1,
-      gap: spacing.xs,
-    },
-    optionStateText: {
-      ...typography.helper,
-      color: theme.colors.brand,
-      fontWeight: '600',
     },
     disconnectButton: {
       borderRadius: radii.md,
@@ -2005,5 +1904,28 @@ const createStyles = (theme: Theme) =>
     tipsButtonText: {
       ...typography.button,
       color: theme.colors.brand,
+    },
+    deviceCalendarRouteContent: {
+      gap: spacing.lg,
+    },
+    legalContent: {
+      gap: spacing.lg,
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    legalSection: {
+      gap: spacing.sm,
+    },
+    legalMeta: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    legalNotice: {
+      ...typography.body,
+      color: theme.colors.dangerText,
+    },
+    legalBody: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
     },
   });
