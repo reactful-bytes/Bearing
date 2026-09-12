@@ -217,12 +217,15 @@ describe('domain presentation', () => {
         onCreateFocus={onCreateFocus}
       />,
     );
-    fireEvent.press(screen.getByRole('button', { name: 'Create Goal' }));
-    fireEvent.press(screen.getByRole('button', { name: 'Create Task' }));
-    fireEvent.press(screen.getByRole('button', { name: 'Create Note' }));
-    fireEvent.press(screen.getByRole('button', { name: 'Create Event' }));
-    fireEvent.press(screen.getByRole('button', { name: 'Create Focus' }));
+    const goalButtons = screen.getAllByRole('button', { name: 'Create Goal' });
+    fireEvent.press(goalButtons[0]);
     expect(onCreateGoal).toHaveBeenCalledTimes(1);
+    fireEvent.press(goalButtons[1]);
+    fireEvent.press(screen.getAllByRole('button', { name: 'Create Task' })[0]);
+    fireEvent.press(screen.getAllByRole('button', { name: 'Create Note' })[0]);
+    fireEvent.press(screen.getAllByRole('button', { name: 'Create Event' })[0]);
+    fireEvent.press(screen.getAllByRole('button', { name: 'Create Focus' })[0]);
+    expect(onCreateGoal).toHaveBeenCalledTimes(2);
     expect(onCreateTask).toHaveBeenCalledTimes(1);
     expect(onCreateNote).toHaveBeenCalledTimes(1);
     expect(onCreateEvent).toHaveBeenCalledTimes(1);

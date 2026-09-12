@@ -81,12 +81,20 @@ export function CreateFabGroup(props: CreateFabGroupProps) {
           return (
             <Animated.View
               key={action.key}
-              pointerEvents={props.visible ? 'auto' : 'none'}
+              pointerEvents={props.visible ? 'box-none' : 'none'}
               style={[styles.actionRow, { transform: [{ translateY }], opacity: progress }]}
             >
-              <View style={styles.labelContainer}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Create ${action.label}`}
+                onPress={props[action.key]}
+                style={({ pressed }) => [
+                  styles.labelContainer,
+                  pressed ? styles.actionPressed : null,
+                ]}
+              >
                 <Text style={styles.label}>{action.label}</Text>
-              </View>
+              </Pressable>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Create ${action.label}`}
