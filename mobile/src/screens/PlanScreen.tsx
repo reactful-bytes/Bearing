@@ -353,7 +353,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
               <EmptyState
                 icon="calendar"
                 title={emptyTodayPhrase}
-                description="Your calendar is clear. Use Create to shape the day."
+                description="Add something new to shape the day."
                 presentation="compact"
               />
             ) : null}
