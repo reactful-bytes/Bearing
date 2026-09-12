@@ -27,6 +27,40 @@ import { AppTabParamList, PlanStackParamList } from '../navigation/navigationTyp
 const MAX_TODAY_EVENTS = 3;
 const MAX_ACTIVE_GOALS = 3;
 
+const EMPTY_TODAY_PHRASES = [
+  'Free as a bird',
+  'Your calendar is taking a deep breath',
+  'Wide-open skies ahead',
+  'A little breathing room for you',
+  'The day is yours to shape',
+  'No meetings, no problem',
+  'A blank canvas with excellent potential',
+  'Room to roam, think, or make',
+  'Today left the door unlocked',
+  'Your schedule just winked at you',
+  'Plenty of runway for something great',
+  'The rare and beautiful empty calendar',
+] as const;
+
+const EMPTY_GOAL_PHRASES = [
+  'No goals yet, only possibilities',
+  'A clean slate is a powerful place to start',
+  'Your next big thing is waiting for a name',
+  'Room for a goal with your fingerprints on it',
+  "Nothing on the board? Let's change that",
+  'The goal-shaped space is all yours',
+  'Every good plan starts with one brave idea',
+  'Your future self would love a goal here',
+  'A little ambition would look great here',
+  'The starting line is wide open',
+  'No goals means unlimited plot twists',
+  'Make some room for what matters next',
+] as const;
+
+function getDailyPhrase(phrases: readonly string[], date: Date): string {
+  return phrases[date.getDate() % phrases.length];
+}
+
 type PlanScreenProps = {
   navigation: NavigationProp<PlanStackParamList, 'PlanHome'>;
 };
@@ -215,6 +249,8 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
   const displayName = profile?.displayName?.trim();
   const greeting = getGreeting(new Date().getHours());
   const nowTimestamp = today.getTime();
+  const emptyTodayPhrase = getDailyPhrase(EMPTY_TODAY_PHRASES, today);
+  const emptyGoalPhrase = getDailyPhrase(EMPTY_GOAL_PHRASES, today);
 
   const todayEvents = useMemo(
     () =>
@@ -316,7 +352,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
             {eventsState === 'empty' || (eventsState === 'ready' && todayEvents.length === 0) ? (
               <EmptyState
                 icon="calendar"
-                title="Nothing scheduled today"
+                title={emptyTodayPhrase}
                 description="Your calendar is clear. Use Create to shape the day."
                 presentation="compact"
               />
@@ -370,7 +406,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
             {goalsState === 'empty' || (goalsState === 'ready' && recentGoals.length === 0) ? (
               <EmptyState
                 icon="goal"
-                title="No active goals"
+                title={emptyGoalPhrase}
                 description="Create a goal to give your next steps a home."
                 presentation="compact"
                 actionLabel="Open goals"

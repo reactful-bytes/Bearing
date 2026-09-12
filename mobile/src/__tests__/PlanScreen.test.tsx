@@ -198,6 +198,26 @@ describe('PlanScreen', () => {
     expect(mockRootNavigate).toHaveBeenCalledWith('Profile');
   });
 
+  it('shows a witty daily phrase when there are no events or active goals', () => {
+    mockUseCalendarEvents.mockReturnValue({
+      events: [],
+      uiState: 'ready',
+      refresh: jest.fn(async () => undefined),
+    } as unknown as ReturnType<typeof useCalendarEvents>);
+    mockUseGoals.mockReturnValue({
+      goals: [],
+      uiState: 'ready',
+      retry: jest.fn(),
+    } as unknown as ReturnType<typeof useGoals>);
+
+    render(<PlanScreen navigation={{ navigate: jest.fn() } as never} />);
+
+    expect(screen.getByText('Room to roam, think, or make')).toBeTruthy();
+    expect(screen.getByText('Your future self would love a goal here')).toBeTruthy();
+    expect(screen.queryByText('Nothing scheduled today')).toBeNull();
+    expect(screen.queryByText('No active goals')).toBeNull();
+  });
+
   it('shows the active focus session and opens Focus Mode', () => {
     mockUseFocusSession.mockReturnValue({
       eventId: 'event-1',
