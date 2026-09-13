@@ -71,13 +71,22 @@ describe('CalendarScreen navigation', () => {
     expect(screen.queryByLabelText('Next day')).toBeNull();
   });
 
-  it('opens Calendar Sources from the toolbar settings control', () => {
+  it('exposes Today and removes calendar source and refresh controls', () => {
     const navigate = jest.fn();
     render(<CalendarScreen navigation={{ navigate }} />);
 
-    fireEvent.press(screen.getByLabelText('Open Calendar Sources'));
+    expect(screen.getByLabelText('Go to today')).toBeTruthy();
+    expect(screen.queryByLabelText('Open Calendar Sources')).toBeNull();
+    expect(screen.queryByLabelText('Refresh calendar events')).toBeNull();
+    expect(navigate).not.toHaveBeenCalled();
+  });
 
-    expect(navigate).toHaveBeenCalledWith('CalendarSources');
+  it('moves to today when Today is pressed', () => {
+    render(<CalendarScreen initialDateOverride={new Date(2026, 6, 10)} />);
+
+    fireEvent.press(screen.getByLabelText('Go to today'));
+
+    expect(screen.getByText(formatDayLabel(new Date()))).toBeTruthy();
   });
 
   it('switches back to day view when Day toggle is pressed from month view', () => {
@@ -135,7 +144,7 @@ describe('CalendarScreen navigation', () => {
     expect(screen.getByText(expectedLabel)).toBeTruthy();
   });
 
-  it('centers the current time after refreshing today', () => {
+  it('centers the current time after returning to today', () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date(2026, 6, 17, 14, 30, 0));
     const scrollToSpy = jest
@@ -151,7 +160,7 @@ describe('CalendarScreen navigation', () => {
       act(() => jest.advanceTimersByTime(50));
       scrollToSpy.mockClear();
 
-      fireEvent.press(screen.getByLabelText('Refresh calendar events'));
+      fireEvent.press(screen.getByLabelText('Go to today'));
       act(() => jest.advanceTimersByTime(50));
 
       expect(scrollToSpy).toHaveBeenCalledWith({ y: 608, animated: false });

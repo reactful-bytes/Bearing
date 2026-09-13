@@ -24,7 +24,7 @@ import { FocusModeOverlay } from '../components/calendar/FocusModeOverlay';
 import { EventRow } from '../components/presentation/EventPresentation';
 import { AppIcon } from '../components/ui/AppIcon';
 import { IconButton } from '../components/ui/IconButton';
-import { layout, spacing, typography } from '../design/tokens';
+import { layout, radii, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import {
   CalendarDisplayEvent,
@@ -186,7 +186,6 @@ export function CalendarScreen({
     updateEvent,
     deleteEvent,
     retryPublication,
-    refresh: refreshEvents,
     deviceError,
     publicationCalendarTitle,
   } = useCalendarEvents(selectedDate, undefined, visibleRange);
@@ -336,7 +335,11 @@ export function CalendarScreen({
   }
 
   function handleToday(): void {
-    setSelectedDate(new Date());
+    const today = new Date();
+    setSelectedDate(today);
+    if (isSameCalendarDay(selectedDate, today)) {
+      setTimelineFocusRequest((current) => current + 1);
+    }
   }
 
   function handlePrevMonth(): void {
@@ -347,13 +350,6 @@ export function CalendarScreen({
   function handleNextMonth(): void {
     const newIndex = Math.min(monthList.length - 1, visibleMonthIndex + 1);
     flatListRef.current?.scrollToIndex({ index: newIndex, animated: true });
-  }
-
-  function handleRefreshCalendar(): void {
-    if (isSameCalendarDay(selectedDate, new Date())) {
-      setTimelineFocusRequest((current) => current + 1);
-    }
-    void refreshEvents();
   }
 
   async function handleAddEvent(
@@ -431,11 +427,7 @@ export function CalendarScreen({
           onPress={() => navigation?.navigate?.('Plan')}
         />
         <AppIcon name="bearingMark" size={34} decorative />
-        <IconButton
-          name="settings"
-          accessibilityLabel="Open Calendar Sources"
-          onPress={() => navigation?.navigate?.('CalendarSources')}
-        />
+        <View style={styles.headerSpacer} />
       </View>
       <View style={styles.calendarToolbar}>
         <ViewModeToggle
@@ -444,21 +436,14 @@ export function CalendarScreen({
           showWeek={isDesktopCalendar || initialViewMode === 'week'}
         />
         <View style={styles.toolbarActions} testID="calendar-toolbar-actions">
-          {viewMode === 'week' ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Go to current week"
-              onPress={handleToday}
-              style={({ pressed }) => [styles.todayButton, pressed ? styles.buttonPressed : null]}
-            >
-              <Text style={styles.todayButtonText}>Today</Text>
-            </Pressable>
-          ) : null}
-          <IconButton
-            name="today"
-            accessibilityLabel="Refresh calendar events"
-            onPress={handleRefreshCalendar}
-          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go to today"
+            onPress={handleToday}
+            style={({ pressed }) => [styles.todayButton, pressed ? styles.buttonPressed : null]}
+          >
+            <Text style={styles.todayButtonText}>Today</Text>
+          </Pressable>
         </View>
       </View>
       {deviceError ? (
@@ -671,6 +656,9 @@ const createStyles = (theme: Theme) =>
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.colors.border,
     },
+    headerSpacer: {
+      width: 40,
+    },
     toolbarActions: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -711,17 +699,19 @@ const createStyles = (theme: Theme) =>
     },
     nextIcon: { transform: [{ rotate: '180deg' }] },
     todayButton: {
-      minHeight: 36,
+      minHeight: 32,
       justifyContent: 'center',
-      paddingHorizontal: spacing.md,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
       borderWidth: 1,
       borderColor: theme.colors.border,
-      borderRadius: 6,
+      borderRadius: radii.md,
       backgroundColor: theme.colors.surface,
     },
     todayButtonText: {
-      ...typography.button,
-      color: theme.colors.brand,
+      ...typography.caption,
+      fontWeight: '600',
+      color: theme.colors.textPrimary,
     },
     weekRangeLabel: {
       ...typography.button,
