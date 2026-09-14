@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Linking,
@@ -16,7 +16,6 @@ import { AppButton } from '../components/ui/AppButton';
 import { GoogleAuthButton } from '../components/auth/GoogleAuthButton';
 import { AppModal } from '../components/ui/AppModal';
 import { FormField } from '../components/ui/FormField';
-import { PremiumPaywallModal } from '../components/premium/PremiumPaywallModal';
 import { CreditPackPurchaseModal } from '../components/premium/CreditPackPurchaseModal';
 import { ProfileSelectionModal } from '../components/profile/ProfileSelectionModal';
 import { SoundPickerModal } from '../components/profile/SoundPickerModal';
@@ -42,10 +41,7 @@ import {
   cleanupLinkedCalendarCopies,
   purgeLocalAccountData,
 } from '../features/profile/accountDeletionService';
-import {
-  LEGAL_DOCUMENTS,
-  getConfiguredSupportEmail,
-} from '../features/profile/legalDocuments';
+import { getConfiguredSupportEmail } from '../features/profile/legalDocuments';
 import {
   buildDataExportFilename,
   downloadDataExportOnWeb,
@@ -61,7 +57,6 @@ import {
 import { TIME_FORMAT_OPTIONS, TimeFormat } from '../features/profile/timeFormat';
 import { hasActivePremiumStatus } from '../features/premium/premiumAccess';
 import {
-  clearAiCreditBalance,
   setAiCreditBalance,
   useAiCreditBalance,
 } from '../features/premium/aiCreditBalance';
@@ -100,9 +95,7 @@ export type ProfileSection =
   | 'deviceCalendars'
   | 'calendarExport'
   | 'tipsWisdom'
-  | 'premiumAccess'
-  | 'privacyPolicy'
-  | 'termsOfService'
+  | 'aiCredits'
   | 'dataExport'
   | 'deleteAccount';
 
@@ -113,7 +106,12 @@ type ProfileScreenProps = {
   isSignOutPending: boolean;
   section?: ProfileSection;
   onPressBack?: () => void;
-  navigation?: { navigate: (screen: ProfileNavigationTarget) => void };
+  navigation?: {
+    navigate: (
+      screen: ProfileNavigationTarget,
+      params?: ProfileStackParamList[ProfileNavigationTarget],
+    ) => void;
+  };
 };
 
 const THEME_OPTIONS: readonly { value: ThemePreference; label: string }[] = [
@@ -184,10 +182,7 @@ export function ProfileScreen({
   const [deviceCalendarError, setDeviceCalendarError] = useState<string | null>(null);
   const [premiumManagementPending, setPremiumManagementPending] = useState(false);
   const [premiumManagementError, setPremiumManagementError] = useState<string | null>(null);
-  const [creditPackVisible, setCreditPackVisible] = useState(false);
   const aiCreditBalance = useAiCreditBalance(authUser?.uid ?? null);
-  const [aiCreditBalanceLoading, setAiCreditBalanceLoading] = useState(false);
-  const [aiCreditBalanceError, setAiCreditBalanceError] = useState<string | null>(null);
   const [icsPendingAction, setIcsPendingAction] = useState<'export' | 'share' | null>(null);
   const [icsError, setIcsError] = useState<string | null>(null);
   const [icsFeedback, setIcsFeedback] = useState<string | null>(null);
@@ -212,6 +207,7 @@ export function ProfileScreen({
   const [premiumDebugLocalPlans, setPremiumDebugLocalPlansState] = useState(
     isPremiumDebugLocalPlansEnabled,
   );
+  const profileScrollRef = useRef<ScrollView>(null);
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
   const isHubRoute = profileSection === undefined;
   const profileForRender =
@@ -339,24 +335,15 @@ export function ProfileScreen({
 
   useEffect(() => {
     if (!authUser || isAnonymous || !hasPremiumAccess) {
-      clearAiCreditBalance();
-      setAiCreditBalanceError(null);
       return;
     }
 
     let current = true;
-    setAiCreditBalanceLoading(true);
-    setAiCreditBalanceError(null);
     void getAiCreditStatus()
       .then((status) => {
         if (current) setAiCreditBalance(authUser.uid, status.availableCredits);
       })
-      .catch(() => {
-        if (current) setAiCreditBalanceError('AI credit balance is unavailable right now.');
-      })
-      .finally(() => {
-        if (current) setAiCreditBalanceLoading(false);
-      });
+      .catch(() => undefined);
 
     return () => {
       current = false;
@@ -544,14 +531,21 @@ export function ProfileScreen({
 
   function getPlanRenewalDescription(): string | undefined {
     if (!hasPremiumAccess || !entitlement?.periodEndAt) return undefined;
-    const formattedDate = entitlement.periodEndAt.toLocaleDateString();
+    const formattedDate = entitlement.periodEndAt.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
     return entitlement.autoRenew ? `Renews ${formattedDate}` : `Expires ${formattedDate}`;
   }
 
   async function handlePremiumAction(): Promise<void> {
     if (!hasPremiumAccess) {
       setPremiumManagementError(null);
-      navigation?.navigate('PremiumAccess');
+      navigation?.navigate('PremiumPaywall', {
+        feature: 'premium_overview',
+        source: 'profile',
+      });
       return;
     }
     if (!authUser || isAnonymous) return;
@@ -583,7 +577,10 @@ export function ProfileScreen({
 
   function handlePremiumRoute(): void {
     if (!hasPremiumAccess) {
-      navigation?.navigate('PremiumAccess');
+      navigation?.navigate('PremiumPaywall', {
+        feature: 'premium_overview',
+        source: 'profile',
+      });
       return;
     }
 
@@ -821,6 +818,7 @@ export function ProfileScreen({
   return (
     <View style={styles.screen}>
       <ScrollView
+        ref={profileScrollRef}
         contentContainerStyle={[
           styles.contentContainer,
         ]}
@@ -940,16 +938,9 @@ export function ProfileScreen({
                     <ListItem
                       variant="row"
                       showDivider={false}
-                      onPress={() => setCreditPackVisible(true)}
+                      onPress={() => navigation?.navigate('AiCredits')}
                       title="AI planning credits"
-                      description={
-                        aiCreditBalanceLoading
-                          ? 'Checking your current balance...'
-                          : (aiCreditBalanceError ??
-                            (aiCreditBalance === null
-                              ? 'Current balance unavailable.'
-                              : `${aiCreditBalance} available`))
-                      }
+                      description={aiCreditBalance === null ? undefined : `${aiCreditBalance} available`}
                     />
                   ) : null}
                 </View>
@@ -959,13 +950,21 @@ export function ProfileScreen({
                   <ListItem
                     variant="row"
                     icon="legal"
-                    onPress={() => navigation?.navigate('PrivacyPolicy')}
+                    onPress={() =>
+                      navigation?.navigate('LegalDocument', {
+                        documentId: 'privacy',
+                      })
+                    }
                     title="Privacy policy"
                   />
                   <ListItem
                     variant="row"
                     icon="document"
-                    onPress={() => navigation?.navigate('TermsOfService')}
+                    onPress={() =>
+                      navigation?.navigate('LegalDocument', {
+                        documentId: 'terms',
+                      })
+                    }
                     title="Terms of service"
                   />
                   <ListItem
@@ -1333,52 +1332,19 @@ export function ProfileScreen({
               </View>
             ) : null}
 
-            {profileSection === 'premiumAccess' ? (
-              <PremiumPaywallModal
+            {profileSection === 'aiCredits' ? (
+              <CreditPackPurchaseModal
                 visible
-                feature="premium_overview"
-                userId={authUser?.uid ?? null}
-                isAnonymous={isAnonymous}
-                hasPremiumAccess={hasPremiumAccess}
-                onClose={onPressBack ?? (() => undefined)}
                 embedded
+                userId={!isAnonymous ? (authUser?.uid ?? null) : null}
+                enabled={hasPremiumAccess && !isAnonymous}
+                source="profile"
+                currentBalance={aiCreditBalance}
+                onBalanceUpdated={(availableCredits) => {
+                  if (authUser) setAiCreditBalance(authUser.uid, availableCredits);
+                }}
+                onClose={onPressBack ?? (() => undefined)}
               />
-            ) : null}
-
-            {profileSection === 'privacyPolicy' || profileSection === 'termsOfService' ? (
-              <View style={styles.section}>
-                <SectionHeading
-                  title={
-                    profileSection === 'privacyPolicy'
-                      ? LEGAL_DOCUMENTS.privacy.title
-                      : LEGAL_DOCUMENTS.terms.title
-                  }
-                  variant="uppercase-accent"
-                />
-                <ScrollView contentContainerStyle={styles.legalContent}>
-                  {(() => {
-                    const document =
-                      profileSection === 'privacyPolicy'
-                        ? LEGAL_DOCUMENTS.privacy
-                        : LEGAL_DOCUMENTS.terms;
-                    return (
-                      <>
-                        <Text style={styles.legalMeta}>Effective {document.effectiveDate}</Text>
-                        <Text style={styles.legalNotice}>{document.notice}</Text>
-                        <Text style={styles.legalBody}>{document.introduction}</Text>
-                        {document.sections.map((section) => (
-                          <View key={section.heading} style={styles.legalSection}>
-                            <Text accessibilityRole="header" style={styles.sectionTitle}>
-                              {section.heading}
-                            </Text>
-                            <Text style={styles.legalBody}>{section.body}</Text>
-                          </View>
-                        ))}
-                      </>
-                    );
-                  })()}
-                </ScrollView>
-              </View>
             ) : null}
 
             {profileSection === 'deviceCalendars' ? (
@@ -1716,18 +1682,6 @@ export function ProfileScreen({
         onSelect={(value) => void handleSelectLocale(value)}
       />
 
-      <CreditPackPurchaseModal
-        visible={creditPackVisible}
-        userId={!isAnonymous ? (authUser?.uid ?? null) : null}
-        enabled={hasPremiumAccess && !isAnonymous}
-        source="profile"
-        currentBalance={aiCreditBalance}
-        onBalanceUpdated={(availableCredits) => {
-          if (authUser) setAiCreditBalance(authUser.uid, availableCredits);
-        }}
-        onClose={() => setCreditPackVisible(false)}
-      />
-
       <AppModal
         visible={disconnectGoogleVisible}
         title="Disconnect Google Sign-In"
@@ -1976,25 +1930,5 @@ const createStyles = (theme: Theme) =>
     },
     deviceCalendarRouteContent: {
       gap: spacing.lg,
-    },
-    legalContent: {
-      gap: spacing.lg,
-      paddingHorizontal: spacing.md,
-      paddingBottom: spacing.xl,
-    },
-    legalSection: {
-      gap: spacing.sm,
-    },
-    legalMeta: {
-      ...typography.helper,
-      color: theme.colors.textSecondary,
-    },
-    legalNotice: {
-      ...typography.body,
-      color: theme.colors.dangerText,
-    },
-    legalBody: {
-      ...typography.body,
-      color: theme.colors.textPrimary,
     },
   });

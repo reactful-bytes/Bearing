@@ -4,12 +4,14 @@ import {
   Modal,
   Platform,
   Pressable,
+  StatusBar,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
+import { useTheme } from '../../design/ThemeProvider';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppIcon } from './AppIcon';
 
@@ -18,11 +20,13 @@ import type { Theme } from '../../design/tokens';
 
 type AppModalProps = {
   visible: boolean;
-  title: string;
+  title?: string;
   onClose: () => void;
   closeLabel?: string;
   headerAccessory?: ReactNode;
   fullScreen?: boolean;
+  hideHeader?: boolean;
+  embedded?: boolean;
   children: ReactNode;
 };
 
@@ -33,9 +37,17 @@ export function AppModal({
   closeLabel = 'Close',
   headerAccessory,
   fullScreen = false,
+  hideHeader = false,
+  embedded = false,
   children,
 }: AppModalProps) {
   const styles = useThemedStyles(createStyles);
+  const { preference } = useTheme();
+  const accessibleTitle = title || 'Modal';
+
+  if (embedded) {
+    return <>{children}</>;
+  }
 
   // Android renders a translucent window per mounted <Modal>, even when `visible={false}`;
   // keeping closed modals out of the tree avoids stray dark bars stacking behind the tab bar.
@@ -49,8 +61,15 @@ export function AppModal({
       transparent={!fullScreen}
       animationType="fade"
       onRequestClose={onClose}
-      accessibilityLabel={`${title} modal`}
+      accessibilityLabel={`${accessibleTitle} modal`}
     >
+      {fullScreen ? (
+        <StatusBar
+          barStyle={preference === 'dark' ? 'light-content' : 'dark-content'}
+          translucent
+          backgroundColor="transparent"
+        />
+      ) : null}
       <KeyboardAvoidingView
         accessibilityViewIsModal
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -59,49 +78,57 @@ export function AppModal({
         {!fullScreen ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Dismiss ${title}`}
+            accessibilityLabel={`Dismiss ${accessibleTitle}`}
             style={styles.backdropPressArea}
             onPress={onClose}
           />
         ) : null}
         <SafeAreaView
-          edges={['top', 'right', 'bottom', 'left']}
+          edges={
+            fullScreen
+              ? ['right', 'left']
+              : ['top', 'right', 'bottom', 'left']
+          }
           style={fullScreen ? styles.fullScreenSheet : styles.sheet}
         >
-          <View style={styles.header}>
-            {fullScreen ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${closeLabel} ${title}`}
-                onPress={onClose}
-                style={styles.closeIconButton}
-              >
-                <AppIcon name="back" size={20} decorative />
-              </Pressable>
-            ) : null}
-            <Text
-              accessibilityRole="header"
-              accessibilityLabel={title}
-              style={[styles.title, fullScreen && styles.fullScreenTitle]}
-            >
-              {title}
-            </Text>
-            <View style={styles.headerActions}>
-              {headerAccessory}
-              {!fullScreen ? (
+          {!hideHeader ? (
+            <View style={styles.header}>
+              {fullScreen ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`${closeLabel} ${title}`}
+                  accessibilityLabel={`${closeLabel} ${accessibleTitle}`}
                   onPress={onClose}
-                  style={styles.closeButton}
+                  style={styles.closeIconButton}
                 >
-                  <Text style={styles.closeButtonText}>{closeLabel}</Text>
+                  <AppIcon name="back" size={20} decorative />
                 </Pressable>
-              ) : (
-                <View style={styles.headerPlaceholder} />
-              )}
+              ) : null}
+              {title ? (
+                <Text
+                  accessibilityRole="header"
+                  accessibilityLabel={title}
+                  style={[styles.title, fullScreen && styles.fullScreenTitle]}
+                >
+                  {title}
+                </Text>
+              ) : null}
+              <View style={styles.headerActions}>
+                {headerAccessory}
+                {!fullScreen ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${closeLabel} ${accessibleTitle}`}
+                    onPress={onClose}
+                    style={styles.closeButton}
+                  >
+                    <Text style={styles.closeButtonText}>{closeLabel}</Text>
+                  </Pressable>
+                ) : (
+                  <View style={styles.headerPlaceholder} />
+                )}
+              </View>
             </View>
-          </View>
+          ) : null}
           <View style={[styles.body, fullScreen && styles.fullScreenBody]}>{children}</View>
         </SafeAreaView>
       </KeyboardAvoidingView>
@@ -187,7 +214,7 @@ const createStyles = (theme: Theme) =>
       flex: 1,
       backgroundColor: theme.colors.background,
       paddingHorizontal: spacing.lg,
-      paddingTop: spacing.md,
+      paddingTop: spacing.xl,
       gap: spacing.lg,
     },
     fullScreenBody: {

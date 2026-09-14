@@ -4,6 +4,7 @@ import {
   Platform,
   ScrollView,
   ScrollViewProps,
+  StatusBar,
   StyleProp,
   StyleSheet,
   View,
@@ -53,14 +54,17 @@ export function AppScreen({
     );
 
   return (
-    <SafeAreaView testID={testID} edges={edges} style={[styles.safeArea, style]}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardContainer}
-      >
-        {content}
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+    <>
+      <StatusBar translucent backgroundColor="transparent" />
+      <SafeAreaView testID={testID} edges={edges} style={[styles.safeArea, style]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardContainer}
+        >
+          {content}
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </>
   );
 }
 

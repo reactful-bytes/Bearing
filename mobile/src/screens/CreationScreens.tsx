@@ -1,15 +1,13 @@
-import { useState } from 'react';
 import { Text } from 'react-native';
 
 import { AddEventModal } from '../components/calendar/AddEventModal';
 import { CreateGoalModal } from '../components/goals/CreateGoalModal';
 import { AddNoteModal } from '../components/notes/AddNoteModal';
-import { PremiumPaywallModal } from '../components/premium/PremiumPaywallModal';
 import { AddTaskModal } from '../components/tasks/AddTaskModal';
 import { AppScreen } from '../components/ui/AppScreen';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { useCreateNote, useNotes } from '../features/notes/useNotes';
-import { hasActivePremiumStatus, PremiumFeature } from '../features/premium/premiumAccess';
+import { hasActivePremiumStatus } from '../features/premium/premiumAccess';
 import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
 import { useGoals } from '../features/goals/useGoals';
 import { useTasks } from '../features/tasks/useTasks';
@@ -18,6 +16,7 @@ import {
   CalendarStackParamList,
   NotesStackParamList,
   PlanStackParamList,
+  RootStackParamList,
 } from '../navigation/navigationTypes';
 import {
   generateAiGoalPlanDraft,
@@ -27,7 +26,10 @@ import {
 type CreationNavigation = {
   canGoBack?: () => boolean;
   goBack?: () => void;
-  navigate?: (screen: string) => void;
+  navigate?: (
+    screen: string,
+    params?: Record<string, unknown> | RootStackParamList['PremiumPaywall'],
+  ) => void;
   replace?: (screen: string) => void;
 };
 
@@ -85,7 +87,6 @@ export function CreateGoalScreen({ navigation }: CreateGoalScreenProps) {
   const { authUser, isAnonymous } = useUserProfile();
   const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
   const { createGoal } = useGoals();
-  const [premiumPaywallFeature, setPremiumPaywallFeature] = useState<PremiumFeature | null>(null);
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
 
   return (
@@ -96,18 +97,15 @@ export function CreateGoalScreen({ navigation }: CreateGoalScreenProps) {
         onSave={createGoal}
         hasPremiumAccess={hasPremiumAccess}
         isPremiumStatusResolved={entitlementUiState === 'ready'}
-        onOpenPremiumPaywall={() => setPremiumPaywallFeature('ai_goal_builder')}
+        onOpenPremiumPaywall={() =>
+          navigation?.navigate?.('PremiumPaywall', {
+            feature: 'ai_goal_builder',
+            source: 'ai_goal_builder',
+          })
+        }
         onGenerateAiPlan={generateAiGoalPlanDraft}
         onLoadAiCreditStatus={getAiCreditStatus}
         creditPackUserId={!isAnonymous ? (authUser?.uid ?? null) : null}
-      />
-      <PremiumPaywallModal
-        visible={premiumPaywallFeature !== null}
-        feature={premiumPaywallFeature}
-        userId={authUser?.uid ?? null}
-        isAnonymous={isAnonymous}
-        hasPremiumAccess={hasPremiumAccess}
-        onClose={() => setPremiumPaywallFeature(null)}
       />
     </AppScreen>
   );
@@ -182,7 +180,6 @@ export function CreateGoalFromNoteScreen({ route, navigation }: NoteConversionPr
   const { authUser, isAnonymous } = useUserProfile();
   const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
   const { createGoal } = useGoals();
-  const [premiumPaywallFeature, setPremiumPaywallFeature] = useState<PremiumFeature | null>(null);
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
 
   if (!note) {
@@ -203,18 +200,15 @@ export function CreateGoalFromNoteScreen({ route, navigation }: NoteConversionPr
         onSave={createGoal}
         hasPremiumAccess={hasPremiumAccess}
         isPremiumStatusResolved={entitlementUiState === 'ready'}
-        onOpenPremiumPaywall={() => setPremiumPaywallFeature('ai_goal_builder')}
+        onOpenPremiumPaywall={() =>
+          navigation?.navigate?.('PremiumPaywall', {
+            feature: 'ai_goal_builder',
+            source: 'ai_goal_builder',
+          })
+        }
         onGenerateAiPlan={generateAiGoalPlanDraft}
         onLoadAiCreditStatus={getAiCreditStatus}
         creditPackUserId={!isAnonymous ? (authUser?.uid ?? null) : null}
-      />
-      <PremiumPaywallModal
-        visible={premiumPaywallFeature !== null}
-        feature={premiumPaywallFeature}
-        userId={authUser?.uid ?? null}
-        isAnonymous={isAnonymous}
-        hasPremiumAccess={hasPremiumAccess}
-        onClose={() => setPremiumPaywallFeature(null)}
       />
     </AppScreen>
   );

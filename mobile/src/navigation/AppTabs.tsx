@@ -1,7 +1,7 @@
-import { NavigationContainer, NavigationProp, useNavigation } from '@react-navigation/native';
+import { NavigationContainer, NavigationProp } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Animated,
   Platform,
@@ -36,6 +36,8 @@ import { FocusModeScreen } from '../screens/FocusModeScreen';
 import { NotesScreen } from '../screens/NotesScreen';
 import { PlanScreen } from '../screens/PlanScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { LegalDocumentScreen } from '../screens/LegalDocumentScreen';
+import { PremiumPaywallScreen } from '../screens/PremiumPaywallScreen';
 import type { ProfileNavigationTarget, ProfileSection } from '../screens/ProfileScreen';
 import { TasksScreen } from '../screens/TasksScreen';
 import { NoteEditorScreen } from '../screens/NoteEditorScreen';
@@ -45,6 +47,7 @@ import {
   NotesStackParamList,
   PlanStackParamList,
   ProfileStackParamList,
+  RootStackParamList,
 } from './navigationTypes';
 
 type AppTabsProps = {
@@ -57,6 +60,7 @@ const PlanStack = createNativeStackNavigator<PlanStackParamList>();
 const CalendarStack = createNativeStackNavigator<CalendarStackParamList>();
 const NotesStack = createNativeStackNavigator<NotesStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
+const RootStack = createNativeStackNavigator<RootStackParamList>();
 const DESKTOP_NAVIGATION_BREAKPOINT = 1024;
 export const DESKTOP_NAVIGATION_WIDTH = 152;
 
@@ -86,7 +90,7 @@ function TabIcon({
   dimmed: boolean;
 }) {
   const styles = useThemedStyles(createStyles);
-  const rotation = useRef(new Animated.Value(0)).current;
+  const [rotation] = useState(() => new Animated.Value(0));
   const iconColor = focused ? styles.activeIcon.color : styles.inactiveIcon.color;
 
   useEffect(() => {
@@ -175,14 +179,20 @@ function NotesNavigator() {
   );
 }
 
-function ProfileNavigator({ onPressSignOut, isSignOutPending }: AppTabsProps) {
+function ProfileNavigator({
+  onPressSignOut,
+  isSignOutPending,
+}: AppTabsProps) {
   function renderSection(section: ProfileSection) {
     return function ProfileSectionRoute({
       navigation,
     }: {
       navigation: {
         goBack: () => void;
-        navigate: (screen: ProfileNavigationTarget) => void;
+        navigate: (
+          screen: ProfileNavigationTarget,
+          params?: ProfileStackParamList[ProfileNavigationTarget],
+        ) => void;
       };
     }) {
       return (
@@ -191,7 +201,9 @@ function ProfileNavigator({ onPressSignOut, isSignOutPending }: AppTabsProps) {
           isSignOutPending={isSignOutPending}
           section={section}
           onPressBack={navigation.goBack}
-          navigation={{ navigate: (screen: ProfileNavigationTarget) => navigation.navigate(screen) }}
+          navigation={{
+            navigate: (screen, params) => navigation.navigate(screen, params),
+          }}
         />
       );
     };
@@ -205,7 +217,7 @@ function ProfileNavigator({ onPressSignOut, isSignOutPending }: AppTabsProps) {
             onPressSignOut={onPressSignOut}
             isSignOutPending={isSignOutPending}
             navigation={{
-              navigate: (screen: ProfileNavigationTarget) => navigation.navigate(screen),
+              navigate: (screen, params) => navigation.navigate(screen, params),
             }}
           />
         )}
@@ -226,13 +238,11 @@ function ProfileNavigator({ onPressSignOut, isSignOutPending }: AppTabsProps) {
       </ProfileStack.Screen>
       <ProfileStack.Screen name="CalendarExport">{renderSection('calendarExport')}</ProfileStack.Screen>
       <ProfileStack.Screen name="TipsWisdom">{renderSection('tipsWisdom')}</ProfileStack.Screen>
-      <ProfileStack.Screen name="PremiumAccess">{renderSection('premiumAccess')}</ProfileStack.Screen>
-      <ProfileStack.Screen name="PrivacyPolicy">{renderSection('privacyPolicy')}</ProfileStack.Screen>
-      <ProfileStack.Screen name="TermsOfService">
-        {renderSection('termsOfService')}
-      </ProfileStack.Screen>
+      <ProfileStack.Screen name="AiCredits">{renderSection('aiCredits')}</ProfileStack.Screen>
       <ProfileStack.Screen name="DataExport">{renderSection('dataExport')}</ProfileStack.Screen>
       <ProfileStack.Screen name="DeleteAccount">{renderSection('deleteAccount')}</ProfileStack.Screen>
+      <ProfileStack.Screen name="PremiumPaywall" component={PremiumPaywallScreen} />
+      <ProfileStack.Screen name="LegalDocument" component={LegalDocumentScreen} />
     </ProfileStack.Navigator>
   );
 }
@@ -251,16 +261,25 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
 
   return (
     <NavigationContainer>
-      <AppTabsNavigator
-        createVisible={createVisible}
-        insets={insets}
-        isDesktopNavigation={isDesktopNavigation}
-        isSignOutPending={isSignOutPending}
-        onPressSignOut={onPressSignOut}
-        setCreateVisible={setCreateVisible}
-        styles={styles}
-        theme={theme}
-      />
+      <RootStack.Navigator screenOptions={{ headerShown: false }}>
+        <RootStack.Screen name="AppTabs">
+          {({ navigation }) => (
+            <AppTabsNavigator
+              createVisible={createVisible}
+              insets={insets}
+              isDesktopNavigation={isDesktopNavigation}
+              isSignOutPending={isSignOutPending}
+              onPressSignOut={onPressSignOut}
+              setCreateVisible={setCreateVisible}
+              styles={styles}
+              theme={theme}
+              rootNavigation={navigation}
+            />
+          )}
+        </RootStack.Screen>
+        <RootStack.Screen name="PremiumPaywall" component={PremiumPaywallScreen} />
+        <RootStack.Screen name="LegalDocument" component={LegalDocumentScreen} />
+      </RootStack.Navigator>
     </NavigationContainer>
   );
 }
@@ -274,6 +293,7 @@ function AppTabsNavigator({
   setCreateVisible,
   styles,
   theme,
+  rootNavigation,
 }: AppTabsProps & {
   createVisible: boolean;
   insets: ReturnType<typeof useSafeAreaInsets>;
@@ -281,22 +301,24 @@ function AppTabsNavigator({
   setCreateVisible: (visible: boolean) => void;
   styles: ReturnType<typeof createStyles>;
   theme: ReturnType<typeof useTheme>['theme'];
+  rootNavigation: NavigationProp<RootStackParamList>;
 }) {
-  const navigation = useNavigation<NavigationProp<AppTabParamList>>();
-
   function navigateToCreate(action: 'goal' | 'task' | 'note' | 'event' | 'focus'): void {
     setCreateVisible(false);
 
     if (action === 'goal') {
-      navigation.navigate('Plan', { screen: 'CreateGoal' });
+      rootNavigation.navigate('AppTabs', { screen: 'Plan', params: { screen: 'CreateGoal' } });
     } else if (action === 'task') {
-      navigation.navigate('Plan', { screen: 'CreateTask' });
+      rootNavigation.navigate('AppTabs', { screen: 'Plan', params: { screen: 'CreateTask' } });
     } else if (action === 'note') {
-      navigation.navigate('Notes', { screen: 'NoteEditor' });
+      rootNavigation.navigate('AppTabs', { screen: 'Notes', params: { screen: 'NoteEditor' } });
     } else if (action === 'focus') {
-      navigation.navigate('Plan', { screen: 'FocusMode' });
+      rootNavigation.navigate('AppTabs', { screen: 'Plan', params: { screen: 'FocusMode' } });
     } else {
-      navigation.navigate('Calendar', { screen: 'CreateEvent' });
+      rootNavigation.navigate('AppTabs', {
+        screen: 'Calendar',
+        params: { screen: 'CreateEvent' },
+      });
     }
   }
 
@@ -377,7 +399,10 @@ function AppTabsNavigator({
         <Tab.Screen name="Notes" component={NotesNavigator} />
         <Tab.Screen name="Profile">
           {() => (
-            <ProfileNavigator onPressSignOut={onPressSignOut} isSignOutPending={isSignOutPending} />
+            <ProfileNavigator
+              onPressSignOut={onPressSignOut}
+              isSignOutPending={isSignOutPending}
+            />
           )}
         </Tab.Screen>
       </Tab.Navigator>

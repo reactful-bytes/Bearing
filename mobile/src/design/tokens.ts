@@ -84,6 +84,7 @@ type ThemeColors = {
   surface: string;
   surfaceMuted: string;
   surfaceBrand: string;
+  surfacePurple: string;
   surfaceRaised: string;
   surfacePressed: string;
   elevated: string;
@@ -112,6 +113,7 @@ const darkColors: ThemeColors = {
   surface: '#111F35',
   surfaceMuted: '#1E293B',
   surfaceBrand: '#172B4D',
+  surfacePurple: '#241B3B',
   surfaceRaised: '#16233D',
   surfacePressed: '#0C1B30',
   elevated: '#1E293B',
@@ -140,6 +142,7 @@ const lightColors: ThemeColors = {
   surface: '#FCFEFF',
   surfaceMuted: '#E4EEF3',
   surfaceBrand: '#D7E6ED',
+  surfacePurple: '#F1E8FC',
   surfaceRaised: '#FFFFFF',
   surfacePressed: '#DCE8ED',
   elevated: '#FFFFFF',

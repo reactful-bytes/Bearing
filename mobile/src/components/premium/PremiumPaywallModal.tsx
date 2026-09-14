@@ -6,14 +6,14 @@ import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppCard } from '../ui/AppCard';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
+import { IconButton } from '../ui/IconButton';
 import { radii, spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
 import { PremiumFeature, getPremiumPaywallCopy } from '../../features/premium/premiumAccess';
 import { usePremiumPurchase } from '../../features/premium/usePremiumPurchase';
 import { PremiumPlan } from '../../features/premium/purchaseTypes';
 import { recordTelemetryEvent } from '../../services/telemetry/telemetry';
-import { LEGAL_DOCUMENTS, LegalDocumentId } from '../../features/profile/legalDocuments';
-import { LegalDocumentModal } from '../profile/LegalDocumentModal';
+import { LegalDocumentId } from '../../features/profile/legalDocuments';
 
 type PremiumPaywallModalProps = {
   visible: boolean;
@@ -23,7 +23,8 @@ type PremiumPaywallModalProps = {
   hasPremiumAccess: boolean;
   onClose: () => void;
   fullScreen?: boolean;
-  embedded?: boolean;
+  screenPresentation?: boolean;
+  onOpenLegalDocument: (documentId: LegalDocumentId) => void;
 };
 
 function getBrandedPlanName(plan: PremiumPlan): string {
@@ -38,11 +39,11 @@ export function PremiumPaywallModal({
   hasPremiumAccess,
   onClose,
   fullScreen = false,
-  embedded = false,
+  screenPresentation = false,
+  onOpenLegalDocument,
 }: PremiumPaywallModalProps) {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const [legalDocumentId, setLegalDocumentId] = useState<LegalDocumentId | null>(null);
   const [selectedPackageIdentifier, setSelectedPackageIdentifier] = useState<string | null>(null);
   const [confirmationPlan, setConfirmationPlan] = useState<PremiumPlan | null>(null);
   const [transactionPlan, setTransactionPlan] = useState<PremiumPlan | null>(null);
@@ -65,7 +66,7 @@ export function PremiumPaywallModal({
     return null;
   }
 
-  const copy = getPremiumPaywallCopy(feature);
+  const copy = getPremiumPaywallCopy();
   const hasAutoRenewingPlans = purchase.plans.some((plan) => plan.isAutoRenewing);
   const hasOneTimePurchasePlans = purchase.plans.some((plan) => plan.isOneTimePurchase);
   const selectedPlan =
@@ -101,7 +102,15 @@ export function PremiumPaywallModal({
             </View>
 
             <AppCard style={styles.highlightsCard}>
-              <Text style={styles.sectionTitle}>Included with Bearing 360</Text>
+              <View style={styles.aiCardHeading}>
+                <View style={styles.aiIcon}>
+                  <Text style={styles.aiIconText}>AI</Text>
+                </View>
+                <View style={styles.aiCardHeadingCopy}>
+                  <Text style={styles.aiCardEyebrow}>AI PLANNING</Text>
+                  <Text style={styles.sectionTitle}>Turn goals into a plan</Text>
+                </View>
+              </View>
               <View style={styles.highlightList}>
                 {copy.highlights.map((highlight) => (
                   <View key={highlight} style={styles.highlightRow}>
@@ -112,85 +121,115 @@ export function PremiumPaywallModal({
               </View>
             </AppCard>
 
-            {purchase.loading ? <Text style={styles.planMeta}>Loading store plans...</Text> : null}
-
-            <View style={styles.planColumn}>
-              {purchase.plans.map((plan) => {
-                const isSelected = plan.packageIdentifier === selectedPackageIdentifier;
-                return (
-                  <Pressable
-                    key={plan.packageIdentifier}
-                    accessibilityRole="radio"
-                    accessibilityLabel={`Select ${getBrandedPlanName(plan)} plan`}
-                    accessibilityState={{
-                      selected: isSelected,
-                      disabled: purchase.pendingAction !== null,
-                    }}
-                    disabled={purchase.pendingAction !== null}
-                    onPress={() => setSelectedPackageIdentifier(plan.packageIdentifier)}
-                    style={({ pressed }) => [
-                      styles.planCard,
-                      isSelected && styles.planCardSelected,
-                      pressed && purchase.pendingAction === null && styles.planCardPressed,
-                    ]}
-                  >
-                    <View style={styles.planHeader}>
-                      <View style={styles.planDetails}>
-                        <View style={styles.planTitleRow}>
-                          <View
-                            style={[
-                              styles.selectionIndicator,
-                              isSelected && styles.selectionIndicatorSelected,
-                            ]}
-                          >
-                            {isSelected ? <View style={styles.selectionIndicatorFill} /> : null}
+            <View style={styles.divider} />
+            <View style={styles.section}>
+              <Text style={styles.sectionEyebrow}>CHOOSE YOUR PLAN</Text>
+              {purchase.loading ? (
+                <View style={styles.planColumn} accessibilityLabel="Loading subscription plans">
+                  <View style={styles.skeletonPlanCard}>
+                    <View style={styles.skeletonPlanCopy}>
+                      <View style={styles.skeletonPlanTitle} />
+                      <View style={styles.skeletonPlanMeta} />
+                    </View>
+                    <View style={styles.skeletonPlanPrice} />
+                  </View>
+                  <View style={styles.skeletonPlanCard}>
+                    <View style={styles.skeletonPlanCopy}>
+                      <View style={styles.skeletonPlanTitle} />
+                      <View style={styles.skeletonPlanMeta} />
+                    </View>
+                    <View style={styles.skeletonPlanPrice} />
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.planColumn}>
+                  {purchase.plans.map((plan) => {
+                    const isSelected = plan.packageIdentifier === selectedPackageIdentifier;
+                    return (
+                      <Pressable
+                        key={plan.packageIdentifier}
+                        accessibilityRole="radio"
+                        accessibilityLabel={`Select ${getBrandedPlanName(plan)} plan`}
+                        accessibilityState={{
+                          selected: isSelected,
+                          disabled: purchase.pendingAction !== null,
+                        }}
+                        disabled={purchase.pendingAction !== null}
+                        onPress={() => setSelectedPackageIdentifier(plan.packageIdentifier)}
+                        style={({ pressed }) => [
+                          styles.planCard,
+                          isSelected && styles.planCardSelected,
+                          pressed && purchase.pendingAction === null && styles.planCardPressed,
+                        ]}
+                      >
+                        <View style={styles.planHeader}>
+                          <View style={styles.planDetails}>
+                            <View style={styles.planTitleRow}>
+                              <View
+                                style={[
+                                  styles.selectionIndicator,
+                                  isSelected && styles.selectionIndicatorSelected,
+                                ]}
+                              >
+                                {isSelected ? <View style={styles.selectionIndicatorFill} /> : null}
+                              </View>
+                              <Text style={styles.planName}>{plan.title}</Text>
+                            </View>
+                            {plan.annualMonthlyBreakdownText ? (
+                              <Text style={styles.planSummary}>
+                                {plan.annualMonthlyBreakdownText}
+                              </Text>
+                            ) : null}
+                            {plan.introductoryOfferText ? (
+                              <View style={styles.planOfferBadge}>
+                                <Text style={styles.planIntroductoryOffer}>
+                                  {plan.introductoryOfferText}
+                                </Text>
+                              </View>
+                            ) : null}
+                            {plan.creditAmount !== null ? (
+                              <Text style={styles.planMeta}>
+                                Includes {plan.creditAmount} AI planning{' '}
+                                {plan.creditAmount === 1 ? 'credit' : 'credits'} per grant
+                              </Text>
+                            ) : null}
+                            {plan.trialCreditAmount !== null ? (
+                              <Text style={styles.planMeta}>
+                                Trial includes {plan.trialCreditAmount} AI planning{' '}
+                                {plan.trialCreditAmount === 1 ? 'credit' : 'credits'}
+                              </Text>
+                            ) : null}
                           </View>
-                          <Text style={styles.planName}>{plan.title}</Text>
-                        </View>
-                        {plan.annualMonthlyBreakdownText ? (
-                          <Text style={styles.planSummary}>{plan.annualMonthlyBreakdownText}</Text>
-                        ) : null}
-                        {plan.introductoryOfferText ? (
-                          <View style={styles.planOfferBadge}>
-                            <Text style={styles.planIntroductoryOffer}>
-                              {plan.introductoryOfferText}
+                          <View style={styles.planPriceBlock}>
+                            <Text style={styles.planPrice}>
+                              {plan.priceText}
+                              {plan.priceSuffixText}
                             </Text>
                           </View>
-                        ) : null}
-                        {plan.creditAmount !== null ? (
-                          <Text style={styles.planMeta}>
-                            Includes {plan.creditAmount} AI planning{' '}
-                            {plan.creditAmount === 1 ? 'credit' : 'credits'} per grant
-                          </Text>
-                        ) : null}
-                        {plan.trialCreditAmount !== null ? (
-                          <Text style={styles.planMeta}>
-                            Trial includes {plan.trialCreditAmount} AI planning{' '}
-                            {plan.trialCreditAmount === 1 ? 'credit' : 'credits'}
-                          </Text>
-                        ) : null}
-                      </View>
-                      <View style={styles.planPriceBlock}>
-                        <Text style={styles.planPrice}>
-                          {plan.priceText}
-                          {plan.priceSuffixText}
-                        </Text>
-                      </View>
-                    </View>
-                  </Pressable>
-                );
-              })}
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
+              <AppButton
+                label="Continue"
+                accessibilityLabel={
+                  selectedPlan
+                    ? `Continue with ${getBrandedPlanName(selectedPlan)} plan`
+                    : 'Select a plan'
+                }
+                onPress={() => selectedPlan && setConfirmationPlan(selectedPlan)}
+                disabled={isPurchaseDisabled}
+                style={styles.primaryAction}
+              />
             </View>
 
             <AppButton
-              label="Continue"
-              accessibilityLabel={
-                selectedPlan
-                  ? `Continue with ${getBrandedPlanName(selectedPlan)} plan`
-                  : 'Select a plan'
-              }
-              onPress={() => selectedPlan && setConfirmationPlan(selectedPlan)}
-              disabled={isPurchaseDisabled}
+              label="Continue on Free Plan"
+              variant="secondary"
+              accessibilityLabel="Close Bearing 360 plans"
+              onPress={onClose}
             />
 
             {purchase.availability !== 'available' && !isAnonymous ? (
@@ -212,17 +251,24 @@ export function PremiumPaywallModal({
 
             {purchase.error ? <Text style={styles.errorText}>{purchase.error}</Text> : null}
 
-            <AppButton
-              label="Restore Purchases"
-              variant="secondary"
-              accessibilityLabel="Restore Bearing 360 purchases"
-              onPress={() => void purchase.restore()}
-              loading={purchase.pendingAction === 'restore'}
-              loadingLabel="Restoring..."
-              disabled={
-                isAnonymous || purchase.availability !== 'available' || purchase.awaitingActivation
-              }
-            />
+            <View style={styles.divider} />
+            <View style={styles.secondarySection}>
+              <Text style={styles.sectionEyebrow}>ALREADY PURCHASED?</Text>
+              <Text style={styles.secondaryDescription}>
+                Restore access from an Apple or Google account already linked to Bearing 360.
+              </Text>
+              <AppButton
+                label="Restore Purchases"
+                variant="secondary"
+                accessibilityLabel="Restore Bearing 360 purchases"
+                onPress={() => void purchase.restore()}
+                loading={purchase.pendingAction === 'restore'}
+                loadingLabel="Restoring..."
+                disabled={
+                  isAnonymous || purchase.availability !== 'available' || purchase.awaitingActivation
+                }
+              />
+            </View>
 
             {hasAutoRenewingPlans || hasOneTimePurchasePlans ? (
               <Text style={styles.footnote}>
@@ -236,53 +282,48 @@ export function PremiumPaywallModal({
               </Text>
             ) : null}
 
-            <View style={styles.legalActions}>
-              <AppButton
-                label="Privacy Policy"
-                variant="secondary"
-                accessibilityLabel="Open Privacy Policy"
-                onPress={() => setLegalDocumentId('privacy')}
-              />
-              <AppButton
-                label="Terms of Service"
-                variant="secondary"
-                accessibilityLabel="Open Terms of Service"
-                onPress={() => setLegalDocumentId('terms')}
-              />
+            <View style={styles.divider} />
+            <View style={styles.secondarySection}>
+              <Text style={styles.sectionEyebrow}>MORE INFORMATION</Text>
+              <View style={styles.legalActions}>
+                <AppButton
+                  label="Privacy Policy"
+                  variant="secondary"
+                  accessibilityLabel="Open Privacy Policy"
+                  onPress={() =>
+                    onOpenLegalDocument('privacy')
+                  }
+                  style={styles.legalAction}
+                />
+                <AppButton
+                  label="Terms of Service"
+                  variant="secondary"
+                  accessibilityLabel="Open Terms of Service"
+                  onPress={() =>
+                    onOpenLegalDocument('terms')
+                  }
+                  style={styles.legalAction}
+                />
+              </View>
             </View>
-
-            <AppButton
-              label="Continue on Free Plan"
-              accessibilityLabel="Close Bearing 360 plans"
-              onPress={onClose}
-            />
           </>
     </ScrollView>
   );
 
   return (
     <>
-      {embedded ? (
+      {screenPresentation ? (
         paywallContent
       ) : (
         <AppModal
-          visible={
-            visible &&
-            legalDocumentId === null &&
-            confirmationPlan === null &&
-            transactionPlan === null
-          }
-          title="Bearing 360"
+          visible={visible && confirmationPlan === null && transactionPlan === null}
           onClose={onClose}
           fullScreen={fullScreen}
+          hideHeader={fullScreen}
         >
           {paywallContent}
         </AppModal>
       )}
-      <LegalDocumentModal
-        document={legalDocumentId ? LEGAL_DOCUMENTS[legalDocumentId] : null}
-        onClose={() => setLegalDocumentId(null)}
-      />
       <AppModal
         visible={confirmationPlan !== null || transactionPlan !== null}
         title={
@@ -293,6 +334,7 @@ export function PremiumPaywallModal({
             : 'Confirm Bearing 360'
         }
         closeLabel={transactionPlan ? 'Close' : 'Back'}
+        fullScreen={fullScreen}
         onClose={() => {
           if (transactionPlan) {
             if (!isPurchaseInProgress) setTransactionPlan(null);
@@ -308,9 +350,7 @@ export function PremiumPaywallModal({
               <View style={styles.confirmationPlanDetails}>
                 <Text style={styles.confirmationPlanTitle}>{confirmationPlan.title}</Text>
                 {confirmationPlan.annualMonthlyBreakdownText ? (
-                  <Text style={styles.planSummary}>
-                    {confirmationPlan.annualMonthlyBreakdownText}
-                  </Text>
+                  <Text style={styles.planSummary}>{confirmationPlan.annualMonthlyBreakdownText}</Text>
                 ) : null}
                 {confirmationPlan.introductoryOfferText ? (
                   <Text style={styles.planMeta}>{confirmationPlan.introductoryOfferText}</Text>
@@ -335,6 +375,7 @@ export function PremiumPaywallModal({
               loading={purchase.pendingAction === confirmationPlan.packageIdentifier}
               loadingLabel="Opening store..."
               disabled={purchase.pendingAction !== null || purchase.awaitingActivation}
+              style={styles.primaryAction}
             />
             <AppButton
               label="Choose Another Plan"
@@ -362,7 +403,7 @@ export function PremiumPaywallModal({
                 <View style={styles.progressIndicator}>
                   <ActivityIndicator
                     accessibilityLabel="Activating Bearing 360 purchase"
-                    color={theme.colors.brand}
+                    color={theme.colors.purple}
                     size="large"
                   />
                 </View>
@@ -401,12 +442,10 @@ export function PremiumPaywallModal({
                     purchase.error ? 'Choose another Bearing 360 plan' : 'Close Bearing 360'
                   }
                   onPress={() => {
-                    if (purchase.error) {
-                      setTransactionPlan(null);
-                    } else {
-                      onClose();
-                    }
+                    if (purchase.error) setTransactionPlan(null);
+                    else onClose();
                   }}
+                  style={[styles.primaryAction, styles.purchaseStateButton]}
                 />
               </View>
             ) : null}
@@ -421,7 +460,9 @@ const createStyles = (theme: Theme) =>
   StyleSheet.create({
     content: {
       gap: spacing.md,
-      paddingBottom: spacing['3xl'],
+    },
+    routeHeader: {
+      gap: spacing.sm,
     },
     heroBlock: {
       gap: spacing.sm,
@@ -431,7 +472,7 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.brand,
     },
     headline: {
-      ...typography.screenTitle,
+      ...typography.sectionTitle,
       color: theme.colors.text,
     },
     body: {
@@ -440,10 +481,53 @@ const createStyles = (theme: Theme) =>
     },
     highlightsCard: {
       gap: spacing.md,
+      borderColor: theme.colors.purple,
+      backgroundColor: theme.colors.surfacePurple,
+    },
+    aiCardHeading: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    aiIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.purple,
+    },
+    aiIconText: {
+      ...typography.label,
+      color: theme.colors.onBrand,
+      letterSpacing: 0,
+    },
+    aiCardHeadingCopy: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    aiCardEyebrow: {
+      ...typography.label,
+      color: theme.colors.brand,
     },
     sectionTitle: {
-      ...typography.button,
+      ...typography.cardTitle,
       color: theme.colors.text,
+    },
+    section: {
+      gap: spacing.md,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: theme.colors.border,
+      marginVertical: spacing.sm,
+    },
+    sectionEyebrow: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+    },
+    primaryAction: {
+      backgroundColor: theme.colors.purple,
     },
     highlightList: {
       gap: spacing.md,
@@ -457,7 +541,7 @@ const createStyles = (theme: Theme) =>
       width: 8,
       height: 8,
       borderRadius: 4,
-      backgroundColor: theme.colors.brand,
+      backgroundColor: theme.colors.textPrimary,
       marginTop: 8,
     },
     highlightText: {
@@ -477,11 +561,45 @@ const createStyles = (theme: Theme) =>
       padding: spacing.md,
     },
     planCardSelected: {
-      borderColor: theme.colors.brand,
+      borderColor: theme.colors.purple,
       backgroundColor: theme.colors.surfaceBrand,
     },
     planCardPressed: {
       opacity: 0.88,
+    },
+    skeletonPlanCard: {
+      minHeight: 96,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surfaceMuted,
+      padding: spacing.md,
+    },
+    skeletonPlanCopy: {
+      flex: 1,
+      gap: spacing.sm,
+    },
+    skeletonPlanTitle: {
+      width: '62%',
+      height: 18,
+      borderRadius: radii.sm,
+      backgroundColor: theme.colors.borderStrong,
+    },
+    skeletonPlanMeta: {
+      width: '42%',
+      height: 14,
+      borderRadius: radii.sm,
+      backgroundColor: theme.colors.borderStrong,
+    },
+    skeletonPlanPrice: {
+      width: '22%',
+      height: 18,
+      borderRadius: radii.sm,
+      backgroundColor: theme.colors.borderStrong,
     },
     planHeader: {
       flexDirection: 'row',
@@ -504,13 +622,13 @@ const createStyles = (theme: Theme) =>
       justifyContent: 'center',
     },
     selectionIndicatorSelected: {
-      borderColor: theme.colors.brand,
+      borderColor: theme.colors.purple,
     },
     selectionIndicatorFill: {
       width: 8,
       height: 8,
       borderRadius: 4,
-      backgroundColor: theme.colors.brand,
+      backgroundColor: theme.colors.purple,
     },
     planDetails: {
       flex: 1,
@@ -531,7 +649,7 @@ const createStyles = (theme: Theme) =>
     },
     planPrice: {
       ...typography.button,
-      color: theme.colors.brand,
+      color: theme.colors.purple,
       textAlign: 'right',
     },
     planIntroductoryOffer: {
@@ -557,6 +675,18 @@ const createStyles = (theme: Theme) =>
     },
     legalActions: {
       gap: spacing.sm,
+      flexDirection: 'row',
+    },
+    legalAction: {
+      flex: 1,
+      paddingHorizontal: spacing.sm,
+    },
+    secondarySection: {
+      gap: spacing.sm,
+    },
+    secondaryDescription: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
     },
     accountNote: {
       ...typography.helper,
@@ -571,13 +701,18 @@ const createStyles = (theme: Theme) =>
       alignItems: 'center',
       gap: spacing.sm,
     },
+    purchaseStateButton: {
+      alignSelf: 'stretch',
+    },
     transactionContent: {
       gap: spacing.md,
     },
     transactionPlan: {
       gap: spacing.xs,
       borderRadius: radii.md,
-      backgroundColor: theme.colors.surfaceMuted,
+      backgroundColor: theme.colors.surfacePurple,
+      borderWidth: 1,
+      borderColor: theme.colors.purple,
       padding: spacing.md,
     },
     transactionPlanLabel: {
@@ -597,7 +732,7 @@ const createStyles = (theme: Theme) =>
     },
     transactionPlanPrice: {
       ...typography.button,
-      color: theme.colors.brand,
+      color: theme.colors.purple,
     },
     progressIndicator: {
       width: 56,
@@ -605,7 +740,7 @@ const createStyles = (theme: Theme) =>
       borderRadius: 28,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: theme.colors.surfaceBrand,
+      backgroundColor: theme.colors.surfacePurple,
     },
     resultMark: {
       width: 56,
@@ -615,14 +750,14 @@ const createStyles = (theme: Theme) =>
       justifyContent: 'center',
     },
     resultMarkSuccess: {
-      backgroundColor: theme.colors.surfaceBrand,
+      backgroundColor: theme.colors.surfacePurple,
     },
     resultMarkFailure: {
       backgroundColor: theme.colors.surfaceMuted,
     },
     resultMarkText: {
       ...typography.title,
-      color: theme.colors.brand,
+      color: theme.colors.purple,
     },
     purchaseStateTitle: {
       ...typography.button,
@@ -646,7 +781,9 @@ const createStyles = (theme: Theme) =>
       justifyContent: 'space-between',
       gap: spacing.md,
       borderRadius: radii.md,
-      backgroundColor: theme.colors.surfaceMuted,
+      backgroundColor: theme.colors.surfacePurple,
+      borderWidth: 1,
+      borderColor: theme.colors.purple,
       padding: spacing.lg,
     },
     confirmationPlanDetails: {
@@ -660,7 +797,7 @@ const createStyles = (theme: Theme) =>
     },
     confirmationPlanPrice: {
       ...typography.button,
-      color: theme.colors.brand,
+      color: theme.colors.purple,
       textAlign: 'right',
     },
     confirmationTerms: {

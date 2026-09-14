@@ -124,6 +124,9 @@ export type CalendarScreenProps = {
         | { goalId?: string; stepId?: string; returnTo?: string }
         | undefined,
     ) => void;
+    getParent?: () => {
+      navigate?: (route: 'Plan', params: AppTabParamList['Plan']) => void;
+    } | undefined;
   };
 };
 
@@ -252,8 +255,9 @@ export function CalendarScreen({
       return;
     }
 
-    if (navigation?.navigate) {
-      navigation.navigate('Plan', {
+    const tabNavigation = navigation?.getParent?.();
+    if (tabNavigation?.navigate) {
+      tabNavigation.navigate('Plan', {
         screen: 'FocusMode',
         params: {
           eventId: focusLaunch.eventId,
@@ -264,7 +268,7 @@ export function CalendarScreen({
           timezone: focusLaunch.timezone,
         },
       });
-      navigation.setParams?.({ focusLaunch: undefined });
+      navigation?.setParams?.({ focusLaunch: undefined });
       return;
     }
 

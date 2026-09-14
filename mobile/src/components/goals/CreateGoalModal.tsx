@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../../design/ThemeProvider';
 import { useThemedStyles } from '../../design/useThemedStyles';
@@ -137,6 +138,7 @@ export function CreateGoalModal({
 }: CreateGoalModalProps) {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const today = useMemo(() => new Date(), []);
   const [wizardIndex, setWizardIndex] = useState(0);
   const [title, setTitle] = useState(initialTitle);
@@ -497,7 +499,9 @@ export function CreateGoalModal({
         onClose={handleClose}
         fullScreen
       >
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: spacing['3xl'] + insets.bottom }]}
+        >
           <Text style={[styles.stepLabel, styles.stepLabelCentered]}>{wizardLabel}</Text>
           <View accessibilityLabel={wizardLabel} style={styles.progressDots}>
             {WIZARD_TITLES.map((_, index) => (

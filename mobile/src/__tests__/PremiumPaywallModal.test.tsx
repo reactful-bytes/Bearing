@@ -64,6 +64,7 @@ describe('PremiumPaywallModal', () => {
         isAnonymous={false}
         hasPremiumAccess={false}
         onClose={jest.fn()}
+        onOpenLegalDocument={jest.fn()}
       />,
     );
 
@@ -98,6 +99,38 @@ describe('PremiumPaywallModal', () => {
     expect(purchasePlan).toHaveBeenCalledWith(annualPlan);
   });
 
+  it('shows legal documents full screen when the paywall is full screen', () => {
+    jest.mocked(usePremiumPurchase).mockReturnValue({
+      availability: 'available',
+      plans: [monthlyPlan],
+      loading: false,
+      pendingAction: null,
+      awaitingActivation: false,
+      error: null,
+      feedback: null,
+      purchase: jest.fn(async () => undefined),
+      restore: jest.fn(async () => undefined),
+    });
+
+    const onOpenLegalDocument = jest.fn();
+    render(
+      <PremiumPaywallModal
+        visible
+        feature="ai_goal_builder"
+        userId="user-1"
+        isAnonymous={false}
+        hasPremiumAccess={false}
+        fullScreen
+        onClose={jest.fn()}
+        onOpenLegalDocument={onOpenLegalDocument}
+      />,
+    );
+
+    fireEvent.press(screen.getByRole('button', { name: 'Open Privacy Policy' }));
+
+    expect(onOpenLegalDocument).toHaveBeenCalledWith('privacy');
+  });
+
   it('uses a compact transaction modal and closes the paywall after a named purchase result', () => {
     jest.mocked(usePremiumPurchase).mockReturnValue({
       availability: 'available',
@@ -120,6 +153,7 @@ describe('PremiumPaywallModal', () => {
         isAnonymous={false}
         hasPremiumAccess={false}
         onClose={onClose}
+        onOpenLegalDocument={jest.fn()}
       />,
     );
 
@@ -147,6 +181,7 @@ describe('PremiumPaywallModal', () => {
         isAnonymous={false}
         hasPremiumAccess={false}
         onClose={jest.fn()}
+        onOpenLegalDocument={jest.fn()}
       />,
     );
 
@@ -174,6 +209,7 @@ describe('PremiumPaywallModal', () => {
         isAnonymous={false}
         hasPremiumAccess
         onClose={onClose}
+        onOpenLegalDocument={jest.fn()}
       />,
     );
 
@@ -204,6 +240,7 @@ describe('PremiumPaywallModal', () => {
         isAnonymous={false}
         hasPremiumAccess={false}
         onClose={jest.fn()}
+        onOpenLegalDocument={jest.fn()}
       />,
     );
 
@@ -231,6 +268,7 @@ describe('PremiumPaywallModal', () => {
         isAnonymous={false}
         hasPremiumAccess={false}
         onClose={jest.fn()}
+        onOpenLegalDocument={jest.fn()}
       />,
     );
 
@@ -259,6 +297,7 @@ describe('PremiumPaywallModal', () => {
         isAnonymous={false}
         hasPremiumAccess={false}
         onClose={jest.fn()}
+        onOpenLegalDocument={jest.fn()}
       />,
     );
 
@@ -294,6 +333,7 @@ describe('PremiumPaywallModal', () => {
         isAnonymous={false}
         hasPremiumAccess={false}
         onClose={jest.fn()}
+        onOpenLegalDocument={jest.fn()}
       />,
     );
 

@@ -245,7 +245,8 @@ describe('GoalsScreen', () => {
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
-    render(<GoalsScreen />);
+    const navigate = jest.fn();
+    render(<GoalsScreen navigation={{ navigate }} />);
     fireEvent.press(screen.getByRole('button', { name: 'Try Again' }));
 
     expect(retry).toHaveBeenCalledTimes(1);
@@ -270,12 +271,11 @@ describe('GoalsScreen', () => {
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
-
     render(<GoalsScreen />);
 
     expect(screen.getByText('No active goals.')).toBeTruthy();
     expect(screen.getByText('New Goal')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Active, 0', selected: true })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Current, 0', selected: true })).toBeTruthy();
   });
 
   it('filters goals with counts, selected state, and filter-specific empty copy', () => {
@@ -306,14 +306,13 @@ describe('GoalsScreen', () => {
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
-
     render(<GoalsScreen />);
 
     expect(screen.getByText('Run a 10k')).toBeTruthy();
     expect(screen.queryByText('Read twelve books')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Active, 1', selected: true })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Current, 1', selected: true })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Completed, 1', selected: false })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'All, 2', selected: false })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Archived, 0', selected: false })).toBeTruthy();
     expect(screen.getByText('Next: Buy running shoes')).toBeTruthy();
     expect(screen.getByText('0 of 1 steps completed')).toBeTruthy();
     expect(screen.getByLabelText('Goal progress Run a 10k').props.accessibilityValue).toEqual({
@@ -329,10 +328,10 @@ describe('GoalsScreen', () => {
     expect(screen.queryByText('Run a 10k')).toBeNull();
     expect(screen.getByRole('button', { name: 'Completed, 1', selected: true })).toBeTruthy();
 
-    fireEvent.press(screen.getByRole('button', { name: 'All, 2' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Archived, 0' }));
 
-    expect(screen.getByText('Run a 10k')).toBeTruthy();
-    expect(screen.getByText('Read twelve books')).toBeTruthy();
+    expect(screen.queryByText('Run a 10k')).toBeNull();
+    expect(screen.queryByText('Read twelve books')).toBeNull();
   });
 
   it('shows completed-filter empty copy', () => {
@@ -354,8 +353,9 @@ describe('GoalsScreen', () => {
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
+    const navigate = jest.fn();
 
-    render(<GoalsScreen />);
+    render(<GoalsScreen navigation={{ navigate }} />);
     fireEvent.press(screen.getByRole('button', { name: 'Completed, 0' }));
 
     expect(screen.getByText('No completed goals.')).toBeTruthy();
@@ -485,8 +485,9 @@ describe('GoalsScreen', () => {
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
+    const navigate = jest.fn();
 
-    render(<GoalsScreen />);
+    render(<GoalsScreen navigation={{ navigate }} />);
 
     fireEvent.press(screen.getByText('New Goal'));
     fireEvent.press(screen.getByLabelText('Continue'));
@@ -501,9 +502,35 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.press(screen.getByLabelText('View Bearing 360 plans for AI goal builder'));
 
-    expect(screen.getByText('Bearing 360')).toBeTruthy();
-    expect(screen.getByText('Unlock AI goal planning.')).toBeTruthy();
-    expect(screen.getByText('Continue on Free Plan')).toBeTruthy();
+    expect(navigate).toHaveBeenCalledWith('PremiumPaywall', {
+      feature: 'ai_goal_builder',
+      source: 'ai_goal_builder',
+    });
+  });
+
+  it('does not own paywall legal documents locally', () => {
+    mockEmptyGoals();
+    const navigate = jest.fn();
+
+    render(<GoalsScreen navigation={{ navigate }} />);
+
+    fireEvent.press(screen.getByText('New Goal'));
+    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
+    fireEvent.changeText(
+      screen.getByLabelText('Planning context'),
+      'Train consistently for eight weeks.',
+    );
+    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Open goal target year dropdown'));
+    fireEvent.press(screen.getByLabelText('Select goal target year 2027'));
+    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('View Bearing 360 plans for AI goal builder'));
+
+    expect(navigate).toHaveBeenCalledWith('PremiumPaywall', {
+      feature: 'ai_goal_builder',
+      source: 'ai_goal_builder',
+    });
   });
 
   it('shows clear progress while generating an AI draft', async () => {
@@ -1206,6 +1233,9 @@ describe('GoalsScreen', () => {
   });
 
   it('edits a step with the wizard-style date picker', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 6, 20, 9, 0, 0));
+
     const updateStepMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
     const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
@@ -1250,5 +1280,7 @@ describe('GoalsScreen', () => {
         estimatedFinishDate: new Date(2026, 8, 9),
       });
     });
+
+    jest.useRealTimers();
   });
 });

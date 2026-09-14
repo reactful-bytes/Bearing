@@ -355,7 +355,7 @@ describe('ProfileScreen', () => {
     mockProfileHooks();
     const onPressBack = jest.fn();
 
-    const view = render(
+    render(
       <ProfileScreen
         onPressSignOut={() => undefined}
         isSignOutPending={false}
@@ -552,8 +552,15 @@ describe('ProfileScreen', () => {
     );
 
     await waitFor(() => expect(screen.getByText('7 available')).toBeTruthy());
-    fireEvent.press(screen.getByText('AI planning credits'));
-    expect(screen.getByRole('header', { name: 'Get AI Credits' })).toBeTruthy();
+    render(
+      <ProfileScreen
+        onPressSignOut={() => undefined}
+        isSignOutPending={false}
+        section="aiCredits"
+        onPressBack={() => undefined}
+      />,
+    );
+    expect(screen.getByText('Keep your planning momentum')).toBeTruthy();
     expect(
       screen.getByText('AI credit packs are available in the iOS and Android apps.'),
     ).toBeTruthy();
@@ -597,38 +604,22 @@ describe('ProfileScreen', () => {
     expect(showPremiumSubscriptionManagement).not.toHaveBeenCalled();
   });
 
-  it('opens in-app legal documents and reports an unconfigured support contact', () => {
+  it('opens canonical legal document routes and reports an unconfigured support contact', () => {
     mockProfileHooks();
+    const navigate = jest.fn();
 
     render(
       <ProfileScreen
         onPressSignOut={() => undefined}
         isSignOutPending={false}
-        section="privacyPolicy"
-        onPressBack={jest.fn()}
+        navigation={{ navigate }}
       />,
     );
-    expect(screen.getByRole('header', { name: 'How information is used' })).toBeTruthy();
-    expect(
-      screen.getByText('Draft for owner and legal review. Not approved for publication.'),
-    ).toBeTruthy();
-    const termsView = renderNative(
-      <ProfileScreen
-        onPressSignOut={() => undefined}
-        isSignOutPending={false}
-        section="termsOfService"
-        onPressBack={jest.fn()}
-      />,
-    );
-    termsView.rerender(
-      <ProfileScreen
-        onPressSignOut={() => undefined}
-        isSignOutPending={false}
-        section="termsOfService"
-        onPressBack={jest.fn()}
-      />,
-    );
-    expect(screen.getByText('AI-assisted features')).toBeTruthy();
+    fireEvent.press(screen.getByText('Privacy policy'));
+    expect(navigate).toHaveBeenCalledWith('LegalDocument', { documentId: 'privacy' });
+
+    fireEvent.press(screen.getByText('Terms of service'));
+    expect(navigate).toHaveBeenCalledWith('LegalDocument', { documentId: 'terms' });
   });
 
   it('opens configured support email and reports email-app failures', async () => {

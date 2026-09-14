@@ -1,5 +1,8 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
+import type { LegalDocumentId } from '../features/profile/legalDocuments';
+import type { PremiumFeature } from '../features/premium/premiumAccess';
+
 export type CalendarFocusLaunch = {
   token: string;
   eventId: string;
@@ -58,11 +61,19 @@ export type ProfileStackParamList = {
   DeviceCalendars: undefined;
   CalendarExport: undefined;
   TipsWisdom: undefined;
-  PremiumAccess: undefined;
-  PrivacyPolicy: undefined;
-  TermsOfService: undefined;
+  AiCredits: undefined;
   DataExport: undefined;
   DeleteAccount: undefined;
+  PremiumPaywall: { feature: PremiumFeature; source: PremiumEntryPoint };
+  LegalDocument: { documentId: LegalDocumentId; bottomInset?: boolean };
+};
+
+export type PremiumEntryPoint = 'profile' | 'ai_goal_builder';
+
+export type RootStackParamList = {
+  AppTabs: NavigatorScreenParams<AppTabParamList> | undefined;
+  PremiumPaywall: { feature: PremiumFeature; source: PremiumEntryPoint };
+  LegalDocument: { documentId: LegalDocumentId; bottomInset?: boolean };
 };
 
 export type AppTabParamList = {

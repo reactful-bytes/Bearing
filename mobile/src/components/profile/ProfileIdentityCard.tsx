@@ -30,7 +30,7 @@ export function ProfileIdentityCard({
       </Text>
       {isPremium ? (
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>PRO</Text>
+          <Text style={styles.badgeText}>Bearing 360</Text>
         </View>
       ) : null}
     </View>

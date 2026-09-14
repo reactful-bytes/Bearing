@@ -19,7 +19,9 @@ export function useCreditPackPurchase(
 ) {
   const [availability] = useState<PremiumPurchaseAvailability>(getPremiumPurchaseAvailability);
   const [packs, setPacks] = useState<CreditPack[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(
+    visible && enabled && userId !== null && availability === 'available',
+  );
   const [pendingPackageIdentifier, setPendingPackageIdentifier] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);

@@ -7,7 +7,6 @@ import { AddStepModal } from '../components/goals/AddStepModal';
 import { CreateGoalModal } from '../components/goals/CreateGoalModal';
 import { GoalDetailsModal } from '../components/goals/GoalDetailsModal';
 import { StepDetailModal } from '../components/goals/StepDetailModal';
-import { PremiumPaywallModal } from '../components/premium/PremiumPaywallModal';
 import { GoalCard, GoalStatusTabs } from '../components/presentation/GoalPresentation';
 import type { GoalFilter } from '../components/presentation/GoalPresentation';
 import { AppCard } from '../components/ui/AppCard';
@@ -22,14 +21,14 @@ import {
   GoalStepRecord,
   GoalWithSteps,
 } from '../features/goals/goalTypes';
-import { PremiumFeature, hasActivePremiumStatus } from '../features/premium/premiumAccess';
+import { hasActivePremiumStatus } from '../features/premium/premiumAccess';
 import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { useGoals } from '../features/goals/useGoals';
 import { useGoalStepEvents } from '../features/goals/useGoalStepEvents';
 import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
-import { PlanStackParamList } from '../navigation/navigationTypes';
+import { PlanStackParamList, RootStackParamList } from '../navigation/navigationTypes';
 import {
   generateAiGoalPlanDraft,
   getAiCreditStatus,
@@ -47,8 +46,15 @@ type GoalsScreenProps = {
   route?: { params?: PlanStackParamList['Goals'] };
   navigation?: {
     setParams?: (params: PlanStackParamList['Goals']) => void;
-    navigate?: (screen: 'GoalDetail', params: PlanStackParamList['GoalDetail']) => void;
-    getParent?: () => { navigate?: (screen: string) => void } | undefined;
+    navigate?: (
+      screen: 'GoalDetail' | 'PremiumPaywall',
+      params: PlanStackParamList['GoalDetail'] | RootStackParamList['PremiumPaywall'],
+    ) => void;
+    getParent?: () =>
+      | {
+          navigate?: (screen: string, params?: Record<string, unknown>) => void;
+        }
+      | undefined;
   };
 };
 
@@ -74,10 +80,8 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [scheduleStepId, setScheduleStepId] = useState<string | null>(null);
-  const [premiumPaywallFeature, setPremiumPaywallFeature] = useState<PremiumFeature | null>(null);
   const [goalFilter, setGoalFilter] = useState<GoalFilter>('active');
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
-  const usesLegacyModal = !navigation?.navigate;
 
   useEffect(() => {
     if (!route?.params?.createGoal) {
@@ -95,19 +99,12 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   const completedGoalCount = goals.filter((goal) => goal.status === 'completed').length;
   const archivedGoalCount = goals.filter((goal) => goal.status === 'archived').length;
   const goalFilterOptions = useMemo(
-    () =>
-      usesLegacyModal
-        ? [
-            { value: 'active' as const, label: 'Active', count: activeGoalCount },
-            { value: 'completed' as const, label: 'Completed', count: completedGoalCount },
-            { value: 'all' as const, label: 'All', count: goals.length },
-          ]
-        : [
-            { value: 'active' as const, label: 'Current', count: activeGoalCount },
-            { value: 'completed' as const, label: 'Completed', count: completedGoalCount },
-            { value: 'archived' as const, label: 'Archived', count: archivedGoalCount },
-          ],
-    [activeGoalCount, archivedGoalCount, completedGoalCount, goals.length, usesLegacyModal],
+    () => [
+      { value: 'active' as const, label: 'Current', count: activeGoalCount },
+      { value: 'completed' as const, label: 'Completed', count: completedGoalCount },
+      { value: 'archived' as const, label: 'Archived', count: archivedGoalCount },
+    ],
+    [activeGoalCount, archivedGoalCount, completedGoalCount],
   );
   const visibleGoals = useMemo(() => {
     if (goalFilter === 'all') {
@@ -214,10 +211,6 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
     setAddStepVisible(false);
   }
 
-  function closePremiumPaywall(): void {
-    setPremiumPaywallFeature(null);
-  }
-
   return (
     <View style={styles.screen}>
       <BearingHeader
@@ -300,19 +293,15 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
         onSave={handleCreateGoal}
         hasPremiumAccess={hasPremiumAccess}
         isPremiumStatusResolved={entitlementUiState === 'ready'}
-        onOpenPremiumPaywall={() => setPremiumPaywallFeature('ai_goal_builder')}
+        onOpenPremiumPaywall={() =>
+          navigation?.navigate?.('PremiumPaywall', {
+            feature: 'ai_goal_builder',
+            source: 'ai_goal_builder',
+          })
+        }
         onGenerateAiPlan={generateAiGoalPlanDraft}
         onLoadAiCreditStatus={getAiCreditStatus}
         creditPackUserId={!isAnonymous ? (authUser?.uid ?? null) : null}
-      />
-
-      <PremiumPaywallModal
-        visible={premiumPaywallFeature !== null}
-        feature={premiumPaywallFeature}
-        userId={authUser?.uid ?? null}
-        isAnonymous={isAnonymous}
-        hasPremiumAccess={hasPremiumAccess}
-        onClose={closePremiumPaywall}
       />
 
       <GoalDetailsModal

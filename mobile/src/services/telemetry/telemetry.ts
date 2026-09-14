@@ -156,8 +156,7 @@ export function buildTelemetryPayload(name: unknown, properties: unknown): Telem
       }
       break;
     case 'premium_paywall_viewed':
-      if (!hasExactKeys(properties, ['feature'])) return null;
-      if (!isOneOf(properties.feature, ['ai_goal_builder', 'premium_overview'])) return null;
+      if (!hasExactKeys(properties, [])) return null;
       break;
     case 'premium_purchase_started':
       if (!hasExactKeys(properties, ['period'])) return null;

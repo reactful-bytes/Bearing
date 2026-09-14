@@ -1,5 +1,5 @@
 import { ReactNode, useMemo } from 'react';
-import { NavigationProp, useNavigation } from '@react-navigation/native';
+import { NavigationProp } from '@react-navigation/native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { getEventKindLabel } from '../components/presentation/EventPresentation';
@@ -232,7 +232,7 @@ function PlanGoalRow({ goal, onPress }: { goal: PlanScreenGoal; onPress: () => v
 export function PlanScreen({ navigation }: PlanScreenProps) {
   const styles = useThemedStyles(createStyles);
   const { theme } = useTheme();
-  const rootNavigation = useNavigation<NavigationProp<AppTabParamList>>();
+  const tabNavigation = navigation.getParent<NavigationProp<AppTabParamList>>();
   const today = useMemo(() => new Date(), []);
   const todayRange = useMemo(() => getDayRange(today), [today]);
   const { profile } = useUserProfile();
@@ -283,22 +283,16 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
 
   function openFocus(): void {
     if (focusSession) {
-      rootNavigation.navigate('Plan', {
-        screen: 'FocusMode',
-        params: { eventId: focusSession.eventId },
-      });
+      navigation.navigate('FocusMode', { eventId: focusSession.eventId });
       return;
     }
 
     if (currentEvent) {
-      rootNavigation.navigate('Plan', {
-        screen: 'FocusMode',
-        params: { eventId: currentEvent.id },
-      });
+      navigation.navigate('FocusMode', { eventId: currentEvent.id });
       return;
     }
 
-    rootNavigation.navigate('Plan', { screen: 'FocusMode' });
+    navigation.navigate('FocusMode');
   }
 
   return (
@@ -307,7 +301,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
         <IconButton
           name="menu"
           accessibilityLabel="Open navigation"
-          onPress={() => rootNavigation.navigate('Profile')}
+          onPress={() => tabNavigation?.navigate('Profile')}
           style={styles.headerAction}
         />
         <View pointerEvents="none" style={styles.brandMark}>
@@ -316,7 +310,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
         <IconButton
           name="more"
           accessibilityLabel="Open profile"
-          onPress={() => rootNavigation.navigate('Profile')}
+          onPress={() => tabNavigation?.navigate('Profile')}
           style={styles.headerActionRight}
         />
       </View>
@@ -363,7 +357,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
                     key={`${event.ownership}-${event.id}`}
                     event={event}
                     dateTime={formatEventTime(event, locale, timeFormat)}
-                    onPress={() => rootNavigation.navigate('Calendar', { screen: 'CalendarHome' })}
+                    onPress={() => tabNavigation?.navigate('Calendar', { screen: 'CalendarHome' })}
                     isNext={index === 0}
                     isLast={index === todayEvents.length - 1}
                   />
@@ -430,7 +424,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
             titleAlign="center"
             accessibilityLabel="Open Notes"
             onPress={() =>
-              rootNavigation.navigate('Notes', {
+              tabNavigation?.navigate('Notes', {
                 screen: 'NotesHome',
                 params: { createNote: true },
               })
