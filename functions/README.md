@@ -56,7 +56,7 @@ Required managed secrets:
 - `REVENUECAT_SECRET_API_KEY`
 - `REVENUECAT_WEBHOOK_AUTHORIZATION`
 - `REVENUECAT_WEBHOOK_SIGNING_SECRET`
-- `REVENUECAT_V2_SECRET_API_KEY` (separate V2 key; never reuse the V1 key)
+- `REVENUECAT_SECRET_API_KEY_V2` (separate V2 key; never reuse the V1 key)
 - `REVENUECAT_PROJECT_ID`
 - `REVENUECAT_AI_CURRENCY_CODE` (defaults to `AIC`)
 

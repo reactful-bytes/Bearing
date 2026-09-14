@@ -49,7 +49,7 @@ restricted release location without secrets, full UIDs, receipts, or customer co
       amounts or an assumed cadence in source or active docs.
 - [ ] Create offering `credit_packs` and attach only approved consumable products with non-expiring
       `AIC` grants. Verify every pack is non-transferable, has no cash value, and has no Restore path.
-- [ ] Provision `REVENUECAT_V2_SECRET_API_KEY` as a separate least-privilege key for required
+- [ ] Provision `REVENUECAT_SECRET_API_KEY_V2` as a separate least-privilege key for required
       customer virtual-currency reads/transactions and project currency/product/grant reads. Record
       key name, project, permissions, and rotation owner, never the key value.
 - [ ] Verify `REVENUECAT_PROJECT_ID` and `REVENUECAT_AI_CURRENCY_CODE` for staging and production.

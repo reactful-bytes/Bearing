@@ -66,7 +66,7 @@ entitlements fail closed.
 - [ ] Add the iOS and Android public SDK keys to the corresponding EAS environments as
       `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY` and `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY`.
 - [ ] Set `REVENUECAT_SECRET_API_KEY`, `REVENUECAT_WEBHOOK_AUTHORIZATION`,
-      `REVENUECAT_WEBHOOK_SIGNING_SECRET`, `REVENUECAT_V2_SECRET_API_KEY`,
+      `REVENUECAT_WEBHOOK_SIGNING_SECRET`, `REVENUECAT_SECRET_API_KEY_V2`,
       `REVENUECAT_PROJECT_ID`, `REVENUECAT_AI_CURRENCY_CODE`, and (when different from `premium`)
       `REVENUECAT_ENTITLEMENT_IDENTIFIER` as Firebase Functions parameters. Keep V1 and V2 keys
       separate and grant the V2 key only required customer-currency transaction and catalog reads.

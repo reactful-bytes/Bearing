@@ -42,7 +42,7 @@ setGlobalOptions({
 
 const geminiApiKey = defineString("GEMINI_API_KEY");
 const revenueCatApiKey = defineString("REVENUECAT_SECRET_API_KEY");
-const revenueCatV2ApiKey = defineString("REVENUECAT_V2_SECRET_API_KEY");
+const revenueCatV2ApiKey = defineString("REVENUECAT_SECRET_API_KEY_V2");
 const revenueCatProjectId = defineString("REVENUECAT_PROJECT_ID");
 const revenueCatVirtualCurrencyCode = defineString(
   "REVENUECAT_AI_CURRENCY_CODE",
