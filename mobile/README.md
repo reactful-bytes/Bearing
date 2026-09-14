@@ -75,6 +75,27 @@ Optional release variable:
 - EXPO_PUBLIC_REVENUECAT_IOS_API_KEY (public iOS SDK key)
 - EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY (public Android SDK key)
 
+Development-only premium testing:
+
+- Set `EXPO_PUBLIC_DEVELOPER_MODE=profile` to show a Developer section in Profile with an
+   `Enable premium plan` toggle. The toggle directly controls the local Bearing 360 entitlement.
+   The `Enable local premium plans` toggle replaces RevenueCat offerings with synthesized plans so
+   the complete paywall and purchase flow can be tested without RevenueCat. `Reset premium plan`
+   returns the account to free access while leaving local plans available for another test.
+- Leave it as `off` for the normal RevenueCat flow.
+
+The override is honored only when `__DEV__` is true and `EXPO_PUBLIC_APP_ENV` is not
+`production`. It is client-side only: backend premium authorization and AI credit accounting
+still use the real Firebase and RevenueCat state.
+
+Other useful debug switches to consider as the app flow grows:
+
+- Seed a deterministic account with expired, grace-period, and active entitlement states.
+- Simulate delayed RevenueCat activation and failed restore responses.
+- Seed zero, low, and exhausted AI credit balances for the goal-builder states.
+- Inject calendar permission denial and partial calendar-sync failures.
+- Add a network/offline mode for loading, retry, and stale-data UI.
+
 Environment strategy:
 
 - Development: local `.env`

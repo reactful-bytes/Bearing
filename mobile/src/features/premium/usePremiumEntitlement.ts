@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react';
 
 import { subscribeToPremiumEntitlement } from '../../services/firebase/firebaseSubscriptions';
 import { PremiumEntitlementRecord, PremiumEntitlementUiState } from './premiumTypes';
+import {
+  getPremiumDebugEntitlement,
+  isPremiumDebugEnabled,
+  subscribeToPremiumDebugAccess,
+} from './premiumDebug';
 
 export type UsePremiumEntitlementReturn = {
   entitlement: PremiumEntitlementRecord | null;
@@ -21,6 +26,14 @@ export function usePremiumEntitlement(userId: string | null): UsePremiumEntitlem
     if (!userId) {
       setUiState('ready');
       return;
+    }
+
+    if (isPremiumDebugEnabled()) {
+      setEntitlement(getPremiumDebugEntitlement(userId));
+      setUiState('ready');
+      return subscribeToPremiumDebugAccess(() => {
+        setEntitlement(getPremiumDebugEntitlement(userId));
+      });
     }
 
     setUiState('loading');

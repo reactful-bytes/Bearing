@@ -8,6 +8,13 @@ import {
 } from '../../services/purchases/revenueCatClient';
 import { recordTelemetryEvent } from '../../services/telemetry/telemetry';
 import { PremiumPlan, PremiumPurchaseAvailability } from './purchaseTypes';
+import {
+  getPremiumDebugPlans,
+  isPremiumDebugLocalPlansEnabled,
+  setPremiumDebugAccess,
+  subscribeToPremiumDebugAccess,
+  isPremiumDebugEnabled,
+} from './premiumDebug';
 
 type ActivationSource = 'purchase' | 'restore';
 
@@ -17,8 +24,13 @@ export function usePremiumPurchase(
   visible: boolean,
   hasPremiumAccess: boolean,
 ) {
-  const [availability] = useState<PremiumPurchaseAvailability>(getPremiumPurchaseAvailability);
-  const [plans, setPlans] = useState<PremiumPlan[]>([]);
+  const [localPlansEnabled, setLocalPlansEnabled] = useState(isPremiumDebugLocalPlansEnabled);
+  const availability: PremiumPurchaseAvailability = localPlansEnabled
+    ? 'available'
+    : getPremiumPurchaseAvailability();
+  const [plans, setPlans] = useState<PremiumPlan[]>(() =>
+    localPlansEnabled ? getPremiumDebugPlans() : [],
+  );
   const [loading, setLoading] = useState(false);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [activationSource, setActivationSource] = useState<ActivationSource | null>(null);
@@ -26,7 +38,21 @@ export function usePremiumPurchase(
   const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isPremiumDebugEnabled()) return;
+    return subscribeToPremiumDebugAccess(() => {
+      setLocalPlansEnabled(isPremiumDebugLocalPlansEnabled());
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!localPlansEnabled) setPlans([]);
     if (!visible || !enabled || !userId || availability !== 'available') return;
+
+    if (localPlansEnabled) {
+      setPlans(getPremiumDebugPlans());
+      setLoading(false);
+      return;
+    }
 
     let current = true;
     setLoading(true);
@@ -47,7 +73,7 @@ export function usePremiumPurchase(
     return () => {
       current = false;
     };
-  }, [availability, enabled, userId, visible]);
+  }, [availability, enabled, localPlansEnabled, userId, visible]);
 
   useEffect(() => {
     if (!activationSource) return;
@@ -77,6 +103,12 @@ export function usePremiumPurchase(
     setPendingAction(plan.packageIdentifier);
     setError(null);
     setFeedback(null);
+    if (localPlansEnabled) {
+      setPremiumDebugAccess(true, plan);
+      setFeedback('Bearing 360 is active on this account.');
+      setPendingAction(null);
+      return;
+    }
     void recordTelemetryEvent('premium_purchase_started', { period: plan.telemetryPlanType });
     const result = await purchasePremiumPlan(userId, plan.packageIdentifier);
     void recordTelemetryEvent('premium_purchase_result', {
@@ -99,6 +131,12 @@ export function usePremiumPurchase(
     setPendingAction('restore');
     setError(null);
     setFeedback(null);
+    if (localPlansEnabled) {
+      setPremiumDebugAccess(true);
+      setFeedback('Bearing 360 is active on this account.');
+      setPendingAction(null);
+      return;
+    }
     const result = await restorePremiumPurchases(userId);
     void recordTelemetryEvent('premium_restore_result', { outcome: result });
     if (result === 'success') {

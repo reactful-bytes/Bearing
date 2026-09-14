@@ -66,6 +66,14 @@ import {
   useAiCreditBalance,
 } from '../features/premium/aiCreditBalance';
 import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
+import {
+  isPremiumDebugAccessEnabled,
+  isPremiumDebugEnabled,
+  isPremiumDebugLocalPlansEnabled,
+  setPremiumDebugAccess,
+  setPremiumDebugLocalPlansEnabled,
+  subscribeToPremiumDebugAccess,
+} from '../features/premium/premiumDebug';
 import { getProfileSoundOption } from '../features/profile/profileSounds';
 import { getDifferentRandomProfileTip } from '../features/profile/profileTips';
 import { useSoundPreview } from '../features/profile/useSoundPreview';
@@ -198,6 +206,12 @@ export function ProfileScreen({
   const [deletePending, setDeletePending] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [legalError, setLegalError] = useState<string | null>(null);
+  const [premiumDebugAccess, setPremiumDebugAccessState] = useState(
+    isPremiumDebugAccessEnabled,
+  );
+  const [premiumDebugLocalPlans, setPremiumDebugLocalPlansState] = useState(
+    isPremiumDebugLocalPlansEnabled,
+  );
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
   const isHubRoute = profileSection === undefined;
   const profileForRender =
@@ -252,6 +266,14 @@ export function ProfileScreen({
       setActiveTip((currentTip) => currentTip ?? getDifferentRandomProfileTip(null));
     }
   }, [profileSection]);
+
+  useEffect(() => {
+    if (!isPremiumDebugEnabled()) return;
+    return subscribeToPremiumDebugAccess(() => {
+      setPremiumDebugAccessState(isPremiumDebugAccessEnabled());
+      setPremiumDebugLocalPlansState(isPremiumDebugLocalPlansEnabled());
+    });
+  }, []);
 
   async function handleSelectTimezone(nextValue: string): Promise<void> {
     setTimezone(nextValue);
@@ -982,6 +1004,53 @@ export function ProfileScreen({
                     title="Delete account"
                   />
                 </View>
+
+                {isPremiumDebugEnabled() ? (
+                  <View style={styles.section}>
+                    <SectionHeading title="Developer" variant="uppercase-accent" />
+                    <ListItem
+                      variant="row"
+                      icon="settings"
+                      title="Enable premium plan"
+                      description="Enable premium plan directly for local Bearing 360 UI testing."
+                      trailingContent={
+                        <Switch
+                          accessibilityLabel="Enable premium plan"
+                          value={premiumDebugAccess}
+                          onValueChange={(enabled) => {
+                            setPremiumDebugAccess(enabled);
+                            setPremiumDebugAccessState(enabled);
+                          }}
+                        />
+                      }
+                    />
+                    <ListItem
+                      variant="row"
+                      icon="settings"
+                      title="Enable local premium plans"
+                      description="Replace RevenueCat products with synthesized plans for paywall flow."
+                      trailingContent={
+                        <Switch
+                          accessibilityLabel="Enable local premium plans"
+                          value={premiumDebugLocalPlans}
+                          onValueChange={(enabled) => {
+                            setPremiumDebugLocalPlansEnabled(enabled);
+                            setPremiumDebugLocalPlansState(enabled);
+                          }}
+                        />
+                      }
+                    />
+                    <ListItem
+                      variant="row"
+                      icon="settings"
+                      showDivider={false}
+                      title="Reset premium plan"
+                      description="Return to the free plan without disabling local plans."
+                      onPress={() => setPremiumDebugAccess(false)}
+                      disabled={!premiumDebugAccess}
+                    />
+                  </View>
+                ) : null}
 
                 <View style={styles.section}>
                   <SectionHeading title="Session" variant="uppercase-accent" />
