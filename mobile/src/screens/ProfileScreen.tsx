@@ -1,14 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  Alert,
-  Linking,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, Linking, Platform, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { useThemedStyles } from '../design/useThemedStyles';
 import { useTheme } from '../design/ThemeProvider';
@@ -56,10 +47,7 @@ import {
 } from '../features/profile/profileOptions';
 import { TIME_FORMAT_OPTIONS, TimeFormat } from '../features/profile/timeFormat';
 import { hasActivePremiumStatus } from '../features/premium/premiumAccess';
-import {
-  setAiCreditBalance,
-  useAiCreditBalance,
-} from '../features/premium/aiCreditBalance';
+import { setAiCreditBalance, useAiCreditBalance } from '../features/premium/aiCreditBalance';
 import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
 import {
   isPremiumDebugAccessEnabled,
@@ -187,23 +175,22 @@ export function ProfileScreen({
   const [icsError, setIcsError] = useState<string | null>(null);
   const [icsFeedback, setIcsFeedback] = useState<string | null>(null);
   const [icsFileLink, setIcsFileLink] = useState<{ filename: string; url: string } | null>(null);
-  const [dataExportPendingAction, setDataExportPendingAction] = useState<
-    'export' | 'share' | null
-  >(null);
+  const [dataExportPendingAction, setDataExportPendingAction] = useState<'export' | 'share' | null>(
+    null,
+  );
   const [dataExportError, setDataExportError] = useState<string | null>(null);
   const [dataExportFeedback, setDataExportFeedback] = useState<string | null>(null);
-  const [dataExportFileLink, setDataExportFileLink] = useState<
-    { filename: string; url: string } | null
-  >(null);
+  const [dataExportFileLink, setDataExportFileLink] = useState<{
+    filename: string;
+    url: string;
+  } | null>(null);
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [deleteLinkedCopies, setDeleteLinkedCopies] = useState(true);
   const [deletePending, setDeletePending] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [legalError, setLegalError] = useState<string | null>(null);
-  const [premiumDebugAccess, setPremiumDebugAccessState] = useState(
-    isPremiumDebugAccessEnabled,
-  );
+  const [premiumDebugAccess, setPremiumDebugAccessState] = useState(isPremiumDebugAccessEnabled);
   const [premiumDebugLocalPlans, setPremiumDebugLocalPlansState] = useState(
     isPremiumDebugLocalPlansEnabled,
   );
@@ -817,12 +804,7 @@ export function ProfileScreen({
 
   return (
     <View style={styles.screen}>
-      <ScrollView
-        ref={profileScrollRef}
-        contentContainerStyle={[
-          styles.contentContainer,
-        ]}
-      >
+      <ScrollView ref={profileScrollRef} contentContainerStyle={[styles.contentContainer]}>
         {onPressBack ? (
           <View style={styles.routeHeader}>
             <IconButton name="back" accessibilityLabel="Back to Profile" onPress={onPressBack} />
@@ -940,7 +922,9 @@ export function ProfileScreen({
                       showDivider={false}
                       onPress={() => navigation?.navigate('AiCredits')}
                       title="AI planning credits"
-                      description={aiCreditBalance === null ? undefined : `${aiCreditBalance} available`}
+                      description={
+                        aiCreditBalance === null ? undefined : `${aiCreditBalance} available`
+                      }
                     />
                   ) : null}
                 </View>
@@ -1320,12 +1304,12 @@ export function ProfileScreen({
                       description={activeTip.body}
                     />
                     <View style={styles.sectionContent}>
-                    <AppButton
-                      label="Refresh"
-                      variant="secondary"
-                      accessibilityLabel="Refresh tip"
-                      onPress={handleRefreshTip}
-                    />
+                      <AppButton
+                        label="Refresh"
+                        variant="secondary"
+                        accessibilityLabel="Refresh tip"
+                        onPress={handleRefreshTip}
+                      />
                     </View>
                   </>
                 ) : null}
@@ -1446,12 +1430,12 @@ export function ProfileScreen({
                         trailingText={
                           deviceCalendars.defaultCalendarId === null ? 'Selected' : undefined
                         }
-                            onPress={() =>
-                              void runDeviceCalendarAction(
-                                () => deviceCalendars.setDefaultCalendar(null),
-                                false,
-                              )
-                            }
+                        onPress={() =>
+                          void runDeviceCalendarAction(
+                            () => deviceCalendars.setDefaultCalendar(null),
+                            false,
+                          )
+                        }
                       />
                       {deviceCalendars.calendars
                         .filter((calendar) => calendar.allowsModifications)
@@ -1488,7 +1472,9 @@ export function ProfileScreen({
                 {deviceCalendars.error ? (
                   <Text style={styles.errorText}>{deviceCalendars.error.message}</Text>
                 ) : null}
-                {deviceCalendarError ? <Text style={styles.errorText}>{deviceCalendarError}</Text> : null}
+                {deviceCalendarError ? (
+                  <Text style={styles.errorText}>{deviceCalendarError}</Text>
+                ) : null}
               </View>
             ) : null}
 
@@ -1569,7 +1555,9 @@ export function ProfileScreen({
                     loadingLabel="Working..."
                   />
                   {dataExportError ? <Text style={styles.errorText}>{dataExportError}</Text> : null}
-                  {dataExportFeedback ? <Text style={styles.successText}>{dataExportFeedback}</Text> : null}
+                  {dataExportFeedback ? (
+                    <Text style={styles.successText}>{dataExportFeedback}</Text>
+                  ) : null}
                   {dataExportFileLink ? (
                     <Text
                       accessibilityRole="link"
@@ -1641,7 +1629,6 @@ export function ProfileScreen({
                 </View>
               </View>
             ) : null}
-
           </>
         ) : null}
       </ScrollView>
@@ -1651,8 +1638,8 @@ export function ProfileScreen({
         title={soundPicker === 'alarm' ? 'Choose Timer Sound' : 'Choose Reminder Sound'}
         selectedSoundId={
           soundPicker === 'alarm'
-            ? profileForRender?.alarmSoundId ?? ''
-            : profileForRender?.reminderSoundId ?? ''
+            ? (profileForRender?.alarmSoundId ?? '')
+            : (profileForRender?.reminderSoundId ?? '')
         }
         playingSoundId={playingSoundId}
         previewError={previewError}

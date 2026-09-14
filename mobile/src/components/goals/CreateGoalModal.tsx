@@ -500,7 +500,10 @@ export function CreateGoalModal({
         fullScreen
       >
         <ScrollView
-          contentContainerStyle={[styles.content, { paddingBottom: spacing['3xl'] + insets.bottom }]}
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: spacing['3xl'] + insets.bottom },
+          ]}
         >
           <Text style={[styles.stepLabel, styles.stepLabelCentered]}>{wizardLabel}</Text>
           <View accessibilityLabel={wizardLabel} style={styles.progressDots}>
@@ -551,9 +554,7 @@ export function CreateGoalModal({
               <View style={styles.smartList}>
                 {SMART_ITEMS.map((item) => (
                   <View key={item.letter} style={styles.smartRow}>
-                    <View
-                      style={[styles.smartBadge, { backgroundColor: theme.colors[item.tone] }]}
-                    >
+                    <View style={[styles.smartBadge, { backgroundColor: theme.colors[item.tone] }]}>
                       <Text style={styles.smartBadgeText}>{item.letter}</Text>
                     </View>
                     <View style={styles.smartCopy}>

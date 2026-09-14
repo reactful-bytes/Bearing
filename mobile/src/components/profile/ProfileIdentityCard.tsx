@@ -20,7 +20,9 @@ export function ProfileIdentityCard({
   return (
     <View style={styles.container}>
       <View style={styles.avatarMark}>
-        <Text style={styles.avatarInitial}>{(displayName || email || '?').trim().charAt(0).toUpperCase()}</Text>
+        <Text style={styles.avatarInitial}>
+          {(displayName || email || '?').trim().charAt(0).toUpperCase()}
+        </Text>
       </View>
       <Text numberOfLines={1} style={styles.name}>
         {displayName || 'Unnamed account'}

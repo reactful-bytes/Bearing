@@ -51,7 +51,11 @@ function formatHourLabel(hour: number, timeFormat: TimeFormat): string {
   return `${displayHour} ${period}`;
 }
 
-function getEventBgColor(status: EventStatus, ownership: CalendarDisplayEvent['ownership'], theme: Theme): string {
+function getEventBgColor(
+  status: EventStatus,
+  ownership: CalendarDisplayEvent['ownership'],
+  theme: Theme,
+): string {
   if (status === 'completed') return theme.colors.textSecondary;
   if (status === 'canceled') return theme.colors.surfaceMuted;
   if (ownership === 'device') return theme.colors.importedCyan;

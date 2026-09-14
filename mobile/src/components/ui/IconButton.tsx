@@ -34,7 +34,12 @@ export function IconButton({
       accessibilityRole="button"
       onPress={onPress}
       disabled={disabled}
-      style={({ pressed }) => [styles.button, pressed && !disabled ? styles.pressed : null, disabled ? styles.disabled : null, style]}
+      style={({ pressed }) => [
+        styles.button,
+        pressed && !disabled ? styles.pressed : null,
+        disabled ? styles.disabled : null,
+        style,
+      ]}
       testID={testID}
     >
       <AppIcon name={name} size={size} color={color} decorative />

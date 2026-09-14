@@ -179,10 +179,7 @@ function NotesNavigator() {
   );
 }
 
-function ProfileNavigator({
-  onPressSignOut,
-  isSignOutPending,
-}: AppTabsProps) {
+function ProfileNavigator({ onPressSignOut, isSignOutPending }: AppTabsProps) {
   function renderSection(section: ProfileSection) {
     return function ProfileSectionRoute({
       navigation,
@@ -236,11 +233,15 @@ function ProfileNavigator({
       <ProfileStack.Screen name="DeviceCalendars">
         {renderSection('deviceCalendars')}
       </ProfileStack.Screen>
-      <ProfileStack.Screen name="CalendarExport">{renderSection('calendarExport')}</ProfileStack.Screen>
+      <ProfileStack.Screen name="CalendarExport">
+        {renderSection('calendarExport')}
+      </ProfileStack.Screen>
       <ProfileStack.Screen name="TipsWisdom">{renderSection('tipsWisdom')}</ProfileStack.Screen>
       <ProfileStack.Screen name="AiCredits">{renderSection('aiCredits')}</ProfileStack.Screen>
       <ProfileStack.Screen name="DataExport">{renderSection('dataExport')}</ProfileStack.Screen>
-      <ProfileStack.Screen name="DeleteAccount">{renderSection('deleteAccount')}</ProfileStack.Screen>
+      <ProfileStack.Screen name="DeleteAccount">
+        {renderSection('deleteAccount')}
+      </ProfileStack.Screen>
       <ProfileStack.Screen name="PremiumPaywall" component={PremiumPaywallScreen} />
       <ProfileStack.Screen name="LegalDocument" component={LegalDocumentScreen} />
     </ProfileStack.Navigator>
@@ -399,10 +400,7 @@ function AppTabsNavigator({
         <Tab.Screen name="Notes" component={NotesNavigator} />
         <Tab.Screen name="Profile">
           {() => (
-            <ProfileNavigator
-              onPressSignOut={onPressSignOut}
-              isSignOutPending={isSignOutPending}
-            />
+            <ProfileNavigator onPressSignOut={onPressSignOut} isSignOutPending={isSignOutPending} />
           )}
         </Tab.Screen>
       </Tab.Navigator>

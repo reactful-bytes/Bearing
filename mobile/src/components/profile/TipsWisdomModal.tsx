@@ -16,7 +16,13 @@ type TipsWisdomModalProps = {
   fullScreen?: boolean;
 };
 
-export function TipsWisdomModal({ visible, tip, onClose, onRefresh, fullScreen = false }: TipsWisdomModalProps) {
+export function TipsWisdomModal({
+  visible,
+  tip,
+  onClose,
+  onRefresh,
+  fullScreen = false,
+}: TipsWisdomModalProps) {
   const styles = useThemedStyles(createStyles);
   return (
     <AppModal visible={visible} title="Tips & Wisdom" onClose={onClose} fullScreen={fullScreen}>

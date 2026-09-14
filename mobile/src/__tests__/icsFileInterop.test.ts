@@ -97,9 +97,9 @@ describe('icsFileInterop', () => {
     });
 
     try {
-      await expect(
-        downloadIcsFileOnWeb('bearing-export.ics', 'BEGIN:VCALENDAR'),
-      ).resolves.toBe('blob:bearing-export');
+      await expect(downloadIcsFileOnWeb('bearing-export.ics', 'BEGIN:VCALENDAR')).resolves.toBe(
+        'blob:bearing-export',
+      );
     } finally {
       if (originalBlob) Object.defineProperty(globalThis, 'Blob', originalBlob);
       else Reflect.deleteProperty(globalThis, 'Blob');

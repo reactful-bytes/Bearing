@@ -1,5 +1,11 @@
 import { cloneElement, ReactElement } from 'react';
-import { act, fireEvent, render as renderNative, screen, waitFor } from '@testing-library/react-native';
+import {
+  act,
+  fireEvent,
+  render as renderNative,
+  screen,
+  waitFor,
+} from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Alert, Linking, Platform } from 'react-native';
 
@@ -40,9 +46,7 @@ import { getAiCreditStatus } from '../services/firebase/firebaseAiGoalPlans';
 
 function render(ui: ReactElement<{ section?: string; navigation?: unknown }>) {
   if (ui.props.section === undefined && ui.props.navigation === undefined) {
-    return renderNative(
-      cloneElement(ui, { navigation: { navigate: jest.fn() } } as never),
-    );
+    return renderNative(cloneElement(ui, { navigation: { navigate: jest.fn() } } as never));
   }
 
   return renderNative(ui);
@@ -424,8 +428,8 @@ describe('ProfileScreen', () => {
     );
 
     fireEvent.press(screen.getByLabelText('Open timezone picker'));
-  expect(screen.getByRole('header', { name: 'Time zone' })).toBeTruthy();
-  expect(screen.getByLabelText('Select Time zone America/Chicago')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Time zone' })).toBeTruthy();
+    expect(screen.getByLabelText('Select Time zone America/Chicago')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Select Time zone America/Chicago'));
 
     await waitFor(() => {
@@ -454,11 +458,7 @@ describe('ProfileScreen', () => {
     mockProfileHooks();
 
     render(
-      <ProfileScreen
-        onPressSignOut={() => undefined}
-        isSignOutPending={false}
-        section="account"
-      />,
+      <ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} section="account" />,
     );
 
     expect(screen.getByRole('header', { name: 'Personal Information' })).toBeTruthy();
@@ -472,11 +472,7 @@ describe('ProfileScreen', () => {
     const { updateProfile } = mockProfileHooks();
 
     render(
-      <ProfileScreen
-        onPressSignOut={() => undefined}
-        isSignOutPending={false}
-        section="account"
-      />,
+      <ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} section="account" />,
     );
 
     fireEvent.changeText(screen.getByLabelText('Profile display name'), 'Updated name');
@@ -520,12 +516,7 @@ describe('ProfileScreen', () => {
       uiState: 'ready',
       error: null,
     });
-    render(
-      <ProfileScreen
-        onPressSignOut={() => undefined}
-        isSignOutPending={false}
-      />,
-    );
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
     await act(async () => {
       fireEvent.press(screen.getByText('Manage Subscription'));
     });
@@ -544,12 +535,7 @@ describe('ProfileScreen', () => {
       error: null,
     });
 
-    render(
-      <ProfileScreen
-        onPressSignOut={() => undefined}
-        isSignOutPending={false}
-      />,
-    );
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
 
     await waitFor(() => expect(screen.getByText('7 available')).toBeTruthy());
     render(
@@ -586,12 +572,7 @@ describe('ProfileScreen', () => {
       error: null,
     });
 
-    render(
-      <ProfileScreen
-        onPressSignOut={() => undefined}
-        isSignOutPending={false}
-      />,
-    );
+    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
     await act(async () => {
       fireEvent.press(screen.getByText('Manage Subscription'));
     });
@@ -869,11 +850,7 @@ describe('ProfileScreen', () => {
     expect(screen.getByText('Visible calendars')).toBeTruthy();
 
     await act(async () => {
-      fireEvent(
-        screen.getByLabelText('Toggle visible calendar Work'),
-        'valueChange',
-        false,
-      );
+      fireEvent(screen.getByLabelText('Toggle visible calendar Work'), 'valueChange', false);
       fireEvent.press(screen.getByLabelText('Use default calendar Work'));
       fireEvent.press(screen.getByLabelText('Refresh device calendars'));
     });

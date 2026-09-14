@@ -207,4 +207,3 @@ export const icons = {
 } as const satisfies Record<string, AppIconDefinition>;
 
 export type AppIconName = keyof typeof icons;
-

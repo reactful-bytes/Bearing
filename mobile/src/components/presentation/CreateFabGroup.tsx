@@ -8,11 +8,7 @@ import { AppIcon } from '../ui/AppIcon';
 import { AppIconName } from '../../design/icons';
 
 type CreateFabActionKey =
-  | 'onCreateGoal'
-  | 'onCreateTask'
-  | 'onCreateNote'
-  | 'onCreateEvent'
-  | 'onCreateFocus';
+  'onCreateGoal' | 'onCreateTask' | 'onCreateNote' | 'onCreateEvent' | 'onCreateFocus';
 
 type CreateFabGroupProps = {
   visible: boolean;
@@ -117,10 +113,7 @@ export function CreateFabGroup(props: CreateFabGroupProps) {
               accessibilityRole="button"
               accessibilityLabel="Close create menu"
               onPress={props.onDismiss}
-              style={({ pressed }) => [
-                styles.closeButton,
-                pressed ? styles.actionPressed : null,
-              ]}
+              style={({ pressed }) => [styles.closeButton, pressed ? styles.actionPressed : null]}
             >
               <Animated.View
                 style={{
@@ -209,7 +202,6 @@ const createStyles = (theme: Theme) =>
       justifyContent: 'center',
       position: 'absolute',
       bottom: -94,
-
     },
     actionPressed: { opacity: 0.85 },
     goalAction: { backgroundColor: theme.colors.success },

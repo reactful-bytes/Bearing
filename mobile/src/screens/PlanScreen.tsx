@@ -485,7 +485,11 @@ const createStyles = (theme: Theme) =>
     },
     title: { ...theme.typography.sectionTitle, color: theme.colors.text },
     subtitle: { ...theme.typography.helper, color: theme.colors.textSecondary },
-    greetingBlock: { gap: theme.spacing.xs, alignItems: 'center', paddingVertical: theme.spacing.xs },
+    greetingBlock: {
+      gap: theme.spacing.xs,
+      alignItems: 'center',
+      paddingVertical: theme.spacing.xs,
+    },
     dashboardGrid: { gap: theme.spacing.xl },
     surfaceRow: {
       flexDirection: 'row',

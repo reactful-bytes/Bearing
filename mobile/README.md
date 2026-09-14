@@ -78,10 +78,10 @@ Optional release variable:
 Development-only premium testing:
 
 - Set `EXPO_PUBLIC_DEVELOPER_MODE=profile` to show a Developer section in Profile with an
-   `Enable premium plan` toggle. The toggle directly controls the local Bearing 360 entitlement.
-   The `Enable local premium plans` toggle replaces RevenueCat offerings with synthesized plans so
-   the complete paywall and purchase flow can be tested without RevenueCat. `Reset premium plan`
-   returns the account to free access while leaving local plans available for another test.
+  `Enable premium plan` toggle. The toggle directly controls the local Bearing 360 entitlement.
+  The `Enable local premium plans` toggle replaces RevenueCat offerings with synthesized plans so
+  the complete paywall and purchase flow can be tested without RevenueCat. `Reset premium plan`
+  returns the account to free access while leaving local plans available for another test.
 - Leave it as `off` for the normal RevenueCat flow.
 
 The override is honored only when `__DEV__` is true and `EXPO_PUBLIC_APP_ENV` is not

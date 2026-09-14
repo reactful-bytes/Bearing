@@ -120,7 +120,11 @@ export function MonthGrid({
                 accessibilityState={{ selected: isSelected }}
                 onPress={() => onSelectDate(new Date(year, month, day))}
                 style={[styles.cell, { width: cellWidth }]}
-                android_ripple={{ color: theme.colors.brand, borderless: true, radius: DAY_CIRCLE_SIZE / 2 }}
+                android_ripple={{
+                  color: theme.colors.brand,
+                  borderless: true,
+                  radius: DAY_CIRCLE_SIZE / 2,
+                }}
               >
                 <View
                   style={[

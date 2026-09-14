@@ -78,84 +78,84 @@ export function CreditPackPurchaseModal({
 
   const selectionContent = (
     <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.heroBlock}>
-            <Text style={styles.badge}>AI PLANNING</Text>
-            <Text style={styles.headline}>Keep your planning momentum</Text>
-            <Text style={styles.body}>
-              Add AI planning credits when you want more help turning goals into editable milestones
-              and next steps.
-            </Text>
-          </View>
+      <View style={styles.heroBlock}>
+        <Text style={styles.badge}>AI PLANNING</Text>
+        <Text style={styles.headline}>Keep your planning momentum</Text>
+        <Text style={styles.body}>
+          Add AI planning credits when you want more help turning goals into editable milestones and
+          next steps.
+        </Text>
+      </View>
 
-          <AppCard style={styles.aiCard}>
-            <View style={styles.aiCardHeading}>
-              <View style={styles.aiIcon}>
-                <Text style={styles.aiIconText}>AI</Text>
-              </View>
-              <View style={styles.aiCardHeadingCopy}>
-                <Text style={styles.aiCardEyebrow}>CREDIT PACKS</Text>
-                <Text style={styles.sectionTitle}>One-time AI planning credits</Text>
-              </View>
+      <AppCard style={styles.aiCard}>
+        <View style={styles.aiCardHeading}>
+          <View style={styles.aiIcon}>
+            <Text style={styles.aiIconText}>AI</Text>
+          </View>
+          <View style={styles.aiCardHeadingCopy}>
+            <Text style={styles.aiCardEyebrow}>CREDIT PACKS</Text>
+            <Text style={styles.sectionTitle}>One-time AI planning credits</Text>
+          </View>
+        </View>
+        {currentBalance !== null ? (
+          <Text style={styles.balance}>{currentBalance} AI planning credits available</Text>
+        ) : null}
+      </AppCard>
+
+      <View style={styles.divider} />
+      <View style={styles.section}>
+        <Text style={styles.sectionEyebrow}>CHOOSE A CREDIT PACK</Text>
+        {purchase.loading ? (
+          <View style={styles.skeletonColumn} accessibilityLabel="Loading credit packs">
+            <View style={styles.skeletonPack}>
+              <View style={styles.skeletonPrimaryLine} />
+              <View style={styles.skeletonPriceLine} />
             </View>
-            {currentBalance !== null ? (
-              <Text style={styles.balance}>{currentBalance} AI planning credits available</Text>
-            ) : null}
-          </AppCard>
-
-          <View style={styles.divider} />
-          <View style={styles.section}>
-            <Text style={styles.sectionEyebrow}>CHOOSE A CREDIT PACK</Text>
-            {purchase.loading ? (
-              <View style={styles.skeletonColumn} accessibilityLabel="Loading credit packs">
-                <View style={styles.skeletonPack}>
-                  <View style={styles.skeletonPrimaryLine} />
-                  <View style={styles.skeletonPriceLine} />
-                </View>
-                <View style={styles.skeletonPack}>
-                  <View style={styles.skeletonPrimaryLine} />
-                  <View style={styles.skeletonPriceLine} />
-                </View>
-              </View>
-            ) : (
-              <View style={styles.packColumn}>
-                {purchase.packs.map((pack) => {
-                  const selected = pack.packageIdentifier === selectedPack?.packageIdentifier;
-                  return (
-                    <Pressable
-                      key={pack.packageIdentifier}
-                      accessibilityRole="radio"
-                      accessibilityLabel={`Select ${pack.amount} AI credit pack for ${pack.priceText}`}
-                      accessibilityState={{
-                        selected,
-                        disabled: purchase.pendingPackageIdentifier !== null,
-                      }}
-                      disabled={purchase.pendingPackageIdentifier !== null}
-                      onPress={() => setSelectedPack(pack)}
-                      style={[styles.pack, selected && styles.packSelected]}
-                    >
-                      <Text style={styles.packAmount}>
-                        {pack.amount} AI planning {pack.amount === 1 ? 'credit' : 'credits'}
-                      </Text>
-                      <Text style={styles.packPrice}>{pack.priceText}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            )}
-            {unsupportedMessage ? <Text style={styles.meta}>{unsupportedMessage}</Text> : null}
-            {purchase.error ? <Text style={styles.error}>{purchase.error}</Text> : null}
-            <AppButton
-              label="Continue"
-              accessibilityLabel={
-                selectedPack
-                  ? `Continue with ${selectedPack.amount} AI credits`
-                  : 'Select a credit pack'
-              }
-              onPress={() => selectedPack && setConfirmationPack(selectedPack)}
-              disabled={purchase.loading || !selectedPack || purchase.availability !== 'available'}
-              style={styles.primaryAction}
-            />
+            <View style={styles.skeletonPack}>
+              <View style={styles.skeletonPrimaryLine} />
+              <View style={styles.skeletonPriceLine} />
+            </View>
           </View>
+        ) : (
+          <View style={styles.packColumn}>
+            {purchase.packs.map((pack) => {
+              const selected = pack.packageIdentifier === selectedPack?.packageIdentifier;
+              return (
+                <Pressable
+                  key={pack.packageIdentifier}
+                  accessibilityRole="radio"
+                  accessibilityLabel={`Select ${pack.amount} AI credit pack for ${pack.priceText}`}
+                  accessibilityState={{
+                    selected,
+                    disabled: purchase.pendingPackageIdentifier !== null,
+                  }}
+                  disabled={purchase.pendingPackageIdentifier !== null}
+                  onPress={() => setSelectedPack(pack)}
+                  style={[styles.pack, selected && styles.packSelected]}
+                >
+                  <Text style={styles.packAmount}>
+                    {pack.amount} AI planning {pack.amount === 1 ? 'credit' : 'credits'}
+                  </Text>
+                  <Text style={styles.packPrice}>{pack.priceText}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+        {unsupportedMessage ? <Text style={styles.meta}>{unsupportedMessage}</Text> : null}
+        {purchase.error ? <Text style={styles.error}>{purchase.error}</Text> : null}
+        <AppButton
+          label="Continue"
+          accessibilityLabel={
+            selectedPack
+              ? `Continue with ${selectedPack.amount} AI credits`
+              : 'Select a credit pack'
+          }
+          onPress={() => selectedPack && setConfirmationPack(selectedPack)}
+          disabled={purchase.loading || !selectedPack || purchase.availability !== 'available'}
+          style={styles.primaryAction}
+        />
+      </View>
     </ScrollView>
   );
 
@@ -224,9 +224,7 @@ export function CreditPackPurchaseModal({
           <Text style={styles.purchaseStateTitle}>
             {purchase.error ? 'Purchase not completed' : 'AI credits added'}
           </Text>
-          <Text style={styles.purchaseStateDescription}>
-            {purchase.error ?? purchase.feedback}
-          </Text>
+          <Text style={styles.purchaseStateDescription}>{purchase.error ?? purchase.feedback}</Text>
           <AppButton
             label={purchase.error ? 'Choose Another Pack' : 'Done'}
             accessibilityLabel={
@@ -249,7 +247,9 @@ export function CreditPackPurchaseModal({
   return (
     <>
       {embedded ? (
-        visible && selectionVisible ? <View>{selectionContent}</View> : null
+        visible && selectionVisible ? (
+          <View>{selectionContent}</View>
+        ) : null
       ) : (
         <AppModal visible={selectionVisible} fullScreen closeLabel="Back" onClose={onClose}>
           {selectionContent}

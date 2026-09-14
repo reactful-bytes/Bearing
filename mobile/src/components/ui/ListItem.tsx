@@ -58,18 +58,18 @@ export function ListItem({
           showDivider ? styles.rowDivider : null,
         ]
       : [styles.item, trailingContentBelow ? styles.itemContentBelow : null];
-  const copyStyle = trailingContentBelow ? [styles.copyBlock, styles.copyBlockContentBelow] : styles.copyBlock;
-  const trailingElement = trailingContent ?? (trailingText ? (
-    <Text
-      style={[styles.trailingText, colorTone !== 'default' ? { color: toneColor } : null]}
-    >
-      {trailingText}
-    </Text>
-  ) : null);
+  const copyStyle = trailingContentBelow
+    ? [styles.copyBlock, styles.copyBlockContentBelow]
+    : styles.copyBlock;
+  const trailingElement =
+    trailingContent ??
+    (trailingText ? (
+      <Text style={[styles.trailingText, colorTone !== 'default' ? { color: toneColor } : null]}>
+        {trailingText}
+      </Text>
+    ) : null);
   const trailingView = trailingElement ? (
-    <View style={trailingContentBelow ? styles.trailingContentBelow : null}>
-      {trailingElement}
-    </View>
+    <View style={trailingContentBelow ? styles.trailingContentBelow : null}>{trailingElement}</View>
   ) : null;
 
   if (onPress) {

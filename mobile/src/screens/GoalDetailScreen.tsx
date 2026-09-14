@@ -493,7 +493,11 @@ const createStyles = (theme: Theme) =>
     detailHeader: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
     detailHeaderCopy: { flex: 1, gap: theme.spacing.xs },
     detailTitle: { ...theme.typography.sectionTitle, color: theme.colors.text },
-    detailProgressText: { ...theme.typography.helper, color: theme.colors.brand, fontWeight: '700' },
+    detailProgressText: {
+      ...theme.typography.helper,
+      color: theme.colors.brand,
+      fontWeight: '700',
+    },
     tabRow: {
       flexDirection: 'row',
       padding: 4,

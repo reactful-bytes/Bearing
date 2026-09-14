@@ -36,13 +36,13 @@ export function SectionHeader({
     ) : null;
 
   return (
-      <View
-        style={[
-          styles.container,
-          variant === 'compact' && styles.compactContainer,
-          variant === 'uppercase-accent' && styles.uppercaseAccentContainer,
-        ]}
-      >
+    <View
+      style={[
+        styles.container,
+        variant === 'compact' && styles.compactContainer,
+        variant === 'uppercase-accent' && styles.uppercaseAccentContainer,
+      ]}
+    >
       <View style={styles.copy}>
         <Text
           accessibilityRole="header"

@@ -124,9 +124,11 @@ export type CalendarScreenProps = {
         | { goalId?: string; stepId?: string; returnTo?: string }
         | undefined,
     ) => void;
-    getParent?: () => {
-      navigate?: (route: 'Plan', params: AppTabParamList['Plan']) => void;
-    } | undefined;
+    getParent?: () =>
+      | {
+          navigate?: (route: 'Plan', params: AppTabParamList['Plan']) => void;
+        }
+      | undefined;
   };
 };
 

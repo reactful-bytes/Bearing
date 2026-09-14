@@ -263,7 +263,10 @@ const createStyles = (theme: Theme) =>
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.background,
     },
-    timelineMarkerComplete: { backgroundColor: theme.colors.success, borderColor: theme.colors.success },
+    timelineMarkerComplete: {
+      backgroundColor: theme.colors.success,
+      borderColor: theme.colors.success,
+    },
     timelineMarkerCurrent: {
       borderWidth: 2,
       borderColor: theme.colors.brand,
