@@ -165,36 +165,50 @@ describe('PlanScreen', () => {
     jest.useRealTimers();
   });
 
-  it('composes the live daily command center and limits today events to three', () => {
+  it('composes the upcoming command center and limits events to three', () => {
     mockReadyState(Array.from({ length: 6 }, (_, index) => makeEvent(index)));
     const stackNavigate = jest.fn();
 
     render(<PlanScreen navigation={{ navigate: stackNavigate } as never} />);
 
     expect(screen.getByText(/Preston/)).toBeTruthy();
-    expect(screen.getByText("TODAY'S PLAN")).toBeTruthy();
+    expect(screen.getByText('UPCOMING')).toBeTruthy();
     expect(screen.getByText('Plan block 0')).toBeTruthy();
     expect(screen.getByText('Plan block 2')).toBeTruthy();
     expect(screen.queryByText('Plan block 3')).toBeNull();
     expect(screen.getByText('Ship the next release')).toBeTruthy();
-    expect(screen.getByText('1')).toBeTruthy();
-    expect(screen.getByText('Ideas captured from Notes.')).toBeTruthy();
+    expect(screen.getByText('50%')).toBeTruthy();
+    expect(screen.getByText('Notes')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'View full day' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'See all' })).toBeTruthy();
   });
 
   it('routes dashboard surfaces and rows to the existing typed destinations', () => {
     const stackNavigate = jest.fn();
-    render(<PlanScreen navigation={{ navigate: stackNavigate } as never} />);
+    render(
+      <PlanScreen
+        navigation={
+          { navigate: stackNavigate, getParent: () => ({ navigate: mockRootNavigate }) } as never
+        }
+      />,
+    );
 
     fireEvent.press(screen.getByRole('button', { name: 'Open event Plan block 1' }));
     fireEvent.press(screen.getByRole('button', { name: 'Open goal Ship the next release' }));
     fireEvent.press(screen.getByRole('button', { name: 'Open Notes' }));
+    fireEvent.press(screen.getByRole('link', { name: 'View full day' }));
+    fireEvent.press(screen.getByRole('link', { name: 'See all' }));
     fireEvent.press(screen.getByRole('button', { name: 'Open profile' }));
 
     expect(stackNavigate).toHaveBeenCalledWith('GoalDetail', { goalId: 'goal-1' });
     expect(mockRootNavigate).toHaveBeenCalledWith('Notes', {
       screen: 'NotesHome',
-      params: { createNote: true },
     });
+    expect(mockRootNavigate).toHaveBeenCalledWith('Calendar', {
+      screen: 'CalendarHome',
+      params: expect.objectContaining({ dateIso: expect.any(String) }),
+    });
+    expect(stackNavigate).toHaveBeenCalledWith('Goals');
     expect(mockRootNavigate).toHaveBeenCalledWith('Profile');
   });
 
@@ -226,15 +240,16 @@ describe('PlanScreen', () => {
     });
     const stackNavigate = jest.fn();
 
-    render(<PlanScreen navigation={{ navigate: stackNavigate } as never} />);
+    render(
+      <PlanScreen
+        navigation={
+          { navigate: stackNavigate, getParent: () => ({ navigate: mockRootNavigate }) } as never
+        }
+      />,
+    );
 
-    expect(screen.getByText('ACTIVE')).toBeTruthy();
-    expect(screen.getByText('Distractions blocked')).toBeTruthy();
     fireEvent.press(screen.getByRole('button', { name: 'Open Focus Mode' }));
-    expect(mockRootNavigate).toHaveBeenCalledWith('Plan', {
-      screen: 'FocusMode',
-      params: { eventId: 'event-1' },
-    });
+    expect(stackNavigate).toHaveBeenCalledWith('FocusMode', { eventId: 'event-1' });
   });
 
   it('renders recovery states for each live Plan source', () => {
@@ -256,8 +271,8 @@ describe('PlanScreen', () => {
 
     render(<PlanScreen navigation={{ navigate: jest.fn() } as never} />);
 
-    expect(screen.getByText("Unable to load today's events.")).toBeTruthy();
-    expect(screen.getByText('Loading goals...')).toBeTruthy();
-    expect(screen.getByText('0')).toBeTruthy();
+    expect(screen.getByText('Unable to load upcoming events.')).toBeTruthy();
+    expect(screen.getByLabelText('Loading')).toBeTruthy();
+    expect(screen.getByText('Notes')).toBeTruthy();
   });
 });

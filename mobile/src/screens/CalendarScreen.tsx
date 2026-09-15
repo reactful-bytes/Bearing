@@ -112,6 +112,7 @@ export type CalendarScreenProps = {
     params?: {
       focusLaunch?: CalendarFocusLaunch;
       createEvent?: boolean;
+      dateIso?: string;
     };
   };
   navigation?: {
@@ -159,6 +160,16 @@ export function CalendarScreen({
   const [pendingFocusEvent, setPendingFocusEvent] = useState<CalendarEvent | null>(null);
   const [preferredFocusEventId, setPreferredFocusEventId] = useState<string | null>(null);
   const [timelineFocusRequest, setTimelineFocusRequest] = useState(0);
+
+  useEffect(() => {
+    const dateIso = route?.params?.dateIso;
+    if (!dateIso) return;
+
+    const nextDate = new Date(dateIso);
+    if (!Number.isNaN(nextDate.getTime())) {
+      setSelectedDate(nextDate);
+    }
+  }, [route?.params?.dateIso]);
 
   useEffect(() => {
     if (!route?.params?.createEvent) {

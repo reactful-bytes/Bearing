@@ -2,32 +2,28 @@ import { ReactNode, useMemo } from 'react';
 import { NavigationProp } from '@react-navigation/native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { getEventKindLabel } from '../components/presentation/EventPresentation';
 import { getGoalProgressPercent } from '../components/presentation/GoalPresentation';
-import { AppCard } from '../components/ui/AppCard';
 import { AppScreen } from '../components/ui/AppScreen';
-import { Card } from '../components/ui/Card';
 import { EmptyState } from '../components/ui/EmptyState';
-import { IconButton } from '../components/ui/IconButton';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { AppIcon } from '../components/ui/AppIcon';
 import { useThemedStyles } from '../design/useThemedStyles';
 import { useTheme } from '../design/ThemeProvider';
+import type { AppIconName } from '../design/icons';
 import type { Theme } from '../design/tokens';
 import { useCalendarEvents } from '../features/calendar/useCalendarEvents';
 import { CalendarDisplayEvent } from '../features/calendar/calendarTypes';
 import { useFocusSession } from '../features/focus/focusSession';
 import { useGoals } from '../features/goals/useGoals';
-import { useNotes } from '../features/notes/useNotes';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { DEFAULT_TIME_FORMAT, TimeFormat, timeFormatOptions } from '../features/profile/timeFormat';
 import { AppTabParamList, PlanStackParamList } from '../navigation/navigationTypes';
 
-const MAX_TODAY_EVENTS = 3;
+const MAX_UPCOMING_EVENTS = 3;
 const MAX_ACTIVE_GOALS = 3;
 
-const EMPTY_TODAY_PHRASES = [
+const EMPTY_UPCOMING_PHRASES = [
   'Free as a bird',
   'Your calendar is taking a deep breath',
   'Wide-open skies ahead',
@@ -65,13 +61,6 @@ type PlanScreenProps = {
   navigation: NavigationProp<PlanStackParamList, 'PlanHome'>;
 };
 
-function getDayRange(date: Date): { start: Date; end: Date } {
-  return {
-    start: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
-    end: new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999),
-  };
-}
-
 function getGreeting(hour: number): string {
   if (hour < 12) return 'Good morning';
   if (hour < 18) return 'Good afternoon';
@@ -92,6 +81,24 @@ function formatEventTime(
   });
 }
 
+function PlanSkeleton({ rows = 3 }: { rows?: number }) {
+  const styles = useThemedStyles(createStyles);
+
+  return (
+    <View accessibilityLabel="Loading" style={styles.skeletonList}>
+      {Array.from({ length: rows }, (_, index) => (
+        <View key={index} style={styles.skeletonRow}>
+          <View style={styles.skeletonMarker} />
+          <View style={styles.skeletonCopy}>
+            <View style={[styles.skeletonLine, styles.skeletonLinePrimary]} />
+            <View style={[styles.skeletonLine, styles.skeletonLineSecondary]} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function PlanSurface({
   title,
   children,
@@ -102,6 +109,10 @@ function PlanSurface({
   titlePlacement = 'inside',
   titleTone = 'brand',
   titleAlign = 'left',
+  titleIcon,
+  titleAction,
+  footer,
+  compact = false,
 }: {
   title: string;
   children: ReactNode;
@@ -109,11 +120,16 @@ function PlanSurface({
   onPress?: () => void;
   accessibilityLabel?: string;
   bodyStyle?: object;
-  titlePlacement?: 'inside' | 'outside';
+  titlePlacement?: 'inside' | 'outside' | 'hidden';
   titleTone?: 'brand' | 'focus' | 'warning';
   titleAlign?: 'left' | 'center';
+  titleIcon?: AppIconName;
+  titleAction?: ReactNode;
+  footer?: ReactNode;
+  compact?: boolean;
 }) {
   const styles = useThemedStyles(createStyles);
+  const { theme } = useTheme();
   const titleStyle = [
     styles.surfaceTitle,
     titleTone === 'focus'
@@ -131,9 +147,29 @@ function PlanSurface({
 
   return (
     <View style={[styles.surfaceShell, style]}>
-      {titlePlacement === 'outside' ? titleElement : null}
-      <View style={styles.surface}>
-        {titlePlacement === 'inside' ? titleElement : null}
+      {titlePlacement === 'outside' ? (
+        <View style={styles.surfaceTitleRow}>
+          <View style={styles.surfaceTitleContent}>
+            {titleIcon ? (
+              <AppIcon name={titleIcon} size={18} color={theme.colors.brand} decorative />
+            ) : null}
+            {titleElement}
+          </View>
+          {titleAction}
+        </View>
+      ) : null}
+      <View style={[styles.surface, compact ? styles.compactSurfaceInner : null]}>
+        {titlePlacement === 'inside' ? (
+          <View style={styles.surfaceTitleRow}>
+            <View style={styles.surfaceTitleContent}>
+              {titleIcon ? (
+                <AppIcon name={titleIcon} size={18} color={theme.colors.brand} decorative />
+              ) : null}
+              {titleElement}
+            </View>
+            {titleAction}
+          </View>
+        ) : null}
         {onPress ? (
           <Pressable
             accessibilityRole="button"
@@ -150,6 +186,7 @@ function PlanSurface({
         ) : (
           <View style={[styles.surfaceBody, bodyStyle]}>{children}</View>
         )}
+        {footer ? <View style={styles.surfaceFooter}>{footer}</View> : null}
       </View>
     </View>
   );
@@ -159,40 +196,38 @@ function PlanEventRow({
   event,
   dateTime,
   onPress,
+  dateLabel,
   isLast,
-  isNext,
 }: {
   event: CalendarDisplayEvent;
   dateTime: string;
   onPress: () => void;
-  isNext: boolean;
+  dateLabel?: string;
   isLast: boolean;
 }) {
   const styles = useThemedStyles(createStyles);
-  const accentStyle = event.ownership === 'device' ? styles.deviceAccent : styles.bearingAccent;
 
   return (
-    <View style={styles.eventItem}>
+    <Pressable
+      accessibilityLabel={`Open event ${event.title}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.eventItem, pressed ? styles.pressed : null]}
+    >
       <View style={styles.timelineColumn}>
-        <View
-          style={[styles.timelineMarker, accentStyle, isNext ? styles.timelineMarkerNext : null]}
-        />
+        <View style={styles.timelineMarker} />
         {!isLast ? <View style={styles.timelineConnector} /> : null}
       </View>
-      <Card
-        accessibilityLabel={`Open event ${event.title}`}
-        onPress={onPress}
-        variant="outlined"
-        style={[styles.eventCard, accentStyle, isNext ? styles.nextEventCard : null]}
-      >
-        <Text numberOfLines={1} style={styles.eventTitle}>
-          {event.title}
-        </Text>
-        <Text style={styles.eventMeta}>
-          {dateTime} · {getEventKindLabel(event)}
-        </Text>
-      </Card>
-    </View>
+      <View style={styles.eventCard}>
+        <View style={styles.eventTitleRow}>
+          <Text numberOfLines={1} style={styles.eventTitle}>
+            {event.title}
+          </Text>
+          {dateLabel ? <Text style={styles.eventDateLabel}>{dateLabel}</Text> : null}
+        </View>
+        <Text style={styles.eventMeta}>{dateTime}</Text>
+      </View>
+    </Pressable>
   );
 }
 
@@ -218,6 +253,7 @@ function PlanGoalRow({ goal, onPress }: { goal: PlanScreenGoal; onPress: () => v
         <Text numberOfLines={1} style={styles.goalTitle}>
           {goal.title}
         </Text>
+        <Text style={styles.goalProgressText}>{progressPercent}%</Text>
       </View>
       <ProgressBar
         accessibilityLabel={`Goal progress ${goal.title}`}
@@ -232,38 +268,28 @@ function PlanGoalRow({ goal, onPress }: { goal: PlanScreenGoal; onPress: () => v
 export function PlanScreen({ navigation }: PlanScreenProps) {
   const styles = useThemedStyles(createStyles);
   const { theme } = useTheme();
-  const tabNavigation = navigation.getParent<NavigationProp<AppTabParamList>>();
+  const tabNavigation = navigation.getParent?.<NavigationProp<AppTabParamList>>();
   const today = useMemo(() => new Date(), []);
-  const todayRange = useMemo(() => getDayRange(today), [today]);
   const { profile } = useUserProfile();
   const focusSession = useFocusSession();
   const { goals, uiState: goalsState, retry: retryGoals } = useGoals();
-  const { notes, uiState: notesState, retry: retryNotes } = useNotes();
-  const {
-    events,
-    uiState: eventsState,
-    refresh: refreshEvents,
-  } = useCalendarEvents(today, undefined, todayRange);
+  const { events, uiState: eventsState, refresh: refreshEvents } = useCalendarEvents(today);
   const locale = profile?.locale ?? 'en-US';
   const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
   const displayName = profile?.displayName?.trim();
+  const firstName = displayName?.split(/\s+/)[0];
   const greeting = getGreeting(new Date().getHours());
   const nowTimestamp = today.getTime();
-  const emptyTodayPhrase = getDailyPhrase(EMPTY_TODAY_PHRASES, today);
+  const emptyUpcomingPhrase = getDailyPhrase(EMPTY_UPCOMING_PHRASES, today);
   const emptyGoalPhrase = getDailyPhrase(EMPTY_GOAL_PHRASES, today);
 
-  const todayEvents = useMemo(
+  const upcomingEvents = useMemo(
     () =>
       [...events]
-        .filter(
-          (event) =>
-            event.startAt >= todayRange.start &&
-            event.startAt <= todayRange.end &&
-            event.endAt.getTime() >= nowTimestamp,
-        )
+        .filter((event) => event.startAt.getTime() >= nowTimestamp)
         .sort((left, right) => left.startAt.getTime() - right.startAt.getTime())
-        .slice(0, MAX_TODAY_EVENTS),
-    [events, nowTimestamp, todayRange],
+        .slice(0, MAX_UPCOMING_EVENTS),
+    [events, nowTimestamp],
   );
   const recentGoals = useMemo(
     () =>
@@ -275,11 +301,11 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
   );
   const currentEvent = useMemo(() => {
     return (
-      todayEvents.find((event) => today >= event.startAt && today < event.endAt) ??
-      todayEvents.find((event) => event.startAt > today) ??
+      upcomingEvents.find((event) => today >= event.startAt && today < event.endAt) ??
+      upcomingEvents.find((event) => event.startAt > today) ??
       null
     );
-  }, [today, todayEvents]);
+  }, [today, upcomingEvents]);
 
   function openFocus(): void {
     if (focusSession) {
@@ -296,165 +322,204 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
   }
 
   return (
-    <AppScreen mode="scroll" testID="plan-screen" contentContainerStyle={styles.content}>
+    <AppScreen
+      mode="scroll"
+      edges={['top', 'right', 'left']}
+      testID="plan-screen"
+      contentContainerStyle={styles.content}
+    >
       <View style={styles.header}>
-        <IconButton
-          name="menu"
-          accessibilityLabel="Open navigation"
-          onPress={() => tabNavigation?.navigate('Profile')}
-          style={styles.headerAction}
-        />
-        <View pointerEvents="none" style={styles.brandMark}>
-          <AppIcon name="bearingMark" size={128} decorative />
+        <View style={styles.brandMark}>
+          <AppIcon name="bearingMark" size={104} decorative />
         </View>
-        <IconButton
-          name="more"
+        <View style={styles.greetingBlock}>
+          <Text accessibilityRole="header" style={styles.greeting}>
+            {greeting},
+          </Text>
+          {firstName ? <Text style={styles.title}>{firstName}</Text> : null}
+          <Text style={styles.subtitle}>Stay focused. Make it count.</Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
           accessibilityLabel="Open profile"
           onPress={() => tabNavigation?.navigate('Profile')}
-          style={styles.headerActionRight}
-        />
-      </View>
-
-      <View style={styles.greetingBlock}>
-        <Text accessibilityRole="header" style={styles.title}>
-          {greeting}
-          {displayName ? `, ${displayName}.` : '.'}
-        </Text>
-        <Text style={styles.subtitle}>Stay focused. Make it count.</Text>
+          style={({ pressed }) => [styles.profileButton, pressed ? styles.pressed : null]}
+        >
+          <AppIcon name="profileAvatar" size={32} decorative />
+        </Pressable>
       </View>
 
       <View style={styles.dashboardGrid}>
         <View style={styles.surfaceRow}>
           <PlanSurface
-            title="TODAY'S PLAN"
-            titlePlacement="outside"
+            title="UPCOMING"
+            titlePlacement="inside"
+            titleIcon="calendar"
+            footer={
+              <Pressable
+                accessibilityRole="link"
+                accessibilityLabel="View full day"
+                onPress={() =>
+                  tabNavigation?.navigate('Calendar', {
+                    screen: 'CalendarHome',
+                    params: { dateIso: new Date().toISOString() },
+                  })
+                }
+                style={({ pressed }) => [styles.surfaceFooterLink, pressed ? styles.pressed : null]}
+              >
+                <Text style={styles.surfaceFooterText}>View full day</Text>
+                <AppIcon name="next" size={18} color={theme.colors.brand} decorative />
+              </Pressable>
+            }
             style={styles.todaySurface}
             bodyStyle={styles.eventListBody}
           >
-            {eventsState === 'loading' ? (
-              <AppCard>
-                <Text style={styles.stateTitle}>Loading today&apos;s events...</Text>
-              </AppCard>
-            ) : null}
+            {eventsState === 'loading' ? <PlanSkeleton /> : null}
             {eventsState === 'error' ? (
               <RecoveryCard
-                title="Unable to load today's events."
+                title="Unable to load upcoming events."
                 description="Check your connection, then retry."
                 onRetry={() => void refreshEvents()}
               />
             ) : null}
-            {eventsState === 'empty' || (eventsState === 'ready' && todayEvents.length === 0) ? (
+            {eventsState === 'empty' || (eventsState === 'ready' && upcomingEvents.length === 0) ? (
               <EmptyState
                 icon="calendar"
-                title={emptyTodayPhrase}
-                description="Add something new to shape the day."
+                title={emptyUpcomingPhrase}
+                description="Add something new to shape what comes next."
                 presentation="compact"
+                style={styles.emptyUpcoming}
               />
             ) : null}
             {eventsState === 'ready'
-              ? todayEvents.map((event, index) => (
+              ? upcomingEvents.map((event, index) => (
                   <PlanEventRow
                     key={`${event.ownership}-${event.id}`}
                     event={event}
                     dateTime={formatEventTime(event, locale, timeFormat)}
-                    onPress={() => tabNavigation?.navigate('Calendar', { screen: 'CalendarHome' })}
-                    isNext={index === 0}
-                    isLast={index === todayEvents.length - 1}
+                    dateLabel={
+                      index === 0 ||
+                      event.startAt.toDateString() !==
+                        upcomingEvents[index - 1].startAt.toDateString()
+                        ? event.startAt.toLocaleDateString(locale, {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric',
+                          })
+                        : undefined
+                    }
+                    onPress={() =>
+                      tabNavigation?.navigate('Calendar', {
+                        screen: 'CalendarHome',
+                        params: { dateIso: event.startAt.toISOString() },
+                      })
+                    }
+                    isLast={index === upcomingEvents.length - 1}
                   />
                 ))
               : null}
-          </PlanSurface>
-
-          <PlanSurface
-            title="FOCUS MODE"
-            titleTone="focus"
-            titleAlign="center"
-            accessibilityLabel="Open Focus Mode"
-            onPress={openFocus}
-            style={styles.focusSurface}
-          >
-            <View style={styles.centeredSurfaceContent}>
-              <AppIcon name="focus" size={96} color={theme.colors.focusGreen} decorative />
-              <Text style={styles.focusStatus}>{focusSession ? 'ACTIVE' : 'READY'}</Text>
-              <Text style={styles.focusDescription}>
-                {focusSession ? 'Distractions blocked' : 'Start a focused session'}
-              </Text>
-            </View>
           </PlanSurface>
         </View>
 
         <View style={styles.surfaceRow}>
-          <PlanSurface title="GOALS" titlePlacement="outside" style={styles.goalsSurface}>
-            {goalsState === 'loading' ? (
-              <AppCard>
-                <Text style={styles.stateTitle}>Loading goals...</Text>
-              </AppCard>
-            ) : null}
-            {goalsState === 'error' ? (
-              <RecoveryCard
-                title="Unable to load goals."
-                description="Check your connection, then retry."
-                onRetry={retryGoals}
-              />
-            ) : null}
-            {goalsState === 'empty' || (goalsState === 'ready' && recentGoals.length === 0) ? (
-              <EmptyState
-                icon="goal"
-                title={emptyGoalPhrase}
-                description="Create a goal to give your next steps a home."
-                presentation="compact"
-                actionLabel="Open goals"
-                onPressAction={() => navigation.navigate('Goals')}
-              />
-            ) : null}
-            {goalsState === 'ready'
-              ? recentGoals.map((goal) => (
-                  <PlanGoalRow
-                    key={goal.id}
-                    goal={goal}
-                    onPress={() => navigation.navigate('GoalDetail', { goalId: goal.id })}
-                  />
-                ))
-              : null}
-          </PlanSurface>
-
           <PlanSurface
-            title="IDEA DUMP"
-            titleTone="warning"
-            titleAlign="center"
-            accessibilityLabel="Open Notes"
-            onPress={() =>
-              tabNavigation?.navigate('Notes', {
-                screen: 'NotesHome',
-                params: { createNote: true },
-              })
-            }
-            style={styles.ideaSurface}
+            title="FOCUS MODE"
+            titleTone="focus"
+            titlePlacement="hidden"
+            accessibilityLabel="Open Focus Mode"
+            onPress={openFocus}
+            style={styles.compactSurface}
+            bodyStyle={[styles.compactSurfaceBody, styles.focusSurfaceBody]}
+            compact
           >
-            <View style={styles.centeredSurfaceContent}>
-              <AppIcon name="idea" size={96} color={theme.colors.warning} decorative />
-              <View style={styles.ideaCopy}>
-                {notesState === 'loading' ? (
-                  <Text style={styles.cardTitle}>Checking your notes...</Text>
-                ) : null}
-                {notesState === 'error' ? (
-                  <RecoveryCard
-                    title="Notes are unavailable"
-                    description="Check your connection, then retry."
-                    onRetry={retryNotes}
-                  />
-                ) : null}
-                {notesState === 'empty' || notesState === 'ready' ? (
-                  <Text style={styles.ideaCount}>
-                    {notes.filter((note) => note.source === 'idea_dump').length}
-                  </Text>
-                ) : null}
-                <Text style={styles.cardDescription}>Ideas captured from Notes.</Text>
-                <Text style={styles.ideaCta}>Review in Notes ›</Text>
+            <View style={styles.compactSurfaceContent}>
+              <AppIcon name="focus" size={42} color={theme.colors.focusGreen} decorative />
+              <View style={styles.compactSurfaceCopy}>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.compactSurfaceLabel, styles.compactSurfaceLabelFocus]}
+                >
+                  Focus Mode
+                </Text>
+                <Text style={styles.compactSurfaceDescription}>Start a focused session</Text>
+              </View>
+              <View style={styles.compactSurfaceChevron}>
+                <AppIcon name="next" size={18} color={theme.colors.focusGreen} decorative />
+              </View>
+            </View>
+          </PlanSurface>
+          <PlanSurface
+            title="NOTES"
+            titlePlacement="hidden"
+            accessibilityLabel="Open Notes"
+            onPress={() => tabNavigation?.navigate('Notes', { screen: 'NotesHome' })}
+            style={styles.compactSurface}
+            bodyStyle={[styles.compactSurfaceBody, styles.notesSurfaceBody]}
+            compact
+          >
+            <View style={styles.compactSurfaceContent}>
+              <AppIcon name="notes" size={42} color={theme.colors.warning} decorative />
+              <View style={styles.compactSurfaceCopy}>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.compactSurfaceLabel, styles.compactSurfaceLabelWarning]}
+                >
+                  Notes
+                </Text>
+                <Text style={styles.compactSurfaceDescription}>Capture a thought</Text>
+              </View>
+              <View style={styles.compactSurfaceChevron}>
+                <AppIcon name="next" size={18} color={theme.colors.warning} decorative />
               </View>
             </View>
           </PlanSurface>
         </View>
+
+        <PlanSurface
+          title="GOALS"
+          titlePlacement="inside"
+          titleIcon="goal"
+          footer={
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="See all"
+              onPress={() => navigation.navigate('Goals')}
+              style={({ pressed }) => [styles.surfaceFooterLink, pressed ? styles.pressed : null]}
+            >
+              <Text style={styles.surfaceFooterText}>See all</Text>
+              <AppIcon name="next" size={18} color={theme.colors.brand} decorative />
+            </Pressable>
+          }
+          style={styles.goalsSurface}
+        >
+          {goalsState === 'loading' ? <PlanSkeleton rows={3} /> : null}
+          {goalsState === 'error' ? (
+            <RecoveryCard
+              title="Unable to load goals."
+              description="Check your connection, then retry."
+              onRetry={retryGoals}
+            />
+          ) : null}
+          {goalsState === 'empty' || (goalsState === 'ready' && recentGoals.length === 0) ? (
+            <EmptyState
+              icon="goal"
+              title={emptyGoalPhrase}
+              description="Create a goal to give your next steps a home."
+              presentation="compact"
+              actionLabel="Open goals"
+              onPressAction={() => navigation.navigate('Goals')}
+            />
+          ) : null}
+          {goalsState === 'ready'
+            ? recentGoals.map((goal) => (
+                <PlanGoalRow
+                  key={goal.id}
+                  goal={goal}
+                  onPress={() => navigation.navigate('GoalDetail', { goalId: goal.id })}
+                />
+              ))
+            : null}
+        </PlanSurface>
       </View>
     </AppScreen>
   );
@@ -463,7 +528,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
     content: {
-      gap: theme.spacing.lg,
+      gap: theme.spacing.md,
       paddingBottom: theme.spacing['3xl'],
     },
     header: {
@@ -472,25 +537,26 @@ const createStyles = (theme: Theme) =>
       minHeight: 64,
       position: 'relative',
     },
-    headerAction: { marginLeft: -theme.spacing.sm },
-    headerActionRight: { marginLeft: 'auto' },
     brandMark: {
-      position: 'absolute',
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0,
+      flexShrink: 0,
+      marginLeft: -10,
+    },
+    profileButton: {
+      marginLeft: theme.spacing.md,
+      minWidth: theme.layout.minimumTouchTarget,
+      minHeight: theme.layout.minimumTouchTarget,
       alignItems: 'center',
       justifyContent: 'center',
     },
     title: { ...theme.typography.sectionTitle, color: theme.colors.text },
+    greeting: { ...theme.typography.helper, color: theme.colors.text, fontWeight: '500' },
     subtitle: { ...theme.typography.helper, color: theme.colors.textSecondary },
     greetingBlock: {
-      gap: theme.spacing.xs,
-      alignItems: 'center',
-      paddingVertical: theme.spacing.xs,
+      flex: 1,
+      alignItems: 'flex-start',
+      justifyContent: 'center',
     },
-    dashboardGrid: { gap: theme.spacing.xl },
+    dashboardGrid: { gap: theme.spacing.xl, marginTop: theme.spacing.xs },
     surfaceRow: {
       flexDirection: 'row',
       alignItems: 'stretch',
@@ -507,17 +573,42 @@ const createStyles = (theme: Theme) =>
       minHeight: 184,
       gap: theme.spacing.sm,
       padding: theme.spacing.lg,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
       borderRadius: theme.radii.lg,
       backgroundColor: theme.colors.surfaceRaised,
+      elevation: 2,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      overflow: 'hidden',
     },
     surfaceTitle: { ...theme.typography.label },
+    surfaceTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: theme.spacing.sm,
+    },
+    surfaceTitleContent: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
     surfaceTitleBrand: { color: theme.colors.brand },
     surfaceTitleFocus: { color: theme.colors.focusGreen },
     surfaceTitleWarning: { color: theme.colors.warning },
     surfaceTitleCentered: { textAlign: 'center' },
     surfaceBody: { flex: 1, gap: theme.spacing.sm },
+    surfaceFooter: {
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+      marginBottom: -theme.spacing.lg,
+    },
+    surfaceFooterLink: {
+      minHeight: 48,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    surfaceFooterText: { ...theme.typography.helper, color: theme.colors.brand, fontWeight: '700' },
+    surfaceLink: { alignSelf: 'flex-end', paddingVertical: theme.spacing.xs },
+    surfaceLinkText: { ...theme.typography.caption, color: theme.colors.brand, fontWeight: '700' },
     centeredSurfaceContent: {
       flex: 1,
       width: '100%',
@@ -527,29 +618,54 @@ const createStyles = (theme: Theme) =>
       gap: theme.spacing.sm,
     },
     pressed: { opacity: 0.82 },
+    emptyUpcoming: { alignItems: 'center', width: '100%' },
     todaySurface: { flex: 1.6, minHeight: 214 },
-    focusSurface: {},
-    goalsSurface: { flex: 1.6, minHeight: 202 },
-    ideaSurface: {},
+    compactSurface: { minHeight: 88 },
+    compactSurfaceInner: { minHeight: 0, paddingVertical: theme.spacing.md },
+    compactSurfaceBody: {
+      position: 'relative',
+      justifyContent: 'center',
+      marginHorizontal: -theme.spacing.lg,
+      marginVertical: -theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+    },
+    compactSurfaceContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      width: '100%',
+      gap: theme.spacing.md,
+    },
+    compactSurfaceCopy: {
+      flex: 1,
+      minWidth: 0,
+      paddingRight: theme.spacing.xs,
+      gap: theme.spacing.xs,
+    },
+    compactSurfaceChevron: { position: 'absolute', right: 0, bottom: 0 },
+    compactSurfaceLabel: { ...theme.typography.cardTitle, fontWeight: '700' },
+    compactSurfaceDescription: { ...theme.typography.caption, color: theme.colors.textSecondary },
+    compactSurfaceLabelFocus: { color: theme.colors.focusGreen },
+    compactSurfaceLabelWarning: { color: theme.colors.warning },
+    focusSurfaceBody: { backgroundColor: `${theme.colors.focusGreen}18` },
+    notesSurfaceBody: { backgroundColor: `${theme.colors.warning}18` },
+    goalsSurface: { minHeight: 202 },
+    goalsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    goalsHeaderSpacer: { flex: 1 },
     eventListBody: { gap: 0 },
     eventItem: {
-      flex: 1,
       flexDirection: 'row',
       alignItems: 'stretch',
-      gap: theme.spacing.sm,
+      gap: theme.spacing.md,
+      paddingVertical: theme.spacing.xs,
     },
-    timelineColumn: { width: 12, alignItems: 'center' },
+    timelineColumn: { width: 20, alignItems: 'center' },
     timelineMarker: {
-      width: 9,
-      height: 9,
-      marginTop: theme.spacing.md,
-      borderRadius: 5,
-      borderWidth: 2,
-      backgroundColor: theme.colors.background,
-    },
-    timelineMarkerNext: {
-      backgroundColor: theme.colors.success,
-      borderColor: theme.colors.success,
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: theme.colors.surfaceBrand,
     },
     timelineConnector: {
       flex: 1,
@@ -561,21 +677,29 @@ const createStyles = (theme: Theme) =>
       flex: 1,
       justifyContent: 'center',
       gap: theme.spacing.xs,
-      paddingVertical: theme.spacing.sm,
-      borderLeftWidth: 2,
     },
-    nextEventCard: {
-      backgroundColor: theme.colors.surfaceBrand,
-      borderColor: theme.colors.success,
-      borderLeftColor: theme.colors.success,
+    eventTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      justifyContent: 'space-between',
+      gap: theme.spacing.sm,
     },
-    bearingAccent: { borderLeftColor: theme.colors.brand },
-    deviceAccent: { borderLeftColor: theme.colors.textSecondary },
-    eventTitle: { ...theme.typography.helper, color: theme.colors.text, fontWeight: '600' },
+    eventTitle: {
+      ...theme.typography.helper,
+      color: theme.colors.text,
+      fontWeight: '600',
+      flex: 1,
+    },
     eventMeta: { ...theme.typography.caption, color: theme.colors.textSecondary },
+    eventDateLabel: {
+      ...theme.typography.caption,
+      color: theme.colors.textSecondary,
+      fontWeight: '700',
+      flexShrink: 0,
+    },
     goalRow: {
       flex: 1,
-      justifyContent: 'center',
+      justifyContent: 'flex-start',
       gap: theme.spacing.xs,
       paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.xs,
@@ -586,6 +710,7 @@ const createStyles = (theme: Theme) =>
       gap: theme.spacing.sm,
     },
     goalTitle: { ...theme.typography.helper, color: theme.colors.text, flex: 1 },
+    goalProgressText: { ...theme.typography.caption, color: theme.colors.textSecondary },
     goalProgress: { minHeight: 4 },
     focusStatus: {
       ...theme.typography.label,
@@ -617,4 +742,24 @@ const createStyles = (theme: Theme) =>
       marginTop: theme.spacing.xs,
     },
     stateTitle: { ...theme.typography.helper, color: theme.colors.text },
+    skeletonList: { gap: theme.spacing.md, paddingVertical: theme.spacing.sm },
+    skeletonRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+    },
+    skeletonMarker: {
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: theme.colors.surfaceMuted,
+    },
+    skeletonCopy: { flex: 1, gap: theme.spacing.xs },
+    skeletonLine: {
+      height: 10,
+      borderRadius: theme.radii.sm,
+      backgroundColor: theme.colors.surfaceMuted,
+    },
+    skeletonLinePrimary: { width: '72%' },
+    skeletonLineSecondary: { width: '42%', height: 8 },
   });
