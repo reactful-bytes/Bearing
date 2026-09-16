@@ -172,7 +172,7 @@ describe('PlanScreen', () => {
     render(<PlanScreen navigation={{ navigate: stackNavigate } as never} />);
 
     expect(screen.getByText(/Preston/)).toBeTruthy();
-    expect(screen.getByText('UPCOMING')).toBeTruthy();
+    expect(screen.getByText('Upcoming')).toBeTruthy();
     expect(screen.getByText('Plan block 0')).toBeTruthy();
     expect(screen.getByText('Plan block 2')).toBeTruthy();
     expect(screen.queryByText('Plan block 3')).toBeNull();

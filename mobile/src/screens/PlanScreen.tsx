@@ -110,6 +110,7 @@ function PlanSurface({
   titleTone = 'brand',
   titleAlign = 'left',
   titleIcon,
+  titleIconColor,
   titleAction,
   footer,
   compact = false,
@@ -124,6 +125,7 @@ function PlanSurface({
   titleTone?: 'brand' | 'focus' | 'warning';
   titleAlign?: 'left' | 'center';
   titleIcon?: AppIconName;
+  titleIconColor?: string;
   titleAction?: ReactNode;
   footer?: ReactNode;
   compact?: boolean;
@@ -139,6 +141,13 @@ function PlanSurface({
         : styles.surfaceTitleBrand,
     titleAlign === 'center' ? styles.surfaceTitleCentered : null,
   ];
+  const resolvedTitleIconColor =
+    titleIconColor ??
+    (titleTone === 'focus'
+      ? theme.colors.focusGreen
+      : titleTone === 'warning'
+        ? theme.colors.warning
+        : theme.colors.brand);
   const titleElement = (
     <Text accessibilityRole="header" style={titleStyle}>
       {title}
@@ -151,7 +160,7 @@ function PlanSurface({
         <View style={styles.surfaceTitleRow}>
           <View style={styles.surfaceTitleContent}>
             {titleIcon ? (
-              <AppIcon name={titleIcon} size={18} color={theme.colors.brand} decorative />
+              <AppIcon name={titleIcon} size={22} color={resolvedTitleIconColor} decorative />
             ) : null}
             {titleElement}
           </View>
@@ -163,7 +172,7 @@ function PlanSurface({
           <View style={styles.surfaceTitleRow}>
             <View style={styles.surfaceTitleContent}>
               {titleIcon ? (
-                <AppIcon name={titleIcon} size={18} color={theme.colors.brand} decorative />
+                <AppIcon name={titleIcon} size={22} color={resolvedTitleIconColor} decorative />
               ) : null}
               {titleElement}
             </View>
@@ -216,7 +225,7 @@ function PlanEventRow({
     >
       <View style={styles.timelineColumn}>
         <View style={styles.timelineMarker} />
-        {!isLast ? <View style={styles.timelineConnector} /> : null}
+        <View style={styles.timelineConnector} />
       </View>
       <View style={styles.eventCard}>
         <View style={styles.eventTitleRow}>
@@ -345,16 +354,19 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
           onPress={() => tabNavigation?.navigate('Profile')}
           style={({ pressed }) => [styles.profileButton, pressed ? styles.pressed : null]}
         >
-          <AppIcon name="profileAvatar" size={32} decorative />
+          <View style={styles.avatarPlaceholder}>
+            <Text style={styles.avatarInitial}>{firstName?.charAt(0).toUpperCase() ?? '?'}</Text>
+          </View>
         </Pressable>
       </View>
 
       <View style={styles.dashboardGrid}>
         <View style={styles.surfaceRow}>
           <PlanSurface
-            title="UPCOMING"
+            title="Upcoming"
             titlePlacement="inside"
             titleIcon="calendar"
+            titleIconColor={theme.colors.purple}
             footer={
               <Pressable
                 accessibilityRole="link"
@@ -433,16 +445,9 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
             compact
           >
             <View style={styles.compactSurfaceContent}>
-              <AppIcon name="focus" size={42} color={theme.colors.focusGreen} decorative />
-              <View style={styles.compactSurfaceCopy}>
-                <Text
-                  numberOfLines={1}
-                  style={[styles.compactSurfaceLabel, styles.compactSurfaceLabelFocus]}
-                >
-                  Focus Mode
-                </Text>
-                <Text style={styles.compactSurfaceDescription}>Start a focused session</Text>
-              </View>
+              <AppIcon name="focus" size={28} color={theme.colors.focusGreen} decorative />
+              <Text numberOfLines={1} style={styles.compactSurfaceLabel}>Focus Mode</Text>
+              <Text style={styles.compactSurfaceDescription}>Block distractions and get things done</Text>
               <View style={styles.compactSurfaceChevron}>
                 <AppIcon name="next" size={18} color={theme.colors.focusGreen} decorative />
               </View>
@@ -458,16 +463,9 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
             compact
           >
             <View style={styles.compactSurfaceContent}>
-              <AppIcon name="notes" size={42} color={theme.colors.warning} decorative />
-              <View style={styles.compactSurfaceCopy}>
-                <Text
-                  numberOfLines={1}
-                  style={[styles.compactSurfaceLabel, styles.compactSurfaceLabelWarning]}
-                >
-                  Notes
-                </Text>
-                <Text style={styles.compactSurfaceDescription}>Capture a thought</Text>
-              </View>
+              <AppIcon name="notes" size={28} color={theme.colors.warning} decorative />
+              <Text numberOfLines={1} style={styles.compactSurfaceLabel}>Notes</Text>
+              <Text style={styles.compactSurfaceDescription}>Capture thoughts before they&apos;re gone</Text>
               <View style={styles.compactSurfaceChevron}>
                 <AppIcon name="next" size={18} color={theme.colors.warning} decorative />
               </View>
@@ -476,9 +474,10 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
         </View>
 
         <PlanSurface
-          title="GOALS"
+          title="Goals"
           titlePlacement="inside"
           titleIcon="goal"
+          titleIconColor={theme.colors.success}
           footer={
             <Pressable
               accessibilityRole="link"
@@ -533,12 +532,13 @@ const createStyles = (theme: Theme) =>
     },
     header: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       minHeight: 64,
       position: 'relative',
     },
     brandMark: {
       flexShrink: 0,
+      marginTop: -10,
       marginLeft: -10,
     },
     profileButton: {
@@ -546,17 +546,26 @@ const createStyles = (theme: Theme) =>
       minWidth: theme.layout.minimumTouchTarget,
       minHeight: theme.layout.minimumTouchTarget,
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'flex-start',
     },
-    title: { ...theme.typography.sectionTitle, color: theme.colors.text },
-    greeting: { ...theme.typography.helper, color: theme.colors.text, fontWeight: '500' },
-    subtitle: { ...theme.typography.helper, color: theme.colors.textSecondary },
+    avatarPlaceholder: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.brand,
+    },
+    avatarInitial: { ...theme.typography.cardTitle, color: theme.colors.surface },
+    title: { ...theme.typography.screenTitle, color: theme.colors.text },
+    greeting: { ...theme.typography.cardTitle, color: theme.colors.textSecondary, fontWeight: '500' },
+    subtitle: { ...theme.typography.helper, lineHeight: 22, color: theme.colors.textSecondary },
     greetingBlock: {
       flex: 1,
       alignItems: 'flex-start',
       justifyContent: 'center',
     },
-    dashboardGrid: { gap: theme.spacing.xl, marginTop: theme.spacing.xs },
+    dashboardGrid: { gap: theme.spacing.xl },
     surfaceRow: {
       flexDirection: 'row',
       alignItems: 'stretch',
@@ -575,14 +584,14 @@ const createStyles = (theme: Theme) =>
       padding: theme.spacing.lg,
       borderRadius: theme.radii.lg,
       backgroundColor: theme.colors.surfaceRaised,
-      elevation: 2,
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
+      boxShadow: '2px 2px 4px rgba(0, 0, 0, 0.06)',
       overflow: 'hidden',
     },
-    surfaceTitle: { ...theme.typography.label },
+    surfaceTitle: {
+      ...theme.typography.cardTitle,
+      color: theme.colors.text,
+      textTransform: 'none',
+    },
     surfaceTitleRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -590,9 +599,9 @@ const createStyles = (theme: Theme) =>
       gap: theme.spacing.sm,
     },
     surfaceTitleContent: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
-    surfaceTitleBrand: { color: theme.colors.brand },
-    surfaceTitleFocus: { color: theme.colors.focusGreen },
-    surfaceTitleWarning: { color: theme.colors.warning },
+    surfaceTitleBrand: { color: theme.colors.text },
+    surfaceTitleFocus: { color: theme.colors.text },
+    surfaceTitleWarning: { color: theme.colors.text },
     surfaceTitleCentered: { textAlign: 'center' },
     surfaceBody: { flex: 1, gap: theme.spacing.sm },
     surfaceFooter: {
@@ -631,23 +640,13 @@ const createStyles = (theme: Theme) =>
       paddingVertical: theme.spacing.md,
     },
     compactSurfaceContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'flex-start',
+      alignItems: 'flex-start',
       width: '100%',
-      gap: theme.spacing.md,
-    },
-    compactSurfaceCopy: {
-      flex: 1,
-      minWidth: 0,
-      paddingRight: theme.spacing.xs,
       gap: theme.spacing.xs,
     },
-    compactSurfaceChevron: { position: 'absolute', right: 0, bottom: 0 },
-    compactSurfaceLabel: { ...theme.typography.cardTitle, fontWeight: '700' },
+    compactSurfaceChevron: { alignSelf: 'flex-end' },
+    compactSurfaceLabel: { ...theme.typography.cardTitle, color: theme.colors.text,  },
     compactSurfaceDescription: { ...theme.typography.caption, color: theme.colors.textSecondary },
-    compactSurfaceLabelFocus: { color: theme.colors.focusGreen },
-    compactSurfaceLabelWarning: { color: theme.colors.warning },
     focusSurfaceBody: { backgroundColor: `${theme.colors.focusGreen}18` },
     notesSurfaceBody: { backgroundColor: `${theme.colors.warning}18` },
     goalsSurface: { minHeight: 202 },
@@ -664,18 +663,21 @@ const createStyles = (theme: Theme) =>
     timelineMarker: {
       width: 16,
       height: 16,
+      marginTop: theme.spacing.xs,
       borderRadius: 8,
-      backgroundColor: theme.colors.surfaceBrand,
+      borderWidth: 2,
+      borderColor: theme.colors.borderStrong,
+      // backgroundColor: `${theme.colors.brand}22`,
     },
     timelineConnector: {
       flex: 1,
-      width: 1,
+      width: 2,
       marginVertical: theme.spacing.xs,
-      backgroundColor: theme.colors.border,
+      backgroundColor: theme.colors.borderStrong,
     },
     eventCard: {
       flex: 1,
-      justifyContent: 'center',
+      justifyContent: 'flex-start',
       gap: theme.spacing.xs,
     },
     eventTitleRow: {
