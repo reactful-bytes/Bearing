@@ -12,8 +12,10 @@ import {
 
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { useTheme } from '../../design/ThemeProvider';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppIcon } from './AppIcon';
+import { CreateFabGroup } from '../presentation/CreateFabGroup';
+import { useCreateFab } from '../presentation/CreateFabContext';
 
 import { radii, spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
@@ -43,6 +45,8 @@ export function AppModal({
 }: AppModalProps) {
   const styles = useThemedStyles(createStyles);
   const { preference } = useTheme();
+  const insets = useSafeAreaInsets();
+  const createFab = useCreateFab();
   const accessibleTitle = title || 'Modal';
 
   if (embedded) {
@@ -127,6 +131,20 @@ export function AppModal({
           ) : null}
           <View style={[styles.body, fullScreen && styles.fullScreenBody]}>{children}</View>
         </SafeAreaView>
+        {!fullScreen && createFab ? (
+          <CreateFabGroup
+            visible={createFab.visible}
+            bottomOffset={insets.bottom + spacing.md}
+            rightOffset={spacing.md}
+            onPress={createFab.open}
+            onDismiss={createFab.dismiss}
+            onCreateGoal={() => createFab.create('goal')}
+            onCreateTask={() => createFab.create('task')}
+            onCreateNote={() => createFab.create('note')}
+            onCreateEvent={() => createFab.create('event')}
+            onCreateFocus={() => createFab.create('focus')}
+          />
+        ) : null}
       </KeyboardAvoidingView>
     </Modal>
   );

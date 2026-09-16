@@ -80,7 +80,6 @@ export type RootStackParamList = {
 export type AppTabParamList = {
   Plan: NavigatorScreenParams<PlanStackParamList> | undefined;
   Calendar: NavigatorScreenParams<CalendarStackParamList> | undefined;
-  Create: undefined;
   Notes: NavigatorScreenParams<NotesStackParamList> | undefined;
   Profile: NavigatorScreenParams<ProfileStackParamList> | undefined;
 };

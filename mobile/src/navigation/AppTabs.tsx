@@ -1,11 +1,8 @@
 import { NavigationContainer, NavigationProp } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useEffect, useState } from 'react';
 import {
-  Animated,
   Platform,
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -14,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CreateFabGroup } from '../components/presentation/CreateFabGroup';
+import { CreateFabAction, CreateFabProvider, useRequiredCreateFab } from '../components/presentation/CreateFabContext';
 import { AppIcon } from '../components/ui/AppIcon';
 import { useTheme } from '../design/ThemeProvider';
 import { useThemedStyles } from '../design/useThemedStyles';
@@ -71,7 +69,6 @@ export function usesDesktopNavigation(platform: string, width: number): boolean 
 const TAB_ICONS: Record<keyof AppTabParamList, AppIconName> = {
   Plan: 'plan',
   Calendar: 'calendar',
-  Create: 'create',
   Notes: 'note',
   Profile: 'profile',
 };
@@ -80,54 +77,19 @@ function TabIcon({
   routeName,
   focused,
   isDesktop,
-  createExpanded,
-  dimmed,
 }: {
   routeName: keyof AppTabParamList;
   focused: boolean;
   isDesktop: boolean;
-  createExpanded: boolean;
-  dimmed: boolean;
 }) {
   const styles = useThemedStyles(createStyles);
-  const [rotation] = useState(() => new Animated.Value(0));
   const iconColor = focused ? styles.activeIcon.color : styles.inactiveIcon.color;
-
-  useEffect(() => {
-    if (routeName !== 'Create') {
-      return;
-    }
-
-    Animated.timing(rotation, {
-      toValue: createExpanded ? 1 : 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-  }, [createExpanded, rotation, routeName]);
-
-  if (routeName === 'Create') {
-    const rotate = rotation.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '45deg'] });
-
-    return (
-      <View style={styles.createIconCircle}>
-        <Animated.View style={{ transform: [{ rotate }] }}>
-          <AppIcon
-            name={TAB_ICONS.Create}
-            size={isDesktop ? 20 : 22}
-            color={styles.createIcon.color}
-            decorative
-          />
-        </Animated.View>
-      </View>
-    );
-  }
 
   return (
     <View
       style={[
         styles.iconSlot,
         focused ? styles.iconSlotFocused : null,
-        dimmed ? styles.iconSlotDimmed : null,
       ]}
     >
       <AppIcon
@@ -248,34 +210,29 @@ function ProfileNavigator({ onPressSignOut, isSignOutPending }: AppTabsProps) {
   );
 }
 
-function CreateTabScreen() {
-  return null;
-}
-
 export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const isDesktopNavigation = usesDesktopNavigation(Platform.OS, width);
-  const [createVisible, setCreateVisible] = useState(false);
-
   return (
     <NavigationContainer>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         <RootStack.Screen name="AppTabs">
           {({ navigation }) => (
-            <AppTabsNavigator
-              createVisible={createVisible}
-              insets={insets}
-              isDesktopNavigation={isDesktopNavigation}
-              isSignOutPending={isSignOutPending}
-              onPressSignOut={onPressSignOut}
-              setCreateVisible={setCreateVisible}
-              styles={styles}
-              theme={theme}
-              rootNavigation={navigation}
-            />
+            <CreateFabProvider
+              onCreate={(action) => navigateToCreate(navigation, action)}
+            >
+              <AppTabsNavigator
+                insets={insets}
+                isDesktopNavigation={isDesktopNavigation}
+                isSignOutPending={isSignOutPending}
+                onPressSignOut={onPressSignOut}
+                styles={styles}
+                theme={theme}
+              />
+            </CreateFabProvider>
           )}
         </RootStack.Screen>
         <RootStack.Screen name="PremiumPaywall" component={PremiumPaywallScreen} />
@@ -285,67 +242,53 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
   );
 }
 
+function navigateToCreate(
+  rootNavigation: NavigationProp<RootStackParamList>,
+  action: CreateFabAction,
+): void {
+  if (action === 'goal') {
+    rootNavigation.navigate('AppTabs', { screen: 'Plan', params: { screen: 'CreateGoal' } });
+  } else if (action === 'task') {
+    rootNavigation.navigate('AppTabs', { screen: 'Plan', params: { screen: 'CreateTask' } });
+  } else if (action === 'note') {
+    rootNavigation.navigate('AppTabs', { screen: 'Notes', params: { screen: 'NoteEditor' } });
+  } else if (action === 'focus') {
+    rootNavigation.navigate('AppTabs', { screen: 'Plan', params: { screen: 'FocusMode' } });
+  } else {
+    rootNavigation.navigate('AppTabs', {
+      screen: 'Calendar',
+      params: { screen: 'CreateEvent' },
+    });
+  }
+}
+
 function AppTabsNavigator({
-  createVisible,
   insets,
   isDesktopNavigation,
   isSignOutPending,
   onPressSignOut,
-  setCreateVisible,
   styles,
   theme,
-  rootNavigation,
 }: AppTabsProps & {
-  createVisible: boolean;
   insets: ReturnType<typeof useSafeAreaInsets>;
   isDesktopNavigation: boolean;
-  setCreateVisible: (visible: boolean) => void;
   styles: ReturnType<typeof createStyles>;
   theme: ReturnType<typeof useTheme>['theme'];
-  rootNavigation: NavigationProp<RootStackParamList>;
 }) {
-  function navigateToCreate(action: 'goal' | 'task' | 'note' | 'event' | 'focus'): void {
-    setCreateVisible(false);
-
-    if (action === 'goal') {
-      rootNavigation.navigate('AppTabs', { screen: 'Plan', params: { screen: 'CreateGoal' } });
-    } else if (action === 'task') {
-      rootNavigation.navigate('AppTabs', { screen: 'Plan', params: { screen: 'CreateTask' } });
-    } else if (action === 'note') {
-      rootNavigation.navigate('AppTabs', { screen: 'Notes', params: { screen: 'NoteEditor' } });
-    } else if (action === 'focus') {
-      rootNavigation.navigate('AppTabs', { screen: 'Plan', params: { screen: 'FocusMode' } });
-    } else {
-      rootNavigation.navigate('AppTabs', {
-        screen: 'Calendar',
-        params: { screen: 'CreateEvent' },
-      });
-    }
-  }
+  const createFab = useRequiredCreateFab();
 
   return (
     <>
       <Tab.Navigator
         initialRouteName="Plan"
         screenOptions={({ route }) => {
-          const isDimmed = createVisible && route.name !== 'Create';
-
           return {
             headerShown: false,
             tabBarPosition: isDesktopNavigation ? 'left' : 'bottom',
             tabBarActiveTintColor: theme.colors.brand,
             tabBarInactiveTintColor: theme.colors.textSecondary,
             tabBarActiveBackgroundColor: isDesktopNavigation ? theme.colors.brand : undefined,
-            tabBarStyle: isDesktopNavigation
-              ? styles.desktopTabBar
-              : [
-                  styles.tabBar,
-                  {
-                    height: theme.layout.tabBarHeight + insets.bottom,
-                    paddingBottom: insets.bottom,
-                  },
-                  createVisible ? styles.tabBarDimmed : null,
-                ],
+            tabBarStyle: isDesktopNavigation ? styles.desktopTabBar : styles.hiddenTabBar,
             tabBarItemStyle: isDesktopNavigation ? styles.desktopTabBarItem : undefined,
             sceneStyle: Platform.OS === 'web' ? styles.webScene : undefined,
             tabBarLabel: ({ focused }) => (
@@ -354,7 +297,6 @@ function AppTabsNavigator({
                   styles.tabBarLabel,
                   isDesktopNavigation ? styles.desktopTabLabel : null,
                   { color: focused ? theme.colors.onBrand : theme.colors.textSecondary },
-                  isDimmed ? styles.tabBarLabelDimmed : null,
                 ]}
               >
                 {route.name}
@@ -366,8 +308,6 @@ function AppTabsNavigator({
                 routeName={route.name as keyof AppTabParamList}
                 focused={focused}
                 isDesktop={isDesktopNavigation}
-                createExpanded={route.name === 'Create' && createVisible}
-                dimmed={isDimmed}
               />
             ),
           };
@@ -375,28 +315,6 @@ function AppTabsNavigator({
       >
         <Tab.Screen name="Plan" component={PlanNavigator} />
         <Tab.Screen name="Calendar" component={CalendarNavigator} />
-        <Tab.Screen
-          name="Create"
-          component={CreateTabScreen}
-          options={{
-            tabBarLabel: () => null,
-            tabBarButton: ({ children, accessibilityState, style }) => (
-              <Pressable
-                testID="create-tab-button"
-                accessibilityRole="button"
-                accessibilityLabel="Create"
-                accessibilityState={accessibilityState}
-                onPress={() => setCreateVisible(true)}
-                style={[
-                  style,
-                  isDesktopNavigation ? styles.createRailButton : styles.createTabButton,
-                ]}
-              >
-                {children}
-              </Pressable>
-            ),
-          }}
-        />
         <Tab.Screen name="Notes" component={NotesNavigator} />
         <Tab.Screen name="Profile">
           {() => (
@@ -405,14 +323,16 @@ function AppTabsNavigator({
         </Tab.Screen>
       </Tab.Navigator>
       <CreateFabGroup
-        visible={createVisible}
-        bottomOffset={theme.layout.tabBarHeight + insets.bottom + theme.spacing.sm}
-        onDismiss={() => setCreateVisible(false)}
-        onCreateGoal={() => navigateToCreate('goal')}
-        onCreateTask={() => navigateToCreate('task')}
-        onCreateNote={() => navigateToCreate('note')}
-        onCreateEvent={() => navigateToCreate('event')}
-        onCreateFocus={() => navigateToCreate('focus')}
+        visible={createFab.visible}
+        bottomOffset={insets.bottom + theme.spacing.md}
+        rightOffset={theme.spacing.md}
+        onPress={createFab.open}
+        onDismiss={createFab.dismiss}
+        onCreateGoal={() => createFab.create('goal')}
+        onCreateTask={() => createFab.create('task')}
+        onCreateNote={() => createFab.create('note')}
+        onCreateEvent={() => createFab.create('event')}
+        onCreateFocus={() => createFab.create('focus')}
       />
     </>
   );
@@ -420,28 +340,11 @@ function AppTabsNavigator({
 
 const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
   StyleSheet.create({
-    tabBar: {
-      height: theme.layout.tabBarHeight,
-      paddingHorizontal: theme.spacing.xs,
-      paddingTop: theme.layout.tabBarPaddingVertical,
-      backgroundColor: theme.colors.surfaceRaised,
-      borderTopColor: theme.componentTokens.tabBar.borderTopColor,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      overflow: 'visible',
-      // React Navigation's default native drop shadow reads as a solid dark
-      // band above the bar on Android's dark theme; the hairline border above is enough.
-      elevation: 0,
-      shadowOpacity: 0,
-      shadowColor: 'transparent',
+    hiddenTabBar: {
+      display: 'none',
     },
     tabBarLabel: {
       ...theme.typography.tabLabel,
-    },
-    tabBarLabelDimmed: {
-      opacity: 0.35,
-    },
-    tabBarDimmed: {
-      backgroundColor: theme.colors.background,
     },
     desktopTabBar: {
       width: DESKTOP_NAVIGATION_WIDTH,
@@ -483,35 +386,5 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
     },
     inactiveIcon: {
       color: theme.colors.textSecondary,
-    },
-    createIconCircle: {
-      width: 56,
-      height: 56,
-      borderRadius: 32,
-      backgroundColor: theme.componentTokens.tabIcon.focusedBackgroundColor,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: theme.colors.borderStrong,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    createIcon: {
-      color: theme.colors.onBrand,
-    },
-    createTabButton: {
-      width: 112,
-      height: theme.layout.tabBarHeight + 12,
-      position: 'absolute',
-      left: '50%',
-      marginLeft: -56,
-      bottom: 0,
-      alignItems: 'center',
-      justifyContent: 'center',
-      overflow: 'visible',
-    },
-    createRailButton: {
-      width: '100%',
-      minHeight: 52,
-      alignItems: 'flex-start',
-      justifyContent: 'center',
     },
   });

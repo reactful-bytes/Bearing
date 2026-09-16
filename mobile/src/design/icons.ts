@@ -24,6 +24,7 @@ import {
   IconClipboardText,
   IconClock,
   IconCopy,
+  IconCompass,
   IconCreditCard,
   IconDots,
   IconEdit,
@@ -94,6 +95,7 @@ const tabler = (component: TablerIcon): TablerIconDefinition => ({
 export const icons = {
   back: tabler(IconChevronLeft),
   calendar: tabler(IconCalendar),
+  compass: tabler(IconCompass),
   close: tabler(IconX),
   create: tabler(IconPlus),
   edit: tabler(IconEdit),

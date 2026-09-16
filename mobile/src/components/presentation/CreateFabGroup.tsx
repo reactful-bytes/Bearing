@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
@@ -13,6 +13,8 @@ type CreateFabActionKey =
 type CreateFabGroupProps = {
   visible: boolean;
   bottomOffset: number;
+  rightOffset?: number;
+  onPress?: () => void;
   onDismiss: () => void;
   onCreateGoal: () => void;
   onCreateTask: () => void;
@@ -41,7 +43,7 @@ const createFabActions: readonly {
 export function CreateFabGroup(props: CreateFabGroupProps) {
   const styles = useThemedStyles(createStyles);
   const { theme } = useTheme();
-  const progress = useRef(new Animated.Value(0)).current;
+  const [progress] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.timing(progress, {
@@ -64,7 +66,7 @@ export function CreateFabGroup(props: CreateFabGroupProps) {
       ) : null}
       <View
         pointerEvents="box-none"
-        style={[styles.container, { bottom: props.bottomOffset }]}
+        style={[styles.container, { bottom: props.bottomOffset, right: props.rightOffset }]}
         testID="create-fab-group"
       >
         {createFabActions.map((action, index) => {
@@ -106,32 +108,41 @@ export function CreateFabGroup(props: CreateFabGroupProps) {
             </Animated.View>
           );
         })}
-        {props.visible ? (
-          <Animated.View style={[styles.closeRow, { opacity: progress }]}>
-            <Pressable
-              testID="create-fab-close"
-              accessibilityRole="button"
-              accessibilityLabel="Close create menu"
-              onPress={props.onDismiss}
-              style={({ pressed }) => [styles.closeButton, pressed ? styles.actionPressed : null]}
+        <Animated.View style={[styles.closeRow, { opacity: 1 }]}>
+          <Pressable
+            testID="create-fab-close"
+            accessibilityRole="button"
+            accessibilityLabel={props.visible ? 'Close create menu' : 'Create'}
+            onPress={props.visible ? props.onDismiss : props.onPress ?? props.onDismiss}
+            style={({ pressed }) => [
+              styles.closeButton,
+              props.visible ? styles.closeButtonExpanded : null,
+              props.visible ? null : styles.closeButtonClosed,
+              pressed ? styles.actionPressed : null,
+            ]}
+          >
+            <Animated.View
+              style={{
+                transform: [
+                  {
+                    rotate: progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', '45deg'],
+                    }),
+                  },
+                ],
+              }}
             >
-              <Animated.View
-                style={{
-                  transform: [
-                    {
-                      rotate: progress.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['0deg', '45deg'],
-                      }),
-                    },
-                  ],
-                }}
-              >
-                <AppIcon name="create" size={22} color={theme.colors.text} decorative />
-              </Animated.View>
-            </Pressable>
-          </Animated.View>
-        ) : null}
+              <AppIcon
+                name={props.visible ? 'create' : 'bearingMark'}
+                size={props.visible ? 22 : 72}
+                color={props.visible ? theme.colors.text : theme.colors.onBrand}
+                imageStyle={!props.visible ? { marginTop: 1 } : undefined}
+                decorative
+              />
+            </Animated.View>
+          </Pressable>
+        </Animated.View>
       </View>
     </>
   );
@@ -141,21 +152,20 @@ const createStyles = (theme: Theme) =>
   StyleSheet.create({
     container: {
       position: 'absolute',
-      left: 0,
-      right: 0,
-      alignItems: 'center',
+      width: 56,
+      height: 56,
+      alignItems: 'flex-end',
     },
     backdrop: {
       backgroundColor: 'rgba(2, 6, 14, 0.72)',
     },
     actionRow: {
       position: 'absolute',
-      bottom: -50,
-      left: theme.spacing.md,
-      right: theme.spacing.md,
+      bottom: 0,
+      right: 0,
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'flex-end',
     },
     labelContainer: {
       minWidth: 96,
@@ -178,10 +188,9 @@ const createStyles = (theme: Theme) =>
     },
     closeRow: {
       position: 'absolute',
-      bottom: 28,
-      left: 0,
+      bottom: 0,
       right: 0,
-      alignItems: 'center',
+      alignItems: 'flex-end',
     },
     actionButton: {
       width: 48,
@@ -195,13 +204,19 @@ const createStyles = (theme: Theme) =>
       width: 56,
       height: 56,
       borderRadius: 32,
-      backgroundColor: theme.colors.background,
+      backgroundColor: theme.colors.brand,
       borderWidth: 1,
       borderColor: theme.colors.borderStrong,
       alignItems: 'center',
       justifyContent: 'center',
       position: 'absolute',
-      bottom: -94,
+      bottom: 0,
+    },
+    closeButtonExpanded: {
+      backgroundColor: theme.colors.background,
+    },
+    closeButtonClosed: {
+      backgroundColor: theme.colors.brand,
     },
     actionPressed: { opacity: 0.85 },
     goalAction: { backgroundColor: theme.colors.success },

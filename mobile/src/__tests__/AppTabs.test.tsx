@@ -2,7 +2,6 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render } from '@testing-library/react-native';
 import React from 'react';
 
-import { layout } from '../design/tokens';
 import { AppTabs, DESKTOP_NAVIGATION_WIDTH, usesDesktopNavigation } from '../navigation/AppTabs';
 
 const mockNavigate = jest.fn();
@@ -68,6 +67,7 @@ jest.mock('../components/presentation/CreateFabGroup', () => {
   return {
     CreateFabGroup: ({
       visible,
+      onPress,
       onDismiss,
       onCreateGoal,
       onCreateTask,
@@ -76,6 +76,7 @@ jest.mock('../components/presentation/CreateFabGroup', () => {
       onCreateFocus,
     }: {
       visible: boolean;
+      onPress?: () => void;
       onDismiss: () => void;
       onCreateGoal: () => void;
       onCreateTask: () => void;
@@ -83,11 +84,17 @@ jest.mock('../components/presentation/CreateFabGroup', () => {
       onCreateEvent: () => void;
       onCreateFocus: () => void;
     }) =>
-      visible
-        ? ReactModule.createElement(
+      ReactModule.createElement(
             ReactModule.Fragment,
             null,
-            ReactModule.createElement(Text, { testID: 'create-fab-group' }, 'Create'),
+            ReactModule.createElement(Pressable, {
+              testID: 'create-fab-button',
+              accessibilityLabel: visible ? 'Close create menu' : 'Create',
+              onPress: visible ? onDismiss : onPress,
+            }),
+            visible
+              ? ReactModule.createElement(Text, { testID: 'create-fab-group' }, 'Create')
+              : null,
             ReactModule.createElement(Pressable, {
               testID: 'create-fab-close',
               accessibilityLabel: 'Close create menu',
@@ -113,8 +120,7 @@ jest.mock('../components/presentation/CreateFabGroup', () => {
               testID: 'create-focus-action',
               onPress: onCreateFocus,
             }),
-          )
-        : null,
+          ),
   };
 });
 
@@ -221,33 +227,20 @@ describe('AppTabs', () => {
     expect(DESKTOP_NAVIGATION_WIDTH).toBe(152);
   });
 
-  it('renders Create as a non-content tab action', () => {
+  it('renders Create as a standalone FAB instead of a tab action', () => {
     const { getByTestId } = render(
       <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
     );
 
-    const createTabButton = getByTestId('create-tab-button');
-
-    expect(createTabButton.props.accessibilityLabel).toBe('Create');
-    expect(createTabButton.props.style).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          height: layout.tabBarHeight + 12,
-          position: 'absolute',
-          left: '50%',
-          bottom: 0,
-          width: 112,
-        }),
-      ]),
-    );
+    expect(getByTestId('create-fab-button').props.accessibilityLabel).toBe('Create');
   });
 
-  it('expands the global Create FAB group without selecting the Create destination', () => {
+  it('expands the global Create FAB group without selecting a destination', () => {
     const { getByTestId } = render(
       <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
     );
 
-    fireEvent.press(getByTestId('create-tab-button'));
+    fireEvent.press(getByTestId('create-fab-button'));
 
     expect(getByTestId('create-fab-group')).toBeTruthy();
   });
@@ -257,7 +250,7 @@ describe('AppTabs', () => {
       <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
     );
 
-    fireEvent.press(getByTestId('create-tab-button'));
+    fireEvent.press(getByTestId('create-fab-button'));
 
     expect(getByTestId('create-fab-close').props.accessibilityLabel).toBe('Close create menu');
   });
@@ -274,7 +267,7 @@ describe('AppTabs', () => {
       <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
     );
 
-    fireEvent.press(getByTestId('create-tab-button'));
+    fireEvent.press(getByTestId('create-fab-button'));
     fireEvent.press(getByTestId(testID));
 
     const tab =
@@ -286,18 +279,13 @@ describe('AppTabs', () => {
     expect(mockNavigate).toHaveBeenCalledWith(tab, target);
   });
 
-  it('reserves the Android bottom safe-area inset for the tab bar', () => {
+  it('does not render a mobile bottom navigation bar', () => {
     const { getByTestId } = render(
       <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
     );
 
     expect(getByTestId('tab-bar-Plan').props.style).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          height: layout.tabBarHeight + 24,
-          paddingBottom: 24,
-        }),
-      ]),
+      expect.objectContaining({ display: 'none' }),
     );
   });
 });
