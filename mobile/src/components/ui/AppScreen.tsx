@@ -1,5 +1,8 @@
 import { ReactNode } from 'react';
 import {
+  ImageBackground,
+  ImageSourcePropType,
+  ImageStyle,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -23,6 +26,8 @@ type AppScreenProps = {
   edges?: readonly Edge[];
   style?: StyleProp<ViewStyle>;
   contentContainerStyle?: ScrollViewProps['contentContainerStyle'];
+  backgroundSource?: ImageSourcePropType;
+  backgroundImageStyle?: StyleProp<ImageStyle>;
   testID?: string;
 };
 
@@ -32,6 +37,8 @@ export function AppScreen({
   edges = ['top', 'right', 'bottom', 'left'],
   style,
   contentContainerStyle,
+  backgroundSource,
+  backgroundImageStyle,
   testID,
 }: AppScreenProps) {
   const styles = useThemedStyles(createStyles);
@@ -57,6 +64,16 @@ export function AppScreen({
     <>
       <StatusBar translucent backgroundColor="transparent" />
       <SafeAreaView testID={testID} edges={edges} style={[styles.safeArea, style]}>
+        {backgroundSource ? (
+          <View pointerEvents="none" style={styles.backgroundLayer}>
+            <ImageBackground
+              source={backgroundSource}
+              resizeMode="cover"
+              style={styles.backgroundImage}
+              imageStyle={backgroundImageStyle}
+            />
+          </View>
+        ) : null}
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardContainer}
@@ -75,6 +92,16 @@ const createStyles = (theme: Theme) =>
       backgroundColor: theme.colors.background,
     },
     keyboardContainer: {
+      flex: 1,
+    },
+    backgroundLayer: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    },
+    backgroundImage: {
       flex: 1,
     },
     content: {

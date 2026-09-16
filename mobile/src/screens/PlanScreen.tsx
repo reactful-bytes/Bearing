@@ -276,7 +276,7 @@ function PlanGoalRow({ goal, onPress }: { goal: PlanScreenGoal; onPress: () => v
 
 export function PlanScreen({ navigation }: PlanScreenProps) {
   const styles = useThemedStyles(createStyles);
-  const { theme } = useTheme();
+  const { theme, preference } = useTheme();
   const tabNavigation = navigation.getParent?.<NavigationProp<AppTabParamList>>();
   const today = useMemo(() => new Date(), []);
   const { profile } = useUserProfile();
@@ -336,6 +336,12 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
       edges={['top', 'right', 'left']}
       testID="plan-screen"
       contentContainerStyle={styles.content}
+      backgroundSource={
+        preference === 'dark'
+          ? require('../../assets/topographic-dark.png')
+          : require('../../assets/topographic-light.png')
+      }
+      backgroundImageStyle={styles.topographicImage}
     >
       <View style={styles.header}>
         <View style={styles.brandMark}>
@@ -529,6 +535,9 @@ const createStyles = (theme: Theme) =>
     content: {
       gap: theme.spacing.md,
       paddingBottom: theme.spacing['3xl'],
+    },
+    topographicImage: {
+      opacity: 0.16,
     },
     header: {
       flexDirection: 'row',
