@@ -206,11 +206,7 @@ jest.mock('@react-navigation/native-stack', () => {
 
   function Screen({ children }: { children?: React.ReactNode }) {
     if (ReactModule.isValidElement(children)) {
-      return ReactModule.createElement(
-        ReactModule.Fragment,
-        null,
-        children,
-      );
+      return ReactModule.createElement(ReactModule.Fragment, null, children);
     }
 
     return ReactModule.createElement(
