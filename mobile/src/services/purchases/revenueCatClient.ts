@@ -17,6 +17,17 @@ let configuredUserId: string | null = null;
 let premiumPackagesByIdentifier = new Map<string, PurchasesPackage>();
 let creditPackPackagesByIdentifier = new Map<string, PurchasesPackage>();
 
+type PurchasesClient = typeof import('react-native-purchases').default;
+
+function getPurchases(): PurchasesClient {
+  // RevenueCat is a native module; synchronous loading also supports Jest's mocked module.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const module = require('react-native-purchases') as {
+    default?: PurchasesClient;
+  } & Partial<PurchasesClient>;
+  return module.default ?? (module as PurchasesClient);
+}
+
 function getApiKey(): string | null {
   const key =
     Platform.OS === 'ios'
@@ -38,7 +49,7 @@ async function getConfiguredPurchases(userId: string) {
     throw new Error('Store billing is unavailable in this build.');
   }
 
-  const Purchases = (await import('react-native-purchases')).default;
+  const Purchases = getPurchases();
   if (!(await Purchases.isConfigured())) {
     Purchases.configure({ apiKey: getApiKey()!, appUserID: userId });
     configuredUserId = userId;
