@@ -88,7 +88,7 @@ export function AppModal({
           />
         ) : null}
         <SafeAreaView
-          edges={fullScreen ? ['right', 'left'] : ['top', 'right', 'bottom', 'left']}
+          edges={fullScreen ? ['right', 'bottom', 'left'] : ['top', 'right', 'bottom', 'left']}
           style={fullScreen ? styles.fullScreenSheet : styles.sheet}
         >
           {!hideHeader ? (

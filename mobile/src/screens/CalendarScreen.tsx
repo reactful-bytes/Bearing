@@ -436,7 +436,7 @@ export function CalendarScreen({
   return (
     // Bottom inset is already reserved by the tab bar's own height/padding;
     // also applying it here double-counts it and crops content above the tab bar.
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.calendarHeader}>
         <IconButton
           name="menu"

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Linking, Platform, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
 import { useTheme } from '../design/ThemeProvider';
@@ -115,6 +116,7 @@ export function ProfileScreen({
   navigation,
 }: ProfileScreenProps) {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const { preference: themePreference, setPreference: setThemePreference } = useTheme();
   const {
     authUser,
@@ -804,7 +806,13 @@ export function ProfileScreen({
 
   return (
     <View style={styles.screen}>
-      <ScrollView ref={profileScrollRef} contentContainerStyle={[styles.contentContainer]}>
+      <ScrollView
+        ref={profileScrollRef}
+        contentContainerStyle={[
+          styles.contentContainer,
+          { paddingBottom: spacing.xl + insets.bottom },
+        ]}
+      >
         {onPressBack ? (
           <View style={styles.routeHeader}>
             <IconButton name="back" accessibilityLabel="Back to Profile" onPress={onPressBack} />

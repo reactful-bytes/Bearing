@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
 import { layout, spacing } from '../design/tokens';
@@ -21,8 +22,11 @@ export function TabPlaceholderScreen({
   children,
 }: TabPlaceholderScreenProps) {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={[styles.container, { paddingBottom: spacing.xl + insets.bottom }]}
+    >
       <ScreenHeader eyebrow="Tab placeholder" title={title} description={description} />
 
       <AppCard>

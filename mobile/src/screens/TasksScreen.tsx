@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
 import { AddEventModal } from '../components/calendar/AddEventModal';
@@ -57,6 +58,7 @@ type TasksScreenProps = {
 
 export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenProps = {}) {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp<AppTabParamList>>();
   const { profile } = useUserProfile();
   const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
@@ -203,7 +205,12 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
         trailingAccessibilityLabel="Open profile"
         onPressTrailing={() => navigation.navigate('Profile')}
       />
-      <ScrollView contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.contentContainer,
+          { paddingBottom: spacing.xl + insets.bottom },
+        ]}
+      >
         <SegmentedControl
           accessibilityLabel="Task filter"
           options={taskFilterOptions}

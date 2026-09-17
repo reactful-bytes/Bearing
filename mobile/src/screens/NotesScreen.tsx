@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
 import { AddNoteModal } from '../components/notes/AddNoteModal';
@@ -45,6 +46,7 @@ const RECENT_NOTE_LIMIT = 3;
 
 export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const { notes, uiState, createNote, updateNote, deleteNote, retry } = useNotes();
   const { profile } = useUserProfile();
   const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
@@ -114,7 +116,12 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
         trailingAccessibilityLabel="Open profile"
         onPressTrailing={() => navigation?.getParent?.()?.navigate?.('Profile')}
       />
-      <ScrollView contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.contentContainer,
+          { paddingBottom: spacing.xl + insets.bottom },
+        ]}
+      >
         <View style={styles.searchRow}>
           <View style={styles.searchField}>
             <AppIcon name="search" size={18} color={styles.searchIcon.color} decorative />

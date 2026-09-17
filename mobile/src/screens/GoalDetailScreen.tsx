@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AddEventModal } from '../components/calendar/AddEventModal';
 import { AddStepModal } from '../components/goals/AddStepModal';
@@ -15,6 +16,7 @@ import { IconButton } from '../components/ui/IconButton';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { useThemedStyles } from '../design/useThemedStyles';
+import { spacing } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
@@ -48,6 +50,7 @@ function formatTaskContext(task: TaskRecord, goal: GoalWithSteps, locale?: strin
 
 export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp<AppTabParamList>>();
   const { profile } = useUserProfile();
   const { createEvent, publicationCalendarTitle, publishEvent } = useCalendarPublication();
@@ -237,7 +240,9 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
 
   return (
     <View style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: spacing.xl + insets.bottom }]}
+      >
         <View style={styles.detailHeader}>
           <IconButton
             name="back"

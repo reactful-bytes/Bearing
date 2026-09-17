@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
 import { AddEventModal } from '../components/calendar/AddEventModal';
@@ -60,6 +61,7 @@ type GoalsScreenProps = {
 
 export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const { createEvent, publicationCalendarTitle } = useCalendarPublication();
   const { authUser, isAnonymous, profile } = useUserProfile();
   const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
@@ -219,7 +221,12 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
         trailingAccessibilityLabel="Open profile"
         onPressTrailing={() => navigation?.getParent?.()?.navigate?.('Profile')}
       />
-      <ScrollView contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.contentContainer,
+          { paddingBottom: spacing.xl + insets.bottom },
+        ]}
+      >
         <GoalStatusTabs
           accessibilityLabel="Goal filter"
           options={goalFilterOptions}
