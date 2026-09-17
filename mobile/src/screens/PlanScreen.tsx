@@ -474,8 +474,12 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
           >
             <View style={styles.compactSurfaceContent}>
               <AppIcon name="focus" size={28} color={theme.colors.focusGreen} decorative />
-              <Text numberOfLines={1} style={styles.compactSurfaceLabel}>Focus Mode</Text>
-              <Text style={styles.compactSurfaceDescription}>Block distractions and get things done</Text>
+              <Text numberOfLines={1} style={styles.compactSurfaceLabel}>
+                Focus Mode
+              </Text>
+              <Text style={styles.compactSurfaceDescription}>
+                Block distractions and get things done
+              </Text>
               <View style={styles.compactSurfaceChevron}>
                 <AppIcon name="next" size={18} color={theme.colors.focusGreen} decorative />
               </View>
@@ -492,8 +496,12 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
           >
             <View style={styles.compactSurfaceContent}>
               <AppIcon name="notes" size={28} color={theme.colors.warning} decorative />
-              <Text numberOfLines={1} style={styles.compactSurfaceLabel}>Notes</Text>
-              <Text style={styles.compactSurfaceDescription}>Capture thoughts before they&apos;re gone</Text>
+              <Text numberOfLines={1} style={styles.compactSurfaceLabel}>
+                Notes
+              </Text>
+              <Text style={styles.compactSurfaceDescription}>
+                Capture thoughts before they&apos;re gone
+              </Text>
               <View style={styles.compactSurfaceChevron}>
                 <AppIcon name="next" size={18} color={theme.colors.warning} decorative />
               </View>
@@ -589,7 +597,11 @@ const createStyles = (theme: Theme) =>
     },
     avatarInitial: { ...theme.typography.cardTitle, color: theme.colors.surface },
     title: { ...theme.typography.screenTitle, color: theme.colors.text },
-    greeting: { ...theme.typography.cardTitle, color: theme.colors.textSecondary, fontWeight: '500' },
+    greeting: {
+      ...theme.typography.cardTitle,
+      color: theme.colors.textSecondary,
+      fontWeight: '500',
+    },
     subtitle: { ...theme.typography.helper, lineHeight: 22, color: theme.colors.textSecondary },
     greetingBlock: {
       flex: 1,
@@ -676,7 +688,7 @@ const createStyles = (theme: Theme) =>
       gap: theme.spacing.xs,
     },
     compactSurfaceChevron: { alignSelf: 'flex-end' },
-    compactSurfaceLabel: { ...theme.typography.cardTitle, color: theme.colors.text,  },
+    compactSurfaceLabel: { ...theme.typography.cardTitle, color: theme.colors.text },
     compactSurfaceDescription: { ...theme.typography.caption, color: theme.colors.textSecondary },
     focusSurfaceBody: { backgroundColor: `${theme.colors.focusGreen}18` },
     notesSurfaceBody: { backgroundColor: `${theme.colors.warning}18` },
