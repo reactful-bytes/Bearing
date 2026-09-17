@@ -11,7 +11,6 @@ import { StepDetailModal } from '../components/goals/StepDetailModal';
 import { GoalCard, GoalStatusTabs } from '../components/presentation/GoalPresentation';
 import type { GoalFilter } from '../components/presentation/GoalPresentation';
 import { AppCard } from '../components/ui/AppCard';
-import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { layout, radii, spacing, typography } from '../design/tokens';
@@ -285,14 +284,6 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
           : null}
       </ScrollView>
 
-      <View style={styles.fabContainer}>
-        <FloatingActionButton
-          label="New Goal"
-          onPress={() => setCreateGoalVisible(true)}
-          style={styles.smallFab}
-        />
-      </View>
-
       <CreateGoalModal
         visible={createGoalVisible}
         onClose={() => setCreateGoalVisible(false)}
@@ -390,16 +381,5 @@ const createStyles = (theme: Theme) =>
       ...typography.body,
       color: theme.colors.textPrimary,
       marginTop: spacing.sm,
-    },
-    fabContainer: {
-      position: 'absolute',
-      right: layout.pagePaddingHorizontal,
-      bottom: layout.pagePaddingVertical,
-    },
-    smallFab: {
-      alignSelf: 'flex-end',
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      borderRadius: radii.lg,
     },
   });

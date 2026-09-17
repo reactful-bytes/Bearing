@@ -66,7 +66,7 @@ describe('NotesScreen', () => {
     render(<NotesScreen />);
 
     expect(screen.getByText('No notes yet.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'New Note' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'New Note' })).toBeNull();
   });
 
   it('renders saved notes with source metadata', () => {
@@ -133,9 +133,8 @@ describe('NotesScreen', () => {
     const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
     mockedUseNotes.mockReturnValue(makeUseNotesReturn({ createNote }));
 
-    render(<NotesScreen />);
+    render(<NotesScreen route={{ params: { createNote: true } }} />);
 
-    fireEvent.press(screen.getByRole('button', { name: 'New Note' }));
     fireEvent.changeText(screen.getByLabelText('Note title'), 'Inbox thought');
     fireEvent.changeText(screen.getByLabelText('Note body'), 'Capture this before it disappears.');
     await act(async () => {

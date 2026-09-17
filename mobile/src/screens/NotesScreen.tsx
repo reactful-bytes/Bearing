@@ -5,7 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemedStyles } from '../design/useThemedStyles';
 import { AddNoteModal } from '../components/notes/AddNoteModal';
 import { NoteDetailModal } from '../components/notes/NoteDetailModal';
-import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { AppIcon } from '../components/ui/AppIcon';
 import { AppCard } from '../components/ui/AppCard';
 import { IconButton } from '../components/ui/IconButton';
@@ -242,16 +241,6 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
         ) : null}
       </ScrollView>
 
-      <View style={styles.fabContainer}>
-        <FloatingActionButton
-          accessibilityLabel="New Note"
-          icon="add"
-          onPress={() => openNoteEditor()}
-          size="standard"
-          style={styles.fab}
-        />
-      </View>
-
       <AddNoteModal
         visible={addNoteVisible && !navigation?.navigate}
         onClose={() => setAddNoteVisible(false)}
@@ -367,10 +356,4 @@ const createStyles = (theme: Theme) =>
       ...typography.body,
       color: theme.colors.textPrimary,
     },
-    fabContainer: {
-      position: 'absolute',
-      right: layout.pagePaddingHorizontal,
-      bottom: layout.pagePaddingVertical,
-    },
-    fab: { alignSelf: 'flex-end' },
   });

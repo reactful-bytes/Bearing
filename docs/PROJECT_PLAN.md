@@ -585,6 +585,7 @@ Second UI redesign pass driven by an updated mockup spec after M36 closed: premi
 | M38.4   | completed | Add back-to-Plan control on the Profile hub | Hub route (non-subsection) gets a plain back-arrow `IconButton` to Plan; subsection back-to-Profile behavior unchanged |
 | M38.5   | completed | Fix header status-bar overlap on Goals/Notes/Profile | Wrapped each screen in a top-edge `SafeAreaView`, matching Calendar's convention, so headers no longer sit under the status bar |
 | M38.6   | completed | Fix Goals back arrow no-op                | Goals is pushed inside the Plan stack, so `getParent().navigate('Plan')` re-focused the already-active tab and did nothing; the header now calls local stack `goBack()` |
+| M38.7   | completed | Remove duplicate Goals and Notes create buttons | The app-wide Create speed-dial is the single creation entry point; focused Goals and Notes screen tests pass |
 
 ## Update Rules
 
