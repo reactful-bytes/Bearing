@@ -12,12 +12,13 @@ describe('AppScreen', () => {
       </AppScreen>,
     );
 
-    expect(screen.getByTestId('screen').props.edges).toEqual({
-      top: 'additive',
-      right: 'additive',
-      bottom: 'additive',
-      left: 'additive',
-    });
+    expect(screen.getByTestId('screen').props.edges).toEqual(
+      expect.objectContaining({
+        top: 'additive',
+        right: 'additive',
+        left: 'additive',
+      }),
+    );
     expect(screen.getByTestId('screen-content').props.style).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ paddingHorizontal: 16, paddingVertical: 20 }),

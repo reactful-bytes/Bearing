@@ -46,6 +46,10 @@ jest.mock('../screens/PremiumPaywallScreen', () => ({
   PremiumPaywallScreen: () => null,
 }));
 
+jest.mock('../screens/LegalDocumentScreen', () => ({
+  LegalDocumentScreen: () => null,
+}));
+
 jest.mock('../screens/TasksScreen', () => ({
   TasksScreen: () => null,
 }));
@@ -204,17 +208,31 @@ jest.mock('@react-navigation/native-stack', () => {
   const ReactModule = jest.requireActual<typeof import('react')>('react');
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
 
-  function Screen({ children }: { children?: React.ReactNode }) {
+  function Screen({
+    children,
+    component,
+  }: {
+    children?: React.ReactNode;
+    component?: React.ComponentType<unknown>;
+  }) {
+    if (component) {
+      return ReactModule.createElement(component);
+    }
+
     if (ReactModule.isValidElement(children)) {
       return ReactModule.createElement(ReactModule.Fragment, null, children);
     }
 
-    return ReactModule.createElement(
-      children as unknown as React.ComponentType<{
+    if (typeof children === 'function') {
+      const renderScreen = children as unknown as React.ComponentType<{
         navigation: { navigate: typeof mockNavigate };
-      }>,
-      { navigation: { navigate: mockNavigate } },
-    );
+      }>;
+      return ReactModule.createElement(renderScreen, {
+        navigation: { navigate: mockNavigate },
+      });
+    }
+
+    return null;
   }
 
   function Navigator({ children }: { children: React.ReactNode }) {
