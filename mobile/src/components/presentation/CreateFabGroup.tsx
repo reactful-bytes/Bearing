@@ -23,8 +23,9 @@ type CreateFabGroupProps = {
   onCreateFocus: () => void;
 };
 
-const ACTION_SPACING = 70;
+const ACTION_SPACING = 64;
 const ANIMATION_DURATION_MS = 200;
+const FAB_PLUS_STROKE_WIDTH = 2.75;
 
 // Declared in on-screen "stack" order (top to bottom); the last entry renders closest to the button.
 const createFabActions: readonly {
@@ -113,7 +114,8 @@ export function CreateFabGroup(props: CreateFabGroupProps) {
             testID="create-fab-close"
             accessibilityRole="button"
             accessibilityLabel={props.visible ? 'Close create menu' : 'Create'}
-            onPress={props.visible ? props.onDismiss : props.onPress ?? props.onDismiss}
+            accessibilityState={{ expanded: props.visible }}
+            onPress={props.visible ? props.onDismiss : (props.onPress ?? props.onDismiss)}
             style={({ pressed }) => [
               styles.closeButton,
               props.visible ? styles.closeButtonExpanded : null,
@@ -125,6 +127,12 @@ export function CreateFabGroup(props: CreateFabGroupProps) {
               style={{
                 transform: [
                   {
+                    scale: progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 0.94],
+                    }),
+                  },
+                  {
                     rotate: progress.interpolate({
                       inputRange: [0, 1],
                       outputRange: ['0deg', '45deg'],
@@ -134,10 +142,10 @@ export function CreateFabGroup(props: CreateFabGroupProps) {
               }}
             >
               <AppIcon
-                name={props.visible ? 'create' : 'bearingMark'}
-                size={props.visible ? 22 : 72}
+                name="create"
+                size={22}
+                strokeWidth={FAB_PLUS_STROKE_WIDTH}
                 color={props.visible ? theme.colors.text : theme.colors.onBrand}
-                imageStyle={!props.visible ? { marginTop: 1 } : undefined}
                 decorative
               />
             </Animated.View>
@@ -161,7 +169,7 @@ const createStyles = (theme: Theme) =>
     },
     actionRow: {
       position: 'absolute',
-      bottom: 0,
+      bottom: 10,
       right: 0,
       flexDirection: 'row',
       alignItems: 'center',
@@ -171,10 +179,8 @@ const createStyles = (theme: Theme) =>
       minWidth: 96,
       minHeight: 44,
       paddingHorizontal: theme.spacing.lg,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
       borderRadius: theme.radii.md,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.surfaceMuted,
       alignItems: 'center',
       justifyContent: 'center',
       marginRight: -20,
@@ -211,12 +217,14 @@ const createStyles = (theme: Theme) =>
       justifyContent: 'center',
       position: 'absolute',
       bottom: 0,
+      boxShadow: '0px 4px 8px rgba(6, 18, 32, 0.26)',
     },
     closeButtonExpanded: {
       backgroundColor: theme.colors.background,
     },
     closeButtonClosed: {
       backgroundColor: theme.colors.brand,
+      borderWidth: 0,
     },
     actionPressed: { opacity: 0.85 },
     goalAction: { backgroundColor: theme.colors.success },

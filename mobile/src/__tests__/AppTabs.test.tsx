@@ -85,42 +85,40 @@ jest.mock('../components/presentation/CreateFabGroup', () => {
       onCreateFocus: () => void;
     }) =>
       ReactModule.createElement(
-            ReactModule.Fragment,
-            null,
-            ReactModule.createElement(Pressable, {
-              testID: 'create-fab-button',
-              accessibilityLabel: visible ? 'Close create menu' : 'Create',
-              onPress: visible ? onDismiss : onPress,
-            }),
-            visible
-              ? ReactModule.createElement(Text, { testID: 'create-fab-group' }, 'Create')
-              : null,
-            ReactModule.createElement(Pressable, {
-              testID: 'create-fab-close',
-              accessibilityLabel: 'Close create menu',
-              onPress: onDismiss,
-            }),
-            ReactModule.createElement(Pressable, {
-              testID: 'create-goal-action',
-              onPress: onCreateGoal,
-            }),
-            ReactModule.createElement(Pressable, {
-              testID: 'create-task-action',
-              onPress: onCreateTask,
-            }),
-            ReactModule.createElement(Pressable, {
-              testID: 'create-note-action',
-              onPress: onCreateNote,
-            }),
-            ReactModule.createElement(Pressable, {
-              testID: 'create-event-action',
-              onPress: onCreateEvent,
-            }),
-            ReactModule.createElement(Pressable, {
-              testID: 'create-focus-action',
-              onPress: onCreateFocus,
-            }),
-          ),
+        ReactModule.Fragment,
+        null,
+        ReactModule.createElement(Pressable, {
+          testID: 'create-fab-button',
+          accessibilityLabel: visible ? 'Close create menu' : 'Create',
+          onPress: visible ? onDismiss : onPress,
+        }),
+        visible ? ReactModule.createElement(Text, { testID: 'create-fab-group' }, 'Create') : null,
+        ReactModule.createElement(Pressable, {
+          testID: 'create-fab-close',
+          accessibilityLabel: 'Close create menu',
+          onPress: onDismiss,
+        }),
+        ReactModule.createElement(Pressable, {
+          testID: 'create-goal-action',
+          onPress: onCreateGoal,
+        }),
+        ReactModule.createElement(Pressable, {
+          testID: 'create-task-action',
+          onPress: onCreateTask,
+        }),
+        ReactModule.createElement(Pressable, {
+          testID: 'create-note-action',
+          onPress: onCreateNote,
+        }),
+        ReactModule.createElement(Pressable, {
+          testID: 'create-event-action',
+          onPress: onCreateEvent,
+        }),
+        ReactModule.createElement(Pressable, {
+          testID: 'create-focus-action',
+          onPress: onCreateFocus,
+        }),
+      ),
   };
 });
 

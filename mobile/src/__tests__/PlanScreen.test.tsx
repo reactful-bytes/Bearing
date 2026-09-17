@@ -175,6 +175,7 @@ describe('PlanScreen', () => {
     expect(screen.getByText('Upcoming')).toBeTruthy();
     expect(screen.getByText('Plan block 0')).toBeTruthy();
     expect(screen.getByText('Plan block 2')).toBeTruthy();
+    expect(screen.getAllByText('Bearing · 30 min')).toHaveLength(3);
     expect(screen.queryByText('Plan block 3')).toBeNull();
     expect(screen.getByText('Ship the next release')).toBeTruthy();
     expect(screen.getByText('50%')).toBeTruthy();

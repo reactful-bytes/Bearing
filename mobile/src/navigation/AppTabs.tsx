@@ -1,17 +1,15 @@
 import { NavigationContainer, NavigationProp } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import {
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CreateFabGroup } from '../components/presentation/CreateFabGroup';
-import { CreateFabAction, CreateFabProvider, useRequiredCreateFab } from '../components/presentation/CreateFabContext';
+import {
+  CreateFabAction,
+  CreateFabProvider,
+  useRequiredCreateFab,
+} from '../components/presentation/CreateFabContext';
 import { AppIcon } from '../components/ui/AppIcon';
 import { useTheme } from '../design/ThemeProvider';
 import { useThemedStyles } from '../design/useThemedStyles';
@@ -86,12 +84,7 @@ function TabIcon({
   const iconColor = focused ? styles.activeIcon.color : styles.inactiveIcon.color;
 
   return (
-    <View
-      style={[
-        styles.iconSlot,
-        focused ? styles.iconSlotFocused : null,
-      ]}
-    >
+    <View style={[styles.iconSlot, focused ? styles.iconSlotFocused : null]}>
       <AppIcon
         name={TAB_ICONS[routeName]}
         size={isDesktop ? 20 : 22}
@@ -221,9 +214,7 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         <RootStack.Screen name="AppTabs">
           {({ navigation }) => (
-            <CreateFabProvider
-              onCreate={(action) => navigateToCreate(navigation, action)}
-            >
+            <CreateFabProvider onCreate={(action) => navigateToCreate(navigation, action)}>
               <AppTabsNavigator
                 insets={insets}
                 isDesktopNavigation={isDesktopNavigation}

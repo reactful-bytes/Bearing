@@ -6,6 +6,7 @@ import { useTheme } from '../../design/ThemeProvider';
 type AppIconProps = {
   name: AppIconName;
   size?: number;
+  strokeWidth?: number;
   color?: string;
   accessibilityLabel?: string;
   decorative?: boolean;
@@ -17,6 +18,7 @@ type AppIconProps = {
 export function AppIcon({
   name,
   size = 24,
+  strokeWidth = 2,
   color,
   accessibilityLabel,
   decorative = !accessibilityLabel,
@@ -54,7 +56,7 @@ export function AppIcon({
 
   return (
     <View testID={testID} style={containerStyle} {...accessibilityProps}>
-      <IconComponent size={size} color={iconColor} strokeWidth={2} />
+      <IconComponent size={size} color={iconColor} strokeWidth={strokeWidth} />
     </View>
   );
 }

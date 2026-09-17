@@ -111,6 +111,13 @@ describe('M23 shared UI primitives', () => {
     expect(onPressAction).toHaveBeenCalledTimes(1);
   });
 
+  it('renders empty state content without an icon', () => {
+    render(<EmptyState title="Nothing upcoming" presentation="compact" />);
+
+    expect(screen.getByText('Nothing upcoming')).toBeTruthy();
+    expect(screen.queryByLabelText('Nothing upcoming icon')).toBeNull();
+  });
+
   it('dismisses the bottom sheet through its backdrop and Android back callback', () => {
     const onDismiss = jest.fn();
     const result = render(

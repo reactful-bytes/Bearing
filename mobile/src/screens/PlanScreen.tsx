@@ -81,6 +81,24 @@ function formatEventTime(
   });
 }
 
+function formatEventDuration(event: CalendarDisplayEvent): string {
+  if (event.allDay) return 'All day';
+
+  const totalMinutes = Math.max(
+    0,
+    Math.round((event.endAt.getTime() - event.startAt.getTime()) / 60_000),
+  );
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 0) return `${minutes} min`;
+  if (minutes === 0) return `${hours} hr${hours === 1 ? '' : 's'}`;
+  return `${hours} hr${hours === 1 ? '' : 's'} ${minutes} min`;
+}
+
+function getEventCalendarLabel(event: CalendarDisplayEvent): string {
+  return event.ownership === 'bearing' ? 'Bearing' : event.calendarTitle;
+}
+
 function PlanSkeleton({ rows = 3 }: { rows?: number }) {
   const styles = useThemedStyles(createStyles);
 
@@ -223,18 +241,23 @@ function PlanEventRow({
       onPress={onPress}
       style={({ pressed }) => [styles.eventItem, pressed ? styles.pressed : null]}
     >
+      <View style={styles.eventTimeColumn}>
+        {dateLabel ? <Text style={styles.eventDateLabel}>{dateLabel}</Text> : null}
+        <Text style={styles.eventTime}>{dateTime}</Text>
+      </View>
       <View style={styles.timelineColumn}>
         <View style={styles.timelineMarker} />
-        <View style={styles.timelineConnector} />
+        {!isLast ? <View style={styles.timelineConnector} /> : null}
       </View>
       <View style={styles.eventCard}>
         <View style={styles.eventTitleRow}>
           <Text numberOfLines={1} style={styles.eventTitle}>
             {event.title}
           </Text>
-          {dateLabel ? <Text style={styles.eventDateLabel}>{dateLabel}</Text> : null}
         </View>
-        <Text style={styles.eventMeta}>{dateTime}</Text>
+        <Text style={styles.eventMeta}>
+          {getEventCalendarLabel(event)} · {formatEventDuration(event)}
+        </Text>
       </View>
     </Pressable>
   );
@@ -402,7 +425,6 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
             ) : null}
             {eventsState === 'empty' || (eventsState === 'ready' && upcomingEvents.length === 0) ? (
               <EmptyState
-                icon="calendar"
                 title={emptyUpcomingPhrase}
                 description="Add something new to shape what comes next."
                 presentation="compact"
@@ -452,8 +474,12 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
           >
             <View style={styles.compactSurfaceContent}>
               <AppIcon name="focus" size={28} color={theme.colors.focusGreen} decorative />
-              <Text numberOfLines={1} style={styles.compactSurfaceLabel}>Focus Mode</Text>
-              <Text style={styles.compactSurfaceDescription}>Block distractions and get things done</Text>
+              <Text numberOfLines={1} style={styles.compactSurfaceLabel}>
+                Focus Mode
+              </Text>
+              <Text style={styles.compactSurfaceDescription}>
+                Block distractions and get things done
+              </Text>
               <View style={styles.compactSurfaceChevron}>
                 <AppIcon name="next" size={18} color={theme.colors.focusGreen} decorative />
               </View>
@@ -470,8 +496,12 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
           >
             <View style={styles.compactSurfaceContent}>
               <AppIcon name="notes" size={28} color={theme.colors.warning} decorative />
-              <Text numberOfLines={1} style={styles.compactSurfaceLabel}>Notes</Text>
-              <Text style={styles.compactSurfaceDescription}>Capture thoughts before they&apos;re gone</Text>
+              <Text numberOfLines={1} style={styles.compactSurfaceLabel}>
+                Notes
+              </Text>
+              <Text style={styles.compactSurfaceDescription}>
+                Capture thoughts before they&apos;re gone
+              </Text>
               <View style={styles.compactSurfaceChevron}>
                 <AppIcon name="next" size={18} color={theme.colors.warning} decorative />
               </View>
@@ -567,7 +597,11 @@ const createStyles = (theme: Theme) =>
     },
     avatarInitial: { ...theme.typography.cardTitle, color: theme.colors.surface },
     title: { ...theme.typography.screenTitle, color: theme.colors.text },
-    greeting: { ...theme.typography.cardTitle, color: theme.colors.textSecondary, fontWeight: '500' },
+    greeting: {
+      ...theme.typography.cardTitle,
+      color: theme.colors.textSecondary,
+      fontWeight: '500',
+    },
     subtitle: { ...theme.typography.helper, lineHeight: 22, color: theme.colors.textSecondary },
     greetingBlock: {
       flex: 1,
@@ -636,7 +670,7 @@ const createStyles = (theme: Theme) =>
       gap: theme.spacing.sm,
     },
     pressed: { opacity: 0.82 },
-    emptyUpcoming: { alignItems: 'center', width: '100%' },
+    emptyUpcoming: { alignItems: 'center', justifyContent: 'center', flex: 1, width: '100%' },
     todaySurface: { flex: 1.6, minHeight: 214 },
     compactSurface: { minHeight: 88 },
     compactSurfaceInner: { minHeight: 0, paddingVertical: theme.spacing.md },
@@ -654,7 +688,7 @@ const createStyles = (theme: Theme) =>
       gap: theme.spacing.xs,
     },
     compactSurfaceChevron: { alignSelf: 'flex-end' },
-    compactSurfaceLabel: { ...theme.typography.cardTitle, color: theme.colors.text,  },
+    compactSurfaceLabel: { ...theme.typography.cardTitle, color: theme.colors.text },
     compactSurfaceDescription: { ...theme.typography.caption, color: theme.colors.textSecondary },
     focusSurfaceBody: { backgroundColor: `${theme.colors.focusGreen}18` },
     notesSurfaceBody: { backgroundColor: `${theme.colors.warning}18` },
@@ -668,26 +702,38 @@ const createStyles = (theme: Theme) =>
       gap: theme.spacing.md,
       paddingVertical: theme.spacing.xs,
     },
-    timelineColumn: { width: 20, alignItems: 'center' },
+    eventTimeColumn: {
+      width: 72,
+      alignItems: 'flex-end',
+      gap: theme.spacing.xs / 2,
+    },
+    eventTime: {
+      ...theme.typography.caption,
+      color: theme.colors.textSecondary,
+      textAlign: 'right',
+    },
+    timelineColumn: { width: 8, alignItems: 'center', position: 'relative' },
     timelineMarker: {
-      width: 16,
-      height: 16,
+      width: 12,
+      height: 12,
       marginTop: theme.spacing.xs,
-      borderRadius: 8,
-      borderWidth: 2,
+      borderRadius: 6,
+      borderWidth: 1.5,
       borderColor: theme.colors.borderStrong,
-      // backgroundColor: `${theme.colors.brand}22`,
     },
     timelineConnector: {
-      flex: 1,
-      width: 2,
-      marginVertical: theme.spacing.xs,
+      position: 'absolute',
+      top: theme.spacing.xs + 14,
+      bottom: -10,
+      width: 1.5,
       backgroundColor: theme.colors.borderStrong,
     },
     eventCard: {
       flex: 1,
       justifyContent: 'flex-start',
       gap: theme.spacing.xs,
+      alignSelf: 'flex-start',
+      marginTop: -2,
     },
     eventTitleRow: {
       flexDirection: 'row',
