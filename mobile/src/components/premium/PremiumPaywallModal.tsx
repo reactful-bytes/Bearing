@@ -6,7 +6,6 @@ import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppCard } from '../ui/AppCard';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
-import { IconButton } from '../ui/IconButton';
 import { radii, spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
 import { PremiumFeature, getPremiumPaywallCopy } from '../../features/premium/premiumAccess';
