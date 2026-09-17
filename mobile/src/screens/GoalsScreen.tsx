@@ -51,6 +51,7 @@ type GoalsScreenProps = {
       screen: 'GoalDetail' | 'PremiumPaywall',
       params: PlanStackParamList['GoalDetail'] | RootStackParamList['PremiumPaywall'],
     ) => void;
+    goBack?: () => void;
     getParent?: () =>
       | {
           navigate?: (screen: string, params?: Record<string, unknown>) => void;
@@ -214,7 +215,16 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
-      <ScreenHeader title="Goals" onPressBack={() => navigation?.getParent?.()?.navigate?.('Plan')} />
+      <ScreenHeader
+        title="Goals"
+        onPressBack={() => {
+          if (navigation?.goBack) {
+            navigation.goBack();
+          } else {
+            navigation?.getParent?.()?.navigate?.('Plan');
+          }
+        }}
+      />
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <GoalStatusTabs
           accessibilityLabel="Goal filter"
