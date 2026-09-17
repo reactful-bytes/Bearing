@@ -12,6 +12,10 @@ import {
   signInWithGoogleAuth,
 } from '../services/firebase/firebaseAuthActions';
 
+jest.mock('expo-splash-screen', () => ({
+  hideAsync: jest.fn(async () => undefined),
+}));
+
 jest.mock('../features/auth/useAuthBootstrap', () => ({
   useAuthBootstrap: jest.fn(),
 }));
