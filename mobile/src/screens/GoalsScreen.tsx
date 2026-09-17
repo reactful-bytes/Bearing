@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
 import { AddEventModal } from '../components/calendar/AddEventModal';
@@ -212,7 +213,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   }
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       <ScreenHeader title="Goals" onPressBack={() => navigation?.getParent?.()?.navigate?.('Plan')} />
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <GoalStatusTabs
@@ -354,7 +355,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
         onClose={() => setScheduleStepId(null)}
         onSave={handleScheduleStepEvent}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

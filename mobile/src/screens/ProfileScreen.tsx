@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Linking, Platform, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
 import { useTheme } from '../design/ThemeProvider';
@@ -803,7 +804,7 @@ export function ProfileScreen({
   }
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       <ScrollView ref={profileScrollRef} contentContainerStyle={[styles.contentContainer]}>
         <View style={styles.routeHeader}>
           {onPressBack ? (
@@ -1699,7 +1700,7 @@ export function ProfileScreen({
           <Text style={styles.errorText}>{googleDisconnectError}</Text>
         ) : null}
       </AppModal>
-    </View>
+    </SafeAreaView>
   );
 }
 
