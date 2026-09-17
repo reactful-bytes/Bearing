@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
 import { AddNoteModal } from '../components/notes/AddNoteModal';
@@ -109,7 +109,7 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
   }
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       <ScreenHeader title="Notes" onPressBack={() => navigation?.getParent?.()?.navigate?.('Plan')} />
       <ScrollView
         contentContainerStyle={[
@@ -273,7 +273,7 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
         onSave={handleUpdateNote}
         onDelete={handleDeleteNote}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
