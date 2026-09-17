@@ -22,8 +22,8 @@ import { AddEventModal } from '../components/calendar/AddEventModal';
 import { EventDetailModal } from '../components/calendar/EventDetailModal';
 import { FocusModeOverlay } from '../components/calendar/FocusModeOverlay';
 import { EventRow } from '../components/presentation/EventPresentation';
-import { AppIcon } from '../components/ui/AppIcon';
 import { IconButton } from '../components/ui/IconButton';
+import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { layout, radii, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import {
@@ -437,15 +437,7 @@ export function CalendarScreen({
     // Bottom inset is already reserved by the tab bar's own height/padding;
     // also applying it here double-counts it and crops content above the tab bar.
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
-      <View style={styles.calendarHeader}>
-        <IconButton
-          name="menu"
-          accessibilityLabel="Open navigation"
-          onPress={() => navigation?.navigate?.('Plan')}
-        />
-        <AppIcon name="bearingMark" size={34} decorative />
-        <View style={styles.headerSpacer} />
-      </View>
+      <ScreenHeader title="Calendar" onPressBack={() => navigation?.navigate?.('Plan')} />
       <View style={styles.calendarToolbar}>
         <ViewModeToggle
           mode={viewMode}
@@ -663,18 +655,6 @@ const createStyles = (theme: Theme) =>
       justifyContent: 'space-between',
       paddingLeft: spacing.md,
       paddingRight: spacing.md,
-    },
-    calendarHeader: {
-      minHeight: 52,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: spacing.sm,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: theme.colors.border,
-    },
-    headerSpacer: {
-      width: 40,
     },
     toolbarActions: {
       flexDirection: 'row',
