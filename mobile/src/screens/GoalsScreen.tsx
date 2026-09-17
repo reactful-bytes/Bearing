@@ -10,9 +10,9 @@ import { StepDetailModal } from '../components/goals/StepDetailModal';
 import { GoalCard, GoalStatusTabs } from '../components/presentation/GoalPresentation';
 import type { GoalFilter } from '../components/presentation/GoalPresentation';
 import { AppCard } from '../components/ui/AppCard';
-import { BearingHeader } from '../components/ui/BearingHeader';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
+import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { layout, radii, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import {
@@ -213,12 +213,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
 
   return (
     <View style={styles.screen}>
-      <BearingHeader
-        leadingAccessibilityLabel="Open navigation"
-        onPressLeading={() => navigation?.getParent?.()?.navigate?.('Plan')}
-        trailingAccessibilityLabel="Open profile"
-        onPressTrailing={() => navigation?.getParent?.()?.navigate?.('Profile')}
-      />
+      <ScreenHeader title="Goals" onPressBack={() => navigation?.getParent?.()?.navigate?.('Plan')} />
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <GoalStatusTabs
           accessibilityLabel="Goal filter"

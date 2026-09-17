@@ -7,9 +7,9 @@ import { NoteDetailModal } from '../components/notes/NoteDetailModal';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { AppIcon } from '../components/ui/AppIcon';
 import { AppCard } from '../components/ui/AppCard';
-import { BearingHeader } from '../components/ui/BearingHeader';
 import { IconButton } from '../components/ui/IconButton';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
+import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { layout, radii, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import { useNotes } from '../features/notes/useNotes';
@@ -108,12 +108,7 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
 
   return (
     <View style={styles.screen}>
-      <BearingHeader
-        leadingAccessibilityLabel="Open navigation"
-        onPressLeading={() => navigation?.getParent?.()?.navigate?.('Plan')}
-        trailingAccessibilityLabel="Open profile"
-        onPressTrailing={() => navigation?.getParent?.()?.navigate?.('Profile')}
-      />
+      <ScreenHeader title="Notes" onPressBack={() => navigation?.getParent?.()?.navigate?.('Plan')} />
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <View style={styles.searchRow}>
           <View style={styles.searchField}>
