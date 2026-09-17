@@ -71,7 +71,7 @@ describe('FoundationGallery', () => {
     expect(screen.queryByLabelText('Foundation sheet')).toBeNull();
 
     fireEvent.press(screen.getByRole('button', { name: 'Add a goal' }));
-    fireEvent.press(screen.getByRole('button', { name: 'Create Goal' }));
+    fireEvent.press(screen.getAllByRole('button', { name: 'Create Goal' })[0]);
     expect(screen.getByText('Create goal selected.')).toBeTruthy();
   });
 });

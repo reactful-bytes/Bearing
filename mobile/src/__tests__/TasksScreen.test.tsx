@@ -8,7 +8,9 @@ import { useTasks } from '../features/tasks/useTasks';
 import { TasksScreen } from '../screens/TasksScreen';
 
 jest.mock('../features/profile/useUserProfile', () => ({
-  useUserProfile: jest.fn(() => ({ profile: { locale: 'en-US', timeFormat: '12-hour' } })),
+  useUserProfile: jest.fn(() => ({
+    profile: { locale: 'en-US', timezone: 'America/Chicago', timeFormat: '12-hour' },
+  })),
 }));
 
 const mockNavigate = jest.fn();

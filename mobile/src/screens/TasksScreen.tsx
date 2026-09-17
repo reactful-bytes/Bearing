@@ -167,7 +167,7 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
 
     const startAt = new Date();
     const endAt = new Date(startAt.getTime() + minutes * 60_000);
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const timezone = profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const input: CreateEventInput = {
       title: startNowTask.title,

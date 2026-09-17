@@ -42,6 +42,10 @@ jest.mock('../screens/ProfileScreen', () => ({
   ProfileScreen: () => null,
 }));
 
+jest.mock('../screens/PremiumPaywallScreen', () => ({
+  PremiumPaywallScreen: () => null,
+}));
+
 jest.mock('../screens/TasksScreen', () => ({
   TasksScreen: () => null,
 }));
@@ -200,8 +204,21 @@ jest.mock('@react-navigation/native-stack', () => {
   const ReactModule = jest.requireActual<typeof import('react')>('react');
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
 
-  function Screen() {
-    return null;
+  function Screen({ children }: { children?: React.ReactNode }) {
+    if (ReactModule.isValidElement(children)) {
+      return ReactModule.createElement(
+        ReactModule.Fragment,
+        null,
+        children,
+      );
+    }
+
+    return ReactModule.createElement(
+      children as unknown as React.ComponentType<{
+        navigation: { navigate: typeof mockNavigate };
+      }>,
+      { navigation: { navigate: mockNavigate } },
+    );
   }
 
   function Navigator({ children }: { children: React.ReactNode }) {
@@ -274,7 +291,7 @@ describe('AppTabs', () => {
         : target.screen === 'CreateEvent'
           ? 'Calendar'
           : 'Plan';
-    expect(mockNavigate).toHaveBeenCalledWith(tab, target);
+    expect(mockNavigate).toHaveBeenCalledWith('AppTabs', { screen: tab, params: target });
   });
 
   it('does not render a mobile bottom navigation bar', () => {
@@ -282,7 +299,8 @@ describe('AppTabs', () => {
       <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
     );
 
-    expect(getByTestId('tab-bar-Plan').props.style).toEqual(
+    const planTab = getByTestId('tab-button-Plan');
+    expect(planTab.props.children[0].props.style).toEqual(
       expect.objectContaining({ display: 'none' }),
     );
   });
