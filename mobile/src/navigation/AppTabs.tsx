@@ -170,6 +170,7 @@ function ProfileNavigator({ onPressSignOut, isSignOutPending }: AppTabsProps) {
             isSignOutPending={isSignOutPending}
             navigation={{
               navigate: (screen, params) => navigation.navigate(screen, params),
+              getParent: () => navigation.getParent(),
             }}
           />
         )}

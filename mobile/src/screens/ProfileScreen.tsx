@@ -13,7 +13,6 @@ import { ProfileSelectionModal } from '../components/profile/ProfileSelectionMod
 import { SoundPickerModal } from '../components/profile/SoundPickerModal';
 import { ProfileIdentityCard } from '../components/profile/ProfileIdentityCard';
 import { ListItem } from '../components/ui/ListItem';
-import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { SectionHeading } from '../components/ui/SectionHeading';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
@@ -100,6 +99,7 @@ type ProfileScreenProps = {
       screen: ProfileNavigationTarget,
       params?: ProfileStackParamList[ProfileNavigationTarget],
     ) => void;
+    getParent?: () => { navigate?: (screen: 'Plan') => void } | undefined;
   };
 };
 
@@ -813,13 +813,17 @@ export function ProfileScreen({
           { paddingBottom: spacing.xl + insets.bottom },
         ]}
       >
-        {onPressBack ? (
-          <View style={styles.routeHeader}>
+        <View style={styles.routeHeader}>
+          {onPressBack ? (
             <IconButton name="back" accessibilityLabel="Back to Profile" onPress={onPressBack} />
-          </View>
-        ) : profileForRender ? null : (
-          <ScreenHeader eyebrow="Profile" title="Profile" />
-        )}
+          ) : (
+            <IconButton
+              name="back"
+              accessibilityLabel="Back to Plan"
+              onPress={() => navigation?.getParent?.()?.navigate?.('Plan')}
+            />
+          )}
+        </View>
 
         {uiState === 'error' ? (
           <RecoveryCard
