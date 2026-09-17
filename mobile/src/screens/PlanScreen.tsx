@@ -318,7 +318,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
   const upcomingEvents = useMemo(
     () =>
       [...events]
-        .filter((event) => event.startAt.getTime() >= nowTimestamp)
+        .filter((event) => event.endAt.getTime() > nowTimestamp)
         .sort((left, right) => left.startAt.getTime() - right.startAt.getTime())
         .slice(0, MAX_UPCOMING_EVENTS),
     [events, nowTimestamp],

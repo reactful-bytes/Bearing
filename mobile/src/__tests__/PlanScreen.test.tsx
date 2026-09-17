@@ -184,6 +184,17 @@ describe('PlanScreen', () => {
     expect(screen.getByRole('link', { name: 'See all' })).toBeTruthy();
   });
 
+  it('includes an event that is currently in progress', () => {
+    const activeEvent = makeEvent(1);
+    activeEvent.startAt = new Date(Date.now() - 10 * 60_000);
+    activeEvent.endAt = new Date(Date.now() + 20 * 60_000);
+    mockReadyState([activeEvent]);
+
+    render(<PlanScreen navigation={{ navigate: jest.fn() } as never} />);
+
+    expect(screen.getByText('Plan block 1')).toBeTruthy();
+  });
+
   it('routes dashboard surfaces and rows to the existing typed destinations', () => {
     const stackNavigate = jest.fn();
     render(
