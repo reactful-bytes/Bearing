@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import App from '../../App';
 import { useAuthBootstrap } from '../features/auth/useAuthBootstrap';
@@ -101,6 +101,10 @@ describe('App shell', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(global, 'requestAnimationFrame').mockImplementation((callback) => {
+      callback(0);
+      return 0;
+    });
     const mockedUseGoogleAuth = useGoogleAuth as jest.MockedFunction<typeof useGoogleAuth>;
     mockedUseGoogleAuth.mockReturnValue({
       isConfigured: true,
@@ -111,6 +115,10 @@ describe('App shell', () => {
         accessToken: null,
       })),
     });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('renders signed-out state entry point', async () => {

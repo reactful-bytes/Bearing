@@ -535,10 +535,16 @@ describe('ProfileScreen', () => {
       error: null,
     });
 
-    render(<ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />);
+    const profileRender = render(
+      <ProfileScreen onPressSignOut={() => undefined} isSignOutPending={false} />,
+    );
 
+    await act(async () => {
+      await Promise.resolve();
+    });
     await waitFor(() => expect(screen.getByText('7 available')).toBeTruthy());
-    render(
+    profileRender.unmount();
+    const creditsRender = render(
       <ProfileScreen
         onPressSignOut={() => undefined}
         isSignOutPending={false}
@@ -550,6 +556,10 @@ describe('ProfileScreen', () => {
     expect(
       screen.getByText('AI credit packs are available in the iOS and Android apps.'),
     ).toBeTruthy();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    creditsRender.unmount();
   });
 
   it('explains that RevenueCat Test Store purchases cannot be managed from the profile hub', async () => {
