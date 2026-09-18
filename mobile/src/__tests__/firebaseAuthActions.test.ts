@@ -9,7 +9,7 @@ import {
   unlink,
 } from 'firebase/auth';
 
-import { clearNativeGoogleSession } from '../../features/auth/googleNativeAuth';
+import { clearNativeGoogleSession } from '../features/auth/googleNativeAuth';
 import {
   completeGooglePasswordConflict,
   GoogleCredentialCollisionError,
@@ -18,8 +18,8 @@ import {
   signInWithGoogleAuth,
   signOutCurrentUser,
   unlinkGoogleFromCurrentUser,
-} from './firebaseAuthActions';
-import { getFirebaseAuth } from './firebaseAuth';
+} from '../services/firebase/firebaseAuthActions';
+import { getFirebaseAuth } from '../services/firebase/firebaseAuth';
 
 jest.mock('firebase/auth', () => ({
   EmailAuthProvider: { credential: jest.fn(() => ({ providerId: 'password' })) },
@@ -36,9 +36,9 @@ jest.mock('firebase/auth', () => ({
   updateProfile: jest.fn(),
 }));
 
-jest.mock('./firebaseAuth', () => ({ getFirebaseAuth: jest.fn() }));
+jest.mock('../services/firebase/firebaseAuth', () => ({ getFirebaseAuth: jest.fn() }));
 
-jest.mock('../../features/auth/googleNativeAuth', () => ({
+jest.mock('../features/auth/googleNativeAuth', () => ({
   clearNativeGoogleSession: jest.fn(),
 }));
 

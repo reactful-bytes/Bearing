@@ -10,7 +10,7 @@ import {
   CreateNoteScreen,
   CreateTaskScreen,
   CreateTaskFromNoteScreen,
-} from './CreationScreens';
+} from '../screens/CreationScreens';
 
 const mockCreateGoal = jest.fn(async () => undefined);
 const mockCreateTask = jest.fn(async () => undefined);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { parseGoogleAuthSessionResult } from './useGoogleAuth';
+import { parseGoogleAuthSessionResult } from '../features/auth/useGoogleAuth';
 
 describe('Google AuthSession results', () => {
   it('normalizes browser cancellation', () => {

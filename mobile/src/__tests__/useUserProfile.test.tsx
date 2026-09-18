@@ -2,30 +2,30 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { onAuthStateChanged } from 'firebase/auth';
 
-import { revokeNativeGoogleAccess } from '../auth/googleNativeAuth';
-import { useGoogleAuth } from '../auth/useGoogleAuth';
-import { getFirebaseAuth } from '../../services/firebase/firebaseAuth';
-import { unlinkGoogleFromCurrentUser } from '../../services/firebase/firebaseAuthActions';
-import { ensureUserProfile, subscribeToUserProfile } from '../../services/firebase/firebaseUsers';
-import { useUserProfile } from './useUserProfile';
+import { revokeNativeGoogleAccess } from '../features/auth/googleNativeAuth';
+import { useGoogleAuth } from '../features/auth/useGoogleAuth';
+import { getFirebaseAuth } from '../services/firebase/firebaseAuth';
+import { unlinkGoogleFromCurrentUser } from '../services/firebase/firebaseAuthActions';
+import { ensureUserProfile, subscribeToUserProfile } from '../services/firebase/firebaseUsers';
+import { useUserProfile } from '../features/profile/useUserProfile';
 
 jest.mock('firebase/auth', () => ({
   onAuthStateChanged: jest.fn(),
 }));
 
-jest.mock('../auth/useGoogleAuth', () => ({
+jest.mock('../features/auth/useGoogleAuth', () => ({
   useGoogleAuth: jest.fn(),
 }));
 
-jest.mock('../auth/googleNativeAuth', () => ({
+jest.mock('../features/auth/googleNativeAuth', () => ({
   revokeNativeGoogleAccess: jest.fn(async () => undefined),
 }));
 
-jest.mock('../../services/firebase/firebaseAuth', () => ({
+jest.mock('../services/firebase/firebaseAuth', () => ({
   getFirebaseAuth: jest.fn(),
 }));
 
-jest.mock('../../services/firebase/firebaseAuthActions', () => ({
+jest.mock('../services/firebase/firebaseAuthActions', () => ({
   linkAnonymousUserWithEmailPassword: jest.fn(),
   linkAnonymousUserWithGoogleAuth: jest.fn(),
   linkCurrentUserWithGoogleAuth: jest.fn(),
@@ -35,7 +35,7 @@ jest.mock('../../services/firebase/firebaseAuthActions', () => ({
   updateCurrentUserDisplayName: jest.fn(),
 }));
 
-jest.mock('../../services/firebase/firebaseUsers', () => ({
+jest.mock('../services/firebase/firebaseUsers', () => ({
   ensureUserProfile: jest.fn(async () => undefined),
   subscribeToUserProfile: jest.fn(() => jest.fn()),
   updateUserProfile: jest.fn(),

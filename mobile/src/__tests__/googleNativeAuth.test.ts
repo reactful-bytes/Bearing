@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
-import { acquireNativeGoogleTokens } from './googleNativeAuth';
+import { acquireNativeGoogleTokens } from '../features/auth/googleNativeAuth';
 
 const originalWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 

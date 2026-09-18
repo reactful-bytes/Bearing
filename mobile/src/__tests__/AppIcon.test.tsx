@@ -2,8 +2,8 @@ import { describe, expect, it } from '@jest/globals';
 import { render, screen } from '@testing-library/react-native';
 import Svg from 'react-native-svg';
 
-import { icons } from '../../design/icons';
-import { AppIcon } from './AppIcon';
+import { icons } from '../design/icons';
+import { AppIcon } from '../components/ui/AppIcon';
 
 describe('AppIcon', () => {
   it.each(Object.keys(icons))('renders the %s registry entry', (name) => {

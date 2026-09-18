@@ -93,4 +93,23 @@ describe('goalHelpers', () => {
     expect(composed.progressText).toBe('2 of 2 steps completed');
     expect(buildGoalProgressText(steps)).toBe('2 of 2 steps completed');
   });
+
+  it('derives operational progress from goal steps, not AI milestone metadata', () => {
+    const goal = makeGoal({
+      isAiAssisted: true,
+      aiPlanVersion: 1,
+      aiMilestones: [{ title: 'Ignored for progress', description: '' }],
+    });
+    const step = makeStep({
+      status: 'completed',
+      completedAt: new Date('2026-07-31T10:00:00.000Z'),
+      updatedAt: new Date('2026-07-31T10:00:00.000Z'),
+    });
+
+    const composed = composeGoalWithSteps(goal, [step]);
+
+    expect(composed.progressText).toBe('1 of 1 steps completed');
+    expect(composed.nextStep).toBeNull();
+    expect(composed.totalStepCount).toBe(1);
+  });
 });

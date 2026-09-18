@@ -1,9 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
-import { ThemeProvider } from '../../design/ThemeProvider';
-import { icons } from '../../design/icons';
-import { FoundationGallery } from './FoundationGallery';
+import { ThemeProvider } from '../design/ThemeProvider';
+import { icons } from '../design/icons';
+import { FoundationGallery } from '../components/ui/FoundationGallery';
 
 async function renderGallery() {
   const result = render(

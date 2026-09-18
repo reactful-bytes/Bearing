@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { buildTaskCreateFields, buildTaskUpdateFields } from './taskPersistence';
+import { buildTaskCreateFields, buildTaskUpdateFields } from '../features/tasks/taskPersistence';
 
 const timestampFactory = (date: Date): string => date.toISOString();
 

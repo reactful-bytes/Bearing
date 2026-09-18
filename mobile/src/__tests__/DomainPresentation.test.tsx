@@ -2,15 +2,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { GoalCard, GoalMilestones, GoalStatusTabs, GoalTimeline } from './GoalPresentation';
-import { TaskRow } from './TaskRow';
-import { EventCard, EventRow, EventSourceChip } from './EventPresentation';
-import { BottomNavigation } from './BottomNavigation';
-import { CreateFabGroup } from './CreateFabGroup';
-import { CalendarDisplayEvent } from '../../features/calendar/calendarTypes';
-import { ThemeProvider } from '../../design/ThemeProvider';
-import { GoalStepRecord, GoalWithSteps } from '../../features/goals/goalTypes';
-import { TaskRecord } from '../../features/tasks/taskTypes';
+import { GoalCard, GoalMilestones, GoalStatusTabs, GoalTimeline } from '../components/presentation/GoalPresentation';
+import { TaskRow } from '../components/presentation/TaskRow';
+import { EventCard, EventRow, EventSourceChip } from '../components/presentation/EventPresentation';
+import { BottomNavigation } from '../components/presentation/BottomNavigation';
+import { CreateFabGroup } from '../components/presentation/CreateFabGroup';
+import { CalendarDisplayEvent } from '../features/calendar/calendarTypes';
+import { ThemeProvider } from '../design/ThemeProvider';
+import { GoalStepRecord, GoalWithSteps } from '../features/goals/goalTypes';
+import { TaskRecord } from '../features/tasks/taskTypes';
 
 const step: GoalStepRecord = {
   id: 'step-1',

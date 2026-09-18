@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { CalendarSourcesScreen } from './CalendarSourcesScreen';
+import { CalendarSourcesScreen } from '../screens/CalendarSourcesScreen';
 
 const mockToggleCalendar = jest.fn(async () => undefined);
 const mockSetDefaultCalendar = jest.fn(async () => undefined);

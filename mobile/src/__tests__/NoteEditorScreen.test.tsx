@@ -3,7 +3,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 
 import { NoteRecord, UpdateNoteInput } from '../features/notes/noteTypes';
 import { useNotes } from '../features/notes/useNotes';
-import { NoteEditorScreen } from './NoteEditorScreen';
+import { NoteEditorScreen } from '../screens/NoteEditorScreen';
 
 const mockNavigate = jest.fn();
 

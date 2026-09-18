@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { decodeNoteData } from './noteDecoder';
+import { decodeNoteData } from '../features/notes/noteDecoder';
 
 function timestamp(value: Date): { toDate: () => Date } {
   return { toDate: () => value };

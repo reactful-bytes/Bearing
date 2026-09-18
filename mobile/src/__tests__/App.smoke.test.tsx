@@ -33,6 +33,20 @@ jest.mock('../services/firebase/firebaseAuthActions', () => ({
   signOutCurrentUser: jest.fn(),
 }));
 
+jest.mock('../design/ThemeProvider', () => {
+  const { darkTheme } = jest.requireActual<typeof import('../design/tokens')>('../design/tokens');
+
+  return {
+    ThemeProvider: ({ children }: { children: import('react').ReactNode }) => children,
+    useTheme: () => ({
+      preference: 'dark' as const,
+      isHydrated: true,
+      theme: darkTheme,
+      setPreference: jest.fn(async () => undefined),
+    }),
+  };
+});
+
 jest.mock('../services/firebase/firebaseApp', () => ({
   getFirebaseApp: jest.fn(),
 }));
@@ -91,12 +105,10 @@ jest.mock('../navigation/AppTabs', () => ({
 describe('App shell', () => {
   async function renderReadyApp(): Promise<void> {
     render(<App />);
-    await waitFor(
-      () => {
-        expect(screen.queryByLabelText('Loading Bearing')).toBeNull();
-      },
-      { timeout: 3000 },
-    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(screen.queryByLabelText('Loading Bearing')).toBeNull();
   }
 
   beforeEach(() => {

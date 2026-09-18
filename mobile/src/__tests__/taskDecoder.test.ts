@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { decodeTaskData } from './taskDecoder';
+import { decodeTaskData } from '../features/tasks/taskDecoder';
 
 function timestamp(date: Date) {
   return { toDate: () => date };

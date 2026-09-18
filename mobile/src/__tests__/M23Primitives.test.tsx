@@ -2,14 +2,14 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Modal, StyleSheet, Text } from 'react-native';
 
-import { AppHeader } from './AppHeader';
-import { BottomSheet } from './BottomSheet';
-import { Card } from './Card';
-import { EmptyState } from './EmptyState';
-import { FloatingActionButton } from './FloatingActionButton';
-import { FormField } from './FormField';
-import { ProgressBar } from './ProgressBar';
-import { SectionHeader } from './SectionHeader';
+import { AppHeader } from '../components/ui/AppHeader';
+import { BottomSheet } from '../components/ui/BottomSheet';
+import { Card } from '../components/ui/Card';
+import { EmptyState } from '../components/ui/EmptyState';
+import { FloatingActionButton } from '../components/ui/FloatingActionButton';
+import { FormField } from '../components/ui/FormField';
+import { ProgressBar } from '../components/ui/ProgressBar';
+import { SectionHeader } from '../components/ui/SectionHeader';
 
 describe('M23 shared UI primitives', () => {
   it('keeps app header action slots fixed while rendering the centered logo treatment', () => {

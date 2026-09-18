@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { sortNotes } from './noteSorting';
-import { NoteRecord } from './noteTypes';
+import { sortNotes } from '../features/notes/noteSorting';
+import { NoteRecord } from '../features/notes/noteTypes';
 
 function note(id: string, updatedAt: string, pinned = false): NoteRecord {
   const date = new Date(updatedAt);

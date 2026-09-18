@@ -4,7 +4,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { CalendarDisplayEvent } from '../features/calendar/calendarTypes';
 import { useCalendarEvents } from '../features/calendar/useCalendarEvents';
 import { useUserProfile } from '../features/profile/useUserProfile';
-import { EventDetailScreen } from './EventDetailScreen';
+import { EventDetailScreen } from '../screens/EventDetailScreen';
 
 jest.mock('../features/calendar/useCalendarEvents', () => ({
   useCalendarEvents: jest.fn(),

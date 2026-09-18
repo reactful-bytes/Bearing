@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it } from '@jest/globals';
 import { act, render, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
-import { ThemeProvider, useTheme } from './ThemeProvider';
-import { useThemedStyles } from './useThemedStyles';
+import { ThemeProvider, useTheme } from '../design/ThemeProvider';
+import { useThemedStyles } from '../design/useThemedStyles';
 
 function ThemeProbe() {
   const { isHydrated, preference, setPreference, theme } = useTheme();

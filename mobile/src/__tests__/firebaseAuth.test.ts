@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FirebaseAuth from 'firebase/auth';
 
-import { getFirebaseApp } from './firebaseApp';
-import { getFirebaseAuth } from './firebaseAuth.native';
+import { getFirebaseApp } from '../services/firebase/firebaseApp';
+import { getFirebaseAuth } from '../services/firebase/firebaseAuth.native';
 
 const getReactNativePersistence = (
   FirebaseAuth as typeof FirebaseAuth & {
@@ -16,7 +16,7 @@ jest.mock('firebase/auth', () => ({
   initializeAuth: jest.fn(),
 }));
 
-jest.mock('./firebaseApp', () => ({ getFirebaseApp: jest.fn() }));
+jest.mock('../services/firebase/firebaseApp', () => ({ getFirebaseApp: jest.fn() }));
 
 describe('Firebase auth initialization', () => {
   beforeEach(() => {

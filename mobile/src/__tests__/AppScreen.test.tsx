@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
-import { AppScreen } from './AppScreen';
+import { AppScreen } from '../components/ui/AppScreen';
 
 describe('AppScreen', () => {
   it('renders static content with page padding and safe-area edges', () => {
