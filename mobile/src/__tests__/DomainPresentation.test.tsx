@@ -2,7 +2,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { GoalCard, GoalMilestones, GoalStatusTabs, GoalTimeline } from '../components/presentation/GoalPresentation';
+import {
+  GoalCard,
+  GoalMilestones,
+  GoalStatusTabs,
+  GoalTimeline,
+} from '../components/presentation/GoalPresentation';
 import { TaskRow } from '../components/presentation/TaskRow';
 import { EventCard, EventRow, EventSourceChip } from '../components/presentation/EventPresentation';
 import { BottomNavigation } from '../components/presentation/BottomNavigation';
