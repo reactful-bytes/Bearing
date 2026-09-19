@@ -15,6 +15,7 @@ import { recordTelemetryEvent } from '../../services/telemetry/telemetry';
 import {
   BearingEvent,
   CalendarDisplayEvent,
+  eventOverlapsCalendarDay,
   DeviceCalendarEvent,
   CalendarUiState,
   CreateEventInput,
@@ -36,14 +37,6 @@ function getMonthStart(date: Date): Date {
 
 function getMonthEnd(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
-}
-
-function isSameCalendarDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -244,7 +237,7 @@ export function useCalendarEvents(
 
   const eventsForDate = useCallback(
     (date: Date): CalendarDisplayEvent[] =>
-      events.filter((event) => isSameCalendarDay(event.startAt, date)),
+      events.filter((event) => eventOverlapsCalendarDay(event, date)),
     [events],
   );
 

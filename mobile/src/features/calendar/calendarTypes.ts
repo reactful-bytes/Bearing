@@ -94,6 +94,13 @@ export type DeviceCalendarEvent = CalendarDisplayFields & {
 export type CalendarDisplayEvent = BearingEvent | DeviceCalendarEvent;
 export type CalendarEvent = BearingEvent;
 
+export function eventOverlapsCalendarDay(event: CalendarDisplayEvent, date: Date): boolean {
+  const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+  return event.startAt < dayEnd && event.endAt > dayStart;
+}
+
 export type CreateEventInput = {
   title: string;
   description: string;

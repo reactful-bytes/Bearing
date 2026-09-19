@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 
 import { useThemedStyles } from '../design/useThemedStyles';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DayNavBar } from '../components/calendar/DayNavBar';
 import { ViewModeToggle } from '../components/calendar/ViewModeToggle';
@@ -34,6 +34,7 @@ import {
   CreateEventOptions,
   ViewMode,
   createUnpublishedMetadata,
+  eventOverlapsCalendarDay,
 } from '../features/calendar/calendarTypes';
 import { useCalendarEvents } from '../features/calendar/useCalendarEvents';
 import { CreateNoteInput as CreateNotePayload } from '../features/notes/noteTypes';
@@ -146,6 +147,7 @@ export function CalendarScreen({
   navigation,
 }: CalendarScreenProps) {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   const calendarPageWidth =
     Platform.OS === 'web' ? Math.min(screenWidth, WEB_CONTENT_MAX_WIDTH) : screenWidth;
@@ -212,7 +214,7 @@ export function CalendarScreen({
   const uiState: CalendarUiState = stateOverride ?? realUiState;
   const calendarEvents = eventsOverride ?? realEvents;
   const dayEvents: CalendarDisplayEvent[] = eventsOverride
-    ? calendarEvents.filter((event) => isSameCalendarDay(event.startAt, selectedDate))
+    ? calendarEvents.filter((event) => eventOverlapsCalendarDay(event, selectedDate))
     : eventsForDate(selectedDate);
 
   // Month carousel
@@ -434,9 +436,10 @@ export function CalendarScreen({
   const visibleMonth = monthList[visibleMonthIndex];
 
   return (
-    // Bottom inset is already reserved by the tab bar's own height/padding;
-    // also applying it here double-counts it and crops content above the tab bar.
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right', 'bottom']}>
+    <SafeAreaView
+      style={[styles.screen]}
+      edges={['top', 'left', 'right']}
+    >
       <View style={styles.calendarHeader}>
         <IconButton
           name="menu"
@@ -559,11 +562,12 @@ export function CalendarScreen({
             onViewableItemsChanged={handleViewableItemsChanged}
             renderItem={({ item: { year, month } }) => {
               const eventDays = new Set<number>();
-              calendarEvents.forEach((event) => {
-                if (event.startAt.getFullYear() === year && event.startAt.getMonth() === month) {
-                  eventDays.add(event.startAt.getDate());
+              const daysInMonth = new Date(year, month + 1, 0).getDate();
+              for (let day = 1; day <= daysInMonth; day += 1) {
+                if (calendarEvents.some((event) => eventOverlapsCalendarDay(event, new Date(year, month, day)))) {
+                  eventDays.add(day);
                 }
-              });
+              }
 
               return (
                 <MonthGrid
@@ -592,7 +596,10 @@ export function CalendarScreen({
               </Text>
             </View>
             <ScrollView
-              contentContainerStyle={styles.monthAgendaContent}
+              contentContainerStyle={[
+                styles.monthAgendaContent,
+                { paddingBottom: layout.pagePaddingVertical + insets.bottom },
+              ]}
               showsVerticalScrollIndicator={false}
             >
               {dayEvents.length > 0 ? (

@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { useThemedStyles } from '../../design/useThemedStyles';
 import { useTheme } from '../../design/ThemeProvider';
+import { useThemedStyles } from '../../design/useThemedStyles';
 import { spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
 
@@ -32,7 +32,7 @@ export const MONTH_NAMES = [
 ];
 
 function buildWeeks(year: number, month: number): (number | null)[][] {
-  const firstDay = new Date(year, month, 1).getDay(); // 0 = Sunday
+  const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const cells: (number | null)[] = [
@@ -48,7 +48,6 @@ function buildWeeks(year: number, month: number): (number | null)[][] {
   for (let i = 0; i < cells.length; i += 7) {
     weeks.push(cells.slice(i, i + 7));
   }
-
   return weeks;
 }
 
@@ -113,42 +112,49 @@ export function MonthGrid({
             const hasEvents = eventDays.has(day);
 
             return (
-              <Pressable
-                key={dayIdx}
-                accessibilityRole="button"
-                accessibilityLabel={`${MONTH_NAMES[month]} ${day}, ${year}`}
-                accessibilityState={{ selected: isSelected }}
-                onPress={() => onSelectDate(new Date(year, month, day))}
-                style={[styles.cell, { width: cellWidth }]}
-                android_ripple={{
-                  color: theme.colors.brand,
-                  borderless: true,
-                  radius: DAY_CIRCLE_SIZE / 2,
-                }}
-              >
-                <View
-                  style={[
-                    styles.dayCircle,
-                    isSelected ? styles.dayCircleSelected : null,
-                    isToday && !isSelected ? styles.dayCircleToday : null,
-                  ]}
+              <View key={dayIdx} style={[styles.cell, { width: cellWidth }]}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${MONTH_NAMES[month]} ${day}, ${year}`}
+                  accessibilityState={{ selected: isSelected }}
+                  onPress={() => onSelectDate(new Date(year, month, day))}
+                  style={styles.dayPressTarget}
                 >
-                  <Text
-                    style={[
-                      styles.dayNumber,
-                      isSelected ? styles.dayNumberSelected : null,
-                      isToday && !isSelected ? styles.dayNumberToday : null,
-                    ]}
-                  >
-                    {day}
-                  </Text>
-                </View>
+                  {({ pressed }) => (
+                    <View
+                      style={[
+                        styles.dayCircle,
+                        {
+                          backgroundColor: pressed
+                            ? theme.colors.surfacePressed
+                            : isSelected
+                              ? theme.colors.brand
+                              : 'transparent',
+                          borderWidth: isToday && !isSelected ? 1.5 : 0,
+                          borderColor: theme.colors.brand,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.dayNumber,
+                          {
+                            color: isSelected ? '#F4F8FA' : theme.colors.text,
+                            fontWeight: isSelected || isToday ? '700' : '400',
+                          },
+                        ]}
+                      >
+                        {day}
+                      </Text>
+                    </View>
+                  )}
+                </Pressable>
                 {hasEvents ? (
                   <View style={styles.eventDot} />
                 ) : (
                   <View style={styles.eventDotPlaceholder} />
                 )}
-              </Pressable>
+              </View>
             );
           })}
         </View>
@@ -174,6 +180,11 @@ const createStyles = (theme: Theme) =>
       alignItems: 'center',
       paddingVertical: spacing.xs,
     },
+    dayPressTarget: {
+      width: DAY_CIRCLE_SIZE,
+      height: DAY_CIRCLE_SIZE,
+      borderRadius: DAY_CIRCLE_SIZE / 2,
+    },
     dayHeader: {
       ...typography.helper,
       fontSize: 12,
@@ -188,25 +199,10 @@ const createStyles = (theme: Theme) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    dayCircleSelected: {
-      backgroundColor: theme.colors.brand,
-    },
-    dayCircleToday: {
-      borderWidth: 1.5,
-      borderColor: theme.colors.brand,
-    },
     dayNumber: {
       ...typography.body,
       fontSize: 15,
       color: theme.colors.text,
-    },
-    dayNumberSelected: {
-      color: '#F4F8FA',
-      fontWeight: '700',
-    },
-    dayNumberToday: {
-      color: theme.colors.brand,
-      fontWeight: '700',
     },
     eventDot: {
       width: 5,

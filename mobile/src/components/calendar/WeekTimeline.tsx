@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../../design/ThemeProvider';
 import { useThemedStyles } from '../../design/useThemedStyles';
@@ -9,6 +10,7 @@ import {
   CalendarDisplayEvent,
   CalendarUiState,
   EventStatus,
+  eventOverlapsCalendarDay,
 } from '../../features/calendar/calendarTypes';
 import {
   DEFAULT_TIME_FORMAT,
@@ -134,6 +136,7 @@ export function WeekTimeline({
 }: WeekTimelineProps) {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
   const [viewportHeight, setViewportHeight] = useState(0);
   const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
@@ -183,6 +186,7 @@ export function WeekTimeline({
         ref={scrollViewRef}
         onLayout={(event) => setViewportHeight(event.nativeEvent.layout.height)}
         style={styles.scrollView}
+        contentContainerStyle={{ paddingBottom: insets.bottom }}
         showsVerticalScrollIndicator
         stickyHeaderIndices={[0]}
         testID="week-timeline-scroll"
@@ -260,7 +264,7 @@ export function WeekTimeline({
           {days.map((day) => {
             const isToday = isSameCalendarDay(day, now);
             const timedEvents = events.filter(
-              (event) => !event.allDay && isSameCalendarDay(event.startAt, day),
+              (event) => !event.allDay && eventOverlapsCalendarDay(event, day),
             );
             return (
               <View key={day.toISOString()} style={styles.dayColumn}>

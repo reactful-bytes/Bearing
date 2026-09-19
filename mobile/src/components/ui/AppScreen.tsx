@@ -13,7 +13,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { Edge, SafeAreaView } from 'react-native-safe-area-context';
+import { Edge, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Theme } from '../../design/tokens';
 import { useThemedStyles } from '../../design/useThemedStyles';
@@ -34,7 +34,7 @@ type AppScreenProps = {
 export function AppScreen({
   children,
   mode = 'static',
-  edges = ['top', 'right', 'bottom', 'left'],
+  edges = ['top', 'right', 'left'],
   style,
   contentContainerStyle,
   backgroundSource,
@@ -42,11 +42,16 @@ export function AppScreen({
   testID,
 }: AppScreenProps) {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const content =
     mode === 'scroll' ? (
       <ScrollView
         testID={testID ? `${testID}-scroll` : undefined}
-        contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: styles.scrollContent.paddingVertical + insets.bottom },
+          contentContainerStyle,
+        ]}
         keyboardShouldPersistTaps="handled"
       >
         {children}
@@ -54,7 +59,15 @@ export function AppScreen({
     ) : (
       <View
         testID={testID ? `${testID}-content` : undefined}
-        style={mode === 'static' ? [styles.content, contentContainerStyle] : contentContainerStyle}
+        style={
+          mode === 'static'
+            ? [
+                styles.content,
+                { paddingBottom: styles.content.paddingVertical + insets.bottom },
+                contentContainerStyle,
+              ]
+            : contentContainerStyle
+        }
       >
         {children}
       </View>

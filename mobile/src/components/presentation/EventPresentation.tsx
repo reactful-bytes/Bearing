@@ -13,7 +13,11 @@ type EventSourceChipProps = {
 export function getEventKindLabel(event: CalendarDisplayEvent): string {
   if (event.ownership === 'bearing' && event.sourceTaskId !== null) return 'Task';
   if (event.ownership === 'bearing' && event.stepId !== null) return 'Milestone';
-  return event.ownership === 'device' ? 'Imported event' : 'Event';
+  return '';
+}
+
+export function getEventCalendarLabel(event: CalendarDisplayEvent): string {
+  return event.ownership === 'bearing' ? 'Bearing' : event.calendarTitle;
 }
 
 export function EventSourceChip({ label, tone = 'bearing' }: EventSourceChipProps) {
@@ -33,6 +37,7 @@ type EventRowProps = {
 export function EventRow({ event, dateTime, timezone, onPress }: EventRowProps) {
   const styles = useThemedStyles(createStyles);
   const sourceLabel = event.ownership === 'bearing' ? 'Bearing' : event.calendarTitle;
+  const kindLabel = getEventKindLabel(event);
   const accentStyle = event.ownership === 'device' ? styles.deviceAccent : styles.bearingAccent;
   return (
     <Card
@@ -45,7 +50,7 @@ export function EventRow({ event, dateTime, timezone, onPress }: EventRowProps) 
         <Text numberOfLines={1} style={styles.title}>
           {event.title}
         </Text>
-        <Text style={styles.kindLabel}>{getEventKindLabel(event)}</Text>
+        {kindLabel ? <Text style={styles.kindLabel}>{kindLabel}</Text> : null}
         <EventSourceChip label={sourceLabel} tone={event.ownership} />
       </View>
       <Text style={styles.meta}>{dateTime}</Text>
@@ -67,6 +72,7 @@ export function EventCard({
 }: EventCardProps) {
   const styles = useThemedStyles(createStyles);
   const sourceLabel = event.ownership === 'bearing' ? 'Bearing' : event.calendarTitle;
+  const kindLabel = getEventKindLabel(event);
   const accentStyle = event.ownership === 'device' ? styles.deviceAccent : styles.bearingAccent;
   return (
     <Card
@@ -79,7 +85,7 @@ export function EventCard({
         <Text numberOfLines={1} style={styles.title}>
           {event.title}
         </Text>
-        <Text style={styles.kindLabel}>{getEventKindLabel(event)}</Text>
+        {kindLabel ? <Text style={styles.kindLabel}>{kindLabel}</Text> : null}
         <EventSourceChip label={sourceLabel} tone={event.ownership} />
       </View>
       <Text style={styles.meta}>{dateTime}</Text>
