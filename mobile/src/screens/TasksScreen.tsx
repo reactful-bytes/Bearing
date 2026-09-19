@@ -208,7 +208,7 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
       <ScrollView
         contentContainerStyle={[
           styles.contentContainer,
-          { paddingBottom: spacing.xl + insets.bottom },
+          { paddingBottom: spacing['3xl'] + insets.bottom },
         ]}
       >
         <SegmentedControl
@@ -349,7 +349,6 @@ const createStyles = (theme: Theme) =>
       paddingHorizontal: layout.pagePaddingHorizontal,
       paddingVertical: layout.pagePaddingVertical,
       gap: spacing.xl,
-      paddingBottom: 120,
     },
     stateTitle: {
       ...typography.button,
