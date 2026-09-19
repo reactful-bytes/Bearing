@@ -223,7 +223,7 @@ const createStyles = (theme: Theme) =>
       backgroundColor: theme.colors.background,
     },
     closeButtonClosed: {
-      backgroundColor: theme.colors.brand,
+      backgroundColor: `${theme.colors.brand}E6`,
       borderWidth: 0,
     },
     actionPressed: { opacity: 0.85 },
