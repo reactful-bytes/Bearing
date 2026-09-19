@@ -1,14 +1,16 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-import { CalendarDisplayEvent } from '../features/calendar/calendarTypes';
+import { BearingEvent, CalendarDisplayEvent } from '../features/calendar/calendarTypes';
 import { GoalWithSteps } from '../features/goals/goalTypes';
 import { NoteRecord } from '../features/notes/noteTypes';
 import { UserProfileRecord } from '../features/profile/profileTypes';
+import { TaskRecord } from '../features/tasks/taskTypes';
 import { useCalendarEvents } from '../features/calendar/useCalendarEvents';
 import { useFocusSession } from '../features/focus/focusSession';
 import { useGoals } from '../features/goals/useGoals';
 import { useNotes } from '../features/notes/useNotes';
+import { useTasks } from '../features/tasks/useTasks';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { PlanScreen } from '../screens/PlanScreen';
 
@@ -28,6 +30,9 @@ jest.mock('../features/goals/useGoals', () => ({
 jest.mock('../features/notes/useNotes', () => ({
   useNotes: jest.fn(),
 }));
+jest.mock('../features/tasks/useTasks', () => ({
+  useTasks: jest.fn(),
+}));
 jest.mock('../features/profile/useUserProfile', () => ({
   useUserProfile: jest.fn(),
 }));
@@ -36,6 +41,7 @@ const mockUseCalendarEvents = useCalendarEvents as jest.MockedFunction<typeof us
 const mockUseFocusSession = useFocusSession as jest.MockedFunction<typeof useFocusSession>;
 const mockUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
 const mockUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
+const mockUseTasks = useTasks as jest.MockedFunction<typeof useTasks>;
 const mockUseUserProfile = useUserProfile as jest.MockedFunction<typeof useUserProfile>;
 const mockRootNavigate = jest.fn();
 
@@ -57,7 +63,7 @@ function makeProfile(): UserProfileRecord {
   };
 }
 
-function makeEvent(index: number): CalendarDisplayEvent {
+function makeEvent(index: number): BearingEvent {
   const startAt = new Date();
   startAt.setMinutes(startAt.getMinutes() + index + 10);
   const endAt = new Date(startAt.getTime() + 30 * 60_000);
@@ -132,6 +138,28 @@ function makeNote(): NoteRecord {
   };
 }
 
+function makeTask(index: number): TaskRecord {
+  const updatedAt = new Date();
+  return {
+    id: `task-${index}`,
+    userId: 'user-1',
+    title: `Task ${index}`,
+    description: '',
+    goalId: null,
+    stepId: null,
+    dueDate: null,
+    scheduledStart: null,
+    scheduledEnd: null,
+    allDay: false,
+    status: 'active',
+    completionSource: null,
+    completedAt: null,
+    completedEventId: null,
+    createdAt: updatedAt,
+    updatedAt,
+  };
+}
+
 function mockReadyState(events: CalendarDisplayEvent[] = [makeEvent(1)]): void {
   mockUseUserProfile.mockReturnValue({ profile: makeProfile() } as ReturnType<
     typeof useUserProfile
@@ -152,6 +180,11 @@ function mockReadyState(events: CalendarDisplayEvent[] = [makeEvent(1)]): void {
     uiState: 'ready',
     retry: jest.fn(),
   } as unknown as ReturnType<typeof useNotes>);
+  mockUseTasks.mockReturnValue({
+    tasks: [],
+    uiState: 'empty',
+    retry: jest.fn(),
+  } as unknown as ReturnType<typeof useTasks>);
 }
 
 describe('PlanScreen', () => {
@@ -181,7 +214,7 @@ describe('PlanScreen', () => {
     expect(screen.getByText('50%')).toBeTruthy();
     expect(screen.getByText('Notes')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'View full day' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'See all' })).toBeTruthy();
+    expect(screen.getAllByRole('link', { name: 'See all' })).toHaveLength(2);
   });
 
   it('includes an event that is currently in progress', () => {
@@ -208,14 +241,17 @@ describe('PlanScreen', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Open event Plan block 1' }));
     fireEvent.press(screen.getByRole('button', { name: 'Open goal Ship the next release' }));
     fireEvent.press(screen.getByRole('button', { name: 'Open Notes' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Open Tasks' }));
+    fireEvent.press(screen.getByTestId('tasks-see-all'));
     fireEvent.press(screen.getByRole('link', { name: 'View full day' }));
-    fireEvent.press(screen.getByRole('link', { name: 'See all' }));
+    fireEvent.press(screen.getAllByRole('link', { name: 'See all' })[0]);
     fireEvent.press(screen.getByRole('button', { name: 'Open profile' }));
 
     expect(stackNavigate).toHaveBeenCalledWith('GoalDetail', { goalId: 'goal-1' });
     expect(mockRootNavigate).toHaveBeenCalledWith('Notes', {
       screen: 'NotesHome',
     });
+    expect(stackNavigate).toHaveBeenCalledWith('Tasks');
     expect(mockRootNavigate).toHaveBeenCalledWith('Calendar', {
       screen: 'CalendarHome',
       params: expect.objectContaining({ dateIso: expect.any(String) }),
@@ -262,6 +298,35 @@ describe('PlanScreen', () => {
 
     fireEvent.press(screen.getByRole('button', { name: 'Open Focus Mode' }));
     expect(stackNavigate).toHaveBeenCalledWith('FocusMode', { eventId: 'event-1' });
+  });
+
+  it('surfaces the task linked to the active focus session', () => {
+    const focusedTask = makeTask(1);
+    const focusedEvent = makeEvent(1);
+    focusedEvent.sourceTaskId = focusedTask.id;
+    mockUseCalendarEvents.mockReturnValue({
+      events: [focusedEvent],
+      uiState: 'ready',
+      refresh: jest.fn(async () => undefined),
+    } as unknown as ReturnType<typeof useCalendarEvents>);
+    mockUseFocusSession.mockReturnValue({
+      eventId: focusedEvent.id,
+      title: focusedEvent.title,
+      endAt: focusedEvent.endAt,
+    });
+    mockUseTasks.mockReturnValue({
+      tasks: [focusedTask],
+      uiState: 'ready',
+      retry: jest.fn(),
+    } as unknown as ReturnType<typeof useTasks>);
+    const stackNavigate = jest.fn();
+
+    render(<PlanScreen navigation={{ navigate: stackNavigate } as never} />);
+
+    expect(screen.getByText('Task 1')).toBeTruthy();
+    expect(screen.getByText('In focus mode')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('plan-task-task-1'));
+    expect(stackNavigate).toHaveBeenCalledWith('Tasks');
   });
 
   it('renders recovery states for each live Plan source', () => {

@@ -1,6 +1,7 @@
 import { ReactNode, useMemo } from 'react';
 import { NavigationProp } from '@react-navigation/native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getGoalProgressPercent } from '../components/presentation/GoalPresentation';
 import { AppScreen } from '../components/ui/AppScreen';
@@ -16,6 +17,8 @@ import { useCalendarEvents } from '../features/calendar/useCalendarEvents';
 import { CalendarDisplayEvent } from '../features/calendar/calendarTypes';
 import { useFocusSession } from '../features/focus/focusSession';
 import { useGoals } from '../features/goals/useGoals';
+import { useTasks } from '../features/tasks/useTasks';
+import { TaskRecord } from '../features/tasks/taskTypes';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { DEFAULT_TIME_FORMAT, TimeFormat, timeFormatOptions } from '../features/profile/timeFormat';
 import { AppTabParamList, PlanStackParamList } from '../navigation/navigationTypes';
@@ -297,14 +300,40 @@ function PlanGoalRow({ goal, onPress }: { goal: PlanScreenGoal; onPress: () => v
   );
 }
 
+function PlanTaskRow({ task, context, onPress }: { task: TaskRecord; context: string; onPress: () => void }) {
+  const styles = useThemedStyles(createStyles);
+
+  return (
+    <Pressable
+      testID={`plan-task-${task.id}`}
+      accessibilityLabel={`Open task ${task.title}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.taskRow, pressed ? styles.pressed : null]}
+    >
+      <View style={styles.taskMarker} />
+      <View style={styles.taskCopy}>
+        <Text numberOfLines={1} style={styles.taskTitle}>
+          {task.title}
+        </Text>
+        <Text numberOfLines={1} style={styles.taskContext}>
+          {context}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
 export function PlanScreen({ navigation }: PlanScreenProps) {
   const styles = useThemedStyles(createStyles);
   const { theme, preference } = useTheme();
+  const insets = useSafeAreaInsets();
   const tabNavigation = navigation.getParent?.<NavigationProp<AppTabParamList>>();
   const today = useMemo(() => new Date(), []);
   const { profile } = useUserProfile();
   const focusSession = useFocusSession();
   const { goals, uiState: goalsState, retry: retryGoals } = useGoals();
+  const { tasks, uiState: tasksState, retry: retryTasks } = useTasks();
   const { events, uiState: eventsState, refresh: refreshEvents } = useCalendarEvents(today);
   const locale = profile?.locale ?? 'en-US';
   const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
@@ -331,6 +360,31 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
         .slice(0, MAX_ACTIVE_GOALS),
     [goals],
   );
+  const taskSummary = useMemo(() => {
+    const activeTasks = tasks.filter((task) => task.status === 'active');
+    const focusEvent = focusSession
+      ? events.find((event) => event.id === focusSession.eventId)
+      : undefined;
+    const focusTaskId = focusEvent?.ownership === 'bearing' ? focusEvent.sourceTaskId : null;
+    const focusTask = focusTaskId
+      ? activeTasks.find((task) => task.id === focusTaskId) ?? null
+      : null;
+    const nextGoalTasks = recentGoals
+      .map((goal) =>
+        goal.nextStep
+          ? activeTasks.find((task) => task.stepId === goal.nextStep?.id) ?? null
+          : null,
+      )
+      .filter((task): task is TaskRecord => task !== null);
+    const recentTasks = [...activeTasks].sort(
+      (left, right) => right.updatedAt.getTime() - left.updatedAt.getTime(),
+    );
+
+    return [focusTask, ...nextGoalTasks, ...recentTasks]
+      .filter((task): task is TaskRecord => task !== null)
+      .filter((task, index, allTasks) => allTasks.findIndex((candidate) => candidate.id === task.id) === index)
+      .slice(0, 3);
+  }, [events, focusSession, recentGoals, tasks]);
   const currentEvent = useMemo(() => {
     return (
       upcomingEvents.find((event) => today >= event.startAt && today < event.endAt) ??
@@ -358,7 +412,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
       mode="scroll"
       edges={['top', 'right', 'left']}
       testID="plan-screen"
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingBottom: theme.spacing['3xl'] + insets.bottom }]}
       backgroundSource={
         preference === 'dark'
           ? require('../../assets/topographic-dark.png')
@@ -555,6 +609,64 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
               ))
             : null}
         </PlanSurface>
+
+        <PlanSurface
+          title="Tasks"
+          titleIcon="tasks"
+          titleIconColor={theme.colors.brand}
+          accessibilityLabel="Open Tasks"
+          onPress={() => navigation.navigate('Tasks')}
+          footer={
+            <Pressable
+              testID="tasks-see-all"
+              accessibilityRole="link"
+              accessibilityLabel="See all tasks"
+              onPress={() => navigation.navigate('Tasks')}
+              style={({ pressed }) => [styles.surfaceFooterLink, pressed ? styles.pressed : null]}
+            >
+              <Text style={styles.surfaceFooterText}>See all</Text>
+              <AppIcon name="next" size={18} color={theme.colors.brand} decorative />
+            </Pressable>
+          }
+          style={styles.tasksSurface}
+        >
+          {tasksState === 'loading' ? <PlanSkeleton rows={2} /> : null}
+          {tasksState === 'error' ? (
+            <RecoveryCard
+              title="Unable to load tasks."
+              description="Check your connection, then retry."
+              onRetry={retryTasks}
+            />
+          ) : null}
+          {tasksState === 'empty' || (tasksState === 'ready' && taskSummary.length === 0) ? (
+            <EmptyState
+              title="Turn intentions into action"
+              description="Review and complete your next steps"
+              presentation="compact"
+              style={styles.emptyTasks}
+            />
+          ) : null}
+          {tasksState === 'ready'
+            ? taskSummary.map((task) => (
+                <PlanTaskRow
+                  key={task.id}
+                  task={task}
+                  context={
+                    focusSession &&
+                    events.some(
+                      (event) =>
+                        event.id === focusSession.eventId &&
+                        event.ownership === 'bearing' &&
+                        event.sourceTaskId === task.id,
+                    )
+                      ? 'In focus mode'
+                      : goals.find((goal) => goal.id === task.goalId)?.title ?? 'Recent task'
+                  }
+                  onPress={() => navigation.navigate('Tasks')}
+                />
+              ))
+            : null}
+        </PlanSurface>
       </View>
     </AppScreen>
   );
@@ -661,16 +773,9 @@ const createStyles = (theme: Theme) =>
     surfaceFooterText: { ...theme.typography.helper, color: theme.colors.brand, fontWeight: '700' },
     surfaceLink: { alignSelf: 'flex-end', paddingVertical: theme.spacing.xs },
     surfaceLinkText: { ...theme.typography.caption, color: theme.colors.brand, fontWeight: '700' },
-    centeredSurfaceContent: {
-      flex: 1,
-      width: '100%',
-      alignSelf: 'stretch',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: theme.spacing.sm,
-    },
     pressed: { opacity: 0.82 },
     emptyUpcoming: { alignItems: 'center', justifyContent: 'center', flex: 1, width: '100%' },
+    emptyTasks: { alignItems: 'center', justifyContent: 'center', flex: 1, width: '100%' },
     todaySurface: { flex: 1.6, minHeight: 214 },
     compactSurface: { minHeight: 88 },
     compactSurfaceInner: { minHeight: 0, paddingVertical: theme.spacing.md },
@@ -693,6 +798,24 @@ const createStyles = (theme: Theme) =>
     focusSurfaceBody: { backgroundColor: `${theme.colors.focusGreen}18` },
     notesSurfaceBody: { backgroundColor: `${theme.colors.warning}18` },
     goalsSurface: { minHeight: 202 },
+    tasksSurface: { minHeight: 148 },
+    taskRow: {
+      minHeight: 48,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+      paddingVertical: theme.spacing.xs,
+    },
+    taskMarker: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      borderWidth: 1.5,
+      borderColor: theme.colors.borderStrong,
+    },
+    taskCopy: { flex: 1, gap: theme.spacing.xs },
+    taskTitle: { ...theme.typography.helper, color: theme.colors.text, fontWeight: '600' },
+    taskContext: { ...theme.typography.caption, color: theme.colors.textSecondary },
     goalsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     goalsHeaderSpacer: { flex: 1 },
     eventListBody: { gap: 0 },
