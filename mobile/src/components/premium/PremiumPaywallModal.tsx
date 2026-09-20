@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ReactNode, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../design/ThemeProvider';
@@ -23,6 +24,8 @@ type PremiumPaywallModalProps = {
   onClose: () => void;
   fullScreen?: boolean;
   screenPresentation?: boolean;
+  screenHeader?: ReactNode;
+  screenBottomInset?: number;
   onOpenLegalDocument: (documentId: LegalDocumentId) => void;
 };
 
@@ -39,9 +42,12 @@ export function PremiumPaywallModal({
   onClose,
   fullScreen = false,
   screenPresentation = false,
+  screenHeader,
+  screenBottomInset = 0,
   onOpenLegalDocument,
 }: PremiumPaywallModalProps) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useThemedStyles(createStyles);
   const [selectedPackageIdentifier, setSelectedPackageIdentifier] = useState<string | null>(null);
   const [confirmationPlan, setConfirmationPlan] = useState<PremiumPlan | null>(null);
@@ -92,8 +98,21 @@ export function PremiumPaywallModal({
     transactionPlan !== null && (purchase.feedback !== null || purchase.error !== null);
 
   const paywallContent = (
-    <ScrollView contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.paywallScroll}
+      contentContainerStyle={[
+        styles.content,
+        fullScreen && {
+          paddingTop: insets.top,
+          ...(screenPresentation && screenBottomInset > 0
+            ? { paddingBottom: screenBottomInset }
+            : null),
+          paddingHorizontal: spacing.lg,
+        },
+      ]}
+    >
       <>
+        {screenHeader}
         <View style={styles.heroBlock}>
           <Text style={styles.badge}>{copy.badge}</Text>
           <Text style={styles.headline}>{copy.headline}</Text>
@@ -310,6 +329,7 @@ export function PremiumPaywallModal({
           visible={visible && confirmationPlan === null && transactionPlan === null}
           onClose={onClose}
           fullScreen={fullScreen}
+          fullScreenEdgeToEdge={fullScreen}
           hideHeader={fullScreen}
         >
           {paywallContent}
@@ -326,6 +346,7 @@ export function PremiumPaywallModal({
         }
         closeLabel={transactionPlan ? 'Close' : 'Back'}
         fullScreen={fullScreen}
+        fullScreenEdgeToEdge={fullScreen}
         onClose={() => {
           if (transactionPlan) {
             if (!isPurchaseInProgress) setTransactionPlan(null);
@@ -451,6 +472,9 @@ export function PremiumPaywallModal({
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
+    paywallScroll: {
+      flex: 1,
+    },
     content: {
       gap: spacing.md,
     },

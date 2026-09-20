@@ -499,12 +499,17 @@ export function CreateGoalModal({
         title="Create Goal"
         onClose={handleClose}
         fullScreen
+        fullScreenEdgeToEdge
         hideHeader
       >
         <ScrollView
           contentContainerStyle={[
             styles.content,
-            { paddingBottom: spacing['3xl'] + insets.bottom },
+            {
+              paddingTop: insets.top,
+              paddingBottom: spacing['3xl'] + insets.bottom,
+              paddingHorizontal: spacing.lg,
+            },
           ]}
         >
           <View style={styles.scrollHeader}>

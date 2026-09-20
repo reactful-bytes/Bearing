@@ -171,6 +171,8 @@ describe('UI primitives', () => {
       </AppModal>,
     );
 
+    expect(screen.getByLabelText('Goal Details modal').props.statusBarTranslucent).toBe(true);
+    expect(screen.getByLabelText('Goal Details modal').props.navigationBarTranslucent).toBe(true);
     expect(screen.getByRole('header', { name: 'Goal Details' })).toBeTruthy();
     expect(screen.getByText('Edit goal')).toBeTruthy();
     expect(screen.getByLabelText('Dismiss Goal Details')).toBeTruthy();

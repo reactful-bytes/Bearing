@@ -4,14 +4,12 @@ import {
   Modal,
   Platform,
   Pressable,
-  StatusBar,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
-import { useTheme } from '../../design/ThemeProvider';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppIcon } from './AppIcon';
 import { CreateFabGroup } from '../presentation/CreateFabGroup';
@@ -27,6 +25,7 @@ type AppModalProps = {
   closeLabel?: string;
   headerAccessory?: ReactNode;
   fullScreen?: boolean;
+  fullScreenEdgeToEdge?: boolean;
   hideHeader?: boolean;
   embedded?: boolean;
   children: ReactNode;
@@ -39,12 +38,12 @@ export function AppModal({
   closeLabel = 'Close',
   headerAccessory,
   fullScreen = false,
+  fullScreenEdgeToEdge = false,
   hideHeader = false,
   embedded = false,
   children,
 }: AppModalProps) {
   const styles = useThemedStyles(createStyles);
-  const { preference } = useTheme();
   const insets = useSafeAreaInsets();
   const createFab = useCreateFab();
   const accessibleTitle = title || 'Modal';
@@ -62,20 +61,15 @@ export function AppModal({
   return (
     <Modal
       visible={visible}
-      transparent={!fullScreen}
+      transparent
       animationType="fade"
+      statusBarTranslucent
+      navigationBarTranslucent
       onRequestClose={onClose}
       accessibilityLabel={`${accessibleTitle} modal`}
     >
-      {fullScreen ? (
-        <StatusBar
-          barStyle={preference === 'dark' ? 'light-content' : 'dark-content'}
-          translucent
-          backgroundColor="transparent"
-        />
-      ) : null}
       <KeyboardAvoidingView
-        accessibilityViewIsModal
+        accessibilityViewIsModal={!fullScreen}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={[styles.backdrop, fullScreen && styles.fullScreenBackdrop]}
       >
@@ -88,8 +82,17 @@ export function AppModal({
           />
         ) : null}
         <SafeAreaView
-          edges={fullScreen ? ['right', 'bottom', 'left'] : ['top', 'right', 'bottom', 'left']}
-          style={fullScreen ? styles.fullScreenSheet : styles.sheet}
+          edges={
+            fullScreen
+              ? fullScreenEdgeToEdge
+                ? []
+                : ['right', 'left']
+              : ['top', 'right', 'bottom', 'left']
+          }
+          style={[
+            fullScreen ? styles.fullScreenSheet : styles.sheet,
+            fullScreenEdgeToEdge && styles.fullScreenEdgeToEdgeSheet,
+          ]}
         >
           {!hideHeader ? (
             <View style={styles.header}>
@@ -230,6 +233,11 @@ const createStyles = (theme: Theme) =>
       paddingHorizontal: spacing.lg,
       paddingTop: spacing.xl,
       gap: spacing.lg,
+    },
+    fullScreenEdgeToEdgeSheet: {
+      paddingHorizontal: 0,
+      paddingTop: 0,
+      gap: 0,
     },
     fullScreenBody: {
       flex: 1,

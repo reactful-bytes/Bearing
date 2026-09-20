@@ -23,6 +23,7 @@ export function LegalDocumentScreen({ route, navigation }: LegalDocumentScreenPr
       edges={['right', 'left']}
       contentContainerStyle={[
         styles.screenContent,
+        { paddingTop: insets.top },
         route.params.bottomInset ? { paddingBottom: spacing['3xl'] + insets.bottom } : null,
       ]}
     >

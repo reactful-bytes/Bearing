@@ -14,7 +14,6 @@ describe('AppScreen', () => {
 
     expect(screen.getByTestId('screen').props.edges).toEqual(
       expect.objectContaining({
-        top: 'additive',
         right: 'additive',
         left: 'additive',
       }),
@@ -34,6 +33,9 @@ describe('AppScreen', () => {
     );
 
     expect(screen.getByTestId('screen-scroll').props.keyboardShouldPersistTaps).toBe('handled');
+    expect(screen.getByTestId('screen-scroll').props.contentContainerStyle).toEqual(
+      expect.arrayContaining([expect.objectContaining({ paddingTop: expect.any(Number) })]),
+    );
   });
 
   it('leaves unmanaged content unpadded for virtualized lists', () => {

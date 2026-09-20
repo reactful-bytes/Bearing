@@ -410,7 +410,6 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
   return (
     <AppScreen
       mode="scroll"
-      edges={['top', 'right', 'left']}
       testID="plan-screen"
       contentContainerStyle={[styles.content, { paddingBottom: theme.spacing['3xl'] + insets.bottom }]}
       backgroundSource={

@@ -34,7 +34,7 @@ type AppScreenProps = {
 export function AppScreen({
   children,
   mode = 'static',
-  edges = ['top', 'right', 'left'],
+  edges = ['right', 'left'],
   style,
   contentContainerStyle,
   backgroundSource,
@@ -43,13 +43,17 @@ export function AppScreen({
 }: AppScreenProps) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
+  const topContentInset = edges.includes('top') ? 0 : insets.top;
   const content =
     mode === 'scroll' ? (
       <ScrollView
         testID={testID ? `${testID}-scroll` : undefined}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: styles.scrollContent.paddingVertical + insets.bottom },
+          {
+            paddingTop: styles.scrollContent.paddingVertical + topContentInset,
+            paddingBottom: styles.scrollContent.paddingVertical + insets.bottom,
+          },
           contentContainerStyle,
         ]}
         keyboardShouldPersistTaps="handled"
@@ -63,6 +67,7 @@ export function AppScreen({
           mode === 'static'
             ? [
                 styles.content,
+              { paddingTop: styles.content.paddingVertical + topContentInset },
                 { paddingBottom: styles.content.paddingVertical + insets.bottom },
                 contentContainerStyle,
               ]

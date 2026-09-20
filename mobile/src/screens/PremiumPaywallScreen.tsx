@@ -26,20 +26,10 @@ export function PremiumPaywallScreen({ route, navigation }: PremiumPaywallScreen
 
   return (
     <AppScreen
-      mode="scroll"
+      mode="unmanaged"
       edges={['right', 'left']}
-      contentContainerStyle={[
-        styles.screenContent,
-        hasSystemBottomInset ? { paddingBottom: spacing['3xl'] + insets.bottom } : null,
-      ]}
+      contentContainerStyle={styles.screenContent}
     >
-      <View style={styles.routeHeader}>
-        <IconButton
-          name="back"
-          accessibilityLabel="Close Bearing 360 plans"
-          onPress={navigation.goBack}
-        />
-      </View>
       <PremiumPaywallModal
         visible
         feature={route.params.feature}
@@ -49,6 +39,16 @@ export function PremiumPaywallScreen({ route, navigation }: PremiumPaywallScreen
         onClose={navigation.goBack}
         fullScreen
         screenPresentation
+        screenBottomInset={spacing['3xl'] + insets.bottom}
+        screenHeader={
+          <View style={styles.routeHeader}>
+            <IconButton
+              name="back"
+              accessibilityLabel="Close Bearing 360 plans"
+              onPress={navigation.goBack}
+            />
+          </View>
+        }
         onOpenLegalDocument={(documentId) =>
           navigation.navigate('LegalDocument', {
             documentId,
@@ -62,7 +62,7 @@ export function PremiumPaywallScreen({ route, navigation }: PremiumPaywallScreen
 
 const styles = StyleSheet.create({
   screenContent: {
-    gap: spacing.lg,
+    flex: 1,
   },
   routeHeader: {
     gap: spacing.sm,
