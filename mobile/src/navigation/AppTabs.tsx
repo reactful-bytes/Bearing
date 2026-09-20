@@ -1,4 +1,4 @@
-import { NavigationContainer, NavigationProp } from '@react-navigation/native';
+import { NavigationContainer, NavigationProp, useNavigationState } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
@@ -267,7 +267,13 @@ function AppTabsNavigator({
   theme: ReturnType<typeof useTheme>['theme'];
 }) {
   const createFab = useRequiredCreateFab();
-
+  const activeTabName = useNavigationState((state) => {
+    const activeRoute = state.routes[state.index];
+    const tabState = activeRoute?.state;
+    const tabIndex = tabState?.index;
+    return tabIndex === undefined ? undefined : tabState?.routes[tabIndex]?.name;
+  });
+  const isProfileTabActive = activeTabName === 'Profile';
   return (
     <>
       <Tab.Navigator
@@ -313,18 +319,20 @@ function AppTabsNavigator({
           )}
         </Tab.Screen>
       </Tab.Navigator>
-      <CreateFabGroup
-        visible={createFab.visible}
-        bottomOffset={insets.bottom + theme.spacing.md}
-        rightOffset={theme.spacing.md}
-        onPress={createFab.open}
-        onDismiss={createFab.dismiss}
-        onCreateGoal={() => createFab.create('goal')}
-        onCreateTask={() => createFab.create('task')}
-        onCreateNote={() => createFab.create('note')}
-        onCreateEvent={() => createFab.create('event')}
-        onCreateFocus={() => createFab.create('focus')}
-      />
+      {!isProfileTabActive ? (
+        <CreateFabGroup
+          visible={createFab.visible}
+          bottomOffset={insets.bottom + theme.spacing.md}
+          rightOffset={theme.spacing.md}
+          onPress={createFab.open}
+          onDismiss={createFab.dismiss}
+          onCreateGoal={() => createFab.create('goal')}
+          onCreateTask={() => createFab.create('task')}
+          onCreateNote={() => createFab.create('note')}
+          onCreateEvent={() => createFab.create('event')}
+          onCreateFocus={() => createFab.create('focus')}
+        />
+      ) : null}
     </>
   );
 }

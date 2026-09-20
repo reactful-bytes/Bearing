@@ -5,6 +5,7 @@ import React from 'react';
 import { AppTabs, DESKTOP_NAVIGATION_WIDTH, usesDesktopNavigation } from '../navigation/AppTabs';
 
 const mockNavigate = jest.fn();
+const mockActiveTabName = { value: 'Plan' };
 
 jest.mock('../screens/CalendarScreen', () => ({
   CalendarScreen: () => null,
@@ -133,6 +134,26 @@ jest.mock('../components/presentation/CreateFabGroup', () => {
 jest.mock('@react-navigation/native', () => ({
   NavigationContainer: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   useNavigation: jest.fn(() => ({ navigate: mockNavigate })),
+  useNavigationState: jest.fn(
+    (
+      selector: (state: {
+        index: number;
+        routes: { name: string; state?: { index: number; routes: { name: string }[] } }[];
+      }) => unknown,
+    ) =>
+      selector({
+        index: 0,
+        routes: [
+          {
+            name: 'AppTabs',
+            state: {
+              index: mockActiveTabName.value === 'Profile' ? 1 : 0,
+              routes: [{ name: 'Plan' }, { name: 'Profile' }],
+            },
+          },
+        ],
+      }),
+  ),
 }));
 
 jest.mock('react-native-safe-area-context', () => ({
@@ -262,6 +283,17 @@ describe('AppTabs', () => {
     );
 
     expect(getByTestId('create-fab-button').props.accessibilityLabel).toBe('Create');
+  });
+
+  it('hides the Create FAB on the Profile tab', () => {
+    mockActiveTabName.value = 'Profile';
+    const { getByTestId, queryByTestId } = render(
+      <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
+    );
+
+    expect(() => getByTestId('create-fab-button')).toThrow();
+    expect(queryByTestId('create-fab-group')).toBeNull();
+    mockActiveTabName.value = 'Plan';
   });
 
   it('expands the global Create FAB group without selecting a destination', () => {
