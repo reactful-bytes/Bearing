@@ -300,7 +300,15 @@ function PlanGoalRow({ goal, onPress }: { goal: PlanScreenGoal; onPress: () => v
   );
 }
 
-function PlanTaskRow({ task, context, onPress }: { task: TaskRecord; context: string; onPress: () => void }) {
+function PlanTaskRow({
+  task,
+  context,
+  onPress,
+}: {
+  task: TaskRecord;
+  context: string;
+  onPress: () => void;
+}) {
   const styles = useThemedStyles(createStyles);
 
   return (
@@ -367,12 +375,12 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
       : undefined;
     const focusTaskId = focusEvent?.ownership === 'bearing' ? focusEvent.sourceTaskId : null;
     const focusTask = focusTaskId
-      ? activeTasks.find((task) => task.id === focusTaskId) ?? null
+      ? (activeTasks.find((task) => task.id === focusTaskId) ?? null)
       : null;
     const nextGoalTasks = recentGoals
       .map((goal) =>
         goal.nextStep
-          ? activeTasks.find((task) => task.stepId === goal.nextStep?.id) ?? null
+          ? (activeTasks.find((task) => task.stepId === goal.nextStep?.id) ?? null)
           : null,
       )
       .filter((task): task is TaskRecord => task !== null);
@@ -382,7 +390,10 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
 
     return [focusTask, ...nextGoalTasks, ...recentTasks]
       .filter((task): task is TaskRecord => task !== null)
-      .filter((task, index, allTasks) => allTasks.findIndex((candidate) => candidate.id === task.id) === index)
+      .filter(
+        (task, index, allTasks) =>
+          allTasks.findIndex((candidate) => candidate.id === task.id) === index,
+      )
       .slice(0, 3);
   }, [events, focusSession, recentGoals, tasks]);
   const currentEvent = useMemo(() => {
@@ -411,7 +422,10 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
     <AppScreen
       mode="scroll"
       testID="plan-screen"
-      contentContainerStyle={[styles.content, { paddingBottom: theme.spacing['3xl'] + insets.bottom }]}
+      contentContainerStyle={[
+        styles.content,
+        { paddingBottom: theme.spacing['3xl'] + insets.bottom },
+      ]}
       backgroundSource={
         preference === 'dark'
           ? require('../../assets/topographic-dark.png')
@@ -659,7 +673,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
                         event.sourceTaskId === task.id,
                     )
                       ? 'In focus mode'
-                      : goals.find((goal) => goal.id === task.goalId)?.title ?? 'Recent task'
+                      : (goals.find((goal) => goal.id === task.goalId)?.title ?? 'Recent task')
                   }
                   onPress={() => navigation.navigate('Tasks')}
                 />

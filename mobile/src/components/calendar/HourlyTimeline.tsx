@@ -86,13 +86,21 @@ function positionOverlappingEvents(events: CalendarDisplayEvent[]): PositionedEv
 }
 
 function getEventTop(startAt: Date, visibleDate: Date): number {
-  const dayStart = new Date(visibleDate.getFullYear(), visibleDate.getMonth(), visibleDate.getDate());
+  const dayStart = new Date(
+    visibleDate.getFullYear(),
+    visibleDate.getMonth(),
+    visibleDate.getDate(),
+  );
   const visibleStart = Math.max(startAt.getTime(), dayStart.getTime());
-  return (visibleStart - dayStart.getTime()) / 3_600_000 * HOUR_HEIGHT;
+  return ((visibleStart - dayStart.getTime()) / 3_600_000) * HOUR_HEIGHT;
 }
 
 function getEventHeight(startAt: Date, endAt: Date, visibleDate: Date): number {
-  const dayStart = new Date(visibleDate.getFullYear(), visibleDate.getMonth(), visibleDate.getDate());
+  const dayStart = new Date(
+    visibleDate.getFullYear(),
+    visibleDate.getMonth(),
+    visibleDate.getDate(),
+  );
   const dayEnd = new Date(dayStart);
   dayEnd.setDate(dayEnd.getDate() + 1);
   const visibleStart = Math.max(startAt.getTime(), dayStart.getTime());
@@ -150,7 +158,9 @@ export function HourlyTimeline({
   const currentTimeTop = (now.getHours() + now.getMinutes() / 60) * HOUR_HEIGHT;
   const selectedDay = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
   const allDayEvents = events.filter((event) => event.allDay);
-  const timedEvents = events.filter((event) => !event.allDay && eventOverlapsCalendarDay(event, date));
+  const timedEvents = events.filter(
+    (event) => !event.allDay && eventOverlapsCalendarDay(event, date),
+  );
   const positionedTimedEvents = positionOverlappingEvents(timedEvents);
   const timelinePaddingBottom = layout.pagePaddingVertical + insets.bottom;
 
@@ -249,9 +259,7 @@ export function HourlyTimeline({
           {/* Hour rows */}
           {HOURS.map((hour) => (
             <View key={hour} style={[styles.hourRow, { top: hour * HOUR_HEIGHT }]}>
-              <Text style={styles.hourLabel}>
-                  {formatHourLabel(hour, timeFormat)}
-              </Text>
+              <Text style={styles.hourLabel}>{formatHourLabel(hour, timeFormat)}</Text>
               <View style={styles.hourLine} />
             </View>
           ))}
@@ -325,7 +333,11 @@ export function HourlyTimeline({
                       ) : null}
                       {!isCompact || showCompactDetails ? (
                         <Text
-                          style={[styles.eventTime, isCompact ? styles.compactEventTime : null, { color: textColor }]}
+                          style={[
+                            styles.eventTime,
+                            isCompact ? styles.compactEventTime : null,
+                            { color: textColor },
+                          ]}
                           numberOfLines={1}
                         >
                           {formatClockTime(event.startAt, timeFormat)} –{' '}

@@ -67,7 +67,7 @@ export function AppScreen({
           mode === 'static'
             ? [
                 styles.content,
-              { paddingTop: styles.content.paddingVertical + topContentInset },
+                { paddingTop: styles.content.paddingVertical + topContentInset },
                 { paddingBottom: styles.content.paddingVertical + insets.bottom },
                 contentContainerStyle,
               ]

@@ -436,10 +436,7 @@ export function CalendarScreen({
   const visibleMonth = monthList[visibleMonthIndex];
 
   return (
-    <SafeAreaView
-      style={[styles.screen]}
-      edges={['top', 'left', 'right']}
-    >
+    <SafeAreaView style={[styles.screen]} edges={['top', 'left', 'right']}>
       <View style={styles.calendarHeader}>
         <IconButton
           name="menu"
@@ -564,7 +561,11 @@ export function CalendarScreen({
               const eventDays = new Set<number>();
               const daysInMonth = new Date(year, month + 1, 0).getDate();
               for (let day = 1; day <= daysInMonth; day += 1) {
-                if (calendarEvents.some((event) => eventOverlapsCalendarDay(event, new Date(year, month, day)))) {
+                if (
+                  calendarEvents.some((event) =>
+                    eventOverlapsCalendarDay(event, new Date(year, month, day)),
+                  )
+                ) {
                   eventDays.add(day);
                 }
               }
