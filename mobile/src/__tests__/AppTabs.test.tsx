@@ -6,6 +6,10 @@ import { AppTabs, DESKTOP_NAVIGATION_WIDTH, usesDesktopNavigation } from '../nav
 
 const mockNavigate = jest.fn();
 const mockActiveTabName = { value: 'Plan' };
+const mockNavigationRef = {
+  canGoBack: jest.fn(() => false),
+  goBack: jest.fn(),
+};
 
 jest.mock('../screens/CalendarScreen', () => ({
   CalendarScreen: () => null,
@@ -133,6 +137,7 @@ jest.mock('../components/presentation/CreateFabGroup', () => {
 
 jest.mock('@react-navigation/native', () => ({
   NavigationContainer: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useNavigationContainerRef: jest.fn(() => mockNavigationRef),
   useNavigation: jest.fn(() => ({ navigate: mockNavigate })),
   useNavigationState: jest.fn(
     (

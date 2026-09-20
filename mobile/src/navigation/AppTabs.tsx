@@ -1,7 +1,21 @@
-import { NavigationContainer, NavigationProp, useNavigationState } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  NavigationProp,
+  useNavigationContainerRef,
+  useNavigationState,
+} from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import {
+  BackHandler,
+  Platform,
+  StyleSheet,
+  Text,
+  ToastAndroid,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import { useEffect, useRef } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CreateFabGroup } from '../components/presentation/CreateFabGroup';
@@ -58,6 +72,7 @@ const NotesStack = createNativeStackNavigator<NotesStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const DESKTOP_NAVIGATION_BREAKPOINT = 1024;
+const EXIT_WARNING_WINDOW_MS = 2000;
 export const DESKTOP_NAVIGATION_WIDTH = 152;
 
 export function usesDesktopNavigation(platform: string, width: number): boolean {
@@ -209,8 +224,35 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const isDesktopNavigation = usesDesktopNavigation(Platform.OS, width);
+  const navigationRef = useNavigationContainerRef<RootStackParamList>();
+  const lastBackPressAt = useRef(0);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') {
+      return;
+    }
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (navigationRef.canGoBack()) {
+        navigationRef.goBack();
+        return true;
+      }
+
+      const now = Date.now();
+      if (now - lastBackPressAt.current < EXIT_WARNING_WINDOW_MS) {
+        return false;
+      }
+
+      lastBackPressAt.current = now;
+      ToastAndroid.show('Press back again to exit', ToastAndroid.SHORT);
+      return true;
+    });
+
+    return () => subscription.remove();
+  }, [navigationRef]);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         <RootStack.Screen name="AppTabs">
           {({ navigation }) => (
