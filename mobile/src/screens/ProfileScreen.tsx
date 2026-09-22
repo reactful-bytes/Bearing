@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Linking, Platform, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
 import { useTheme } from '../design/ThemeProvider';
@@ -13,7 +13,6 @@ import { ProfileSelectionModal } from '../components/profile/ProfileSelectionMod
 import { SoundPickerModal } from '../components/profile/SoundPickerModal';
 import { ProfileIdentityCard } from '../components/profile/ProfileIdentityCard';
 import { ListItem } from '../components/ui/ListItem';
-import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { SectionHeading } from '../components/ui/SectionHeading';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
@@ -100,6 +99,7 @@ type ProfileScreenProps = {
       screen: ProfileNavigationTarget,
       params?: ProfileStackParamList[ProfileNavigationTarget],
     ) => void;
+    getParent?: () => { navigate?: (screen: 'Plan') => void } | undefined;
   };
 };
 
@@ -805,7 +805,7 @@ export function ProfileScreen({
   }
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       <ScrollView
         ref={profileScrollRef}
         contentContainerStyle={[
@@ -813,13 +813,17 @@ export function ProfileScreen({
           { paddingBottom: spacing.xl + insets.bottom },
         ]}
       >
-        {onPressBack ? (
-          <View style={styles.routeHeader}>
+        <View style={styles.routeHeader}>
+          {onPressBack ? (
             <IconButton name="back" accessibilityLabel="Back to Profile" onPress={onPressBack} />
-          </View>
-        ) : profileForRender ? null : (
-          <ScreenHeader eyebrow="Profile" title="Profile" />
-        )}
+          ) : (
+            <IconButton
+              name="back"
+              accessibilityLabel="Back to Plan"
+              onPress={() => navigation?.getParent?.()?.navigate?.('Plan')}
+            />
+          )}
+        </View>
 
         {uiState === 'error' ? (
           <RecoveryCard
@@ -1703,7 +1707,7 @@ export function ProfileScreen({
           <Text style={styles.errorText}>{googleDisconnectError}</Text>
         ) : null}
       </AppModal>
-    </View>
+    </SafeAreaView>
   );
 }
 

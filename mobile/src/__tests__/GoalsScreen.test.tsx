@@ -190,7 +190,6 @@ function mockEmptyGoals(): void {
 }
 
 function openAiPlanningStep(): void {
-  fireEvent.press(screen.getByText('New Goal'));
   fireEvent.press(screen.getByLabelText('Continue'));
   fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
   fireEvent.changeText(
@@ -274,7 +273,7 @@ describe('GoalsScreen', () => {
     render(<GoalsScreen />);
 
     expect(screen.getByText('No active goals.')).toBeTruthy();
-    expect(screen.getByText('New Goal')).toBeTruthy();
+    expect(screen.queryByText('New Goal')).toBeNull();
     expect(screen.getByRole('button', { name: 'Current, 0', selected: true })).toBeTruthy();
   });
 
@@ -389,9 +388,8 @@ describe('GoalsScreen', () => {
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
-    render(<GoalsScreen />);
+    render(<GoalsScreen route={{ params: { createGoal: true } }} />);
 
-    fireEvent.press(screen.getByText('New Goal'));
     expect(screen.getByLabelText('Create Goal modal')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Continue'));
     expect(screen.getByLabelText('Create Goal modal')).toBeTruthy();
@@ -487,9 +485,8 @@ describe('GoalsScreen', () => {
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
     const navigate = jest.fn();
 
-    render(<GoalsScreen navigation={{ navigate }} />);
+    render(<GoalsScreen route={{ params: { createGoal: true } }} navigation={{ navigate }} />);
 
-    fireEvent.press(screen.getByText('New Goal'));
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.changeText(
@@ -512,9 +509,8 @@ describe('GoalsScreen', () => {
     mockEmptyGoals();
     const navigate = jest.fn();
 
-    render(<GoalsScreen navigation={{ navigate }} />);
+    render(<GoalsScreen route={{ params: { createGoal: true } }} navigation={{ navigate }} />);
 
-    fireEvent.press(screen.getByText('New Goal'));
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.changeText(
@@ -544,7 +540,7 @@ describe('GoalsScreen', () => {
       generateAiGoalPlanDraft as jest.MockedFunction<typeof generateAiGoalPlanDraft>
     ).mockImplementation(() => new Promise(() => undefined));
 
-    render(<GoalsScreen />);
+    render(<GoalsScreen route={{ params: { createGoal: true } }} />);
     openAiPlanningStep();
     await waitFor(() => expect(screen.getByText(/AI credits available: 10/)).toBeTruthy());
 
@@ -620,9 +616,8 @@ describe('GoalsScreen', () => {
       availableCredits: 9,
     });
 
-    render(<GoalsScreen />);
+    render(<GoalsScreen route={{ params: { createGoal: true } }} />);
 
-    fireEvent.press(screen.getByText('New Goal'));
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.changeText(
@@ -731,8 +726,7 @@ describe('GoalsScreen', () => {
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
-    render(<GoalsScreen />);
-    fireEvent.press(screen.getByText('New Goal'));
+    render(<GoalsScreen route={{ params: { createGoal: true } }} />);
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.changeText(
@@ -776,7 +770,7 @@ describe('GoalsScreen', () => {
     });
     mockEmptyGoals();
 
-    render(<GoalsScreen />);
+    render(<GoalsScreen route={{ params: { createGoal: true } }} />);
     openAiPlanningStep();
 
     await waitFor(() => expect(screen.getByText(/AI credits available: 0/)).toBeTruthy());
@@ -801,7 +795,7 @@ describe('GoalsScreen', () => {
     ).mockRejectedValue({ code: 'functions/resource-exhausted' });
     mockEmptyGoals();
 
-    render(<GoalsScreen />);
+    render(<GoalsScreen route={{ params: { createGoal: true } }} />);
     openAiPlanningStep();
     await waitFor(() => expect(screen.getByText(/AI credits available: 1/)).toBeTruthy());
     fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
@@ -827,7 +821,7 @@ describe('GoalsScreen', () => {
     ).mockRejectedValue({ code: 'functions/aborted' });
     mockEmptyGoals();
 
-    render(<GoalsScreen />);
+    render(<GoalsScreen route={{ params: { createGoal: true } }} />);
     openAiPlanningStep();
     await waitFor(() => expect(screen.getByText(/AI credits available: 10/)).toBeTruthy());
     fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
@@ -862,9 +856,8 @@ describe('GoalsScreen', () => {
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
-    render(<GoalsScreen />);
+    render(<GoalsScreen route={{ params: { createGoal: true } }} />);
 
-    fireEvent.press(screen.getByText('New Goal'));
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.changeText(

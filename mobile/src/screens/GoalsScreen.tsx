@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
 import { AddEventModal } from '../components/calendar/AddEventModal';
@@ -11,9 +11,8 @@ import { StepDetailModal } from '../components/goals/StepDetailModal';
 import { GoalCard, GoalStatusTabs } from '../components/presentation/GoalPresentation';
 import type { GoalFilter } from '../components/presentation/GoalPresentation';
 import { AppCard } from '../components/ui/AppCard';
-import { BearingHeader } from '../components/ui/BearingHeader';
-import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
+import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { layout, radii, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import {
@@ -51,6 +50,7 @@ type GoalsScreenProps = {
       screen: 'GoalDetail' | 'PremiumPaywall',
       params: PlanStackParamList['GoalDetail'] | RootStackParamList['PremiumPaywall'],
     ) => void;
+    goBack?: () => void;
     getParent?: () =>
       | {
           navigate?: (screen: string, params?: Record<string, unknown>) => void;
@@ -214,12 +214,16 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   }
 
   return (
-    <View style={styles.screen}>
-      <BearingHeader
-        leadingAccessibilityLabel="Open navigation"
-        onPressLeading={() => navigation?.getParent?.()?.navigate?.('Plan')}
-        trailingAccessibilityLabel="Open profile"
-        onPressTrailing={() => navigation?.getParent?.()?.navigate?.('Profile')}
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+      <ScreenHeader
+        title="Goals"
+        onPressBack={() => {
+          if (navigation?.goBack) {
+            navigation.goBack();
+          } else {
+            navigation?.getParent?.()?.navigate?.('Plan');
+          }
+        }}
       />
       <ScrollView
         contentContainerStyle={[
@@ -285,14 +289,6 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
             ))
           : null}
       </ScrollView>
-
-      <View style={styles.fabContainer}>
-        <FloatingActionButton
-          label="New Goal"
-          onPress={() => setCreateGoalVisible(true)}
-          style={styles.smallFab}
-        />
-      </View>
 
       <CreateGoalModal
         visible={createGoalVisible}
@@ -366,7 +362,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
         onClose={() => setScheduleStepId(null)}
         onSave={handleScheduleStepEvent}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -390,16 +386,5 @@ const createStyles = (theme: Theme) =>
       ...typography.body,
       color: theme.colors.textPrimary,
       marginTop: spacing.sm,
-    },
-    fabContainer: {
-      position: 'absolute',
-      right: layout.pagePaddingHorizontal,
-      bottom: layout.pagePaddingVertical,
-    },
-    smallFab: {
-      alignSelf: 'flex-end',
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      borderRadius: radii.lg,
     },
   });

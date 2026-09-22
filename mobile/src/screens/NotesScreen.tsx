@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
 import { AddNoteModal } from '../components/notes/AddNoteModal';
 import { NoteDetailModal } from '../components/notes/NoteDetailModal';
-import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { AppIcon } from '../components/ui/AppIcon';
 import { AppCard } from '../components/ui/AppCard';
-import { BearingHeader } from '../components/ui/BearingHeader';
 import { IconButton } from '../components/ui/IconButton';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
+import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { layout, radii, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import { useNotes } from '../features/notes/useNotes';
@@ -109,13 +108,8 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
   }
 
   return (
-    <View style={styles.screen}>
-      <BearingHeader
-        leadingAccessibilityLabel="Open navigation"
-        onPressLeading={() => navigation?.getParent?.()?.navigate?.('Plan')}
-        trailingAccessibilityLabel="Open profile"
-        onPressTrailing={() => navigation?.getParent?.()?.navigate?.('Profile')}
-      />
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+      <ScreenHeader title="Notes" onPressBack={() => navigation?.getParent?.()?.navigate?.('Plan')} />
       <ScrollView
         contentContainerStyle={[
           styles.contentContainer,
@@ -253,16 +247,6 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
         ) : null}
       </ScrollView>
 
-      <View style={styles.fabContainer}>
-        <FloatingActionButton
-          accessibilityLabel="New Note"
-          icon="add"
-          onPress={() => openNoteEditor()}
-          size="standard"
-          style={styles.fab}
-        />
-      </View>
-
       <AddNoteModal
         visible={addNoteVisible && !navigation?.navigate}
         onClose={() => setAddNoteVisible(false)}
@@ -278,7 +262,7 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
         onSave={handleUpdateNote}
         onDelete={handleDeleteNote}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -378,10 +362,4 @@ const createStyles = (theme: Theme) =>
       ...typography.body,
       color: theme.colors.textPrimary,
     },
-    fabContainer: {
-      position: 'absolute',
-      right: layout.pagePaddingHorizontal,
-      bottom: layout.pagePaddingVertical,
-    },
-    fab: { alignSelf: 'flex-end' },
   });
