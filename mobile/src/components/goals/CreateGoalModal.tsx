@@ -11,7 +11,7 @@ import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { CreditPackPurchaseModal } from '../premium/CreditPackPurchaseModal';
 import { FormField } from '../ui/FormField';
-import { IconButton } from '../ui/IconButton';
+import { ScreenHeader } from '../ui/ScreenHeader';
 import {
   GoalDateParts,
   GoalDatePicker,
@@ -442,7 +442,6 @@ export function CreateGoalModal({
         title="Create Goal"
         onClose={handleClose}
         fullScreen
-        fullScreenEdgeToEdge
         hideHeader
       >
         <ScrollView
@@ -451,17 +450,15 @@ export function CreateGoalModal({
             {
               paddingTop: insets.top,
               paddingBottom: spacing['3xl'] + insets.bottom,
-              paddingHorizontal: spacing.lg,
+              paddingHorizontal: 0,
             },
           ]}
         >
-          <View style={styles.scrollHeader}>
-            <IconButton name="back" accessibilityLabel="Close Create Goal" onPress={handleClose} />
-            <Text accessibilityRole="header" style={styles.scrollHeaderTitle}>
-              Create Goal
-            </Text>
-            <View style={styles.scrollHeaderPlaceholder} />
-          </View>
+          <ScreenHeader
+            title="Create Goal"
+            onPressBack={handleClose}
+            backAccessibilityLabel="Close Create Goal"
+          />
           <Text style={[styles.stepLabel, styles.stepLabelCentered]}>{wizardLabel}</Text>
           <View accessibilityLabel={wizardLabel} style={styles.progressDots}>
             {WIZARD_TITLES.map((_, index) => (
@@ -856,22 +853,6 @@ const createStyles = (theme: Theme) =>
     content: {
       gap: spacing.lg,
       paddingBottom: spacing['3xl'],
-    },
-    scrollHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: spacing.md,
-    },
-    scrollHeaderTitle: {
-      ...typography.label,
-      color: theme.colors.brand,
-      textAlign: 'center',
-      flex: 1,
-    },
-    scrollHeaderPlaceholder: {
-      width: 44,
-      height: 44,
     },
     section: {
       gap: spacing.lg,

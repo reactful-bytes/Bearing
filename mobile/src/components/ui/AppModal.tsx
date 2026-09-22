@@ -25,7 +25,6 @@ type AppModalProps = {
   closeLabel?: string;
   headerAccessory?: ReactNode;
   fullScreen?: boolean;
-  fullScreenEdgeToEdge?: boolean;
   hideHeader?: boolean;
   embedded?: boolean;
   children: ReactNode;
@@ -38,7 +37,6 @@ export function AppModal({
   closeLabel = 'Close',
   headerAccessory,
   fullScreen = false,
-  fullScreenEdgeToEdge = false,
   hideHeader = false,
   embedded = false,
   children,
@@ -82,17 +80,8 @@ export function AppModal({
           />
         ) : null}
         <SafeAreaView
-          edges={
-            fullScreen
-              ? fullScreenEdgeToEdge
-                ? []
-                : ['right', 'left']
-              : ['top', 'right', 'bottom', 'left']
-          }
-          style={[
-            fullScreen ? styles.fullScreenSheet : styles.sheet,
-            fullScreenEdgeToEdge && styles.fullScreenEdgeToEdgeSheet,
-          ]}
+          edges={fullScreen ? [] : ['top', 'right', 'bottom', 'left']}
+          style={[fullScreen ? styles.fullScreenSheet : styles.sheet]}
         >
           {!hideHeader ? (
             <View style={styles.header}>
@@ -231,13 +220,7 @@ const createStyles = (theme: Theme) =>
       flex: 1,
       backgroundColor: theme.colors.background,
       paddingHorizontal: spacing.lg,
-      paddingTop: spacing.xl,
       gap: spacing.lg,
-    },
-    fullScreenEdgeToEdgeSheet: {
-      paddingHorizontal: 0,
-      paddingTop: 0,
-      gap: 0,
     },
     fullScreenBody: {
       flex: 1,

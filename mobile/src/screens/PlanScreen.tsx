@@ -65,10 +65,7 @@ type PlanScreenProps = {
 };
 
 type PlanPageNavigation = {
-  navigate: (
-    screen: 'Calendar' | 'Notes' | 'Profile',
-    params?: Record<string, unknown>,
-  ) => void;
+  navigate: (screen: 'Calendar' | 'Notes' | 'Profile', params?: Record<string, unknown>) => void;
 };
 
 function getGreeting(hour: number): string {

@@ -102,7 +102,7 @@ export function PremiumPaywallModal({
       style={styles.paywallScroll}
       contentContainerStyle={[
         styles.content,
-        fullScreen && {
+        screenPresentation && {
           paddingTop: insets.top,
           ...(screenPresentation && screenBottomInset > 0
             ? { paddingBottom: screenBottomInset }
@@ -329,7 +329,6 @@ export function PremiumPaywallModal({
           visible={visible && confirmationPlan === null && transactionPlan === null}
           onClose={onClose}
           fullScreen={fullScreen}
-          fullScreenEdgeToEdge={fullScreen}
           hideHeader={fullScreen}
         >
           {paywallContent}
@@ -346,7 +345,6 @@ export function PremiumPaywallModal({
         }
         closeLabel={transactionPlan ? 'Close' : 'Back'}
         fullScreen={fullScreen}
-        fullScreenEdgeToEdge={fullScreen}
         onClose={() => {
           if (transactionPlan) {
             if (!isPurchaseInProgress) setTransactionPlan(null);

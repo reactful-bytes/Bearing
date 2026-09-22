@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 
 import type { Theme } from '../../design/tokens';
 import { useThemedStyles } from '../../design/useThemedStyles';
@@ -11,6 +11,7 @@ export type AppHeaderProps = {
   leading?: ReactNode;
   trailing?: ReactNode;
   centeredTitle?: boolean;
+  titleStyle?: StyleProp<TextStyle>;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 };
@@ -22,6 +23,7 @@ export function AppHeader({
   leading,
   trailing,
   centeredTitle = false,
+  titleStyle,
   style,
   testID,
 }: AppHeaderProps) {
@@ -31,7 +33,7 @@ export function AppHeader({
     <View style={[styles.copy, centeredTitle && styles.centeredCopy]}>
       {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
       <View style={styles.titleRow}>
-        <Text accessibilityRole="header" numberOfLines={1} style={styles.title}>
+        <Text accessibilityRole="header" numberOfLines={1} style={[styles.title, titleStyle]}>
           {title}
         </Text>
       </View>
@@ -44,7 +46,10 @@ export function AppHeader({
   );
 
   return (
-    <View testID={testID} style={[styles.container, style]}>
+    <View
+      testID={testID}
+      style={[styles.container, centeredTitle && styles.centeredContainer, style]}
+    >
       {showActionSlots ? (
         <View testID={testID ? `${testID}-leading` : undefined} style={styles.actionSlot}>
           {leading}
@@ -68,6 +73,9 @@ const createStyles = (theme: Theme) =>
       alignItems: 'center',
       gap: theme.spacing.sm,
     },
+    centeredContainer: {
+      gap: theme.spacing.md,
+    },
     actionSlot: {
       width: theme.layout.minimumTouchTarget,
       height: theme.layout.minimumTouchTarget,
@@ -81,11 +89,9 @@ const createStyles = (theme: Theme) =>
       gap: theme.spacing.xs,
     },
     centeredCopyContainer: {
-      position: 'absolute',
-      left: theme.layout.minimumTouchTarget + theme.spacing.sm,
-      right: theme.layout.minimumTouchTarget + theme.spacing.sm,
+      flex: 1,
+      minWidth: 0,
       alignItems: 'center',
-      pointerEvents: 'none',
     },
     centeredCopy: {
       alignItems: 'center',

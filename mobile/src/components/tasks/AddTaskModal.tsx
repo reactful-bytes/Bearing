@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EventDateTimePickerField } from '../calendar/EventDateTimePickerField';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { FormField } from '../ui/FormField';
+import { ScreenHeader } from '../ui/ScreenHeader';
 import { layout, radii, spacing, typography } from '../../design/tokens';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import type { Theme } from '../../design/tokens';
@@ -36,6 +38,7 @@ export function AddTaskModal({
   fullScreen = false,
 }: AddTaskModalProps) {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const { profile } = useUserProfile();
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
@@ -140,12 +143,22 @@ export function AddTaskModal({
   }
 
   return (
-    <AppModal visible={visible} title="New Task" onClose={handleClose} fullScreen={fullScreen}>
+    <AppModal
+      visible={visible}
+      title="New Task"
+      onClose={handleClose}
+      fullScreen={fullScreen}
+      hideHeader={fullScreen}
+    >
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          fullScreen ? { paddingTop: insets.top, paddingBottom: spacing.sm + insets.bottom } : null,
+        ]}
         keyboardShouldPersistTaps="handled"
       >
+        {fullScreen ? <ScreenHeader title="New Task" onPressBack={handleClose} /> : null}
         <FormField
           label="Title"
           accessibilityLabel="Task title"

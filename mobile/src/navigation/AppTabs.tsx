@@ -261,17 +261,20 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
     >
       <CreateFabProvider onCreate={(action) => navigateToCreate(navigationRef, action)}>
         <RootStack.Navigator
-        screenOptions={{
-          headerShown: false,
-        }}
+          screenOptions={{
+            headerShown: false,
+          }}
         >
           <RootStack.Screen name="Plan" component={PlanNavigator} />
           <RootStack.Screen name="Calendar" component={CalendarNavigator} />
           <RootStack.Screen name="Notes" component={NotesNavigator} />
           <RootStack.Screen name="Profile">
-          {() => (
-            <ProfileNavigator onPressSignOut={onPressSignOut} isSignOutPending={isSignOutPending} />
-          )}
+            {() => (
+              <ProfileNavigator
+                onPressSignOut={onPressSignOut}
+                isSignOutPending={isSignOutPending}
+              />
+            )}
           </RootStack.Screen>
           <RootStack.Screen name="PremiumPaywall" component={PremiumPaywallScreen} />
           <RootStack.Screen name="LegalDocument" component={LegalDocumentScreen} />
@@ -298,7 +301,7 @@ function navigateToCreate(
   } else if (action === 'task') {
     rootNavigation.navigate('Plan', { screen: 'CreateTask' });
   } else if (action === 'note') {
-    rootNavigation.navigate('Notes', { screen: 'NoteEditor' });
+    rootNavigation.navigate('Notes', { screen: 'CreateNote' });
   } else if (action === 'focus') {
     rootNavigation.navigate('Plan', { screen: 'FocusMode' });
   } else {

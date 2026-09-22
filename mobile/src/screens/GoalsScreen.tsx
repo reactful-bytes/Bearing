@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
@@ -13,7 +13,7 @@ import type { GoalFilter } from '../components/presentation/GoalPresentation';
 import { AppCard } from '../components/ui/AppCard';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
-import { layout, radii, spacing, typography } from '../design/tokens';
+import { layout, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import {
   CreateGoalInput,
@@ -214,23 +214,24 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   }
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
-      <ScreenHeader
-        title="Goals"
-        onPressBack={() => {
-          if (navigation?.goBack) {
-            navigation.goBack();
-          } else {
-            navigation?.getParent?.()?.navigate?.('Plan');
-          }
-        }}
-      />
+    <SafeAreaView style={styles.screen} edges={['left', 'right']}>
       <ScrollView
         contentContainerStyle={[
           styles.contentContainer,
+          { paddingTop: insets.top },
           { paddingBottom: spacing['3xl'] + insets.bottom },
         ]}
       >
+        <ScreenHeader
+          title="Goals"
+          onPressBack={() => {
+            if (navigation?.goBack) {
+              navigation.goBack();
+            } else {
+              navigation?.getParent?.()?.navigate?.('Plan');
+            }
+          }}
+        />
         <GoalStatusTabs
           accessibilityLabel="Goal filter"
           options={goalFilterOptions}

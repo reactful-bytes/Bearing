@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../../design/ThemeProvider';
 import { useThemedStyles } from '../../design/useThemedStyles';
@@ -31,6 +32,8 @@ type EventFormProps = {
   locale?: string;
   timeFormat?: TimeFormat;
   saveLabel?: string;
+  fullScreen?: boolean;
+  header?: ReactNode;
   onSave: (input: CreateEventInput, options: CreateEventOptions) => Promise<void>;
 };
 
@@ -99,10 +102,13 @@ export function EventForm({
   locale,
   timeFormat = DEFAULT_TIME_FORMAT,
   saveLabel = 'Save Event',
+  fullScreen = false,
+  header,
   onSave,
 }: EventFormProps) {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const [values, setValues] = useState<CalendarEventFormValues>(() =>
     buildCalendarEventFormValues(initialDate, initialValues),
   );
@@ -194,9 +200,13 @@ export function EventForm({
   return (
     <ScrollView
       style={styles.scrollView}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        fullScreen ? { paddingTop: insets.top, paddingBottom: spacing.sm + insets.bottom } : null,
+      ]}
       keyboardShouldPersistTaps="handled"
     >
+      {header}
       <FormField
         label="Title"
         value={values.title}

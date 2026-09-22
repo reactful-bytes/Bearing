@@ -329,7 +329,7 @@ describe('AppTabs', () => {
   it.each([
     ['goal', 'create-goal-action', { screen: 'CreateGoal' }],
     ['task', 'create-task-action', { screen: 'CreateTask' }],
-    ['note', 'create-note-action', { screen: 'NoteEditor' }],
+    ['note', 'create-note-action', { screen: 'CreateNote' }],
     ['event', 'create-event-action', { screen: 'CreateEvent' }],
     ['focus', 'create-focus-action', { screen: 'FocusMode' }],
   ])('routes the global %s action to its typed screen', (_action, testID, target) => {
@@ -342,7 +342,7 @@ describe('AppTabs', () => {
     fireEvent.press(getByTestId(testID));
 
     const tab =
-      target.screen === 'NoteEditor'
+      target.screen === 'CreateNote'
         ? 'Notes'
         : target.screen === 'CreateEvent'
           ? 'Calendar'

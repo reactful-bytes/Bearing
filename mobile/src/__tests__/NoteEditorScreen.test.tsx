@@ -57,6 +57,7 @@ describe('NoteEditorScreen', () => {
 
     render(<NoteEditorScreen route={{ params: { noteId: 'note-1' } }} navigation={{ goBack }} />);
 
+    expect(screen.getByRole('header', { name: 'Edit Note' })).toBeTruthy();
     fireEvent.changeText(screen.getByLabelText('Note body'), 'Updated note body.');
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Save note changes'));

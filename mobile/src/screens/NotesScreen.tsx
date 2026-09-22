@@ -37,7 +37,10 @@ type NotesScreenProps = {
   navigation?: {
     goBack?: () => void;
     setParams: (params: NotesStackParamList['NotesHome']) => void;
-    navigate?: (screen: 'NoteEditor', params?: NotesStackParamList['NoteEditor']) => void;
+    navigate?: (
+      screen: 'NoteEditor' | 'CreateNote',
+      params?: NotesStackParamList['NoteEditor'] | NotesStackParamList['CreateNote'],
+    ) => void;
     getParent?: () => { navigate?: (screen: string) => void } | undefined;
   };
 };
@@ -61,7 +64,7 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
     }
 
     if (navigation?.navigate) {
-      navigation.navigate('NoteEditor');
+      navigation.navigate('CreateNote');
     } else {
       setAddNoteVisible(true);
     }
@@ -87,7 +90,7 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
 
   function openNoteEditor(noteId?: string): void {
     if (navigation?.navigate) {
-      navigation.navigate('NoteEditor', noteId ? { noteId } : undefined);
+      navigation.navigate(noteId ? 'NoteEditor' : 'CreateNote', noteId ? { noteId } : undefined);
       return;
     }
 
@@ -109,24 +112,25 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
   }
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
-      <ScreenHeader
-        title="Notes"
-        onPressBack={() => {
-          if (navigation?.goBack) {
-            navigation.goBack();
-            return;
-          }
-
-          navigation?.getParent?.()?.navigate?.('Plan');
-        }}
-      />
+    <SafeAreaView style={styles.screen} edges={['left', 'right']}>
       <ScrollView
         contentContainerStyle={[
           styles.contentContainer,
+          { paddingTop: insets.top },
           { paddingBottom: spacing.xl + insets.bottom },
         ]}
       >
+        <ScreenHeader
+          title="Notes"
+          onPressBack={() => {
+            if (navigation?.goBack) {
+              navigation.goBack();
+              return;
+            }
+
+            navigation?.getParent?.()?.navigate?.('Plan');
+          }}
+        />
         <View style={styles.searchRow}>
           <View style={styles.searchField}>
             <AppIcon name="search" size={18} color={styles.searchIcon.color} decorative />

@@ -437,8 +437,12 @@ export function CalendarScreen({
   const visibleMonth = monthList[visibleMonthIndex];
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.screen} edges={['left', 'right']}>
       <ScreenHeader
+        style={{
+          paddingHorizontal: layout.pagePaddingHorizontal,
+          paddingTop: insets.top,
+        }}
         title="Calendar"
         onPressBack={() => {
           if (navigation?.goBack) {

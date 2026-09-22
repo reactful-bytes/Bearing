@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { FormField } from '../ui/FormField';
+import { ScreenHeader } from '../ui/ScreenHeader';
 import { radii, spacing, typography } from '../../design/tokens';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import type { Theme } from '../../design/tokens';
@@ -27,6 +29,7 @@ export function AddNoteModal({
   fullScreen = false,
 }: AddNoteModalProps) {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -71,12 +74,22 @@ export function AddNoteModal({
   }
 
   return (
-    <AppModal visible={visible} title="New Note" onClose={handleClose} fullScreen={fullScreen}>
+    <AppModal
+      visible={visible}
+      title="New Note"
+      onClose={handleClose}
+      fullScreen={fullScreen}
+      hideHeader={fullScreen}
+    >
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          fullScreen ? { paddingTop: insets.top, paddingBottom: spacing.sm + insets.bottom } : null,
+        ]}
         keyboardShouldPersistTaps="handled"
       >
+        {fullScreen ? <ScreenHeader title="New Note" onPressBack={handleClose} /> : null}
         <FormField
           label="Title"
           accessibilityLabel="Note title"

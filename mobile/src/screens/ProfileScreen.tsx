@@ -17,6 +17,7 @@ import { SectionHeading } from '../components/ui/SectionHeading';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { IconButton } from '../components/ui/IconButton';
+import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { layout, radii, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import type { ThemePreference } from '../design/ThemeProvider';
@@ -806,32 +807,30 @@ export function ProfileScreen({
   }
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.screen} edges={['left', 'right']}>
       <ScrollView
         ref={profileScrollRef}
         contentContainerStyle={[
           styles.contentContainer,
+          { paddingTop: insets.top },
           { paddingBottom: spacing.xl + insets.bottom },
         ]}
       >
-        <View style={styles.routeHeader}>
-          {onPressBack ? (
-            <IconButton name="back" accessibilityLabel="Back to Profile" onPress={onPressBack} />
-          ) : (
-            <IconButton
-              name="back"
-              accessibilityLabel="Back to Plan"
-              onPress={() => {
-                if (navigation?.goBack) {
-                  navigation.goBack();
-                  return;
-                }
+        <ScreenHeader
+          title="Profile"
+          onPressBack={
+            onPressBack ??
+            (() => {
+              if (navigation?.goBack) {
+                navigation.goBack();
+                return;
+              }
 
-                navigation?.getParent?.()?.navigate?.('Plan');
-              }}
-            />
-          )}
-        </View>
+              navigation?.getParent?.()?.navigate?.('Plan');
+            })
+          }
+          backAccessibilityLabel={onPressBack ? 'Back to Profile' : 'Back to Plan'}
+        />
 
         {uiState === 'error' ? (
           <RecoveryCard
@@ -1731,9 +1730,6 @@ const createStyles = (theme: Theme) =>
       paddingVertical: layout.pagePaddingVertical,
       gap: spacing.lg,
       paddingBottom: 120,
-    },
-    routeHeader: {
-      gap: spacing.sm,
     },
     stateTitle: {
       ...typography.button,

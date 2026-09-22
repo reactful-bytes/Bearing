@@ -6,45 +6,26 @@ import { AppButton } from '../components/ui/AppButton';
 import { AppCard } from '../components/ui/AppCard';
 import { AppScreen } from '../components/ui/AppScreen';
 import { FormField } from '../components/ui/FormField';
-import { IconButton } from '../components/ui/IconButton';
+import { ScreenHeader } from '../components/ui/ScreenHeader';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { spacing } from '../design/tokens';
 import { useThemedStyles } from '../design/useThemedStyles';
 import type { Theme } from '../design/tokens';
 import { useNotes } from '../features/notes/useNotes';
 import { NotesStackParamList } from '../navigation/navigationTypes';
-import { useUserProfile } from '../features/profile/useUserProfile';
-import { DEFAULT_TIME_FORMAT, timeFormatOptions } from '../features/profile/timeFormat';
 
 type NoteEditorScreenProps = {
   route?: { params?: NotesStackParamList['NoteEditor'] };
   navigation?: { goBack: () => void };
 };
 
-function formatDateTime(date: Date, locale?: string): string {
-  return date.toLocaleString(locale, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    ...timeFormatOptions(DEFAULT_TIME_FORMAT),
-  });
-}
-
 export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = {}) {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const stackNavigation = useNavigation<NavigationProp<NotesStackParamList>>();
-  const { profile } = useUserProfile();
-  const {
-    notes,
-    uiState,
-    createNote: createFromCollection,
-    updateNote,
-    pinNote,
-    archiveNote,
-    deleteNote,
-  } = useNotes();
+  const { notes, uiState, updateNote, pinNote, archiveNote, deleteNote } = useNotes();
   const noteId = route?.params?.noteId ?? null;
   const note = useMemo(() => notes.find((item) => item.id === noteId) ?? null, [noteId, notes]);
-  const isEditing = noteId !== null;
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [pinned, setPinned] = useState(false);
@@ -55,11 +36,6 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
 
   useEffect(() => {
     if (!note) {
-      if (!isEditing) {
-        setTitle('');
-        setBody('');
-        setPinned(false);
-      }
       return;
     }
 
@@ -68,7 +44,7 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
     setPinned(note.pinned);
     setError(null);
     setConfirmingDelete(false);
-  }, [isEditing, note]);
+  }, [note]);
 
   async function handleSave(): Promise<void> {
     const trimmedBody = body.trim();
@@ -82,21 +58,11 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
     setConfirmingDelete(false);
 
     try {
-      if (isEditing && note) {
-        await updateNote(note.id, { title: title.trim(), body: trimmedBody, pinned });
-      } else {
-        await createFromCollection({
-          title: title.trim(),
-          body: trimmedBody,
-          source: 'manual',
-          sourceEventId: route?.params?.sourceEventId ?? null,
-          sourceStepId: route?.params?.sourceStepId ?? null,
-          pinned,
-        });
-      }
+      if (!note) return;
+      await updateNote(note.id, { title: title.trim(), body: trimmedBody, pinned });
       navigation?.goBack();
     } catch {
-      setError(isEditing ? 'Failed to save note changes.' : 'Failed to save note.');
+      setError('Failed to save note changes.');
     } finally {
       setSaving(false);
     }
@@ -160,17 +126,41 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
     stackNavigation.navigate(screen, { noteId: note.id });
   }
 
-  if (isEditing && uiState === 'loading' && !note) {
+  if (noteId && uiState === 'loading' && !note) {
     return (
-      <AppScreen mode="scroll" testID="note-editor-loading">
+      <AppScreen
+        mode="scroll"
+        testID="note-editor-loading"
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top, paddingBottom: spacing.xl + insets.bottom },
+        ]}
+      >
+        <ScreenHeader
+          title="Edit Note"
+          onPressBack={() => navigation?.goBack?.()}
+          backAccessibilityLabel="Back to Notes"
+        />
         <Text style={styles.stateTitle}>Loading note...</Text>
       </AppScreen>
     );
   }
 
-  if (isEditing && !note) {
+  if (noteId && !note) {
     return (
-      <AppScreen mode="scroll" testID="note-editor-missing">
+      <AppScreen
+        mode="scroll"
+        testID="note-editor-missing"
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top, paddingBottom: spacing.xl + insets.bottom },
+        ]}
+      >
+        <ScreenHeader
+          title="Edit Note"
+          onPressBack={() => navigation?.goBack?.()}
+          backAccessibilityLabel="Back to Notes"
+        />
         <Text style={styles.stateTitle}>Note unavailable.</Text>
         <Text style={styles.stateDescription}>This note may have been deleted or archived.</Text>
         <AppButton label="Back to Notes" onPress={navigation?.goBack} />
@@ -179,147 +169,134 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
   }
 
   return (
-    <AppScreen mode="scroll" testID="note-editor-screen">
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <IconButton
-            name="back"
-            accessibilityLabel="Back to Notes"
-            onPress={() => navigation?.goBack?.()}
-          />
-          <View style={styles.headerCopy}>
-            <Text accessibilityRole="header" numberOfLines={1} style={styles.title}>
-              {note?.title || (isEditing ? 'Edit Note' : 'New Note')}
-            </Text>
-            {note ? (
-              <Text style={styles.updatedAt}>
-                Updated {formatDateTime(note.updatedAt, profile?.locale)}
-              </Text>
-            ) : null}
-          </View>
-          <IconButton
-            name="complete"
-            accessibilityLabel={isEditing ? 'Save note changes' : 'Save note'}
-            onPress={() => void handleSave()}
-          />
-        </View>
+    <AppScreen
+      mode="scroll"
+      testID="note-editor-screen"
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: insets.top, paddingBottom: spacing.xl + insets.bottom },
+      ]}
+    >
+      <ScreenHeader
+        title="Edit Note"
+        onPressBack={() => navigation?.goBack?.()}
+        backAccessibilityLabel="Back to Notes"
+      />
 
-        <View style={styles.form}>
-          <FormField
-            label="Title"
-            accessibilityLabel="Note title"
-            placeholder="Optional title"
-            value={title}
-            onChangeText={setTitle}
-            inputStyle={styles.titleInput}
-          />
-          <FormField
-            label="Content"
-            accessibilityLabel="Note body"
-            placeholder="Write your note..."
-            value={body}
-            onChangeText={setBody}
-            multiline
-            error={error}
-            inputStyle={styles.bodyInput}
-          />
-          <AppButton
-            label={pinned ? 'Unpin note' : 'Pin note'}
-            variant="secondary"
-            accessibilityLabel={pinned ? 'Unpin note' : 'Pin note'}
-            onPress={handleTogglePinned}
-            loading={pinning}
-            loadingLabel="Updating..."
-            style={pinned ? styles.pinToggleActive : null}
-          />
-        </View>
-
-        {note ? (
-          <AppCard style={styles.actionsCard}>
-            <Text style={styles.sectionTitle}>Use this note</Text>
-            <Text style={styles.sectionDescription}>
-              Start a draft from this context, then edit it before committing.
-            </Text>
-            <View style={styles.actionRow}>
-              <AppButton
-                label="Create Task"
-                variant="secondary"
-                onPress={() => openConversion('CreateTaskFromNote')}
-                style={[styles.actionButton, styles.createTaskAccent]}
-              />
-              <AppButton
-                label="Create Goal"
-                variant="secondary"
-                onPress={() => openConversion('CreateGoalFromNote')}
-                style={[styles.actionButton, styles.createGoalAccent]}
-              />
-            </View>
-            <AppButton
-              label="Create Event"
-              variant="secondary"
-              onPress={() => openConversion('CreateEventFromNote')}
-              style={styles.createEventAccent}
-            />
-          </AppCard>
-        ) : null}
-
-        {note ? (
-          <View style={styles.dangerActions}>
-            <AppButton
-              label="Archive Note"
-              variant="secondary"
-              onPress={handleArchive}
-              loading={saving}
-            />
-            {!confirmingDelete ? (
-              <AppButton
-                label="Delete Note"
-                variant="danger"
-                onPress={() => setConfirmingDelete(true)}
-              />
-            ) : (
-              <View style={styles.confirmBlock}>
-                <Text style={styles.confirmText}>Delete this note permanently?</Text>
-                <View style={styles.actionRow}>
-                  <AppButton
-                    label="Cancel"
-                    variant="secondary"
-                    onPress={() => setConfirmingDelete(false)}
-                    style={styles.actionButton}
-                  />
-                  <AppButton
-                    label="Yes, Delete"
-                    variant="danger"
-                    accessibilityLabel="Confirm note delete"
-                    onPress={handleDelete}
-                    loading={saving}
-                    loadingLabel="Deleting..."
-                    style={styles.actionButton}
-                  />
-                </View>
-              </View>
-            )}
-          </View>
-        ) : null}
+      <View style={styles.form}>
+        <FormField
+          label="Title"
+          accessibilityLabel="Note title"
+          placeholder="Optional title"
+          value={title}
+          onChangeText={setTitle}
+          inputStyle={styles.titleInput}
+        />
+        <FormField
+          label="Content"
+          accessibilityLabel="Note body"
+          placeholder="Write your note..."
+          value={body}
+          onChangeText={setBody}
+          multiline
+          error={error}
+          inputStyle={styles.bodyInput}
+        />
+        <AppButton
+          label={pinned ? 'Unpin note' : 'Pin note'}
+          variant="secondary"
+          accessibilityLabel={pinned ? 'Unpin note' : 'Pin note'}
+          onPress={handleTogglePinned}
+          loading={pinning}
+          loadingLabel="Updating..."
+          style={pinned ? styles.pinToggleActive : null}
+        />
+        <AppButton
+          label="Save Changes"
+          accessibilityLabel="Save note changes"
+          onPress={() => void handleSave()}
+          loading={saving}
+          loadingLabel="Saving..."
+        />
       </View>
+
+      {note ? (
+        <AppCard style={styles.actionsCard}>
+          <Text style={styles.sectionTitle}>Use this note</Text>
+          <Text style={styles.sectionDescription}>
+            Start a draft from this context, then edit it before committing.
+          </Text>
+          <View style={styles.actionRow}>
+            <AppButton
+              label="Create Task"
+              variant="secondary"
+              onPress={() => openConversion('CreateTaskFromNote')}
+              style={[styles.actionButton, styles.createTaskAccent]}
+            />
+            <AppButton
+              label="Create Goal"
+              variant="secondary"
+              onPress={() => openConversion('CreateGoalFromNote')}
+              style={[styles.actionButton, styles.createGoalAccent]}
+            />
+          </View>
+          <AppButton
+            label="Create Event"
+            variant="secondary"
+            onPress={() => openConversion('CreateEventFromNote')}
+            style={styles.createEventAccent}
+          />
+        </AppCard>
+      ) : null}
+
+      {note ? (
+        <View style={styles.dangerActions}>
+          <AppButton
+            label="Archive Note"
+            variant="secondary"
+            onPress={handleArchive}
+            loading={saving}
+          />
+          {!confirmingDelete ? (
+            <AppButton
+              label="Delete Note"
+              variant="danger"
+              onPress={() => setConfirmingDelete(true)}
+            />
+          ) : (
+            <View style={styles.confirmBlock}>
+              <Text style={styles.confirmText}>Delete this note permanently?</Text>
+              <View style={styles.actionRow}>
+                <AppButton
+                  label="Cancel"
+                  variant="secondary"
+                  onPress={() => setConfirmingDelete(false)}
+                  style={styles.actionButton}
+                />
+                <AppButton
+                  label="Yes, Delete"
+                  variant="danger"
+                  accessibilityLabel="Confirm note delete"
+                  onPress={handleDelete}
+                  loading={saving}
+                  loadingLabel="Deleting..."
+                  style={styles.actionButton}
+                />
+              </View>
+            </View>
+          )}
+        </View>
+      ) : null}
     </AppScreen>
   );
 }
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
-    content: { gap: theme.spacing.md },
-    header: {
-      minHeight: 52,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.xs,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: theme.colors.border,
+    content: {
+      gap: theme.spacing.md,
+      paddingBottom: theme.spacing.xl,
     },
-    headerCopy: { flex: 1, alignItems: 'center', gap: theme.spacing.xs },
-    title: { ...theme.typography.cardTitle, color: theme.colors.text },
-    updatedAt: { ...theme.typography.helper, color: theme.colors.textSecondary },
     form: { gap: theme.spacing.md, paddingTop: theme.spacing.sm },
     titleInput: {
       minHeight: 48,

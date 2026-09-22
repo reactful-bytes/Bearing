@@ -9,7 +9,7 @@ import { AddTaskModal } from '../components/tasks/AddTaskModal';
 import { StartNowModal } from '../components/tasks/StartNowModal';
 import { TaskDetailModal } from '../components/tasks/TaskDetailModal';
 import { AppCard } from '../components/ui/AppCard';
-import { BearingHeader } from '../components/ui/BearingHeader';
+import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
@@ -199,18 +199,14 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
 
   return (
     <View style={styles.screen}>
-      <BearingHeader
-        leadingAccessibilityLabel="Open navigation"
-        onPressLeading={() => navigation.navigate('Plan')}
-        trailingAccessibilityLabel="Open profile"
-        onPressTrailing={() => navigation.navigate('Profile')}
-      />
       <ScrollView
         contentContainerStyle={[
           styles.contentContainer,
+          { paddingTop: insets.top },
           { paddingBottom: spacing['3xl'] + insets.bottom },
         ]}
       >
+        <ScreenHeader title="Tasks" onPressBack={() => navigation.goBack()} />
         <SegmentedControl
           accessibilityLabel="Task filter"
           options={taskFilterOptions}

@@ -1,4 +1,5 @@
 import { AppModal } from '../ui/AppModal';
+import { ScreenHeader } from '../ui/ScreenHeader';
 import { CreateEventInput, CreateEventOptions } from '../../features/calendar/calendarTypes';
 import { EventForm } from './EventForm';
 import { TimeFormat } from '../../features/profile/timeFormat';
@@ -36,7 +37,13 @@ export function AddEventModal({
   }
 
   return (
-    <AppModal visible={visible} title={modalTitle} onClose={onClose} fullScreen={fullScreen}>
+    <AppModal
+      visible={visible}
+      title={modalTitle}
+      onClose={onClose}
+      fullScreen={fullScreen}
+      hideHeader={fullScreen}
+    >
       <EventForm
         active={visible}
         initialDate={initialDate}
@@ -44,6 +51,8 @@ export function AddEventModal({
         publicationCalendarTitle={publicationCalendarTitle}
         locale={locale}
         timeFormat={timeFormat}
+        fullScreen={fullScreen}
+        header={fullScreen ? <ScreenHeader title={modalTitle} onPressBack={onClose} /> : undefined}
         onSave={handleSave}
       />
     </AppModal>
