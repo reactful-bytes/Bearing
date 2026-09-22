@@ -117,6 +117,7 @@ export type CalendarScreenProps = {
     };
   };
   navigation?: {
+    goBack?: () => void;
     setParams?: (params: { focusLaunch?: CalendarFocusLaunch; createEvent?: boolean }) => void;
     navigate?: (
       route: 'CalendarSources' | 'CreateEvent' | 'EventDetail' | 'Plan',
@@ -437,7 +438,17 @@ export function CalendarScreen({
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
-      <ScreenHeader title="Calendar" onPressBack={() => navigation?.navigate?.('Plan')} />
+      <ScreenHeader
+        title="Calendar"
+        onPressBack={() => {
+          if (navigation?.goBack) {
+            navigation.goBack();
+            return;
+          }
+
+          navigation?.navigate?.('Plan');
+        }}
+      />
       <View style={styles.calendarToolbar}>
         <ViewModeToggle
           mode={viewMode}

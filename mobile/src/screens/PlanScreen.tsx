@@ -21,7 +21,7 @@ import { useTasks } from '../features/tasks/useTasks';
 import { TaskRecord } from '../features/tasks/taskTypes';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { DEFAULT_TIME_FORMAT, TimeFormat, timeFormatOptions } from '../features/profile/timeFormat';
-import { AppTabParamList, PlanStackParamList } from '../navigation/navigationTypes';
+import { PlanStackParamList } from '../navigation/navigationTypes';
 
 const MAX_UPCOMING_EVENTS = 3;
 const MAX_ACTIVE_GOALS = 3;
@@ -62,6 +62,13 @@ function getDailyPhrase(phrases: readonly string[], date: Date): string {
 
 type PlanScreenProps = {
   navigation: NavigationProp<PlanStackParamList, 'PlanHome'>;
+};
+
+type PlanPageNavigation = {
+  navigate: (
+    screen: 'Calendar' | 'Notes' | 'Profile',
+    params?: Record<string, unknown>,
+  ) => void;
 };
 
 function getGreeting(hour: number): string {
@@ -336,7 +343,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
   const styles = useThemedStyles(createStyles);
   const { theme, preference } = useTheme();
   const insets = useSafeAreaInsets();
-  const tabNavigation = navigation.getParent?.<NavigationProp<AppTabParamList>>();
+  const pageNavigation = navigation.getParent?.() as PlanPageNavigation | undefined;
   const today = useMemo(() => new Date(), []);
   const { profile } = useUserProfile();
   const focusSession = useFocusSession();
@@ -447,7 +454,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Open profile"
-          onPress={() => tabNavigation?.navigate('Profile')}
+          onPress={() => pageNavigation?.navigate('Profile')}
           style={({ pressed }) => [styles.profileButton, pressed ? styles.pressed : null]}
         >
           <View style={styles.avatarPlaceholder}>
@@ -468,7 +475,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
                 accessibilityRole="link"
                 accessibilityLabel="View full day"
                 onPress={() =>
-                  tabNavigation?.navigate('Calendar', {
+                  pageNavigation?.navigate('Calendar', {
                     screen: 'CalendarHome',
                     params: { dateIso: new Date().toISOString() },
                   })
@@ -516,7 +523,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
                         : undefined
                     }
                     onPress={() =>
-                      tabNavigation?.navigate('Calendar', {
+                      pageNavigation?.navigate('Calendar', {
                         screen: 'CalendarHome',
                         params: { dateIso: event.startAt.toISOString() },
                       })
@@ -556,7 +563,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
             title="NOTES"
             titlePlacement="hidden"
             accessibilityLabel="Open Notes"
-            onPress={() => tabNavigation?.navigate('Notes', { screen: 'NotesHome' })}
+            onPress={() => pageNavigation?.navigate('Notes', { screen: 'NotesHome' })}
             style={styles.compactSurface}
             bodyStyle={[styles.compactSurfaceBody, styles.notesSurfaceBody]}
             compact

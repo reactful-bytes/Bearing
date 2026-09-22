@@ -1,21 +1,20 @@
 import {
   NavigationContainer,
-  NavigationProp,
+  NavigationContainerRef,
   useNavigationContainerRef,
-  useNavigationState,
 } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {
   BackHandler,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   ToastAndroid,
   View,
   useWindowDimensions,
 } from 'react-native';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CreateFabGroup } from '../components/presentation/CreateFabGroup';
@@ -65,7 +64,6 @@ type AppTabsProps = {
   isSignOutPending: boolean;
 };
 
-const Tab = createBottomTabNavigator<AppTabParamList>();
 const PlanStack = createNativeStackNavigator<PlanStackParamList>();
 const CalendarStack = createNativeStackNavigator<CalendarStackParamList>();
 const NotesStack = createNativeStackNavigator<NotesStackParamList>();
@@ -185,7 +183,7 @@ function ProfileNavigator({ onPressSignOut, isSignOutPending }: AppTabsProps) {
             isSignOutPending={isSignOutPending}
             navigation={{
               navigate: (screen, params) => navigation.navigate(screen, params),
-              getParent: () => navigation.getParent(),
+              goBack: navigation.goBack,
             }}
           />
         )}
@@ -226,6 +224,7 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
   const styles = useThemedStyles(createStyles);
   const isDesktopNavigation = usesDesktopNavigation(Platform.OS, width);
   const navigationRef = useNavigationContainerRef<RootStackParamList>();
+  const [activeRouteName, setActiveRouteName] = useState<keyof RootStackParamList>('Plan');
   const lastBackPressAt = useRef(0);
 
   useEffect(() => {
@@ -253,115 +252,115 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
   }, [navigationRef]);
 
   return (
-    <NavigationContainer ref={navigationRef}>
-      <RootStack.Navigator screenOptions={{ headerShown: false }}>
-        <RootStack.Screen name="AppTabs">
-          {({ navigation }) => (
-            <CreateFabProvider onCreate={(action) => navigateToCreate(navigation, action)}>
-              <AppTabsNavigator
-                insets={insets}
-                isDesktopNavigation={isDesktopNavigation}
-                isSignOutPending={isSignOutPending}
-                onPressSignOut={onPressSignOut}
-                styles={styles}
-                theme={theme}
-              />
-            </CreateFabProvider>
+    <NavigationContainer
+      ref={navigationRef}
+      onStateChange={(state) => {
+        const routeName = state?.routes?.[state.index ?? 0]?.name;
+        setActiveRouteName((routeName as keyof RootStackParamList | undefined) ?? 'Plan');
+      }}
+    >
+      <CreateFabProvider onCreate={(action) => navigateToCreate(navigationRef, action)}>
+        <RootStack.Navigator
+        screenOptions={{
+          headerShown: false,
+        }}
+        >
+          <RootStack.Screen name="Plan" component={PlanNavigator} />
+          <RootStack.Screen name="Calendar" component={CalendarNavigator} />
+          <RootStack.Screen name="Notes" component={NotesNavigator} />
+          <RootStack.Screen name="Profile">
+          {() => (
+            <ProfileNavigator onPressSignOut={onPressSignOut} isSignOutPending={isSignOutPending} />
           )}
-        </RootStack.Screen>
-        <RootStack.Screen name="PremiumPaywall" component={PremiumPaywallScreen} />
-        <RootStack.Screen name="LegalDocument" component={LegalDocumentScreen} />
-      </RootStack.Navigator>
+          </RootStack.Screen>
+          <RootStack.Screen name="PremiumPaywall" component={PremiumPaywallScreen} />
+          <RootStack.Screen name="LegalDocument" component={LegalDocumentScreen} />
+        </RootStack.Navigator>
+        <AppNavigationChrome
+          insets={insets}
+          isDesktopNavigation={isDesktopNavigation}
+          activeRouteName={activeRouteName}
+          navigation={navigationRef}
+          styles={styles}
+          theme={theme}
+        />
+      </CreateFabProvider>
     </NavigationContainer>
   );
 }
 
 function navigateToCreate(
-  rootNavigation: NavigationProp<RootStackParamList>,
+  rootNavigation: NavigationContainerRef<RootStackParamList>,
   action: CreateFabAction,
 ): void {
   if (action === 'goal') {
-    rootNavigation.navigate('AppTabs', { screen: 'Plan', params: { screen: 'CreateGoal' } });
+    rootNavigation.navigate('Plan', { screen: 'CreateGoal' });
   } else if (action === 'task') {
-    rootNavigation.navigate('AppTabs', { screen: 'Plan', params: { screen: 'CreateTask' } });
+    rootNavigation.navigate('Plan', { screen: 'CreateTask' });
   } else if (action === 'note') {
-    rootNavigation.navigate('AppTabs', { screen: 'Notes', params: { screen: 'NoteEditor' } });
+    rootNavigation.navigate('Notes', { screen: 'NoteEditor' });
   } else if (action === 'focus') {
-    rootNavigation.navigate('AppTabs', { screen: 'Plan', params: { screen: 'FocusMode' } });
+    rootNavigation.navigate('Plan', { screen: 'FocusMode' });
   } else {
-    rootNavigation.navigate('AppTabs', {
-      screen: 'Calendar',
-      params: { screen: 'CreateEvent' },
-    });
+    rootNavigation.navigate('Calendar', { screen: 'CreateEvent' });
   }
 }
 
-function AppTabsNavigator({
+function AppNavigationChrome({
   insets,
   isDesktopNavigation,
-  isSignOutPending,
-  onPressSignOut,
+  activeRouteName,
+  navigation,
   styles,
   theme,
-}: AppTabsProps & {
+}: {
   insets: ReturnType<typeof useSafeAreaInsets>;
   isDesktopNavigation: boolean;
+  activeRouteName: keyof RootStackParamList;
+  navigation: NavigationContainerRef<RootStackParamList>;
   styles: ReturnType<typeof createStyles>;
   theme: ReturnType<typeof useTheme>['theme'];
 }) {
   const createFab = useRequiredCreateFab();
-  const activeTabName = useNavigationState((state) => {
-    const activeRoute = state.routes[state.index];
-    const tabState = activeRoute?.state;
-    const tabIndex = tabState?.index;
-    return tabIndex === undefined ? undefined : tabState?.routes[tabIndex]?.name;
-  });
-  const isProfileTabActive = activeTabName === 'Profile';
+  const isProfileTabActive = activeRouteName === 'Profile';
   return (
     <>
-      <Tab.Navigator
-        initialRouteName="Plan"
-        screenOptions={({ route }) => {
-          return {
-            headerShown: false,
-            tabBarPosition: isDesktopNavigation ? 'left' : 'bottom',
-            tabBarActiveTintColor: theme.colors.brand,
-            tabBarInactiveTintColor: theme.colors.textSecondary,
-            tabBarActiveBackgroundColor: isDesktopNavigation ? theme.colors.brand : undefined,
-            tabBarStyle: isDesktopNavigation ? styles.desktopTabBar : styles.hiddenTabBar,
-            tabBarItemStyle: isDesktopNavigation ? styles.desktopTabBarItem : undefined,
-            sceneStyle: Platform.OS === 'web' ? styles.webScene : undefined,
-            tabBarLabel: ({ focused }) => (
+      {isDesktopNavigation ? (
+        <View style={styles.desktopNavigationOverlay}>
+          {(['Plan', 'Calendar', 'Notes', 'Profile'] as const).map((destination) => (
+            <Pressable
+              key={destination}
+              accessibilityRole="tab"
+              accessibilityLabel={destination}
+              accessibilityState={{ selected: activeRouteName === destination }}
+              onPress={() => navigation.navigate(destination)}
+              style={[
+                styles.desktopTabBarItem,
+                activeRouteName === destination ? styles.desktopTabBarItemActive : null,
+              ]}
+            >
+              <TabIcon
+                routeName={destination as keyof AppTabParamList}
+                focused={activeRouteName === destination}
+                isDesktop
+              />
               <Text
                 style={[
-                  styles.tabBarLabel,
-                  isDesktopNavigation ? styles.desktopTabLabel : null,
-                  { color: focused ? theme.colors.onBrand : theme.colors.textSecondary },
+                  styles.desktopTabLabel,
+                  {
+                    color:
+                      activeRouteName === destination
+                        ? theme.colors.onBrand
+                        : theme.colors.textSecondary,
+                  },
                 ]}
               >
-                {route.name}
+                {destination}
               </Text>
-            ),
-            tabBarLabelPosition: isDesktopNavigation ? 'beside-icon' : 'below-icon',
-            tabBarIcon: ({ focused }) => (
-              <TabIcon
-                routeName={route.name as keyof AppTabParamList}
-                focused={focused}
-                isDesktop={isDesktopNavigation}
-              />
-            ),
-          };
-        }}
-      >
-        <Tab.Screen name="Plan" component={PlanNavigator} />
-        <Tab.Screen name="Calendar" component={CalendarNavigator} />
-        <Tab.Screen name="Notes" component={NotesNavigator} />
-        <Tab.Screen name="Profile">
-          {() => (
-            <ProfileNavigator onPressSignOut={onPressSignOut} isSignOutPending={isSignOutPending} />
-          )}
-        </Tab.Screen>
-      </Tab.Navigator>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
       {!isProfileTabActive ? (
         <CreateFabGroup
           visible={createFab.visible}
@@ -382,13 +381,14 @@ function AppTabsNavigator({
 
 const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
   StyleSheet.create({
-    hiddenTabBar: {
-      display: 'none',
-    },
     tabBarLabel: {
       ...theme.typography.tabLabel,
     },
-    desktopTabBar: {
+    desktopNavigationOverlay: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      bottom: 0,
       width: DESKTOP_NAVIGATION_WIDTH,
       paddingHorizontal: theme.spacing.sm,
       paddingVertical: theme.spacing.xl,
@@ -401,6 +401,13 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       minHeight: 52,
       borderRadius: 8,
       marginVertical: theme.spacing.xs,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+      paddingHorizontal: theme.spacing.md,
+    },
+    desktopTabBarItemActive: {
+      backgroundColor: theme.colors.brand,
     },
     webScene: {
       width: '100%',

@@ -9,6 +9,7 @@ const mockActiveTabName = { value: 'Plan' };
 const mockNavigationRef = {
   canGoBack: jest.fn(() => false),
   goBack: jest.fn(),
+  navigate: mockNavigate,
 };
 
 jest.mock('../screens/CalendarScreen', () => ({
@@ -136,7 +137,19 @@ jest.mock('../components/presentation/CreateFabGroup', () => {
 });
 
 jest.mock('@react-navigation/native', () => ({
-  NavigationContainer: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  NavigationContainer: ({
+    children,
+    onStateChange,
+  }: {
+    children: React.ReactNode;
+    onStateChange?: (state: { index: number; routes: { name: string }[] }) => void;
+  }) => {
+    const ReactModule = jest.requireActual<typeof import('react')>('react');
+    ReactModule.useEffect(() => {
+      onStateChange?.({ index: 0, routes: [{ name: mockActiveTabName.value }] });
+    }, []);
+    return <>{children}</>;
+  },
   useNavigationContainerRef: jest.fn(() => mockNavigationRef),
   useNavigation: jest.fn(() => ({ navigate: mockNavigate })),
   useNavigationState: jest.fn(
@@ -148,15 +161,7 @@ jest.mock('@react-navigation/native', () => ({
     ) =>
       selector({
         index: 0,
-        routes: [
-          {
-            name: 'AppTabs',
-            state: {
-              index: mockActiveTabName.value === 'Profile' ? 1 : 0,
-              routes: [{ name: 'Plan' }, { name: 'Profile' }],
-            },
-          },
-        ],
+        routes: [{ name: mockActiveTabName.value }],
       }),
   ),
 }));
@@ -342,7 +347,7 @@ describe('AppTabs', () => {
         : target.screen === 'CreateEvent'
           ? 'Calendar'
           : 'Plan';
-    expect(mockNavigate).toHaveBeenCalledWith('AppTabs', { screen: tab, params: target });
+    expect(mockNavigate).toHaveBeenCalledWith(tab, target);
   });
 
   it('does not render a mobile bottom navigation bar', () => {
@@ -350,9 +355,6 @@ describe('AppTabs', () => {
       <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
     );
 
-    const planTab = getByTestId('tab-button-Plan');
-    expect(planTab.props.children[0].props.style).toEqual(
-      expect.objectContaining({ display: 'none' }),
-    );
+    expect(() => getByTestId('tab-button-Plan')).toThrow();
   });
 });

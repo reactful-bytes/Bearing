@@ -72,7 +72,10 @@ export type ProfileStackParamList = {
 export type PremiumEntryPoint = 'profile' | 'ai_goal_builder';
 
 export type RootStackParamList = {
-  AppTabs: NavigatorScreenParams<AppTabParamList> | undefined;
+  Plan: NavigatorScreenParams<PlanStackParamList> | undefined;
+  Calendar: NavigatorScreenParams<CalendarStackParamList> | undefined;
+  Notes: NavigatorScreenParams<NotesStackParamList> | undefined;
+  Profile: NavigatorScreenParams<ProfileStackParamList> | undefined;
   PremiumPaywall: { feature: PremiumFeature; source: PremiumEntryPoint };
   LegalDocument: { documentId: LegalDocumentId; bottomInset?: boolean };
 };

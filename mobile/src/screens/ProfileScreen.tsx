@@ -95,6 +95,7 @@ type ProfileScreenProps = {
   section?: ProfileSection;
   onPressBack?: () => void;
   navigation?: {
+    goBack?: () => void;
     navigate: (
       screen: ProfileNavigationTarget,
       params?: ProfileStackParamList[ProfileNavigationTarget],
@@ -820,7 +821,14 @@ export function ProfileScreen({
             <IconButton
               name="back"
               accessibilityLabel="Back to Plan"
-              onPress={() => navigation?.getParent?.()?.navigate?.('Plan')}
+              onPress={() => {
+                if (navigation?.goBack) {
+                  navigation.goBack();
+                  return;
+                }
+
+                navigation?.getParent?.()?.navigate?.('Plan');
+              }}
             />
           )}
         </View>

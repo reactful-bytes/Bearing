@@ -35,6 +35,7 @@ function noteSourceLabel(note: NoteRecord): string {
 type NotesScreenProps = {
   route?: { params?: NotesStackParamList['NotesHome'] };
   navigation?: {
+    goBack?: () => void;
     setParams: (params: NotesStackParamList['NotesHome']) => void;
     navigate?: (screen: 'NoteEditor', params?: NotesStackParamList['NoteEditor']) => void;
     getParent?: () => { navigate?: (screen: string) => void } | undefined;
@@ -109,7 +110,17 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
-      <ScreenHeader title="Notes" onPressBack={() => navigation?.getParent?.()?.navigate?.('Plan')} />
+      <ScreenHeader
+        title="Notes"
+        onPressBack={() => {
+          if (navigation?.goBack) {
+            navigation.goBack();
+            return;
+          }
+
+          navigation?.getParent?.()?.navigate?.('Plan');
+        }}
+      />
       <ScrollView
         contentContainerStyle={[
           styles.contentContainer,

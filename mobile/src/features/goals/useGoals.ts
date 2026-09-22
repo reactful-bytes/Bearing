@@ -24,6 +24,14 @@ import {
   updateGoalStep as updateFirebaseGoalStep,
 } from '../../services/firebase/firebaseGoals';
 
+type GoalSubscriptionCache = {
+  goals: GoalRecord[];
+  steps: GoalStepRecord[];
+  uiState: GoalUiState;
+};
+
+const goalSubscriptionCache = new Map<string, GoalSubscriptionCache>();
+
 function sortGoals(goals: GoalWithSteps[]): GoalWithSteps[] {
   const statusWeight: Record<GoalRecord['status'], number> = {
     active: 0,
@@ -55,22 +63,25 @@ export type UseGoalsReturn = {
 };
 
 export function useGoals(): UseGoalsReturn {
-  const [goals, setGoals] = useState<GoalRecord[]>([]);
-  const [steps, setSteps] = useState<GoalStepRecord[]>([]);
-  const [uiState, setUiState] = useState<GoalUiState>('loading');
-  const [goalsLoaded, setGoalsLoaded] = useState(false);
-  const [stepsLoaded, setStepsLoaded] = useState(false);
+  const userId = getFirebaseAuth().currentUser?.uid ?? null;
+  const cached = userId ? goalSubscriptionCache.get(userId) : undefined;
+  const hasCachedData = Boolean(cached);
+  const [goals, setGoals] = useState<GoalRecord[]>(cached?.goals ?? []);
+  const [steps, setSteps] = useState<GoalStepRecord[]>(cached?.steps ?? []);
+  const [uiState, setUiState] = useState<GoalUiState>(cached?.uiState ?? 'loading');
+  const [goalsLoaded, setGoalsLoaded] = useState(Boolean(cached));
+  const [stepsLoaded, setStepsLoaded] = useState(Boolean(cached));
   const [revision, setRevision] = useState(0);
 
   useEffect(() => {
-    const userId = getFirebaseAuth().currentUser?.uid;
-
     if (!userId) {
       setUiState('error');
       return;
     }
 
-    setUiState('loading');
+    if (!hasCachedData) {
+      setUiState('loading');
+    }
     setGoalsLoaded(false);
     setStepsLoaded(false);
 
@@ -100,9 +111,13 @@ export function useGoals(): UseGoalsReturn {
       unsubscribeGoals();
       unsubscribeSteps();
     };
-  }, [revision]);
+  }, [hasCachedData, revision, userId]);
 
   const retry = useCallback(() => {
+    const userId = getFirebaseAuth().currentUser?.uid;
+    if (userId) {
+      goalSubscriptionCache.delete(userId);
+    }
     setUiState('loading');
     setRevision((current) => current + 1);
   }, []);
@@ -138,8 +153,12 @@ export function useGoals(): UseGoalsReturn {
       return;
     }
 
-    setUiState(goalMap.length === 0 ? 'empty' : 'ready');
-  }, [goalMap.length, goalsLoaded, stepsLoaded]);
+    const nextUiState = goalMap.length === 0 ? 'empty' : 'ready';
+    setUiState(nextUiState);
+    if (userId) {
+      goalSubscriptionCache.set(userId, { goals, steps, uiState: nextUiState });
+    }
+  }, [goalMap.length, goals, goalsLoaded, steps, stepsLoaded, userId]);
 
   const createGoal = useCallback(async (input: CreateGoalInput): Promise<void> => {
     const userId = getFirebaseAuth().currentUser?.uid;
