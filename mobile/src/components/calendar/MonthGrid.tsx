@@ -12,6 +12,7 @@ type MonthGridProps = {
   eventDays: Set<number>; // day numbers (1–31) that have at least one event
   onSelectDate: (date: Date) => void;
   width: number; // page width supplied by parent
+  minDate?: Date;
 };
 
 const DAY_HEADERS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -77,6 +78,7 @@ export function MonthGrid({
   eventDays,
   onSelectDate,
   width,
+  minDate,
 }: MonthGridProps) {
   const styles = useThemedStyles(createStyles);
   const { theme } = useTheme();
@@ -110,14 +112,19 @@ export function MonthGrid({
             const isToday =
               today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
             const hasEvents = eventDays.has(day);
+            const isBeforeMinDate =
+              minDate !== undefined &&
+              new Date(year, month, day).getTime() <
+                new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate()).getTime();
 
             return (
               <View key={dayIdx} style={[styles.cell, { width: cellWidth }]}>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`${MONTH_NAMES[month]} ${day}, ${year}`}
-                  accessibilityState={{ selected: isSelected }}
+                  accessibilityState={{ selected: isSelected, disabled: isBeforeMinDate }}
                   onPress={() => onSelectDate(new Date(year, month, day))}
+                  disabled={isBeforeMinDate}
                   style={styles.dayPressTarget}
                 >
                   {({ pressed }) => (
@@ -142,6 +149,7 @@ export function MonthGrid({
                             color: isSelected ? '#F4F8FA' : theme.colors.text,
                             fontWeight: isSelected || isToday ? '700' : '400',
                           },
+                          isBeforeMinDate ? styles.disabledDay : null,
                         ]}
                       >
                         {day}
@@ -203,6 +211,9 @@ const createStyles = (theme: Theme) =>
       ...typography.body,
       fontSize: 15,
       color: theme.colors.text,
+    },
+    disabledDay: {
+      opacity: 0.35,
     },
     eventDot: {
       width: 5,

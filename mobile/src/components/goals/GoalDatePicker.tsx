@@ -1,39 +1,17 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
-import { AppCard } from '../ui/AppCard';
+import { IconButton } from '../ui/IconButton';
+import { MonthGrid, MONTH_NAMES } from '../calendar/MonthGrid';
 import { radii, spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
-
-export type GoalDateField = 'month' | 'day' | 'year';
 
 export type GoalDateParts = {
   month: number;
   day: number;
   year: number;
 };
-
-export type DatePickerOption = {
-  value: number;
-  label: string;
-};
-
-export const MONTH_OPTIONS = [
-  { value: 1, label: '01 - Jan' },
-  { value: 2, label: '02 - Feb' },
-  { value: 3, label: '03 - Mar' },
-  { value: 4, label: '04 - Apr' },
-  { value: 5, label: '05 - May' },
-  { value: 6, label: '06 - Jun' },
-  { value: 7, label: '07 - Jul' },
-  { value: 8, label: '08 - Aug' },
-  { value: 9, label: '09 - Sep' },
-  { value: 10, label: '10 - Oct' },
-  { value: 11, label: '11 - Nov' },
-  { value: 12, label: '12 - Dec' },
-] as const;
-
-export const YEAR_OPTION_COUNT = 51;
 
 export function addDays(date: Date, days: number): Date {
   const nextDate = new Date(date);
@@ -81,99 +59,191 @@ export function isFutureDate(date: Date, today: Date): boolean {
   return dateOnly.getTime() > todayOnly.getTime();
 }
 
+export function isTodayOrFutureDate(date: Date, today: Date): boolean {
+  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return dateOnly.getTime() >= todayOnly.getTime();
+}
+
 type GoalDatePickerProps = {
   title: string;
-  summaryLabel: string;
-  helperText: string;
   accessibilityPrefix: string;
   dateParts: GoalDateParts;
-  activeField: GoalDateField | null;
-  optionsByField: Record<GoalDateField, DatePickerOption[]>;
-  onToggleField: (field: GoalDateField) => void;
-  onSelectField: (field: GoalDateField, value: number) => void;
+  onSelectDate: (date: Date) => void;
 };
 
 export function GoalDatePicker({
   title,
-  summaryLabel,
-  helperText,
   accessibilityPrefix,
   dateParts,
-  activeField,
-  optionsByField,
-  onToggleField,
-  onSelectField,
+  onSelectDate,
 }: GoalDatePickerProps) {
   const styles = useThemedStyles(createStyles);
-  const activeOptions = activeField ? optionsByField[activeField] : [];
+  const { width: screenWidth } = useWindowDimensions();
+  const [overlay, setOverlay] = useState<'month' | 'year' | null>(null);
+  const [calendarWidth, setCalendarWidth] = useState(0);
+  const calendarDate = getGoalDateFromParts(dateParts);
+  const calendarYear = dateParts.year;
+  const calendarMonth = dateParts.month - 1;
+  const width = calendarWidth || Math.max(screenWidth - spacing.lg * 2, 280);
+  const today = useMemo(() => new Date(), []);
+  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const currentYear = todayOnly.getFullYear();
+  const currentMonth = todayOnly.getMonth();
+  const firstYear = Math.min(currentYear, calendarYear);
+  const yearOptions = Array.from({ length: 12 }, (_, index) => firstYear + index);
+
+  function makeDate(year: number, month: number): Date {
+    const day = Math.min(dateParts.day, getDayOptions(month + 1, year).length);
+    return new Date(year, month, day);
+  }
+
+  function selectMonth(month: number): void {
+    if (calendarYear === currentYear && month < currentMonth) {
+      return;
+    }
+    onSelectDate(makeDate(calendarYear, month));
+    setOverlay(null);
+  }
+
+  function selectYear(year: number): void {
+    if (year < currentYear) {
+      return;
+    }
+    onSelectDate(makeDate(year, calendarMonth));
+    setOverlay(null);
+  }
+
+  function shiftMonth(amount: number): void {
+    const shiftedDate = new Date(calendarYear, calendarMonth + amount, 1);
+    if (
+      amount < 0 &&
+      (shiftedDate.getFullYear() < currentYear ||
+        (shiftedDate.getFullYear() === currentYear && shiftedDate.getMonth() < currentMonth))
+    ) {
+      return;
+    }
+    onSelectDate(makeDate(shiftedDate.getFullYear(), shiftedDate.getMonth()));
+  }
 
   return (
     <View style={styles.section}>
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>{title}</Text>
-        <Text style={styles.dateSummary}>{summaryLabel}</Text>
-        <Text style={styles.dateHint}>{helperText}</Text>
       </View>
 
-      <View style={styles.dateFieldRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Open ${accessibilityPrefix} month dropdown`}
-          onPress={() => onToggleField('month')}
-          style={({ pressed }) => [styles.dateFieldButton, pressed ? styles.buttonPressed : null]}
-        >
-          <Text style={styles.dateFieldLabel}>Month</Text>
-          <Text style={styles.dateFieldValue}>{formatTwoDigits(dateParts.month)}</Text>
-        </Pressable>
+      <View
+        style={styles.calendarCard}
+        onLayout={(event) => setCalendarWidth(event.nativeEvent.layout.width)}
+      >
+        <View style={styles.todayRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Set ${accessibilityPrefix} date to today`}
+            onPress={() => onSelectDate(todayOnly)}
+            style={({ pressed }) => [styles.todayButton, pressed ? styles.buttonPressed : null]}
+          >
+            <Text style={styles.todayButtonText}>Today</Text>
+          </Pressable>
+        </View>
+        <View style={styles.monthNavRow}>
+          <IconButton
+            name="back"
+            accessibilityLabel={`Previous month for ${accessibilityPrefix}`}
+            onPress={() => shiftMonth(-1)}
+            disabled={
+              calendarYear === currentYear && calendarMonth === currentMonth
+                ? true
+                : calendarYear < currentYear ||
+                  (calendarYear === currentYear && calendarMonth < currentMonth)
+            }
+          />
+          <View style={styles.monthHeader}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Select ${accessibilityPrefix} month`}
+              onPress={() => setOverlay(overlay === 'month' ? null : 'month')}
+              style={({ pressed }) => [styles.headerButton, pressed ? styles.buttonPressed : null]}
+            >
+              <Text style={styles.monthHeaderText}>{MONTH_NAMES[calendarMonth]}</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Select ${accessibilityPrefix} year`}
+              onPress={() => setOverlay(overlay === 'year' ? null : 'year')}
+              style={({ pressed }) => [styles.headerButton, pressed ? styles.buttonPressed : null]}
+            >
+              <Text style={styles.monthHeaderText}>{calendarYear}</Text>
+            </Pressable>
+          </View>
+          <IconButton
+            name="back"
+            accessibilityLabel={`Next month for ${accessibilityPrefix}`}
+            onPress={() => shiftMonth(1)}
+            style={styles.nextIcon}
+          />
+        </View>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Open ${accessibilityPrefix} day dropdown`}
-          onPress={() => onToggleField('day')}
-          style={({ pressed }) => [styles.dateFieldButton, pressed ? styles.buttonPressed : null]}
-        >
-          <Text style={styles.dateFieldLabel}>Day</Text>
-          <Text style={styles.dateFieldValue}>{formatTwoDigits(dateParts.day)}</Text>
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Open ${accessibilityPrefix} year dropdown`}
-          onPress={() => onToggleField('year')}
-          style={({ pressed }) => [styles.dateFieldButton, pressed ? styles.buttonPressed : null]}
-        >
-          <Text style={styles.dateFieldLabel}>Year</Text>
-          <Text style={styles.dateFieldValue}>{dateParts.year}</Text>
-        </Pressable>
-      </View>
-
-      {activeField ? (
-        <AppCard style={styles.dropdownCard}>
-          <Text style={styles.dropdownTitle}>
-            {activeField === 'month'
-              ? 'Select month'
-              : activeField === 'day'
-                ? 'Select day'
-                : 'Select year'}
-          </Text>
-          <ScrollView style={styles.dropdownList} nestedScrollEnabled>
-            {activeOptions.map((option) => (
+        {overlay === 'month' ? (
+          <View style={styles.selectionGrid}>
+            {MONTH_NAMES.map((month, index) => (
               <Pressable
-                key={`${accessibilityPrefix}-${activeField}-${option.value}`}
+                key={month}
                 accessibilityRole="button"
-                accessibilityLabel={`Select ${accessibilityPrefix} ${activeField} ${option.label}`}
-                onPress={() => onSelectField(activeField, option.value)}
+                accessibilityLabel={`Select ${accessibilityPrefix} ${month}`}
+                accessibilityState={{ selected: index === calendarMonth }}
+                onPress={() => selectMonth(index)}
+                disabled={
+                  calendarYear < currentYear ||
+                  (calendarYear === currentYear && index < currentMonth)
+                }
                 style={({ pressed }) => [
-                  styles.dropdownOption,
+                  styles.selectionOption,
+                  index === calendarMonth ? styles.selectionOptionSelected : null,
+                  calendarYear < currentYear ||
+                  (calendarYear === currentYear && index < currentMonth)
+                    ? styles.disabledOption
+                    : null,
                   pressed ? styles.buttonPressed : null,
                 ]}
               >
-                <Text style={styles.dropdownOptionText}>{option.label}</Text>
+                <Text style={styles.selectionOptionText}>{month.slice(0, 3)}</Text>
               </Pressable>
             ))}
-          </ScrollView>
-        </AppCard>
-      ) : null}
+          </View>
+        ) : overlay === 'year' ? (
+          <View style={styles.selectionGrid}>
+            {yearOptions.map((year) => (
+              <Pressable
+                key={year}
+                accessibilityRole="button"
+                accessibilityLabel={`Select ${accessibilityPrefix} year ${year}`}
+                accessibilityState={{ selected: year === calendarYear }}
+                onPress={() => selectYear(year)}
+                disabled={year < currentYear}
+                style={({ pressed }) => [
+                  styles.selectionOption,
+                  year === calendarYear ? styles.selectionOptionSelected : null,
+                  year < currentYear ? styles.disabledOption : null,
+                  pressed ? styles.buttonPressed : null,
+                ]}
+              >
+                <Text style={styles.selectionOptionText}>{year}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : (
+          <MonthGrid
+            year={calendarYear}
+            month={calendarMonth}
+            selectedDate={calendarDate}
+            eventDays={new Set()}
+            onSelectDate={onSelectDate}
+            width={width}
+            minDate={todayOnly}
+          />
+        )}
+      </View>
     </View>
   );
 }
@@ -190,58 +260,71 @@ const createStyles = (theme: Theme) =>
       ...typography.label,
       color: theme.colors.textSecondary,
     },
-    dateFieldRow: {
-      flexDirection: 'row',
-      gap: spacing.sm,
-    },
-    dateFieldButton: {
-      flex: 1,
-      minHeight: 44,
-      borderRadius: radii.md,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.md,
-      gap: spacing.xs,
-    },
-    dateFieldLabel: {
-      ...typography.label,
-      color: theme.colors.textSecondary,
-    },
-    dateFieldValue: {
-      ...typography.body,
-      color: theme.colors.text,
-    },
-    dateSummary: {
-      ...typography.body,
-      color: theme.colors.text,
-    },
-    dateHint: {
-      ...typography.helper,
-      color: theme.colors.textSecondary,
-    },
-    dropdownCard: {
-      gap: spacing.sm,
-      paddingVertical: spacing.md,
-    },
-    dropdownTitle: {
-      ...typography.helper,
-      color: theme.colors.textSecondary,
-      fontWeight: '700',
-    },
-    dropdownList: {
-      maxHeight: 176,
-    },
-    dropdownOption: {
-      minHeight: 44,
-      borderRadius: radii.md,
-      paddingHorizontal: spacing.md,
+    calendarCard: {
+      paddingHorizontal: 0,
       paddingVertical: spacing.sm,
     },
-    dropdownOptionText: {
+    todayRow: {
+      alignItems: 'flex-end',
+      paddingHorizontal: spacing.md,
+    },
+    todayButton: {
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+    },
+    todayButtonText: {
+      ...typography.label,
+      color: theme.colors.brand,
+      fontWeight: '700',
+    },
+    monthNavRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.sm,
+    },
+    monthHeader: {
+      flex: 1,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: spacing.xs,
+    },
+    headerButton: {
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: spacing.xs,
+    },
+    monthHeaderText: {
+      ...typography.sectionTitle,
+      color: theme.colors.text,
+      fontSize: 18,
+    },
+    nextIcon: {
+      transform: [{ rotate: '180deg' }],
+    },
+    selectionGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      padding: spacing.sm,
+      gap: spacing.xs,
+    },
+    selectionOption: {
+      width: '31.5%',
+      minHeight: 42,
+      borderRadius: radii.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    selectionOptionSelected: {
+      backgroundColor: theme.colors.brand,
+    },
+    disabledOption: {
+      opacity: 0.35,
+    },
+    selectionOptionText: {
       ...typography.body,
-      color: theme.colors.textPrimary,
+      color: theme.colors.text,
     },
     buttonPressed: {
       opacity: 0.86,

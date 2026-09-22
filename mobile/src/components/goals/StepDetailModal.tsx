@@ -7,18 +7,12 @@ import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { FormField } from '../ui/FormField';
 import {
-  GoalDateField,
   GoalDateParts,
   GoalDatePicker,
-  MONTH_OPTIONS,
-  YEAR_OPTION_COUNT,
   buildDefaultGoalDateParts,
   buildGoalDateParts,
-  formatGoalDateParts,
-  formatTwoDigits,
-  getDayOptions,
   getGoalDateFromParts,
-  isFutureDate,
+  isTodayOrFutureDate,
 } from './GoalDatePicker';
 import { radii, spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
@@ -92,18 +86,9 @@ export function StepDetailModal({
   const [description, setDescription] = useState('');
   const [starter, setStarter] = useState('');
   const [dateParts, setDateParts] = useState<GoalDateParts>({ month: 1, day: 1, year: 2026 });
-  const [activeDateField, setActiveDateField] = useState<GoalDateField | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const today = useMemo(() => new Date(), []);
-  const yearOptions = useMemo(
-    () => Array.from({ length: YEAR_OPTION_COUNT }, (_, index) => today.getFullYear() + index),
-    [today],
-  );
-  const dayOptions = useMemo(
-    () => getDayOptions(dateParts.month, dateParts.year),
-    [dateParts.month, dateParts.year],
-  );
 
   useEffect(() => {
     if (!step || !visible) {
@@ -119,23 +104,12 @@ export function StepDetailModal({
         ? buildGoalDateParts(step.estimatedFinishDate)
         : buildDefaultGoalDateParts(today),
     );
-    setActiveDateField(null);
     setSaving(false);
     setError(null);
   }, [step, today, visible]);
 
-  function updateDateField(field: GoalDateField, value: number): void {
-    setDateParts((current) => {
-      const next = { ...current, [field]: value };
-      const validDays = getDayOptions(next.month, next.year);
-
-      if (!validDays.includes(next.day)) {
-        next.day = validDays[validDays.length - 1];
-      }
-
-      return next;
-    });
-    setActiveDateField(null);
+  function updateDate(date: Date): void {
+    setDateParts(buildGoalDateParts(date));
     setError(null);
   }
 
@@ -150,8 +124,8 @@ export function StepDetailModal({
     }
 
     const parsedDate = getGoalDateFromParts(dateParts);
-    if (!isFutureDate(parsedDate, today)) {
-      setError('Estimated finish date must be in the future.');
+    if (!isTodayOrFutureDate(parsedDate, today)) {
+      setError('Estimated finish date must be today or later.');
       return;
     }
 
@@ -250,23 +224,9 @@ export function StepDetailModal({
               <View style={styles.fieldGroup}>
                 <GoalDatePicker
                   title="Estimated finish date"
-                  summaryLabel={`Selected date: ${formatGoalDateParts(dateParts)}`}
-                  helperText="Format: MM-DD-YYYY"
                   accessibilityPrefix="edit step target"
                   dateParts={dateParts}
-                  activeField={activeDateField}
-                  optionsByField={{
-                    month: MONTH_OPTIONS.map((option) => ({
-                      value: option.value,
-                      label: option.label,
-                    })),
-                    day: dayOptions.map((day) => ({ value: day, label: formatTwoDigits(day) })),
-                    year: yearOptions.map((year) => ({ value: year, label: String(year) })),
-                  }}
-                  onToggleField={(field) =>
-                    setActiveDateField((current) => (current === field ? null : field))
-                  }
-                  onSelectField={updateDateField}
+                  onSelectDate={updateDate}
                 />
               </View>
 

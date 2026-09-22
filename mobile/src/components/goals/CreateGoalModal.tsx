@@ -13,17 +13,13 @@ import { CreditPackPurchaseModal } from '../premium/CreditPackPurchaseModal';
 import { FormField } from '../ui/FormField';
 import { IconButton } from '../ui/IconButton';
 import {
-  GoalDateField,
   GoalDateParts,
   GoalDatePicker,
-  MONTH_OPTIONS,
-  YEAR_OPTION_COUNT,
   buildDefaultGoalDateParts,
-  formatGoalDateParts,
+  buildGoalDateParts,
   formatTwoDigits,
-  getDayOptions,
   getGoalDateFromParts,
-  isFutureDate,
+  isTodayOrFutureDate,
 } from './GoalDatePicker';
 import { radii, spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
@@ -53,7 +49,6 @@ type CreateGoalModalProps = {
 type DraftGoalStep = CreateGoalStepInput & {
   id: string;
   dateParts: GoalDateParts;
-  activeDateField: GoalDateField | null;
 };
 
 const WIZARD_TITLES = [
@@ -82,7 +77,6 @@ function makeEmptyDraftStep(index: number, baseDate: Date): DraftGoalStep {
     starter: '',
     estimatedFinishDate: getGoalDateFromParts(defaultDateParts),
     dateParts: defaultDateParts,
-    activeDateField: null,
   };
 }
 
@@ -111,7 +105,7 @@ function parseAiDateParts(
     return goalTargetDateParts;
   }
 
-  if (!isFutureDate(parsedDate, currentDate)) {
+  if (!isTodayOrFutureDate(parsedDate, currentDate)) {
     return buildDefaultGoalDateParts(currentDate);
   }
 
@@ -147,7 +141,6 @@ export function CreateGoalModal({
   const [goalDateParts, setGoalDateParts] = useState<GoalDateParts>(() =>
     buildDefaultGoalDateParts(today),
   );
-  const [activeGoalDateField, setActiveGoalDateField] = useState<GoalDateField | null>(null);
   const [draftSteps, setDraftSteps] = useState<DraftGoalStep[]>([makeEmptyDraftStep(1, today)]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -204,7 +197,6 @@ export function CreateGoalModal({
     setTitle('');
     setDescription('');
     setGoalDateParts(buildDefaultGoalDateParts(today));
-    setActiveGoalDateField(null);
     setDraftSteps([makeEmptyDraftStep(1, today)]);
     setSaving(false);
     setError(null);
@@ -278,7 +270,6 @@ export function CreateGoalModal({
             starter: step.starter,
             estimatedFinishDate: getGoalDateFromParts(dateParts),
             dateParts,
-            activeDateField: null,
           };
         }),
       );
@@ -307,65 +298,27 @@ export function CreateGoalModal({
     }
   }
 
-  function toggleDraftStepDateField(id: string, field: GoalDateField): void {
+  function updateDraftStepDate(id: string, date: Date): void {
     setDraftSteps((current) =>
       current.map((step) => {
         if (step.id !== id) {
-          return {
-            ...step,
-            activeDateField: null,
-          };
+          return step;
         }
 
-        return {
-          ...step,
-          activeDateField: step.activeDateField === field ? null : field,
-        };
-      }),
-    );
-    setError(null);
-  }
-
-  function updateDraftStepDateField(id: string, field: GoalDateField, value: number): void {
-    setDraftSteps((current) =>
-      current.map((step) => {
-        if (step.id !== id) {
-          return {
-            ...step,
-            activeDateField: null,
-          };
-        }
-
-        const nextDateParts = { ...step.dateParts, [field]: value };
-        const validDays = getDayOptions(nextDateParts.month, nextDateParts.year);
-
-        if (!validDays.includes(nextDateParts.day)) {
-          nextDateParts.day = validDays[validDays.length - 1];
-        }
+        const nextDateParts = buildGoalDateParts(date);
 
         return {
           ...step,
           dateParts: nextDateParts,
           estimatedFinishDate: getGoalDateFromParts(nextDateParts),
-          activeDateField: null,
         };
       }),
     );
     setError(null);
   }
 
-  function updateGoalDateField(field: GoalDateField, value: number): void {
-    setGoalDateParts((current) => {
-      const next = { ...current, [field]: value };
-      const validDays = getDayOptions(next.month, next.year);
-
-      if (!validDays.includes(next.day)) {
-        next.day = validDays[validDays.length - 1];
-      }
-
-      return next;
-    });
-    setActiveGoalDateField(null);
+  function updateGoalDate(date: Date): void {
+    setGoalDateParts(buildGoalDateParts(date));
     setError(null);
   }
 
@@ -386,8 +339,8 @@ export function CreateGoalModal({
 
     if (wizardIndex === 2) {
       const selectedDate = getGoalDateFromParts(goalDateParts);
-      if (!isFutureDate(selectedDate, currentDate)) {
-        setError('Estimated completion date must be in the future.');
+      if (!isTodayOrFutureDate(selectedDate, currentDate)) {
+        setError('Estimated completion date must be today or later.');
         return false;
       }
     }
@@ -400,11 +353,12 @@ export function CreateGoalModal({
       }
 
       const invalidStepIndex = filledSteps.findIndex(
-        (step) => !step.estimatedFinishDate || !isFutureDate(step.estimatedFinishDate, currentDate),
+        (step) =>
+          !step.estimatedFinishDate || !isTodayOrFutureDate(step.estimatedFinishDate, currentDate),
       );
 
       if (invalidStepIndex !== -1) {
-        setError(`Step ${invalidStepIndex + 1} estimated finish date must be in the future.`);
+        setError(`Step ${invalidStepIndex + 1} estimated finish date must be today or later.`);
         return false;
       }
 
@@ -437,12 +391,10 @@ export function CreateGoalModal({
     }
 
     const parsedDate = getGoalDateFromParts(goalDateParts);
-    if (!isFutureDate(parsedDate, today)) {
-      setError('Estimated completion date must be in the future.');
+    if (!isTodayOrFutureDate(parsedDate, today)) {
+      setError('Estimated completion date must be today or later.');
       return;
     }
-
-    setActiveGoalDateField(null);
 
     setSaving(true);
     setError(null);
@@ -482,15 +434,6 @@ export function CreateGoalModal({
       setSaving(false);
     }
   }
-
-  const yearOptions = useMemo(
-    () => Array.from({ length: YEAR_OPTION_COUNT }, (_, index) => today.getFullYear() + index),
-    [today],
-  );
-  const dayOptions = useMemo(
-    () => getDayOptions(goalDateParts.month, goalDateParts.year),
-    [goalDateParts.month, goalDateParts.year],
-  );
 
   return (
     <>
@@ -763,23 +706,9 @@ export function CreateGoalModal({
           {wizardIndex === 2 ? (
             <GoalDatePicker
               title="Estimated completion date"
-              summaryLabel={`Selected date: ${formatGoalDateParts(goalDateParts)}`}
-              helperText="Format: MM-DD-YYYY"
               accessibilityPrefix="goal target"
               dateParts={goalDateParts}
-              activeField={activeGoalDateField}
-              optionsByField={{
-                month: MONTH_OPTIONS.map((option) => ({
-                  value: option.value,
-                  label: option.label,
-                })),
-                day: dayOptions.map((day) => ({ value: day, label: formatTwoDigits(day) })),
-                year: yearOptions.map((year) => ({ value: year, label: String(year) })),
-              }}
-              onToggleField={(field) =>
-                setActiveGoalDateField((current) => (current === field ? null : field))
-              }
-              onSelectField={updateGoalDateField}
+              onSelectDate={updateGoalDate}
             />
           ) : null}
 
@@ -819,26 +748,9 @@ export function CreateGoalModal({
 
                   <GoalDatePicker
                     title="Estimated finish date"
-                    summaryLabel={`Selected date: ${formatGoalDateParts(step.dateParts)}`}
-                    helperText="Format: MM-DD-YYYY"
                     accessibilityPrefix={`draft step ${index + 1}`}
                     dateParts={step.dateParts}
-                    activeField={step.activeDateField}
-                    optionsByField={{
-                      month: MONTH_OPTIONS.map((option) => ({
-                        value: option.value,
-                        label: option.label,
-                      })),
-                      day: getDayOptions(step.dateParts.month, step.dateParts.year).map((day) => ({
-                        value: day,
-                        label: formatTwoDigits(day),
-                      })),
-                      year: yearOptions.map((year) => ({ value: year, label: String(year) })),
-                    }}
-                    onToggleField={(field) => toggleDraftStepDateField(step.id, field)}
-                    onSelectField={(field, value) =>
-                      updateDraftStepDateField(step.id, field, value)
-                    }
+                    onSelectDate={(date) => updateDraftStepDate(step.id, date)}
                   />
                 </AppCard>
               ))}
