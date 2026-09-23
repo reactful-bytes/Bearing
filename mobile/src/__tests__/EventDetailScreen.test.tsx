@@ -20,13 +20,16 @@ jest.mock('../components/calendar/EventDetailModal', () => {
     EventDetailModal: ({
       event,
       onClose,
+      onEdit,
     }: {
       event: CalendarDisplayEvent;
       onClose: () => void;
+      onEdit: () => void;
     }) => (
       <>
         <Text>{event.title}</Text>
         <Button title="Close event" onPress={onClose} />
+        <Button title="Edit event" onPress={onEdit} />
       </>
     ),
   };
@@ -86,10 +89,11 @@ describe('EventDetailScreen', () => {
     } as never);
 
     const goBack = jest.fn();
+    const navigate = jest.fn();
     render(
       <EventDetailScreen
         route={{ params: { eventId: event.id, dateIso: event.startAt.toISOString() } }}
-        navigation={{ goBack }}
+        navigation={{ goBack, navigate }}
       />,
     );
 
@@ -98,5 +102,10 @@ describe('EventDetailScreen', () => {
 
     fireEvent.press(screen.getByText('Close event'));
     expect(goBack).toHaveBeenCalledTimes(1);
+    fireEvent.press(screen.getByText('Edit event'));
+    expect(navigate).toHaveBeenCalledWith('EventEdit', {
+      eventId: event.id,
+      dateIso: event.startAt.toISOString(),
+    });
   });
 });

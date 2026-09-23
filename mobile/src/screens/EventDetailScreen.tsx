@@ -12,7 +12,10 @@ import { DEFAULT_TIME_FORMAT } from '../features/profile/timeFormat';
 
 type EventDetailScreenProps = {
   route: { params: CalendarStackParamList['EventDetail'] };
-  navigation: { goBack: () => void };
+  navigation: {
+    goBack: () => void;
+    navigate: (screen: 'EventEdit', params: CalendarStackParamList['EventEdit']) => void;
+  };
 };
 
 export function EventDetailScreen({ route, navigation }: EventDetailScreenProps) {
@@ -58,13 +61,16 @@ export function EventDetailScreen({ route, navigation }: EventDetailScreenProps)
   return (
     <EventDetailModal
       event={event}
+      embedded
+      onEdit={() =>
+        navigation.navigate('EventEdit', {
+          eventId: event.id,
+          dateIso: event.startAt.toISOString(),
+        })
+      }
       onClose={navigation.goBack}
-      onUpdate={async (selectedEvent, input) => {
-        await updateEvent(selectedEvent, input);
-      }}
-      onDelete={async (selectedEvent) => {
-        await deleteEvent(selectedEvent);
-      }}
+      onUpdate={async (selectedEvent, input) => updateEvent(selectedEvent, input)}
+      onDelete={async (selectedEvent) => deleteEvent(selectedEvent)}
       onRetryPublication={retryPublication}
       locale={profile?.locale}
       timeFormat={profile?.timeFormat ?? DEFAULT_TIME_FORMAT}

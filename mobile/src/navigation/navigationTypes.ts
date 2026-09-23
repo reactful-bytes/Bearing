@@ -38,6 +38,7 @@ export type CalendarStackParamList = {
   CalendarHome:
     { focusLaunch?: CalendarFocusLaunch; createEvent?: boolean; dateIso?: string } | undefined;
   EventDetail: { eventId: string; dateIso?: string };
+  EventEdit: { eventId: string; dateIso?: string };
   CalendarSources: undefined;
   CreateEvent: { goalId?: string; stepId?: string; returnTo?: string } | undefined;
   CreateTask: { goalId?: string; stepId?: string; returnTo?: string } | undefined;

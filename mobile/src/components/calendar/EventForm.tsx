@@ -1,12 +1,23 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  StyleProp,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+  ViewStyle,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../../design/ThemeProvider';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppButton } from '../ui/AppButton';
 import { FormField } from '../ui/FormField';
+import { ListItem } from '../ui/ListItem';
 import { EventDateTimePickerField } from './EventDateTimePickerField';
+import { TimeZoneModal } from '../ui/TimeZoneModal';
 import { radii, spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
 import {
@@ -23,8 +34,10 @@ import {
   parseCalendarEventForm,
 } from '../../features/calendar/eventEditor';
 import { DEFAULT_TIME_FORMAT, TimeFormat } from '../../features/profile/timeFormat';
+import { getSelectionLabel } from '../../features/options/selectionOptions';
+import { TIMEZONE_OPTIONS } from '../../features/timezone/timezoneOptions';
 
-type EventFormProps = {
+export type EventFormProps = {
   active: boolean;
   initialDate: Date;
   initialValues?: Partial<CreateEventInput>;
@@ -33,6 +46,7 @@ type EventFormProps = {
   timeFormat?: TimeFormat;
   saveLabel?: string;
   fullScreen?: boolean;
+  contentContainerStyle?: StyleProp<ViewStyle>;
   header?: ReactNode;
   onSave: (input: CreateEventInput, options: CreateEventOptions) => Promise<void>;
 };
@@ -103,6 +117,7 @@ export function EventForm({
   timeFormat = DEFAULT_TIME_FORMAT,
   saveLabel = 'Save Event',
   fullScreen = false,
+  contentContainerStyle,
   header,
   onSave,
 }: EventFormProps) {
@@ -117,6 +132,7 @@ export function EventForm({
   const [saving, setSaving] = useState(false);
   const [publishToDevice, setPublishToDevice] = useState(false);
   const [activeAlertSelector, setActiveAlertSelector] = useState<AlertSelector | null>(null);
+  const [timezonePickerVisible, setTimezonePickerVisible] = useState(false);
 
   useEffect(() => {
     if (!active) return;
@@ -126,6 +142,7 @@ export function EventForm({
     setSaving(false);
     setPublishToDevice(false);
     setActiveAlertSelector(null);
+    setTimezonePickerVisible(false);
   }, [active, initialDate, initialValues]);
 
   function updateValue<Key extends keyof CalendarEventFormValues>(
@@ -198,392 +215,403 @@ export function EventForm({
   }
 
   return (
-    <ScrollView
-      style={styles.scrollView}
-      contentContainerStyle={[
-        styles.content,
-        fullScreen ? { paddingTop: insets.top, paddingBottom: spacing.sm + insets.bottom } : null,
-      ]}
-      keyboardShouldPersistTaps="handled"
-    >
-      {header}
-      <FormField
-        label="Title"
-        value={values.title}
-        onChangeText={(value) => updateValue('title', value)}
-        placeholder="Event title"
-        placeholderTextColor={theme.colors.textSecondary}
-        autoCapitalize="sentences"
-        returnKeyType="next"
-        accessibilityLabel="Event title"
-        labelStyle={styles.compactLabel}
-        inputStyle={styles.input}
-      />
-
-      <FormField
-        label="Description (optional)"
-        value={values.description}
-        onChangeText={(value) => updateValue('description', value)}
-        placeholder="Add notes"
-        placeholderTextColor={theme.colors.textSecondary}
-        multiline
-        accessibilityLabel="Event description"
-        labelStyle={styles.compactLabel}
-        inputStyle={styles.textArea}
-      />
-
-      <View style={styles.switchRow}>
-        <Text style={styles.fieldLabel}>All day</Text>
-        <Switch
-          value={values.allDay}
-          onValueChange={handleAllDayChange}
-          trackColor={{ false: theme.colors.border, true: theme.colors.surfaceBrand }}
-          thumbColor={values.allDay ? theme.colors.brand : theme.colors.textSecondary}
-          accessibilityLabel="All-day event"
+    <>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.content,
+          fullScreen
+            ? {
+                paddingTop: insets.top,
+                paddingBottom: spacing.sm + insets.bottom,
+              }
+            : null,
+          contentContainerStyle,
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        {header}
+        <FormField
+          label="Title"
+          value={values.title}
+          onChangeText={(value) => updateValue('title', value)}
+          placeholder="Event title"
+          placeholderTextColor={theme.colors.textSecondary}
+          autoCapitalize="sentences"
+          returnKeyType="next"
+          accessibilityLabel="Event title"
+          labelStyle={styles.compactLabel}
+          inputStyle={styles.input}
         />
-      </View>
 
-      <View style={styles.dateRow}>
-        <EventDateTimePickerField
-          label="Start date"
-          containerStyle={styles.flexField}
-          value={values.startDate}
-          accessibilityLabel="Start date"
-          mode="date"
-          dateValue={values.startDate}
-          timeValue={values.allDay ? '00:00' : values.startTime}
-          timezone={values.timezone}
-          locale={locale}
-          timeFormat={timeFormat}
-          compact
-          onChange={(value) => updateValue('startDate', value)}
+        <FormField
+          label="Description (optional)"
+          value={values.description}
+          onChangeText={(value) => updateValue('description', value)}
+          placeholder="Add notes"
+          placeholderTextColor={theme.colors.textSecondary}
+          multiline
+          accessibilityLabel="Event description"
+          labelStyle={styles.compactLabel}
+          inputStyle={styles.textArea}
         />
-        <EventDateTimePickerField
-          label="End date"
-          containerStyle={styles.flexField}
-          value={values.endDate}
-          accessibilityLabel="End date"
-          mode="date"
-          dateValue={values.endDate}
-          timeValue={values.allDay ? '00:00' : values.endTime}
-          timezone={values.timezone}
-          locale={locale}
-          timeFormat={timeFormat}
-          compact
-          onChange={(value) => updateValue('endDate', value)}
-        />
-      </View>
 
-      {!values.allDay ? (
+        <View style={styles.switchRow}>
+          <Text style={styles.fieldLabel}>All day</Text>
+          <Switch
+            value={values.allDay}
+            onValueChange={handleAllDayChange}
+            trackColor={{ false: theme.colors.border, true: theme.colors.surfaceBrand }}
+            thumbColor={values.allDay ? theme.colors.brand : theme.colors.textSecondary}
+            accessibilityLabel="All-day event"
+          />
+        </View>
+
         <View style={styles.dateRow}>
           <EventDateTimePickerField
-            label="Start time"
+            label="Start date"
             containerStyle={styles.flexField}
-            value={values.startTime}
-            accessibilityLabel="Start time"
-            mode="time"
+            value={values.startDate}
+            accessibilityLabel="Start date"
+            mode="date"
             dateValue={values.startDate}
-            timeValue={values.startTime}
+            timeValue={values.allDay ? '00:00' : values.startTime}
             timezone={values.timezone}
             locale={locale}
             timeFormat={timeFormat}
             compact
-            onChange={(value) => updateValue('startTime', value)}
+            onChange={(value) => updateValue('startDate', value)}
           />
           <EventDateTimePickerField
-            label="End time"
+            label="End date"
             containerStyle={styles.flexField}
-            value={values.endTime}
-            accessibilityLabel="End time"
-            mode="time"
+            value={values.endDate}
+            accessibilityLabel="End date"
+            mode="date"
             dateValue={values.endDate}
-            timeValue={values.endTime}
+            timeValue={values.allDay ? '00:00' : values.endTime}
             timezone={values.timezone}
             locale={locale}
             timeFormat={timeFormat}
             compact
-            onChange={(value) => updateValue('endTime', value)}
+            onChange={(value) => updateValue('endDate', value)}
           />
         </View>
-      ) : null}
 
-      {publicationCalendarTitle ? (
-        <View style={styles.switchRow}>
-          <View style={styles.switchLabelGroup}>
-            <Text style={styles.fieldLabel}>Add to {publicationCalendarTitle}</Text>
-            <Text style={styles.helperText}>Creates a linked copy in your device calendar.</Text>
+        {!values.allDay ? (
+          <View style={styles.dateRow}>
+            <EventDateTimePickerField
+              label="Start time"
+              containerStyle={styles.flexField}
+              value={values.startTime}
+              accessibilityLabel="Start time"
+              mode="time"
+              dateValue={values.startDate}
+              timeValue={values.startTime}
+              timezone={values.timezone}
+              locale={locale}
+              timeFormat={timeFormat}
+              compact
+              onChange={(value) => updateValue('startTime', value)}
+            />
+            <EventDateTimePickerField
+              label="End time"
+              containerStyle={styles.flexField}
+              value={values.endTime}
+              accessibilityLabel="End time"
+              mode="time"
+              dateValue={values.endDate}
+              timeValue={values.endTime}
+              timezone={values.timezone}
+              locale={locale}
+              timeFormat={timeFormat}
+              compact
+              onChange={(value) => updateValue('endTime', value)}
+            />
           </View>
-          <Switch
-            value={publishToDevice}
-            onValueChange={setPublishToDevice}
-            trackColor={{ false: theme.colors.border, true: theme.colors.surfaceBrand }}
-            thumbColor={publishToDevice ? theme.colors.brand : theme.colors.textSecondary}
-            accessibilityLabel={`Add to ${publicationCalendarTitle}`}
-          />
-        </View>
-      ) : null}
+        ) : null}
 
-      <AppButton
-        label={advancedVisible ? 'Hide Advanced' : 'Advanced'}
-        variant="secondary"
-        accessibilityLabel={
-          advancedVisible ? 'Hide advanced event fields' : 'Show advanced event fields'
-        }
-        onPress={() => setAdvancedVisible((current) => !current)}
-        style={styles.advancedButton}
-      />
+        {publicationCalendarTitle ? (
+          <View style={styles.switchRow}>
+            <View style={styles.switchLabelGroup}>
+              <Text style={styles.fieldLabel}>Add to {publicationCalendarTitle}</Text>
+              <Text style={styles.helperText}>Creates a linked copy in your device calendar.</Text>
+            </View>
+            <Switch
+              value={publishToDevice}
+              onValueChange={setPublishToDevice}
+              trackColor={{ false: theme.colors.border, true: theme.colors.surfaceBrand }}
+              thumbColor={publishToDevice ? theme.colors.brand : theme.colors.textSecondary}
+              accessibilityLabel={`Add to ${publicationCalendarTitle}`}
+            />
+          </View>
+        ) : null}
 
-      {advancedVisible ? (
-        <View style={styles.advancedFields}>
-          <FormField
-            label="Timezone"
-            value={values.timezone}
-            onChangeText={(value) => updateValue('timezone', value)}
-            placeholder="America/New_York"
-            placeholderTextColor={theme.colors.textSecondary}
-            autoCapitalize="none"
-            autoCorrect={false}
-            accessibilityLabel="Event timezone"
-            labelStyle={styles.compactLabel}
-            inputStyle={styles.input}
-          />
+        <AppButton
+          label={advancedVisible ? 'Hide Advanced' : 'Advanced'}
+          variant="secondary"
+          accessibilityLabel={
+            advancedVisible ? 'Hide advanced event fields' : 'Show advanced event fields'
+          }
+          onPress={() => setAdvancedVisible((current) => !current)}
+          style={styles.advancedButton}
+        />
 
-          <FormField
-            label="Location"
-            value={values.location}
-            onChangeText={(value) => updateValue('location', value)}
-            placeholder="Add a location"
-            placeholderTextColor={theme.colors.textSecondary}
-            accessibilityLabel="Event location"
-            labelStyle={styles.compactLabel}
-            inputStyle={styles.input}
-          />
+        {advancedVisible ? (
+          <View style={styles.advancedFields}>
+            <ListItem
+              title="Time zone"
+              accessibilityLabel="Open event timezone picker"
+              onPress={() => setTimezonePickerVisible(true)}
+              trailingText={getSelectionLabel(TIMEZONE_OPTIONS, values.timezone, values.timezone)}
+            />
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Repeats</Text>
-            <View style={styles.optionWrap}>
-              {RECURRENCE_OPTIONS.map((option) => (
-                <Pressable
-                  key={option.value}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: values.recurrenceFrequency === option.value }}
-                  onPress={() => handleRecurrenceFrequencyChange(option.value)}
-                  style={[
-                    styles.option,
-                    values.recurrenceFrequency === option.value ? styles.optionSelected : null,
-                  ]}
-                >
-                  <Text
+            <FormField
+              label="Location"
+              value={values.location}
+              onChangeText={(value) => updateValue('location', value)}
+              placeholder="Add a location"
+              placeholderTextColor={theme.colors.textSecondary}
+              accessibilityLabel="Event location"
+              labelStyle={styles.compactLabel}
+              inputStyle={styles.input}
+            />
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Repeats</Text>
+              <View style={styles.optionWrap}>
+                {RECURRENCE_OPTIONS.map((option) => (
+                  <Pressable
+                    key={option.value}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: values.recurrenceFrequency === option.value }}
+                    onPress={() => handleRecurrenceFrequencyChange(option.value)}
                     style={[
-                      styles.optionText,
-                      values.recurrenceFrequency === option.value
-                        ? styles.optionTextSelected
-                        : null,
+                      styles.option,
+                      values.recurrenceFrequency === option.value ? styles.optionSelected : null,
                     ]}
                   >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-
-          {values.recurrenceFrequency === 'custom' ? (
-            <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Repeat on</Text>
-              <View style={styles.weekdayRow}>
-                {EVENT_WEEKDAYS.map((weekday) => {
-                  const selected = values.recurrenceWeekdays.includes(weekday);
-                  return (
-                    <Pressable
-                      key={weekday}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Repeat on ${WEEKDAY_LABELS[weekday].full}`}
-                      accessibilityState={{ selected }}
-                      onPress={() => handleWeekdayChange(weekday)}
-                      style={({ pressed }) => [
-                        styles.weekdayOption,
-                        selected ? styles.optionSelected : null,
-                        pressed ? styles.pressed : null,
+                    <Text
+                      style={[
+                        styles.optionText,
+                        values.recurrenceFrequency === option.value
+                          ? styles.optionTextSelected
+                          : null,
                       ]}
                     >
-                      <Text
-                        style={[styles.optionText, selected ? styles.optionTextSelected : null]}
-                      >
-                        {WEEKDAY_LABELS[weekday].short}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                ))}
               </View>
             </View>
-          ) : null}
 
-          {values.recurrenceFrequency !== 'none' ? (
-            <>
-              <FormField
-                label="Repeat interval"
-                value={values.recurrenceInterval}
-                onChangeText={(value) => updateValue('recurrenceInterval', value)}
-                keyboardType="number-pad"
-                accessibilityLabel="Recurrence interval"
-                labelStyle={styles.compactLabel}
-                inputStyle={styles.input}
-              />
-              <View style={styles.dateRow}>
-                <EventDateTimePickerField
-                  label="End date (optional)"
-                  containerStyle={styles.flexField}
-                  value={values.recurrenceEndDate}
-                  accessibilityLabel="Recurrence end date"
-                  mode="date"
-                  dateValue={values.recurrenceEndDate}
-                  fallbackDateValue={values.endDate}
-                  timeValue="12:00"
-                  timezone={values.timezone}
-                  locale={locale}
-                  timeFormat={timeFormat}
-                  compact
-                  allowClear
-                  onChange={(value) => updateValue('recurrenceEndDate', value)}
-                />
+            {values.recurrenceFrequency === 'custom' ? (
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>Repeat on</Text>
+                <View style={styles.weekdayRow}>
+                  {EVENT_WEEKDAYS.map((weekday) => {
+                    const selected = values.recurrenceWeekdays.includes(weekday);
+                    return (
+                      <Pressable
+                        key={weekday}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Repeat on ${WEEKDAY_LABELS[weekday].full}`}
+                        accessibilityState={{ selected }}
+                        onPress={() => handleWeekdayChange(weekday)}
+                        style={({ pressed }) => [
+                          styles.weekdayOption,
+                          selected ? styles.optionSelected : null,
+                          pressed ? styles.pressed : null,
+                        ]}
+                      >
+                        <Text
+                          style={[styles.optionText, selected ? styles.optionTextSelected : null]}
+                        >
+                          {WEEKDAY_LABELS[weekday].short}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : null}
+
+            {values.recurrenceFrequency !== 'none' ? (
+              <>
                 <FormField
-                  label="Occurrences (optional)"
-                  containerStyle={styles.flexField}
-                  value={values.recurrenceOccurrenceCount}
-                  onChangeText={(value) => updateValue('recurrenceOccurrenceCount', value)}
+                  label="Repeat interval"
+                  value={values.recurrenceInterval}
+                  onChangeText={(value) => updateValue('recurrenceInterval', value)}
                   keyboardType="number-pad"
-                  accessibilityLabel="Recurrence occurrences"
+                  accessibilityLabel="Recurrence interval"
                   labelStyle={styles.compactLabel}
                   inputStyle={styles.input}
                 />
+                <View style={styles.dateRow}>
+                  <EventDateTimePickerField
+                    label="End date (optional)"
+                    containerStyle={styles.flexField}
+                    value={values.recurrenceEndDate}
+                    accessibilityLabel="Recurrence end date"
+                    mode="date"
+                    dateValue={values.recurrenceEndDate}
+                    fallbackDateValue={values.endDate}
+                    timeValue="12:00"
+                    timezone={values.timezone}
+                    locale={locale}
+                    timeFormat={timeFormat}
+                    compact
+                    allowClear
+                    onChange={(value) => updateValue('recurrenceEndDate', value)}
+                  />
+                  <FormField
+                    label="Occurrences (optional)"
+                    containerStyle={styles.flexField}
+                    value={values.recurrenceOccurrenceCount}
+                    onChangeText={(value) => updateValue('recurrenceOccurrenceCount', value)}
+                    keyboardType="number-pad"
+                    accessibilityLabel="Recurrence occurrences"
+                    labelStyle={styles.compactLabel}
+                    inputStyle={styles.input}
+                  />
+                </View>
+              </>
+            ) : null}
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Alerts</Text>
+              <View style={styles.alertSelectorRow}>
+                {(
+                  [
+                    { label: 'First alert', selector: 'first', timing: values.firstAlertTiming },
+                    { label: 'Second alert', selector: 'second', timing: values.secondAlertTiming },
+                  ] as const
+                ).map(({ label, selector, timing }) => (
+                  <Pressable
+                    key={selector}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open ${label.toLowerCase()} selector`}
+                    onPress={() =>
+                      setActiveAlertSelector((current) => (current === selector ? null : selector))
+                    }
+                    style={({ pressed }) => [styles.alertSelector, pressed ? styles.pressed : null]}
+                  >
+                    <Text style={styles.alertSelectorLabel}>{label}</Text>
+                    <Text style={styles.alertSelectorValue}>{formatAlertTiming(timing)}</Text>
+                  </Pressable>
+                ))}
               </View>
-            </>
-          ) : null}
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Alerts</Text>
-            <View style={styles.alertSelectorRow}>
-              {(
-                [
-                  { label: 'First alert', selector: 'first', timing: values.firstAlertTiming },
-                  { label: 'Second alert', selector: 'second', timing: values.secondAlertTiming },
-                ] as const
-              ).map(({ label, selector, timing }) => (
-                <Pressable
-                  key={selector}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Open ${label.toLowerCase()} selector`}
-                  onPress={() =>
-                    setActiveAlertSelector((current) => (current === selector ? null : selector))
-                  }
-                  style={({ pressed }) => [styles.alertSelector, pressed ? styles.pressed : null]}
-                >
-                  <Text style={styles.alertSelectorLabel}>{label}</Text>
-                  <Text style={styles.alertSelectorValue}>{formatAlertTiming(timing)}</Text>
-                </Pressable>
-              ))}
-            </View>
-
-            {activeAlertSelector ? (
-              <View style={styles.alertOptions}>
-                {ALERT_TIMING_OPTIONS.map((option) => {
-                  const activeTiming =
-                    activeAlertSelector === 'first'
-                      ? values.firstAlertTiming
-                      : values.secondAlertTiming;
-                  const otherTiming =
-                    activeAlertSelector === 'first'
-                      ? values.secondAlertTiming
-                      : values.firstAlertTiming;
-                  const isSelected = activeTiming === option.value;
-                  const isUnavailable = option.value !== 'none' && otherTiming === option.value;
-                  return (
-                    <Pressable
-                      key={option.value}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Select ${
-                        activeAlertSelector === 'first' ? 'first' : 'second'
-                      } alert ${option.label}`}
-                      accessibilityState={{ disabled: isUnavailable, selected: isSelected }}
-                      disabled={isUnavailable}
-                      onPress={() => handleAlertTimingChange(activeAlertSelector, option.value)}
-                      style={({ pressed }) => [
-                        styles.alertOption,
-                        isSelected ? styles.alertOptionSelected : null,
-                        isUnavailable ? styles.alertOptionDisabled : null,
-                        pressed ? styles.pressed : null,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.alertOptionText,
-                          isSelected ? styles.alertOptionTextSelected : null,
-                          isUnavailable ? styles.alertOptionTextDisabled : null,
+              {activeAlertSelector ? (
+                <View style={styles.alertOptions}>
+                  {ALERT_TIMING_OPTIONS.map((option) => {
+                    const activeTiming =
+                      activeAlertSelector === 'first'
+                        ? values.firstAlertTiming
+                        : values.secondAlertTiming;
+                    const otherTiming =
+                      activeAlertSelector === 'first'
+                        ? values.secondAlertTiming
+                        : values.firstAlertTiming;
+                    const isSelected = activeTiming === option.value;
+                    const isUnavailable = option.value !== 'none' && otherTiming === option.value;
+                    return (
+                      <Pressable
+                        key={option.value}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Select ${
+                          activeAlertSelector === 'first' ? 'first' : 'second'
+                        } alert ${option.label}`}
+                        accessibilityState={{ disabled: isUnavailable, selected: isSelected }}
+                        disabled={isUnavailable}
+                        onPress={() => handleAlertTimingChange(activeAlertSelector, option.value)}
+                        style={({ pressed }) => [
+                          styles.alertOption,
+                          isSelected ? styles.alertOptionSelected : null,
+                          isUnavailable ? styles.alertOptionDisabled : null,
+                          pressed ? styles.pressed : null,
                         ]}
                       >
-                        {option.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ) : null}
-          </View>
+                        <Text
+                          style={[
+                            styles.alertOptionText,
+                            isSelected ? styles.alertOptionTextSelected : null,
+                            isUnavailable ? styles.alertOptionTextDisabled : null,
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : null}
+            </View>
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Availability</Text>
-            <View style={styles.optionWrap}>
-              {AVAILABILITY_OPTIONS.map((option) => (
-                <Pressable
-                  key={option.value}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: values.availability === option.value }}
-                  onPress={() => updateValue('availability', option.value)}
-                  style={[
-                    styles.option,
-                    values.availability === option.value ? styles.optionSelected : null,
-                  ]}
-                >
-                  <Text
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Availability</Text>
+              <View style={styles.optionWrap}>
+                {AVAILABILITY_OPTIONS.map((option) => (
+                  <Pressable
+                    key={option.value}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: values.availability === option.value }}
+                    onPress={() => updateValue('availability', option.value)}
                     style={[
-                      styles.optionText,
-                      values.availability === option.value ? styles.optionTextSelected : null,
+                      styles.option,
+                      values.availability === option.value ? styles.optionSelected : null,
                     ]}
                   >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              ))}
+                    <Text
+                      style={[
+                        styles.optionText,
+                        values.availability === option.value ? styles.optionTextSelected : null,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
+
+            <FormField
+              label="URL"
+              value={values.url}
+              onChangeText={(value) => updateValue('url', value)}
+              placeholder="https://"
+              placeholderTextColor={theme.colors.textSecondary}
+              keyboardType="url"
+              autoCapitalize="none"
+              autoCorrect={false}
+              accessibilityLabel="Event URL"
+              labelStyle={styles.compactLabel}
+              inputStyle={styles.input}
+            />
           </View>
+        ) : null}
 
-          <FormField
-            label="URL"
-            value={values.url}
-            onChangeText={(value) => updateValue('url', value)}
-            placeholder="https://"
-            placeholderTextColor={theme.colors.textSecondary}
-            keyboardType="url"
-            autoCapitalize="none"
-            autoCorrect={false}
-            accessibilityLabel="Event URL"
-            labelStyle={styles.compactLabel}
-            inputStyle={styles.input}
-          />
-        </View>
-      ) : null}
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-      <AppButton
-        label={saveLabel}
-        accessibilityLabel="Save event"
-        onPress={handleSave}
-        loading={saving}
-        loadingLabel="Saving..."
+        <AppButton
+          label={saveLabel}
+          accessibilityLabel="Save event"
+          onPress={handleSave}
+          loading={saving}
+          loadingLabel="Saving..."
+        />
+      </ScrollView>
+      <TimeZoneModal
+        visible={timezonePickerVisible}
+        selectedValue={values.timezone}
+        onClose={() => setTimezonePickerVisible(false)}
+        onSelect={(value) => {
+          updateValue('timezone', value);
+          setTimezonePickerVisible(false);
+        }}
       />
-    </ScrollView>
+    </>
   );
 }
 
@@ -591,6 +619,7 @@ const createStyles = (theme: Theme) =>
   StyleSheet.create({
     scrollView: {
       flexShrink: 1,
+      backgroundColor: theme.colors.background,
     },
     content: {
       gap: spacing.lg,

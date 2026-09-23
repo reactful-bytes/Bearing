@@ -1,17 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../../design/ThemeProvider';
 import { useThemedStyles } from '../../design/useThemedStyles';
+import { AppButton } from '../ui/AppButton';
+import { AppCard } from '../ui/AppCard';
 import { AppModal } from '../ui/AppModal';
-import { radii, spacing, typography } from '../../design/tokens';
+import { ListItem } from '../ui/ListItem';
+import { ScreenHeader } from '../ui/ScreenHeader';
+import { spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
 import {
   BearingEvent,
   CalendarDisplayEvent,
   CreateEventInput,
 } from '../../features/calendar/calendarTypes';
-import { EventForm } from './EventForm';
+import { EventEditForm } from './EventEditForm';
 import {
   DEFAULT_TIME_FORMAT,
   TimeFormat,
@@ -26,38 +31,62 @@ type EventDetailModalProps = {
   onRetryPublication?: (event: BearingEvent) => Promise<void>;
   locale?: string;
   timeFormat?: TimeFormat;
+  embedded?: boolean;
+  onEdit?: () => void;
 };
 
-const MONTH_NAMES_SHORT = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
-
-function formatTimeRange(startAt: Date, endAt: Date, timeFormat: TimeFormat): string {
-  return `${formatClockTime(startAt, timeFormat)} – ${formatClockTime(endAt, timeFormat)}`;
+function formatFullDate(date: Date, locale?: string): string {
+  return date.toLocaleDateString(locale, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
 
-function formatFullDate(date: Date): string {
-  const month = MONTH_NAMES_SHORT[date.getMonth()];
-  const day = date.getDate();
-  const year = date.getFullYear();
-  return `${month} ${day}, ${year}`;
+function formatEventTime(date: Date, allDay: boolean, timeFormat: TimeFormat): string {
+  return allDay ? 'All day' : formatClockTime(date, timeFormat);
 }
 
-function statusLabel(status: CalendarDisplayEvent['status']): string {
-  if (status === 'completed') return 'Completed';
-  if (status === 'canceled') return 'Canceled';
-  return 'Scheduled';
+function formatRecurrence(event: CalendarDisplayEvent): string {
+  const recurrence = event.recurrenceRule;
+  if (!recurrence) return 'Does not repeat';
+
+  const unit =
+    recurrence.frequency === 'daily'
+      ? 'day'
+      : recurrence.frequency === 'weekly'
+        ? 'week'
+        : recurrence.frequency === 'monthly'
+          ? 'month'
+          : 'year';
+  const repeatLabel = recurrence.interval === 1 ? unit : `${recurrence.interval} ${unit}s`;
+  const weekdayLabel =
+    recurrence.weekdays.length > 0
+      ? ` on ${recurrence.weekdays.map((weekday) => weekday.slice(0, 3)).join(', ')}`
+      : '';
+  const endLabel = recurrence.occurrenceCount
+    ? `, ${recurrence.occurrenceCount} times`
+    : recurrence.endAt
+      ? `, until ${formatFullDate(recurrence.endAt)}`
+      : '';
+
+  return `Every ${repeatLabel}${weekdayLabel}${endLabel}`;
+}
+
+function formatAvailability(availability: CalendarDisplayEvent['availability']): string {
+  return availability === 'not-supported'
+    ? 'Not supported'
+    : availability.charAt(0).toUpperCase() + availability.slice(1);
+}
+
+function formatAlert(alarm: CalendarDisplayEvent['alarms'][number]): string {
+  if (alarm.relativeOffsetMinutes === null) {
+    return alarm.absoluteAt ? `At ${formatFullDate(alarm.absoluteAt)}` : 'Custom alert';
+  }
+  if (alarm.relativeOffsetMinutes === 0) return 'At event time';
+  const minutes = Math.abs(alarm.relativeOffsetMinutes);
+  const unit = `${minutes} minute${minutes === 1 ? '' : 's'}`;
+  return `${unit} ${alarm.relativeOffsetMinutes < 0 ? 'before' : 'after'} event`;
 }
 
 export function EventDetailModal({
@@ -68,8 +97,11 @@ export function EventDetailModal({
   onRetryPublication,
   locale,
   timeFormat = DEFAULT_TIME_FORMAT,
+  embedded = false,
+  onEdit,
 }: EventDetailModalProps) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useThemedStyles(createStyles);
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -133,171 +165,206 @@ export function EventDetailModal({
       visible={event !== null}
       title={editing ? 'Edit Event' : 'Event Details'}
       onClose={handleClose}
+      fullScreen
+      hideHeader
+      embedded={embedded}
     >
       {event && editing ? (
-        <EventForm
+        <EventEditForm
           active
           initialDate={event.startAt}
           initialValues={event}
           saveLabel="Update Event"
           locale={locale}
           timeFormat={timeFormat}
+          fullScreen
+          header={
+            <ScreenHeader
+              title="Edit Event"
+              onPressBack={() => setEditing(false)}
+              backAccessibilityLabel="Back to event details"
+            />
+          }
           onSave={handleUpdate}
         />
       ) : event ? (
-        <>
-          <Text style={styles.eventTitle}>{event.title}</Text>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.content,
+            {
+              paddingTop: insets.top,
+              paddingBottom: spacing.xl + insets.bottom,
+              paddingHorizontal: embedded ? spacing.lg : 0,
+            },
+          ]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <ScreenHeader
+            title="Event Details"
+            onPressBack={handleClose}
+            backAccessibilityLabel="Back to calendar"
+          />
 
-          <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Calendar</Text>
-            <Text style={styles.metaValue}>
-              {event.ownership === 'bearing'
-                ? 'Bearing'
-                : `${event.calendarTitle} · ${event.sourceLabel}`}
-            </Text>
+          <View style={styles.section}>
+            <AppCard style={styles.eventCard}>
+              <Text style={styles.eventTitle}>{event.title}</Text>
+              {event.description ? (
+                <Text style={styles.description}>{event.description}</Text>
+              ) : null}
+            </AppCard>
           </View>
 
-          {event.ownership === 'bearing' ? (
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>Device copy</Text>
-              <Text style={styles.metaValue}>
-                {event.publication.status === 'published'
-                  ? 'Linked'
-                  : event.publication.status === 'publishing'
-                    ? 'Publishing'
-                    : event.publication.status === 'failed'
-                      ? 'Needs attention'
-                      : 'Not linked'}
-              </Text>
-            </View>
-          ) : null}
+          <View style={styles.section}>
+            <AppCard style={styles.detailsCard}>
+              <Text style={styles.detailsHeading}>Details</Text>
+              <View style={styles.timelineRow}>
+                <View accessibilityLabel="Event time" style={styles.timeline}>
+                  <View style={styles.timelineConnector} />
+                  <View style={styles.timelinePoint}>
+                    <View style={styles.timelineMarker} />
+                    <Text style={styles.timelineLabel}>Start</Text>
+                    <Text style={styles.timelineTime}>
+                      {formatEventTime(event.startAt, event.allDay, timeFormat)}
+                    </Text>
+                    <Text style={styles.timelineDate}>{formatFullDate(event.startAt, locale)}</Text>
+                  </View>
+                  <View style={styles.timelinePoint}>
+                    <View style={styles.timelineMarker} />
+                    <Text style={styles.timelineLabel}>End</Text>
+                    <Text style={styles.timelineTime}>
+                      {formatEventTime(event.endAt, event.allDay, timeFormat)}
+                    </Text>
+                    <Text style={styles.timelineDate}>{formatFullDate(event.endAt, locale)}</Text>
+                  </View>
+                </View>
+                <Text style={styles.timezoneText}>{event.timezone}</Text>
+              </View>
+              <ListItem
+                title="Calendar"
+                variant="row"
+                showDivider
+                trailingContent={
+                  <View style={styles.calendarValue}>
+                    <View
+                      style={[
+                        styles.sourceDot,
+                        {
+                          backgroundColor:
+                            event.ownership === 'device' && event.calendarColor
+                              ? event.calendarColor
+                              : theme.colors.brand,
+                        },
+                      ]}
+                    />
+                    <Text style={styles.calendarText}>
+                      {event.ownership === 'bearing' ? 'Bearing' : event.calendarTitle}
+                    </Text>
+                  </View>
+                }
+              />
+              <ListItem
+                title="Location"
+                variant="row"
+                showDivider
+                trailingText={event.location || 'No location'}
+                trailingTextColor={theme.colors.textSecondary}
+              />
+              <ListItem
+                title="Repeats"
+                variant="row"
+                showDivider
+                trailingText={formatRecurrence(event)}
+                trailingTextColor={theme.colors.textSecondary}
+              />
+              <ListItem
+                title="Alerts"
+                variant="row"
+                showDivider
+                trailingText={
+                  event.alarms.length > 0 ? event.alarms.map(formatAlert).join(', ') : 'No alerts'
+                }
+                trailingTextColor={theme.colors.textSecondary}
+              />
+              <ListItem
+                title="Availability"
+                variant="row"
+                showDivider
+                trailingText={formatAvailability(event.availability)}
+                trailingTextColor={theme.colors.textSecondary}
+              />
+              <ListItem
+                title="URL"
+                variant="row"
+                showDivider={false}
+                trailingText={event.url || 'No URL'}
+                trailingTextColor={theme.colors.textSecondary}
+              />
+            </AppCard>
+          </View>
 
           {event.ownership === 'bearing' && event.publication.lastError ? (
             <Text style={styles.errorText}>{event.publication.lastError}</Text>
           ) : null}
-
           {event.ownership === 'bearing' &&
           event.publication.retryable &&
           !event.publication.deletionIntent &&
           onRetryPublication ? (
-            <Pressable
-              accessibilityRole="button"
+            <AppButton
+              label="Retry Device Copy"
               accessibilityLabel="Retry device publication"
-              disabled={retryingPublication}
-              onPress={handleRetryPublication}
-              style={({ pressed }) => [
-                styles.retryButton,
-                pressed && !retryingPublication ? styles.actionButtonPressed : null,
-                retryingPublication ? styles.retryButtonDisabled : null,
-              ]}
-            >
-              <Text style={styles.retryButtonText}>
-                {retryingPublication ? 'Retrying...' : 'Retry Device Copy'}
-              </Text>
-            </Pressable>
+              onPress={() => void handleRetryPublication()}
+              loading={retryingPublication}
+              loadingLabel="Retrying..."
+              variant="secondary"
+            />
           ) : null}
-
           {publicationError ? <Text style={styles.errorText}>{publicationError}</Text> : null}
-
-          <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Date</Text>
-            <Text style={styles.metaValue}>{formatFullDate(event.startAt)}</Text>
-          </View>
-
-          <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Time</Text>
-            <Text style={styles.metaValue}>
-              {formatTimeRange(event.startAt, event.endAt, timeFormat)}
-            </Text>
-          </View>
-
-          <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Status</Text>
-            <Text
-              style={[
-                styles.metaValue,
-                event.status === 'completed'
-                  ? { color: theme.colors.brand }
-                  : event.status === 'canceled'
-                    ? { color: theme.colors.dangerText }
-                    : { color: theme.colors.textSecondary },
-              ]}
-            >
-              {statusLabel(event.status)}
-            </Text>
-          </View>
-
-          {event.description ? (
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>Description</Text>
-              <Text style={styles.metaValue}>{event.description}</Text>
-            </View>
-          ) : null}
-
           {!mutable ? (
             <Text style={styles.readOnlyText}>This device calendar event is read-only.</Text>
           ) : null}
-
           {deleteError ? <Text style={styles.errorText}>{deleteError}</Text> : null}
-
           {mutable && !confirmingDelete ? (
             <View style={styles.actionRow}>
-              <Pressable
-                accessibilityRole="button"
+              <AppButton
+                label="Edit"
+                variant="secondary"
                 accessibilityLabel="Edit event"
-                onPress={() => setEditing(true)}
-                style={({ pressed }) => [
-                  styles.editButton,
-                  pressed ? styles.actionButtonPressed : null,
-                ]}
-              >
-                <Text style={styles.editButtonText}>Edit</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
+                onPress={() => (onEdit ? onEdit() : setEditing(true))}
+                style={styles.flexButton}
+              />
+              <AppButton
+                label="Delete"
+                variant="danger"
                 accessibilityLabel="Delete event"
                 onPress={() => setConfirmingDelete(true)}
-                style={({ pressed }) => [
-                  styles.deleteButton,
-                  pressed ? styles.actionButtonPressed : null,
-                ]}
-              >
-                <Text style={styles.deleteButtonText}>Delete</Text>
-              </Pressable>
+                style={styles.flexButton}
+              />
             </View>
           ) : mutable ? (
             <View style={styles.confirmRow}>
               <Text style={styles.confirmText}>Delete this event permanently?</Text>
-              <View style={styles.confirmButtons}>
-                <Pressable
-                  accessibilityRole="button"
+              <View style={styles.actionRow}>
+                <AppButton
+                  label="Cancel"
+                  variant="secondary"
                   accessibilityLabel="Cancel delete"
                   onPress={() => setConfirmingDelete(false)}
-                  style={({ pressed }) => [
-                    styles.cancelButton,
-                    pressed ? styles.cancelButtonPressed : null,
-                  ]}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
+                  style={styles.flexButton}
+                />
+                <AppButton
+                  label="Yes, Delete"
+                  variant="danger"
                   accessibilityLabel="Confirm delete"
-                  onPress={deleting ? undefined : handleConfirmDelete}
-                  style={({ pressed }) => [
-                    styles.confirmDeleteButton,
-                    deleting ? styles.confirmDeleteButtonDisabled : null,
-                    pressed && !deleting ? styles.confirmDeleteButtonPressed : null,
-                  ]}
-                >
-                  <Text style={styles.confirmDeleteButtonText}>
-                    {deleting ? 'Deleting…' : 'Yes, Delete'}
-                  </Text>
-                </Pressable>
+                  onPress={() => void handleConfirmDelete()}
+                  loading={deleting}
+                  loadingLabel="Deleting..."
+                  style={styles.flexButton}
+                />
               </View>
             </View>
           ) : null}
-        </>
+        </ScrollView>
       ) : null}
     </AppModal>
   );
@@ -305,19 +372,111 @@ export function EventDetailModal({
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
+    scrollView: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    content: {
+      gap: spacing.xl,
+      paddingBottom: spacing.xl,
+    },
+    section: {
+      gap: spacing.md,
+    },
+    eventCard: {
+      gap: spacing.sm,
+    },
+    detailsCard: {
+      paddingHorizontal: 0,
+      paddingVertical: 0,
+      gap: 0,
+      overflow: 'hidden',
+    },
     eventTitle: {
-      ...typography.button,
-      fontSize: 18,
+      ...typography.sectionTitle,
       color: theme.colors.text,
     },
-    metaRow: {
-      gap: spacing.xs,
-    },
-    metaLabel: {
+    detailsHeading: {
       ...typography.label,
       color: theme.colors.textSecondary,
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.md,
     },
-    metaValue: {
+    description: {
+      ...typography.body,
+      color: theme.colors.textPrimary,
+    },
+    calendarValue: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    calendarText: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      fontWeight: '600',
+    },
+    sourceDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+    },
+    timelineRow: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+      gap: spacing.sm,
+    },
+    timeline: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.sm,
+      position: 'relative',
+    },
+    timelinePoint: {
+      flex: 1,
+      minWidth: 0,
+      gap: spacing.xs,
+      alignItems: 'center',
+    },
+    timelineMarker: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      backgroundColor: theme.colors.brand,
+      marginBottom: spacing.xs,
+      zIndex: 1,
+    },
+    timelineConnector: {
+      position: 'absolute',
+      left: '27%',
+      right: '27%',
+      height: 2,
+      backgroundColor: theme.colors.borderStrong,
+      marginTop: 5,
+      zIndex: 0,
+    },
+    timelineLabel: {
+      ...typography.label,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+    },
+    timelineTime: {
+      ...typography.button,
+      color: theme.colors.text,
+      textAlign: 'center',
+    },
+    timelineDate: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      textAlign: 'center',
+    },
+    timezoneText: {
+      ...typography.caption,
+      color: theme.colors.textMuted,
+    },
+    infoValue: {
       ...typography.body,
       color: theme.colors.text,
     },
@@ -329,47 +488,12 @@ const createStyles = (theme: Theme) =>
       ...typography.helper,
       color: theme.colors.textSecondary,
     },
-    retryButton: {
-      borderRadius: radii.sm,
-      paddingVertical: spacing.md,
-      backgroundColor: theme.colors.surfaceBrand,
-      alignItems: 'center',
-    },
-    retryButtonDisabled: {
-      opacity: 0.5,
-    },
-    retryButtonText: {
-      ...typography.button,
-      color: theme.colors.brand,
-    },
     actionRow: {
       flexDirection: 'row',
       gap: spacing.md,
     },
-    editButton: {
+    flexButton: {
       flex: 1,
-      borderRadius: radii.sm,
-      paddingVertical: spacing.md,
-      backgroundColor: theme.colors.surfaceBrand,
-      alignItems: 'center',
-    },
-    editButtonText: {
-      ...typography.button,
-      color: theme.colors.brand,
-    },
-    deleteButton: {
-      flex: 1,
-      borderRadius: radii.sm,
-      paddingVertical: spacing.md,
-      backgroundColor: theme.colors.dangerSurface,
-      alignItems: 'center',
-    },
-    actionButtonPressed: {
-      opacity: 0.8,
-    },
-    deleteButtonText: {
-      ...typography.button,
-      color: theme.colors.dangerText,
     },
     confirmRow: {
       gap: spacing.sm,
@@ -377,40 +501,5 @@ const createStyles = (theme: Theme) =>
     confirmText: {
       ...typography.body,
       color: theme.colors.text,
-    },
-    confirmButtons: {
-      flexDirection: 'row',
-      gap: spacing.md,
-    },
-    cancelButton: {
-      flex: 1,
-      borderRadius: radii.sm,
-      paddingVertical: spacing.md,
-      backgroundColor: theme.colors.surfaceMuted,
-      alignItems: 'center',
-    },
-    cancelButtonPressed: {
-      opacity: 0.8,
-    },
-    cancelButtonText: {
-      ...typography.button,
-      color: theme.colors.textPrimary,
-    },
-    confirmDeleteButton: {
-      flex: 1,
-      borderRadius: radii.sm,
-      paddingVertical: spacing.md,
-      backgroundColor: theme.colors.dangerSurface,
-      alignItems: 'center',
-    },
-    confirmDeleteButtonDisabled: {
-      opacity: 0.5,
-    },
-    confirmDeleteButtonPressed: {
-      opacity: 0.8,
-    },
-    confirmDeleteButtonText: {
-      ...typography.button,
-      color: theme.colors.dangerText,
     },
   });

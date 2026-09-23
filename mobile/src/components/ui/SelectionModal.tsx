@@ -2,46 +2,53 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
-import { AppCard } from '../ui/AppCard';
-import { AppModal } from '../ui/AppModal';
-import { FormField } from '../ui/FormField';
-import { radii, spacing, typography } from '../../design/tokens';
+import { AppCard } from './AppCard';
+import { AppModal } from './AppModal';
+import { FormField } from './FormField';
+import { ScreenHeader } from './ScreenHeader';
+import { spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
-import { ProfileSelectionOption } from '../../features/profile/profileOptions';
 
-type ProfileSelectionModalProps = {
+export type SelectionOption = {
+  value: string;
+  label: string;
+};
+
+type SelectionModalProps = {
   visible: boolean;
   title: string;
   searchPlaceholder: string;
   selectedValue: string;
-  options: ProfileSelectionOption[];
+  options: SelectionOption[];
+  emptyStateDescription?: string;
+  selectedLabel?: string;
+  unselectedLabel?: string;
   onClose: () => void;
   onSelect: (value: string) => void;
 };
 
-export function ProfileSelectionModal({
+export function SelectionModal({
   visible,
   title,
   searchPlaceholder,
   selectedValue,
   options,
+  emptyStateDescription = 'Try a different search.',
+  selectedLabel = 'Selected',
+  unselectedLabel = 'Choose',
   onClose,
   onSelect,
-}: ProfileSelectionModalProps) {
+}: SelectionModalProps) {
   const styles = useThemedStyles(createStyles);
   const [query, setQuery] = useState('');
 
   const filteredOptions = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) return options;
 
-    if (!normalizedQuery) {
-      return options;
-    }
-
-    return options.filter((option) => {
-      const searchTarget = `${option.label} ${option.value}`.toLowerCase();
-      return searchTarget.includes(normalizedQuery);
-    });
+    return options.filter((option) =>
+      `${option.label} ${option.value}`.toLowerCase().includes(normalizedQuery),
+    );
   }, [options, query]);
 
   function handleClose(): void {
@@ -55,8 +62,13 @@ export function ProfileSelectionModal({
   }
 
   return (
-    <AppModal visible={visible} title={title} onClose={handleClose}>
+    <AppModal visible={visible} onClose={handleClose} hideHeader>
       <View style={styles.content}>
+        <ScreenHeader
+          title={title}
+          onPressBack={handleClose}
+          backAccessibilityLabel={`Back from ${title}`}
+        />
         <FormField
           label="Search"
           accessibilityLabel={`${title} search`}
@@ -68,8 +80,11 @@ export function ProfileSelectionModal({
 
         <AppCard style={styles.resultsCard}>
           <Text style={styles.resultsLabel}>{filteredOptions.length} options</Text>
-
-          <ScrollView style={styles.scrollList} nestedScrollEnabled>
+          <ScrollView
+            style={styles.scrollList}
+            nestedScrollEnabled
+            keyboardShouldPersistTaps="handled"
+          >
             {filteredOptions.map((option) => {
               const isSelected = option.value === selectedValue;
 
@@ -78,6 +93,7 @@ export function ProfileSelectionModal({
                   key={option.value}
                   accessibilityRole="button"
                   accessibilityLabel={`Select ${title} ${option.value}`}
+                  accessibilityState={{ selected: isSelected }}
                   onPress={() => handleSelect(option.value)}
                   style={({ pressed }) => [
                     styles.optionRow,
@@ -89,7 +105,9 @@ export function ProfileSelectionModal({
                     <Text style={styles.optionLabel}>{option.label}</Text>
                     <Text style={styles.optionValue}>{option.value}</Text>
                   </View>
-                  <Text style={styles.optionStatus}>{isSelected ? 'Selected' : 'Choose'}</Text>
+                  <Text style={styles.optionStatus}>
+                    {isSelected ? selectedLabel : unselectedLabel}
+                  </Text>
                 </Pressable>
               );
             })}
@@ -97,9 +115,7 @@ export function ProfileSelectionModal({
             {filteredOptions.length === 0 ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateTitle}>No results</Text>
-                <Text style={styles.emptyStateBody}>
-                  Try a city, region, language, or locale code.
-                </Text>
+                <Text style={styles.emptyStateBody}>{emptyStateDescription}</Text>
               </View>
             ) : null}
           </ScrollView>
@@ -112,16 +128,7 @@ export function ProfileSelectionModal({
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
     content: {
-      gap: spacing.md,
-    },
-    searchInput: {
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: radii.md,
-      backgroundColor: theme.colors.surface,
-      color: theme.colors.text,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.md,
+      gap: spacing.lg,
     },
     resultsCard: {
       gap: spacing.sm,
@@ -141,7 +148,7 @@ const createStyles = (theme: Theme) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: spacing.md,
-      borderRadius: radii.md,
+      borderRadius: theme.radii.md,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
     },

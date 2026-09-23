@@ -12,6 +12,7 @@ type ListItemProps = {
   accessibilityLabel?: string;
   description?: ReactNode;
   trailingText?: string;
+  trailingTextColor?: string;
   trailingContent?: ReactNode;
   trailingContentBelow?: boolean;
   icon?: AppIconName;
@@ -29,6 +30,7 @@ export function ListItem({
   accessibilityLabel,
   description,
   trailingText,
+  trailingTextColor,
   trailingContent,
   trailingContentBelow = false,
   icon,
@@ -64,7 +66,13 @@ export function ListItem({
   const trailingElement =
     trailingContent ??
     (trailingText ? (
-      <Text style={[styles.trailingText, colorTone !== 'default' ? { color: toneColor } : null]}>
+      <Text
+        style={[
+          styles.trailingText,
+          colorTone !== 'default' ? { color: toneColor } : null,
+          trailingTextColor ? { color: trailingTextColor } : null,
+        ]}
+      >
         {trailingText}
       </Text>
     ) : null);

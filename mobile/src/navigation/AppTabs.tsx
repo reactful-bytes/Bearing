@@ -30,6 +30,7 @@ import { AppIconName } from '../design/icons';
 import { CalendarScreen } from '../screens/CalendarScreen';
 import { CalendarSourcesScreen } from '../screens/CalendarSourcesScreen';
 import { EventDetailScreen } from '../screens/EventDetailScreen';
+import { EventEditScreen } from '../screens/EventEditScreen';
 import {
   CreateEventScreen,
   CreateEventFromNoteScreen,
@@ -127,6 +128,7 @@ function CalendarNavigator() {
     <CalendarStack.Navigator screenOptions={{ headerShown: false }}>
       <CalendarStack.Screen name="CalendarHome" component={CalendarScreen} />
       <CalendarStack.Screen name="EventDetail" component={EventDetailScreen} />
+      <CalendarStack.Screen name="EventEdit" component={EventEditScreen} />
       <CalendarStack.Screen name="CalendarSources" component={CalendarSourcesScreen} />
       <CalendarStack.Screen name="CreateEvent" component={CreateEventScreen} />
       <CalendarStack.Screen name="CreateTask" component={CreateTaskScreen} />

@@ -1,7 +1,7 @@
 import { AppModal } from '../ui/AppModal';
 import { ScreenHeader } from '../ui/ScreenHeader';
 import { CreateEventInput, CreateEventOptions } from '../../features/calendar/calendarTypes';
-import { EventForm } from './EventForm';
+import { EventCreateForm } from './EventCreateForm';
 import { TimeFormat } from '../../features/profile/timeFormat';
 
 type AddEventInitialValues = Partial<CreateEventInput>;
@@ -44,7 +44,7 @@ export function AddEventModal({
       fullScreen={fullScreen}
       hideHeader={fullScreen}
     >
-      <EventForm
+      <EventCreateForm
         active={visible}
         initialDate={initialDate}
         initialValues={initialValues}

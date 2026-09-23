@@ -11,7 +11,7 @@ import {
 const startAt = new Date('2026-07-31T09:00:00.000Z');
 const endAt = new Date('2026-07-31T10:00:00.000Z');
 
-function makeBearingEvent(): BearingEvent {
+function makeBearingEvent(overrides: Partial<BearingEvent> = {}): BearingEvent {
   return {
     ownership: 'bearing',
     id: 'bearing-1',
@@ -34,6 +34,7 @@ function makeBearingEvent(): BearingEvent {
     publication: createUnpublishedMetadata(),
     createdAt: startAt,
     updatedAt: startAt,
+    ...overrides,
   };
 }
 
@@ -141,6 +142,37 @@ describe('EventDetailModal', () => {
     expect(screen.queryByLabelText('Delete event')).toBeNull();
   });
 
+  it('shows the event metadata fields', () => {
+    const event = makeBearingEvent({
+      location: 'Studio 4',
+      recurrenceRule: {
+        frequency: 'weekly',
+        interval: 1,
+        endAt: null,
+        occurrenceCount: null,
+        weekdays: ['monday', 'wednesday'],
+      },
+      alarms: [{ absoluteAt: null, relativeOffsetMinutes: -15 }],
+      availability: 'tentative',
+      url: 'https://example.com/planning',
+    });
+
+    render(
+      <EventDetailModal
+        event={event}
+        onClose={jest.fn()}
+        onUpdate={jest.fn(async () => undefined)}
+        onDelete={jest.fn(async () => undefined)}
+      />,
+    );
+
+    expect(screen.getByText('Studio 4')).toBeTruthy();
+    expect(screen.getByText('Every week on mon, wed')).toBeTruthy();
+    expect(screen.getByText('15 minutes before event')).toBeTruthy();
+    expect(screen.getByText('Tentative')).toBeTruthy();
+    expect(screen.getByText('https://example.com/planning')).toBeTruthy();
+  });
+
   it('retries a failed linked copy without changing the Bearing event', async () => {
     const event = makeBearingEvent();
     event.publication = {
@@ -162,8 +194,8 @@ describe('EventDetailModal', () => {
       />,
     );
 
-    expect(screen.getByText('Needs attention')).toBeTruthy();
     expect(screen.getByText('Device publication failed.')).toBeTruthy();
+    expect(screen.getByLabelText('Retry device publication')).toBeTruthy();
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Retry device publication'));
     });

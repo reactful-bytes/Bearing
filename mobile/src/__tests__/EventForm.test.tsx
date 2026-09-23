@@ -4,6 +4,32 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { EventForm } from '../components/calendar/EventForm';
 
 describe('EventForm', () => {
+  it('selects a time zone through the searchable selector', async () => {
+    const onSave = jest.fn(async () => undefined);
+    render(
+      <EventForm
+        active
+        initialDate={new Date('2026-07-31T09:00:00.000Z')}
+        initialValues={{ timezone: 'UTC' }}
+        onSave={onSave}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText('Show advanced event fields'));
+    fireEvent.press(screen.getByLabelText('Open event timezone picker'));
+    fireEvent.changeText(screen.getByLabelText('Time zone search'), 'New York');
+    fireEvent.press(screen.getByLabelText('Select Time zone America/New_York'));
+    fireEvent.changeText(screen.getByLabelText('Event title'), 'New York planning');
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Save event'));
+    });
+
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ timezone: 'America/New_York' }), {
+      publishToDevice: false,
+    });
+  });
+
   it('submits supported all-day and advanced event fields', async () => {
     const onSave = jest.fn(async () => undefined);
     render(

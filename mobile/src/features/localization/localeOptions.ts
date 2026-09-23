@@ -1,60 +1,6 @@
-export type ProfileSelectionOption = {
-  value: string;
-  label: string;
-};
+import type { SelectionOption } from '../../components/ui/SelectionModal';
 
-const FALLBACK_TIMEZONES = [
-  'Africa/Cairo',
-  'Africa/Johannesburg',
-  'Africa/Lagos',
-  'America/Anchorage',
-  'America/Argentina/Buenos_Aires',
-  'America/Bogota',
-  'America/Chicago',
-  'America/Denver',
-  'America/Halifax',
-  'America/Los_Angeles',
-  'America/Mexico_City',
-  'America/New_York',
-  'America/Phoenix',
-  'America/Sao_Paulo',
-  'America/Toronto',
-  'Asia/Bangkok',
-  'Asia/Dhaka',
-  'Asia/Dubai',
-  'Asia/Hong_Kong',
-  'Asia/Jakarta',
-  'Asia/Jerusalem',
-  'Asia/Karachi',
-  'Asia/Kolkata',
-  'Asia/Manila',
-  'Asia/Seoul',
-  'Asia/Shanghai',
-  'Asia/Singapore',
-  'Asia/Tokyo',
-  'Australia/Adelaide',
-  'Australia/Brisbane',
-  'Australia/Melbourne',
-  'Australia/Perth',
-  'Australia/Sydney',
-  'Europe/Amsterdam',
-  'Europe/Athens',
-  'Europe/Berlin',
-  'Europe/Dublin',
-  'Europe/Helsinki',
-  'Europe/Istanbul',
-  'Europe/Lisbon',
-  'Europe/London',
-  'Europe/Madrid',
-  'Europe/Moscow',
-  'Europe/Paris',
-  'Europe/Rome',
-  'Pacific/Auckland',
-  'Pacific/Fiji',
-  'Pacific/Honolulu',
-];
-
-const LOCALE_CANDIDATES = [
+const LOCALE_CANDIDATES: SelectionOption[] = [
   { value: 'af-ZA', label: 'Afrikaans (South Africa)' },
   { value: 'ar-AE', label: 'Arabic (United Arab Emirates)' },
   { value: 'ar-EG', label: 'Arabic (Egypt)' },
@@ -126,36 +72,6 @@ const LOCALE_CANDIDATES = [
   { value: 'zh-TW', label: 'Chinese Traditional (Taiwan)' },
 ];
 
-function formatTimeZoneLabel(timeZone: string): string {
-  return timeZone.replace(/_/g, ' ');
-}
-
-function buildTimezoneOptions(): ProfileSelectionOption[] {
-  const supportedValuesOf = (
-    Intl as Intl.DateTimeFormatOptions & {
-      supportedValuesOf?: (key: string) => string[];
-    }
-  ).supportedValuesOf;
-  const zones =
-    typeof supportedValuesOf === 'function' ? supportedValuesOf('timeZone') : FALLBACK_TIMEZONES;
-
-  return zones.map((timeZone) => ({
-    value: timeZone,
-    label: formatTimeZoneLabel(timeZone),
-  }));
-}
-
-function buildLocaleOptions(): ProfileSelectionOption[] {
-  return [...LOCALE_CANDIDATES].sort((left, right) => left.label.localeCompare(right.label));
-}
-
-export const PROFILE_TIMEZONE_OPTIONS = buildTimezoneOptions();
-export const PROFILE_LOCALE_OPTIONS = buildLocaleOptions();
-
-export function getProfileSelectionLabel(
-  options: ProfileSelectionOption[],
-  value: string,
-  fallbackLabel: string,
-): string {
-  return options.find((option) => option.value === value)?.label ?? fallbackLabel;
-}
+export const LOCALE_OPTIONS = [...LOCALE_CANDIDATES].sort((left, right) =>
+  left.label.localeCompare(right.label),
+);

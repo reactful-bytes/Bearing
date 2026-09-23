@@ -9,7 +9,7 @@ import { GoogleAuthButton } from '../components/auth/GoogleAuthButton';
 import { AppModal } from '../components/ui/AppModal';
 import { FormField } from '../components/ui/FormField';
 import { CreditPackPurchaseModal } from '../components/premium/CreditPackPurchaseModal';
-import { ProfileSelectionModal } from '../components/profile/ProfileSelectionModal';
+import { LocaleModal } from '../components/ui/LocaleModal';
 import { SoundPickerModal } from '../components/profile/SoundPickerModal';
 import { ProfileIdentityCard } from '../components/profile/ProfileIdentityCard';
 import { ListItem } from '../components/ui/ListItem';
@@ -18,6 +18,7 @@ import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { IconButton } from '../components/ui/IconButton';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
+import { TimeZoneModal } from '../components/ui/TimeZoneModal';
 import { layout, radii, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import type { ThemePreference } from '../design/ThemeProvider';
@@ -41,11 +42,9 @@ import {
   shareDataExportFile,
   writeDataExportFile,
 } from '../features/profile/dataExportFileInterop';
-import {
-  getProfileSelectionLabel,
-  PROFILE_LOCALE_OPTIONS,
-  PROFILE_TIMEZONE_OPTIONS,
-} from '../features/profile/profileOptions';
+import { LOCALE_OPTIONS } from '../features/localization/localeOptions';
+import { getSelectionLabel } from '../features/options/selectionOptions';
+import { TIMEZONE_OPTIONS } from '../features/timezone/timezoneOptions';
 import { TIME_FORMAT_OPTIONS, TimeFormat } from '../features/profile/timeFormat';
 import { hasActivePremiumStatus } from '../features/premium/premiumAccess';
 import { setAiCreditBalance, useAiCreditBalance } from '../features/premium/aiCreditBalance';
@@ -1282,8 +1281,8 @@ export function ProfileScreen({
                       timezonePending
                         ? 'Saving...'
                         : (timezoneError ??
-                          getProfileSelectionLabel(
-                            PROFILE_TIMEZONE_OPTIONS,
+                          getSelectionLabel(
+                            TIMEZONE_OPTIONS,
                             timezone,
                             timezone || 'Select a time zone',
                           ))
@@ -1300,11 +1299,7 @@ export function ProfileScreen({
                       localePending
                         ? 'Saving...'
                         : (localeError ??
-                          getProfileSelectionLabel(
-                            PROFILE_LOCALE_OPTIONS,
-                            locale,
-                            locale || 'Select a locale',
-                          ))
+                          getSelectionLabel(LOCALE_OPTIONS, locale, locale || 'Select a locale'))
                     }
                   />
                 </View>
@@ -1668,22 +1663,16 @@ export function ProfileScreen({
         onSelect={handleSelectSound}
       />
 
-      <ProfileSelectionModal
+      <TimeZoneModal
         visible={timezonePickerVisible}
-        title="Time zone"
-        searchPlaceholder="Search time zones by city or region"
         selectedValue={timezone}
-        options={PROFILE_TIMEZONE_OPTIONS}
         onClose={() => setTimezonePickerVisible(false)}
         onSelect={(value) => void handleSelectTimezone(value)}
       />
 
-      <ProfileSelectionModal
+      <LocaleModal
         visible={localePickerVisible}
-        title="Locale"
-        searchPlaceholder="Search locales by language or region"
         selectedValue={locale}
-        options={PROFILE_LOCALE_OPTIONS}
         onClose={() => setLocalePickerVisible(false)}
         onSelect={(value) => void handleSelectLocale(value)}
       />
