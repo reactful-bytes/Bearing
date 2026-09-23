@@ -981,6 +981,8 @@ describe('GoalsScreen', () => {
     render(<GoalsScreen />);
 
     fireEvent.press(screen.getByText('Run a 10k'));
+    expect(screen.getByRole('button', { name: 'Close Goal Details' })).toBeTruthy();
+    expect(screen.queryByLabelText('Dismiss Goal Details')).toBeNull();
     expect(screen.getByText('Milestones')).toBeTruthy();
     expect(screen.getByText('Build a running base')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Edit goal'));

@@ -21,6 +21,27 @@ describe('UI primitives', () => {
     expect(screen.getByText('Plan your schedule.')).toBeTruthy();
   });
 
+  it('renders back navigation with a trailing action', () => {
+    const handleBack = jest.fn();
+    const handleEdit = jest.fn();
+
+    render(
+      <ScreenHeader
+        title="Goal Details"
+        onPressBack={handleBack}
+        backAccessibilityLabel="Close Goal Details"
+        trailing={<AppButton label="Edit" onPress={handleEdit} />}
+      />,
+    );
+
+    fireEvent.press(screen.getByRole('button', { name: 'Close Goal Details' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Edit' }));
+
+    expect(handleBack).toHaveBeenCalledTimes(1);
+    expect(handleEdit).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('header', { name: 'Goal Details' })).toBeTruthy();
+  });
+
   it('renders card content', () => {
     render(
       <AppCard>

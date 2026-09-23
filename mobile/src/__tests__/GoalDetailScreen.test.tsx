@@ -1,5 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GoalDetailScreen } from '../screens/GoalDetailScreen';
 import { useGoals } from '../features/goals/useGoals';
@@ -140,6 +142,12 @@ function mockHooks(
 describe('GoalDetailScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (useSafeAreaInsets as jest.MockedFunction<typeof useSafeAreaInsets>).mockReturnValue({
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    });
     mockHooks();
   });
 
@@ -158,6 +166,21 @@ describe('GoalDetailScreen', () => {
       expect(completeTask).toHaveBeenCalledWith('task-1', { completionSource: 'manual' });
     });
     expect(screen.getByText('Task Details')).toBeTruthy();
+  });
+
+  it('keeps the detail header below the top safe area', () => {
+    (useSafeAreaInsets as jest.MockedFunction<typeof useSafeAreaInsets>).mockReturnValue({
+      top: 24,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    });
+
+    render(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
+
+    expect(
+      StyleSheet.flatten(screen.getByTestId('goal-detail-scroll').props.contentContainerStyle),
+    ).toEqual(expect.objectContaining({ paddingTop: 32 }));
   });
 
   it('creates a task with the goal and next-step context', async () => {

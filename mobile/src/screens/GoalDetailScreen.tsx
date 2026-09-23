@@ -241,7 +241,14 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
   return (
     <View style={styles.screen}>
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: spacing.xl + insets.bottom }]}
+        testID="goal-detail-scroll"
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingTop: spacing.sm + insets.top,
+            paddingBottom: spacing.xl + insets.bottom,
+          },
+        ]}
       >
         <View style={styles.detailHeader}>
           <IconButton

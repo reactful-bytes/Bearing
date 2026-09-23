@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppCard } from '../ui/AppCard';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { FormField } from '../ui/FormField';
+import { ScreenHeader } from '../ui/ScreenHeader';
 import {
   GoalDateParts,
   GoalDatePicker,
@@ -54,6 +56,7 @@ export function GoalDetailsModal({
   onReorderSteps,
 }: GoalDetailsModalProps) {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const [editMode, setEditMode] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -158,10 +161,26 @@ export function GoalDetailsModal({
       visible={visible}
       title="Goal Details"
       onClose={handleClose}
-      headerAccessory={headerAccessory}
+      fullScreen
+      hideHeader
     >
       {goal ? (
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.content,
+            {
+              paddingTop: insets.top,
+              paddingBottom: spacing['3xl'] + insets.bottom,
+              paddingHorizontal: 0,
+            },
+          ]}
+        >
+          <ScreenHeader
+            title="Goal Details"
+            onPressBack={handleClose}
+            backAccessibilityLabel="Close Goal Details"
+            trailing={headerAccessory}
+          />
           {editMode ? (
             <View style={styles.section}>
               <FormField
@@ -277,11 +296,9 @@ export function GoalDetailsModal({
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
-    scrollView: {
-      flexShrink: 1,
-    },
     content: {
       gap: spacing.lg,
+      paddingBottom: spacing['3xl'],
     },
     section: {
       gap: spacing.md,

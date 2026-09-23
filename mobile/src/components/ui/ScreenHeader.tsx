@@ -30,11 +30,21 @@ export function ScreenHeader({
   if (onPressBack) {
     return (
       <View style={[styles.scrollHeader, style]}>
-        <IconButton name="back" accessibilityLabel={backAccessibilityLabel} onPress={onPressBack} />
+        <View style={trailing ? [styles.accessorySlot, styles.leadingAccessorySlot] : undefined}>
+          <IconButton
+            name="back"
+            accessibilityLabel={backAccessibilityLabel}
+            onPress={onPressBack}
+          />
+        </View>
         <Text accessibilityRole="header" style={styles.title}>
           {title}
         </Text>
-        <View style={styles.placeholder} />
+        {trailing ? (
+          <View style={styles.accessorySlot}>{trailing}</View>
+        ) : (
+          <View style={styles.placeholder} />
+        )}
       </View>
     );
   }
@@ -67,5 +77,14 @@ const createStyles = (theme: Theme) =>
     placeholder: {
       width: 44,
       height: 44,
+    },
+    accessorySlot: {
+      width: 88,
+      minHeight: 44,
+      alignItems: 'flex-end',
+      justifyContent: 'center',
+    },
+    leadingAccessorySlot: {
+      alignItems: 'flex-start',
     },
   });
