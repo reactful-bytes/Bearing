@@ -188,8 +188,9 @@ describe('TasksScreen', () => {
     ).toBeTruthy();
   });
 
-  it('creates a task from the modal', async () => {
+  it('creates a task from the route-driven modal without a screen FAB', async () => {
     const createTaskMock = jest.fn(async () => undefined);
+    const setParams = jest.fn();
     const mockedUseTasks = useTasks as jest.MockedFunction<typeof useTasks>;
 
     mockedUseTasks.mockReturnValue({
@@ -213,9 +214,12 @@ describe('TasksScreen', () => {
       retry: jest.fn(),
     });
 
-    render(<TasksScreen />);
+    render(
+      <TasksScreen route={{ params: { createTask: true } }} navigation={{ setParams }} />,
+    );
 
-    fireEvent.press(screen.getByLabelText('New task'));
+    expect(screen.queryByRole('button', { name: 'New task' })).toBeNull();
+    expect(setParams).toHaveBeenCalledWith({ createTask: undefined });
     fireEvent.changeText(screen.getByLabelText('Task title'), 'Plan weekly meals');
     fireEvent.changeText(
       screen.getByLabelText('Task description'),

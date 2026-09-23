@@ -166,7 +166,7 @@ export function TaskDetailModal({
   const headerAccessory = task ? (
     <AppButton
       label={editMode ? 'Cancel' : 'Edit'}
-      variant="secondary"
+      variant={editMode ? 'secondary' : 'primary'}
       accessibilityLabel={editMode ? 'Cancel task editing' : 'Edit task'}
       onPress={() => {
         setError(null);
@@ -365,7 +365,6 @@ const createStyles = (theme: Theme) =>
     },
     headerButtonText: {
       ...typography.helper,
-      color: theme.colors.textPrimary,
       fontWeight: '600',
     },
     actionStack: {

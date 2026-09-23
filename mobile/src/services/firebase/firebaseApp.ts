@@ -14,7 +14,9 @@ export function getFirebaseApp(): FirebaseApp {
     cachedFirebaseApp = getApps().length > 0 ? getApp() : initializeApp(config);
     return cachedFirebaseApp;
   } catch (error) {
-    throw new Error('Failed to initialize Firebase app.', {
+    const reason = error instanceof Error ? ` ${error.message}` : '';
+
+    throw new Error(`Failed to initialize Firebase app.${reason}`, {
       cause: error,
     });
   }

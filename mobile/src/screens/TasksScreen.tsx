@@ -10,7 +10,6 @@ import { StartNowModal } from '../components/tasks/StartNowModal';
 import { TaskDetailModal } from '../components/tasks/TaskDetailModal';
 import { AppCard } from '../components/ui/AppCard';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
-import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { layout, radii, spacing, typography } from '../design/tokens';
@@ -277,14 +276,6 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
           : null}
       </ScrollView>
 
-      <View style={styles.fabContainer}>
-        <FloatingActionButton
-          accessibilityLabel="New task"
-          onPress={() => setAddTaskVisible(true)}
-          style={styles.smallFab}
-        />
-      </View>
-
       <AddTaskModal
         visible={addTaskVisible}
         onClose={() => setAddTaskVisible(false)}
@@ -387,19 +378,5 @@ const createStyles = (theme: Theme) =>
     taskDescription: {
       ...typography.helper,
       color: theme.colors.textPrimary,
-    },
-    fabContainer: {
-      position: 'absolute',
-      right: layout.pagePaddingHorizontal,
-      bottom: layout.pagePaddingVertical,
-    },
-    smallFab: {
-      alignSelf: 'flex-end',
-      width: 56,
-      minHeight: 56,
-      justifyContent: 'center',
-      paddingHorizontal: 0,
-      paddingVertical: 0,
-      borderRadius: 28,
     },
   });

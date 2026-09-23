@@ -11,6 +11,7 @@ import {
 
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AppButton } from './AppButton';
 import { AppIcon } from './AppIcon';
 import { CreateFabGroup } from '../presentation/CreateFabGroup';
 import { useCreateFab } from '../presentation/CreateFabContext';
@@ -107,14 +108,14 @@ export function AppModal({
               <View style={styles.headerActions}>
                 {headerAccessory}
                 {!fullScreen ? (
-                  <Pressable
-                    accessibilityRole="button"
+                  <AppButton
+                    label={closeLabel}
+                    variant="secondary"
                     accessibilityLabel={`${closeLabel} ${accessibleTitle}`}
                     onPress={onClose}
                     style={styles.closeButton}
-                  >
-                    <Text style={styles.closeButtonText}>{closeLabel}</Text>
-                  </Pressable>
+                    textStyle={styles.closeButtonText}
+                  />
                 ) : (
                   <View style={styles.headerPlaceholder} />
                 )}
@@ -200,11 +201,6 @@ const createStyles = (theme: Theme) =>
     closeButton: {
       minWidth: 44,
       minHeight: 44,
-      borderRadius: theme.componentTokens.button.borderRadius,
-      paddingHorizontal: spacing.md,
-      backgroundColor: theme.colors.surfaceMuted,
-      alignItems: 'center',
-      justifyContent: 'center',
     },
     closeButtonText: {
       ...typography.helper,
