@@ -38,7 +38,10 @@ service cloud.firestore {
 
     match /events/{eventId} {
       allow create: if ownsIncomingDocument();
-      allow read, delete: if ownsExistingDocument();
+      allow get: if isSignedIn()
+        && (!exists(/databases/$(database)/documents/events/$(eventId))
+          || ownsExistingDocument());
+      allow list, delete: if ownsExistingDocument();
       allow update: if ownsExistingDocument() && ownsIncomingDocument();
     }
 

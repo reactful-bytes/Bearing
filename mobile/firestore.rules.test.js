@@ -162,6 +162,8 @@ describe('Firestore ownership rules', () => {
 
     await assertSucceeds(
       runTransaction(ownerDb, async (transaction) => {
+        const existingEvent = await transaction.get(doc(ownerDb, 'events', 'task-task-1'));
+        expect(existingEvent.exists()).toBe(false);
         transaction.set(doc(ownerDb, 'events', 'task-task-1'), {
           userId: OWNER_ID,
           sourceTaskId: 'task-1',
@@ -173,5 +175,8 @@ describe('Firestore ownership rules', () => {
         });
       }),
     );
+
+    await assertSucceeds(getDoc(doc(ownerDb, 'events', 'task-task-1')));
+    await assertFails(getDoc(doc(firestoreFor(OTHER_ID), 'events', 'task-task-1')));
   });
 });
