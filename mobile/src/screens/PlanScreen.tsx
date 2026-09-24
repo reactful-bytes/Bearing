@@ -608,12 +608,10 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
           ) : null}
           {goalsState === 'empty' || (goalsState === 'ready' && recentGoals.length === 0) ? (
             <EmptyState
-              icon="goal"
               title={emptyGoalPhrase}
               description="Create a goal to give your next steps a home."
               presentation="compact"
-              actionLabel="Open goals"
-              onPressAction={() => navigation.navigate('Goals')}
+              style={styles.emptyGoals}
             />
           ) : null}
           {goalsState === 'ready'
@@ -792,6 +790,7 @@ const createStyles = (theme: Theme) =>
     surfaceLinkText: { ...theme.typography.caption, color: theme.colors.brand, fontWeight: '700' },
     pressed: { opacity: 0.82 },
     emptyUpcoming: { alignItems: 'center', justifyContent: 'center', flex: 1, width: '100%' },
+    emptyGoals: { alignItems: 'center', justifyContent: 'center', flex: 1, width: '100%' },
     emptyTasks: { alignItems: 'center', justifyContent: 'center', flex: 1, width: '100%' },
     todaySurface: { flex: 1.6, minHeight: 214 },
     compactSurface: { minHeight: 88 },

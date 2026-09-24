@@ -88,7 +88,7 @@ const createStyles = (theme: Theme) =>
     compactTitle: {
       ...theme.typography.helper,
       fontWeight: '600',
-      textAlign: 'left',
+      textAlign: 'center',
     },
     description: {
       ...theme.typography.body,
