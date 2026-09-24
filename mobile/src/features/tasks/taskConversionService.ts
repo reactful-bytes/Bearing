@@ -8,6 +8,7 @@ export type TaskConversionCompletionSource = Extract<
 
 export type TaskConversionTask = {
   userId: string;
+  goalId: string | null;
   status: 'active' | 'completed';
   completionSource: TaskCompletionSource | null;
   completedEventId: string | null;
@@ -47,6 +48,7 @@ export type TaskConversionResult = {
   eventId: string;
   eventInput: CreateEventInput;
   created: boolean;
+  goalId: string | null;
 };
 
 export function taskConversionEventId(taskId: string): string {
@@ -92,7 +94,7 @@ export async function convertTaskToEventAtomically(
         task.completionSource === completionSource &&
         existingEvent
       ) {
-        return { eventId, eventInput: existingEvent.input, created: false };
+        return { eventId, eventInput: existingEvent.input, created: false, goalId: task.goalId };
       }
       throw new Error('Task has already been completed.');
     }
@@ -107,6 +109,7 @@ export async function convertTaskToEventAtomically(
       eventId,
       eventInput: existingEvent?.input ?? input,
       created: !existingEvent,
+      goalId: task.goalId,
     };
   });
 }

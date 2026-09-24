@@ -21,7 +21,7 @@ Many users split their day planning, goal management, and notes across disconnec
 ## Core Value Proposition
 
 - Plan your day and your life goals in one app.
-- Convert high-level goals into practical steps and timelines.
+- Convert high-level goals into practical tasks and timelines.
 - Stay focused during active events with a distraction-reducing Focus Mode.
 - Capture thoughts quickly (Idea Dump) and process them later in Notes.
 
@@ -74,7 +74,7 @@ Bottom tab navigation with five screens:
 2. Goal input step.
 3. Optional Bearing 360 AI setup step to help generate plan and timeline.
 4. Manual path (if AI skipped): completion date input.
-5. Step creation flow.
+5. Task creation flow.
 6. Finish.
 
 #### Goal Details Modal
@@ -82,21 +82,21 @@ Bottom tab navigation with five screens:
 - Read-only default view.
 - Top-right edit button for goal name, description, and estimated finish date.
 - Top-right close button.
-- Scrollable step cards list.
-- Completed steps shown grayed out with strike-through text.
-- Plus button at list bottom to add a step.
+- Scrollable task cards list.
+- Completed tasks shown grayed out with strike-through text.
+- Plus button at list bottom to add a task.
 - Drag-and-drop reorder via press-and-hold on hamburger handle.
 
-#### Step Details Modal
+#### Task Details Modal
 
-- Opens when tapping a step card.
+- Opens when tapping a task card.
 - Read-only default with edit button.
 - Back-arrow close behavior returns to Goal Details.
 - Fields:
-  - Step name
+  - Task name
   - Description
   - Starter (small text field; behavior to be finalized later)
-- Schedule button creates calendar event linked to the goal step.
+- Schedule button creates calendar event linked to the goal task.
 - Scrollable list of linked events.
 - Past events shown grayed out with strike-through text.
 
@@ -137,13 +137,13 @@ Bottom tab navigation with five screens:
 ## AI Helper Concept
 
 - Input: user goal.
-- Output: suggested milestones, ordered steps, and target timeline.
+- Output: suggested milestones, ordered tasks, and target timeline.
 - User remains in control with ability to edit generated plans.
 
 ## Data and Integration Requirements
 
 - Firebase Auth for user accounts.
-- Cloud data storage for goals, steps, notes, and settings.
+- Cloud data storage for goals, tasks, notes, and settings.
 - Native iOS/Android calendar access through Expo SDK 57 `expo-calendar`.
 - Per-device calendar IDs and preferences stored locally, never treated as portable cloud IDs.
 - `.ics` export for standards-based portability.
@@ -158,13 +158,13 @@ Bottom tab navigation with five screens:
 ## Success Metrics (v1)
 
 - Goal creation completion rate.
-- Weekly active users who complete at least one planned step.
+- Weekly active users who complete at least one planned task.
 - Focus Mode usage frequency and average session duration.
 - Notes captured from Idea Dump and later processed.
 - Bearing 360 conversion rate from goal wizard AI step.
 
 ## Open Product Questions
 
-- Final behavioral definition for the Step "Starter" field.
+- Final behavioral definition for the Task "Starter" field.
 - Degree of visual mimicry versus legal-safe differentiation from Apple Calendar aesthetics.
 - Final launch pricing, trial terms, and remotely configured grant choices for Bearing 360.

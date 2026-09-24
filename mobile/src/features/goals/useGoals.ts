@@ -1,64 +1,50 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { composeGoalWithSteps, deriveGoalStatus, normalizeGoalSteps } from './goalHelpers';
+import { composeGoalWithTasks, deriveGoalStatus } from './goalHelpers';
 import {
   CreateGoalInput,
-  CreateGoalStepInput,
   GoalRecord,
-  GoalStepRecord,
   GoalUiState,
-  GoalWithSteps,
+  GoalWithTasks,
   UpdateGoalInput,
-  UpdateGoalStepInput,
 } from './goalTypes';
 import { getFirebaseAuth } from '../../services/firebase/firebaseAuth';
 import {
   createGoal as createFirebaseGoal,
-  createGoalStep as createFirebaseGoalStep,
-  deleteGoalStep as deleteFirebaseGoalStep,
   markGoalCompleted as markFirebaseGoalCompleted,
-  reorderGoalSteps as reorderFirebaseGoalSteps,
+  subscribeToGoalTasks,
   subscribeToGoals,
-  subscribeToGoalSteps,
   updateGoal as updateFirebaseGoal,
-  updateGoalStep as updateFirebaseGoalStep,
 } from '../../services/firebase/firebaseGoals';
+import { TaskRecord } from '../tasks/taskTypes';
 
 type GoalSubscriptionCache = {
   goals: GoalRecord[];
-  steps: GoalStepRecord[];
+  tasks: TaskRecord[];
   uiState: GoalUiState;
 };
 
 const goalSubscriptionCache = new Map<string, GoalSubscriptionCache>();
 
-function sortGoals(goals: GoalWithSteps[]): GoalWithSteps[] {
+function sortGoals(goals: GoalWithTasks[]): GoalWithTasks[] {
   const statusWeight: Record<GoalRecord['status'], number> = {
     active: 0,
     completed: 1,
     archived: 2,
   };
-
   return [...goals].sort((left, right) => {
     const statusDifference = statusWeight[left.status] - statusWeight[right.status];
-    if (statusDifference !== 0) {
-      return statusDifference;
-    }
-
+    if (statusDifference !== 0) return statusDifference;
     return left.estimatedCompletionDate.getTime() - right.estimatedCompletionDate.getTime();
   });
 }
 
 export type UseGoalsReturn = {
-  goals: GoalWithSteps[];
+  goals: GoalWithTasks[];
   uiState: GoalUiState;
   createGoal: (input: CreateGoalInput) => Promise<void>;
   updateGoal: (goalId: string, fields: UpdateGoalInput) => Promise<void>;
   markGoalCompleted: (goalId: string) => Promise<void>;
-  createStep: (goalId: string, input: CreateGoalStepInput) => Promise<void>;
-  deleteStep: (stepId: string) => Promise<void>;
-  updateStep: (stepId: string, fields: UpdateGoalStepInput) => Promise<void>;
-  reorderSteps: (goalId: string, orderedStepIds: string[]) => Promise<void>;
   retry: () => void;
 };
 
@@ -67,10 +53,10 @@ export function useGoals(): UseGoalsReturn {
   const cached = userId ? goalSubscriptionCache.get(userId) : undefined;
   const hasCachedData = Boolean(cached);
   const [goals, setGoals] = useState<GoalRecord[]>(cached?.goals ?? []);
-  const [steps, setSteps] = useState<GoalStepRecord[]>(cached?.steps ?? []);
+  const [tasks, setTasks] = useState<TaskRecord[]>(cached?.tasks ?? []);
   const [uiState, setUiState] = useState<GoalUiState>(cached?.uiState ?? 'loading');
   const [goalsLoaded, setGoalsLoaded] = useState(Boolean(cached));
-  const [stepsLoaded, setStepsLoaded] = useState(Boolean(cached));
+  const [tasksLoaded, setTasksLoaded] = useState(Boolean(cached));
   const [revision, setRevision] = useState(0);
 
   useEffect(() => {
@@ -78,217 +64,76 @@ export function useGoals(): UseGoalsReturn {
       setUiState('error');
       return;
     }
-
-    if (!hasCachedData) {
-      setUiState('loading');
-    }
+    if (!hasCachedData) setUiState('loading');
     setGoalsLoaded(false);
-    setStepsLoaded(false);
-
+    setTasksLoaded(false);
     const unsubscribeGoals = subscribeToGoals(
       userId,
       (fetchedGoals) => {
         setGoals(fetchedGoals);
         setGoalsLoaded(true);
       },
-      () => {
-        setUiState('error');
-      },
+      () => setUiState('error'),
     );
-
-    const unsubscribeSteps = subscribeToGoalSteps(
+    const unsubscribeTasks = subscribeToGoalTasks(
       userId,
-      (fetchedSteps) => {
-        setSteps(fetchedSteps);
-        setStepsLoaded(true);
+      (fetchedTasks) => {
+        setTasks(fetchedTasks);
+        setTasksLoaded(true);
       },
-      () => {
-        setUiState('error');
-      },
+      () => setUiState('error'),
     );
-
     return () => {
       unsubscribeGoals();
-      unsubscribeSteps();
+      unsubscribeTasks();
     };
   }, [hasCachedData, revision, userId]);
 
   const retry = useCallback(() => {
-    const userId = getFirebaseAuth().currentUser?.uid;
-    if (userId) {
-      goalSubscriptionCache.delete(userId);
-    }
+    if (userId) goalSubscriptionCache.delete(userId);
     setUiState('loading');
     setRevision((current) => current + 1);
-  }, []);
+  }, [userId]);
 
-  const goalMap = useMemo(() => {
-    const groupedSteps = new Map<string, GoalStepRecord[]>();
-
-    steps.forEach((step) => {
-      const existing = groupedSteps.get(step.goalId);
-      if (existing) {
-        existing.push(step);
-        return;
-      }
-
-      groupedSteps.set(step.goalId, [step]);
-    });
-
-    return sortGoals(
-      goals.map((goal) => {
-        const goalSteps = groupedSteps.get(goal.id) ?? [];
-        const rolledStatus = deriveGoalStatus(goal.status, goalSteps);
-
-        return composeGoalWithSteps(
-          rolledStatus === goal.status ? goal : { ...goal, status: rolledStatus },
-          goalSteps,
-        );
-      }),
-    );
-  }, [goals, steps]);
+  const goalMap = useMemo(
+    () =>
+      sortGoals(
+        goals.map((goal) => {
+          const goalTasks = tasks.filter((task) => task.goalId === goal.id);
+          const rolledStatus = deriveGoalStatus(goal.status, goalTasks);
+          return composeGoalWithTasks(
+            rolledStatus === goal.status ? goal : { ...goal, status: rolledStatus },
+            goalTasks,
+          );
+        }),
+      ),
+    [goals, tasks],
+  );
 
   useEffect(() => {
-    if (!goalsLoaded || !stepsLoaded) {
-      return;
-    }
-
+    if (!goalsLoaded || !tasksLoaded) return;
     const nextUiState = goalMap.length === 0 ? 'empty' : 'ready';
     setUiState(nextUiState);
-    if (userId) {
-      goalSubscriptionCache.set(userId, { goals, steps, uiState: nextUiState });
-    }
-  }, [goalMap.length, goals, goalsLoaded, steps, stepsLoaded, userId]);
+    if (userId) goalSubscriptionCache.set(userId, { goals, tasks, uiState: nextUiState });
+  }, [goalMap.length, goals, goalsLoaded, tasks, tasksLoaded, userId]);
 
   const createGoal = useCallback(async (input: CreateGoalInput): Promise<void> => {
-    const userId = getFirebaseAuth().currentUser?.uid;
-    if (!userId) {
-      throw new Error('User is not authenticated.');
-    }
-
-    await createFirebaseGoal(userId, input);
+    const currentUserId = getFirebaseAuth().currentUser?.uid;
+    if (!currentUserId) throw new Error('User is not authenticated.');
+    await createFirebaseGoal(currentUserId, input);
   }, []);
 
   const updateGoal = useCallback(async (goalId: string, fields: UpdateGoalInput): Promise<void> => {
-    const userId = getFirebaseAuth().currentUser?.uid;
-    if (!userId) {
-      throw new Error('User is not authenticated.');
-    }
-
-    await updateFirebaseGoal(userId, goalId, fields);
+    const currentUserId = getFirebaseAuth().currentUser?.uid;
+    if (!currentUserId) throw new Error('User is not authenticated.');
+    await updateFirebaseGoal(currentUserId, goalId, fields);
   }, []);
 
   const markGoalCompleted = useCallback(async (goalId: string): Promise<void> => {
-    const userId = getFirebaseAuth().currentUser?.uid;
-    if (!userId) {
-      throw new Error('User is not authenticated.');
-    }
-
-    await markFirebaseGoalCompleted(userId, goalId);
+    const currentUserId = getFirebaseAuth().currentUser?.uid;
+    if (!currentUserId) throw new Error('User is not authenticated.');
+    await markFirebaseGoalCompleted(currentUserId, goalId);
   }, []);
 
-  const createStep = useCallback(
-    async (goalId: string, input: CreateGoalStepInput): Promise<void> => {
-      const userId = getFirebaseAuth().currentUser?.uid;
-      if (!userId) {
-        throw new Error('User is not authenticated.');
-      }
-
-      const goal = goalMap.find((entry) => entry.id === goalId);
-      if (!goal) {
-        throw new Error('Goal not found.');
-      }
-
-      await createFirebaseGoalStep(
-        userId,
-        goalId,
-        input,
-        goal.steps.length,
-        goal.status,
-        goal.nextStep?.id ?? null,
-      );
-    },
-    [goalMap],
-  );
-
-  const deleteStep = useCallback(
-    async (stepId: string): Promise<void> => {
-      const userId = getFirebaseAuth().currentUser?.uid;
-      if (!userId) {
-        throw new Error('User is not authenticated.');
-      }
-
-      const targetStep = steps.find((step) => step.id === stepId);
-      if (!targetStep) {
-        throw new Error('Goal step not found.');
-      }
-
-      const targetGoal = goalMap.find((goal) => goal.id === targetStep.goalId);
-      if (!targetGoal) {
-        throw new Error('Goal not found.');
-      }
-
-      const remainingSteps = normalizeGoalSteps(
-        targetGoal.steps.filter((step) => step.id !== stepId),
-      );
-      const nextGoalStatus = deriveGoalStatus(targetGoal.status, remainingSteps);
-      const nextStep =
-        nextGoalStatus === 'completed'
-          ? null
-          : composeGoalWithSteps({ ...targetGoal, status: nextGoalStatus }, remainingSteps)
-              .nextStep;
-
-      await deleteFirebaseGoalStep(
-        userId,
-        targetGoal.id,
-        stepId,
-        remainingSteps,
-        nextGoalStatus,
-        nextStep?.id ?? null,
-      );
-    },
-    [goalMap, steps],
-  );
-
-  const updateStep = useCallback(
-    async (stepId: string, fields: UpdateGoalStepInput): Promise<void> => {
-      const userId = getFirebaseAuth().currentUser?.uid;
-      if (!userId) {
-        throw new Error('User is not authenticated.');
-      }
-
-      const targetStep = steps.find((step) => step.id === stepId);
-      if (!targetStep) {
-        throw new Error('Goal step not found.');
-      }
-
-      await updateFirebaseGoalStep(userId, targetStep.goalId, stepId, fields);
-    },
-    [steps],
-  );
-
-  const reorderSteps = useCallback(
-    async (goalId: string, orderedStepIds: string[]): Promise<void> => {
-      const userId = getFirebaseAuth().currentUser?.uid;
-      if (!userId) {
-        throw new Error('User is not authenticated.');
-      }
-
-      await reorderFirebaseGoalSteps(userId, goalId, orderedStepIds);
-    },
-    [],
-  );
-
-  return {
-    goals: goalMap,
-    uiState,
-    createGoal,
-    updateGoal,
-    markGoalCompleted,
-    createStep,
-    deleteStep,
-    updateStep,
-    reorderSteps,
-    retry,
-  };
+  return { goals: goalMap, uiState, createGoal, updateGoal, markGoalCompleted, retry };
 }

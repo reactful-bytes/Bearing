@@ -324,7 +324,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M27.1   | completed | Extend task contracts                   | Nullable links, due/schedule/all-day fields decode legacy documents and round-trip  |
 | M27.2   | completed | Expose event sourceTaskId               | Event serialization and decoding retain nullable task provenance                    |
 | M27.3   | completed | Add note pinned field                   | Missing legacy value is false; mutations and sorting preserve pinned behavior       |
-| M27.4   | completed | Confirm operational goal-step timeline  | One GoalStepRecord source is used; no parallel editable milestone tree remains      |
+| M27.4   | completed | Confirm task-based goal timeline         | Tasks are the only operational goal records; AI milestones remain descriptive       |
 | M27.5   | completed | Decide Focus persistence                | Persist smallest required session model or document process-local decision          |
 | M27.6   | completed | Deploy-compatible backend updates       | Services, export/delete, rules, indexes, docs, and emulator tests cover all fields  |
 | M27.7   | completed | Validate compatibility and deploy order | Round trips pass and rules/indexes deployment precedes field-writing client release |
@@ -361,7 +361,7 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M30.1   | completed | Restyle Goals List               | Current maps to persisted active and all three filters have deterministic states |
 | M30.2   | completed | Add goal list actions and states | Goal cards, Create Goal, and loading/empty/error states use shared components    |
 | M30.3   | completed | Route Goal Detail                | Tasks and Timeline tabs replace modal only after mutation parity                 |
-| M30.4   | completed | Link tasks to goals and steps    | Next Up/task lists support all required mutations and display context            |
+| M30.4   | completed | Link tasks to goals              | Next Up/task lists support all required mutations and display context            |
 | M30.5   | completed | Render operational timeline      | Ordered steps show state and linked tasks without duplicate milestone data       |
 | M30.6   | completed | Preserve standalone task access  | Plan and Create can open unlinked task flows                                     |
 | M30.7   | completed | Validate goals and tasks         | Filters, mutations, ordering, and navigation tests pass                          |

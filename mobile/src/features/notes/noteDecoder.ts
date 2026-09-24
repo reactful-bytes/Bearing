@@ -18,7 +18,7 @@ export function decodeNoteData(id: string, data: Record<string, unknown>): NoteR
     body: data.body as string,
     source: data.source as NoteRecord['source'],
     sourceEventId: (data.sourceEventId as string | null) ?? null,
-    sourceStepId: (data.sourceStepId as string | null) ?? null,
+    sourceTaskId: (data.sourceTaskId as string | null) ?? null,
     pinned: data.pinned === true,
     processed: data.processed === true,
     archived: data.archived === true,

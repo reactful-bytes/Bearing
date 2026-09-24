@@ -26,7 +26,6 @@ describe("admin privacy deletion", () => {
           aiCreditOperations: [],
           events: [],
           goals: [],
-          goalSteps: [],
           notes: [],
           tasks: [],
         };

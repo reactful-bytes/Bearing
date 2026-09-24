@@ -2,12 +2,13 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   buildGoalProgressText,
-  composeGoalWithSteps,
+  composeGoalWithTasks,
   deriveGoalStatus,
-  getFirstIncompleteStep,
-  normalizeGoalSteps,
+  getFirstIncompleteTask,
+  normalizeGoalTasks,
 } from '../features/goals/goalHelpers';
-import { GoalRecord, GoalStepRecord } from '../features/goals/goalTypes';
+import { GoalRecord } from '../features/goals/goalTypes';
+import { TaskRecord } from '../features/tasks/taskTypes';
 
 function makeGoal(overrides: Partial<GoalRecord> = {}): GoalRecord {
   return {
@@ -23,7 +24,6 @@ function makeGoal(overrides: Partial<GoalRecord> = {}): GoalRecord {
       timeBound: 'By October 1',
     },
     estimatedCompletionDate: new Date(2026, 8, 1),
-    nextStepId: null,
     status: 'active',
     isAiAssisted: false,
     aiPlanVersion: null,
@@ -33,18 +33,23 @@ function makeGoal(overrides: Partial<GoalRecord> = {}): GoalRecord {
   };
 }
 
-function makeStep(overrides: Partial<GoalStepRecord> = {}): GoalStepRecord {
+function makeTask(overrides: Partial<TaskRecord> = {}): TaskRecord {
   return {
-    id: 'step-1',
+    id: 'task-1',
     userId: 'user-1',
     goalId: 'goal-1',
     title: 'Buy running shoes',
     description: 'Pick up a supportive pair.',
     starter: 'Research two stores',
-    estimatedFinishDate: null,
+    dueDate: null,
+    scheduledStart: null,
+    scheduledEnd: null,
+    allDay: false,
     order: 0,
-    status: 'pending',
+    status: 'active',
+    completionSource: null,
     completedAt: null,
+    completedEventId: null,
     createdAt: new Date(2026, 6, 20, 9, 0, 0),
     updatedAt: new Date(2026, 6, 20, 9, 0, 0),
     ...overrides,
@@ -52,64 +57,64 @@ function makeStep(overrides: Partial<GoalStepRecord> = {}): GoalStepRecord {
 }
 
 describe('goalHelpers', () => {
-  it('normalizes step order before deriving the next step', () => {
-    const steps = [
-      makeStep({ id: 'step-2', order: 5, title: 'Week two run' }),
-      makeStep({ id: 'step-1', order: 3, title: 'Week one run', status: 'completed' }),
-      makeStep({ id: 'step-3', order: 1, title: 'Buy shoes' }),
+  it('normalizes task order before deriving the next task', () => {
+    const tasks = [
+      makeTask({ id: 'task-2', order: 5, title: 'Week two run' }),
+      makeTask({ id: 'task-1', order: 3, title: 'Week one run', status: 'completed' }),
+      makeTask({ id: 'task-3', order: 1, title: 'Buy shoes' }),
     ];
 
-    const normalized = normalizeGoalSteps(steps);
+    const normalized = normalizeGoalTasks(tasks);
 
-    expect(normalized.map((step) => step.order)).toEqual([0, 1, 2]);
-    expect(getFirstIncompleteStep(normalized)?.id).toBe('step-3');
+    expect(normalized.map((task) => task.order)).toEqual([0, 1, 2]);
+    expect(getFirstIncompleteTask(normalized)?.id).toBe('task-3');
   });
 
-  it('derives completed status when every step is complete', () => {
-    const steps = [
-      makeStep({ id: 'step-1', status: 'completed' }),
-      makeStep({ id: 'step-2', order: 1, status: 'completed' }),
+  it('derives completed status when every task is complete', () => {
+    const tasks = [
+      makeTask({ id: 'task-1', status: 'completed' }),
+      makeTask({ id: 'task-2', order: 1, status: 'completed' }),
     ];
 
-    expect(deriveGoalStatus('active', steps)).toBe('completed');
+    expect(deriveGoalStatus('active', tasks)).toBe('completed');
   });
 
   it('preserves manual completion once a goal is completed', () => {
-    const steps = [makeStep({ status: 'pending' })];
+    const tasks = [makeTask()];
 
-    expect(deriveGoalStatus('completed', steps)).toBe('completed');
+    expect(deriveGoalStatus('completed', tasks)).toBe('completed');
   });
 
-  it('builds progress text and omits next step for completed goals', () => {
+  it('builds progress text and omits next task for completed goals', () => {
     const goal = makeGoal({ status: 'completed' });
-    const steps = [
-      makeStep({ id: 'step-1', status: 'completed' }),
-      makeStep({ id: 'step-2', order: 1, status: 'completed' }),
+    const tasks = [
+      makeTask({ id: 'task-1', status: 'completed' }),
+      makeTask({ id: 'task-2', order: 1, status: 'completed' }),
     ];
 
-    const composed = composeGoalWithSteps(goal, steps);
+    const composed = composeGoalWithTasks(goal, tasks);
 
-    expect(composed.nextStep).toBeNull();
-    expect(composed.progressText).toBe('2 of 2 steps completed');
-    expect(buildGoalProgressText(steps)).toBe('2 of 2 steps completed');
+    expect(composed.nextTask).toBeNull();
+    expect(composed.progressText).toBe('2 of 2 tasks completed');
+    expect(buildGoalProgressText(tasks)).toBe('2 of 2 tasks completed');
   });
 
-  it('derives operational progress from goal steps, not AI milestone metadata', () => {
+  it('derives operational progress from goal tasks, not AI milestone metadata', () => {
     const goal = makeGoal({
       isAiAssisted: true,
       aiPlanVersion: 1,
       aiMilestones: [{ title: 'Ignored for progress', description: '' }],
     });
-    const step = makeStep({
+    const task = makeTask({
       status: 'completed',
       completedAt: new Date('2026-07-31T10:00:00.000Z'),
       updatedAt: new Date('2026-07-31T10:00:00.000Z'),
     });
 
-    const composed = composeGoalWithSteps(goal, [step]);
+    const composed = composeGoalWithTasks(goal, [task]);
 
-    expect(composed.progressText).toBe('1 of 1 steps completed');
-    expect(composed.nextStep).toBeNull();
-    expect(composed.totalStepCount).toBe(1);
+    expect(composed.progressText).toBe('1 of 1 tasks completed');
+    expect(composed.nextTask).toBeNull();
+    expect(composed.totalTaskCount).toBe(1);
   });
 });

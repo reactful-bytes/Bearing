@@ -14,9 +14,9 @@ Define an initial Firebase-aligned data model for Bearing that supports Calendar
 ## Entity Relationship Overview
 
 - One user owns many goals, notes, tasks, and Bearing calendar events.
-- One goal has many steps.
-- One step can link to many scheduled events.
-- One user owns many tasks for unscheduled work.
+- One goal has many tasks.
+- One task can link to a scheduled event.
+- One user owns many tasks for unscheduled work or goal execution.
 - Focus Mode Idea Dump creates notes linked to optional source event.
 - Premium entitlement controls AI planning availability.
 
@@ -57,7 +57,6 @@ Fields:
   - relevant: string
   - timeBound: string
 - estimatedCompletionDate: timestamp
-- nextStepId: string | null
 - status: enum (active, completed, archived)
 - isAiAssisted: boolean
 - aiPlanVersion: number | null
@@ -71,29 +70,6 @@ Indexes (planned):
 
 - userId + status + estimatedCompletionDate
 - userId + updatedAt
-
-### goalSteps
-
-Document ID: stepId
-
-Fields:
-
-- userId: string
-- goalId: string
-- title: string
-- description: string
-- starter: string
-- estimatedFinishDate: timestamp | null
-- order: number
-- status: enum (pending, in_progress, completed)
-- completedAt: timestamp | null
-- createdAt: timestamp
-- updatedAt: timestamp
-
-Indexes (planned):
-
-- goalId + order
-- userId + goalId + status
 
 ### events
 
@@ -124,7 +100,7 @@ Fields:
 - publicationBaselineHash: string | null
 - sourceTaskId: string | null
 - goalId: string | null
-- stepId: string | null
+- taskId: string | null
 - status: enum (scheduled, completed, canceled)
 - createdAt: timestamp
 - updatedAt: timestamp
@@ -132,7 +108,7 @@ Fields:
 Indexes (planned):
 
 - userId + startAt
-- userId + stepId + startAt
+- userId + taskId + startAt
 - userId + publicationStatus + updatedAt
 
 ### tasks
@@ -145,7 +121,8 @@ Fields:
 - title: string
 - description: string
 - goalId: string | null
-- stepId: string | null
+- starter: string
+- order: number
 - dueDate: timestamp | null
 - scheduledStart: timestamp | null
 - scheduledEnd: timestamp | null
@@ -157,8 +134,8 @@ Fields:
 - createdAt: timestamp
 - updatedAt: timestamp
 
-`goalId` and `stepId` are optional links to the existing goal and operational
-step records. `dueDate` is the task's date-level target; `scheduledStart` and
+`goalId` is an optional link to a goal. `starter` is the smallest useful first
+action, and `order` is the task's position within that goal. `dueDate` is the task's date-level target; `scheduledStart` and
 `scheduledEnd` are optional timestamp bounds for planned work. `allDay` is
 false for legacy documents and indicates that the scheduled bounds represent
 an all-day task when true. Clients must preserve explicit nulls when clearing
@@ -180,7 +157,7 @@ Fields:
 - body: string
 - source: enum (manual, idea_dump)
 - sourceEventId: string | null
-- sourceStepId: string | null
+- sourceTaskId: string | null
 - pinned: boolean (false for legacy documents)
 - processed: boolean
 - archived: boolean
@@ -299,8 +276,8 @@ Notes:
 ## Data Integrity Rules
 
 - Deleting a goal should soft-delete by default to preserve history.
-- Step order must be unique per goal and normalized after drag reorder.
-- Events tied to steps retain their Bearing linkage regardless of optional system-calendar publication.
+- Task order must be unique per goal and normalized after reorder.
+- Events tied to tasks retain their Bearing linkage regardless of optional system-calendar publication.
 - Firestore creation succeeds before native publication is attempted; publication failure never removes the Bearing event.
 - A confirmed external deletion marks a linked Bearing event unpublished rather than deleting it.
 - Tasks converted into events should keep the linked event ID for traceability and stay hidden from the default active list.
@@ -309,7 +286,7 @@ Notes:
 
 ## Error Handling Requirements
 
-- Return actionable errors for missing relationships (goal not found, step not found).
+- Return actionable errors for missing relationships, such as a missing goal.
 - Preserve causal context in Cloud Function failures.
 - Never log auth credentials, payment payload secrets, calendar content, native calendar IDs, or publication link keys.
 
@@ -324,9 +301,9 @@ Notes:
 - Goal-plan request metadata and successful validated drafts may remain in server-only
   `aiCreditOperations` for up to 24 hours to support coordination and idempotent retries. Failed
   records contain no draft.
-- Approved generated fields are stored only as editable goal, milestone, and step records.
+- Approved generated fields are stored only as editable goal, milestone, and task records.
 - Provider request handling and retention must be verified in the release processor review.
 
 ## Open Questions
 
-- Final definition and downstream behavior of starter field on goal steps.
+- Final definition and downstream behavior of the starter field on goal tasks.

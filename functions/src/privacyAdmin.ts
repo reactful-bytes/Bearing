@@ -16,7 +16,6 @@ import {
 export const OWNED_COLLECTIONS = [
   "events",
   "goals",
-  "goalSteps",
   "notes",
   "tasks",
 ] as const;
@@ -91,7 +90,6 @@ const readLocalUserDataAdmin = async (userId: string) => {
     aiCreditOperations: records.aiCreditOperations ?? [],
     events: records.events ?? [],
     goals: records.goals ?? [],
-    goalSteps: records.goalSteps ?? [],
     notes: records.notes ?? [],
     tasks: records.tasks ?? [],
   };

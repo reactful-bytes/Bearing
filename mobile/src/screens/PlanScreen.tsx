@@ -273,13 +273,15 @@ function PlanEventRow({
 type PlanScreenGoal = {
   title: string;
   status: 'active' | 'completed' | 'archived';
-  completedStepCount: number;
-  totalStepCount: number;
+  completedTaskCount: number;
+  totalTaskCount: number;
 };
 
 function PlanGoalRow({ goal, onPress }: { goal: PlanScreenGoal; onPress: () => void }) {
   const styles = useThemedStyles(createStyles);
-  const progressPercent = getGoalProgressPercent(goal);
+  const progressPercent = goal.totalTaskCount
+    ? Math.round((goal.completedTaskCount / goal.totalTaskCount) * 100)
+    : 0;
 
   return (
     <Pressable
@@ -383,9 +385,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
       : null;
     const nextGoalTasks = recentGoals
       .map((goal) =>
-        goal.nextStep
-          ? (activeTasks.find((task) => task.stepId === goal.nextStep?.id) ?? null)
-          : null,
+        goal.nextTask ? (activeTasks.find((task) => task.id === goal.nextTask?.id) ?? null) : null,
       )
       .filter((task): task is TaskRecord => task !== null);
     const recentTasks = [...activeTasks].sort(
@@ -609,7 +609,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
           {goalsState === 'empty' || (goalsState === 'ready' && recentGoals.length === 0) ? (
             <EmptyState
               title={emptyGoalPhrase}
-              description="Create a goal to give your next steps a home."
+              description="Create a goal to give your next tasks a home."
               presentation="compact"
               style={styles.emptyGoals}
             />
@@ -656,7 +656,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
           {tasksState === 'empty' || (tasksState === 'ready' && taskSummary.length === 0) ? (
             <EmptyState
               title="Turn intentions into action"
-              description="Review and complete your next steps"
+              description="Review and complete your next tasks"
               presentation="compact"
               style={styles.emptyTasks}
             />

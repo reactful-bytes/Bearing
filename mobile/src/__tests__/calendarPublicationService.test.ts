@@ -78,7 +78,7 @@ function bearingEvent(overrides: Partial<BearingEvent> = {}): BearingEvent {
     url: null,
     sourceTaskId: null,
     goalId: null,
-    stepId: null,
+    taskId: null,
     status: 'scheduled',
     publication: createUnpublishedMetadata(),
     createdAt: startAt,

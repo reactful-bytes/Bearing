@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { BearingEvent, CalendarDisplayEvent } from '../features/calendar/calendarTypes';
-import { GoalWithSteps } from '../features/goals/goalTypes';
+import { GoalWithTasks } from '../features/goals/goalTypes';
 import { NoteRecord } from '../features/notes/noteTypes';
 import { UserProfileRecord } from '../features/profile/profileTypes';
 import { TaskRecord } from '../features/tasks/taskTypes';
@@ -85,7 +85,7 @@ function makeEvent(index: number): BearingEvent {
     userId: 'user-1',
     sourceTaskId: null,
     goalId: null,
-    stepId: null,
+    taskId: null,
     publication: {
       status: 'unpublished',
       markerId: null,
@@ -99,7 +99,7 @@ function makeEvent(index: number): BearingEvent {
   };
 }
 
-function makeGoal(): GoalWithSteps {
+function makeGoal(): GoalWithTasks {
   return {
     id: 'goal-1',
     userId: 'user-1',
@@ -107,15 +107,14 @@ function makeGoal(): GoalWithSteps {
     description: '',
     smartMeta: { specific: '', measurable: '', achievable: '', relevant: '', timeBound: '' },
     estimatedCompletionDate: new Date(2026, 8, 30),
-    nextStepId: null,
     status: 'active',
     isAiAssisted: false,
     aiPlanVersion: null,
-    steps: [],
-    nextStep: null,
-    completedStepCount: 1,
-    totalStepCount: 2,
-    progressText: '1 of 2 steps completed',
+    tasks: [],
+    nextTask: null,
+    completedTaskCount: 1,
+    totalTaskCount: 2,
+    progressText: '1 of 2 tasks completed',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -129,7 +128,7 @@ function makeNote(): NoteRecord {
     body: 'Try a smaller release.',
     source: 'idea_dump',
     sourceEventId: null,
-    sourceStepId: null,
+    sourceTaskId: null,
     pinned: false,
     processed: false,
     archived: false,
@@ -146,7 +145,8 @@ function makeTask(index: number): TaskRecord {
     title: `Task ${index}`,
     description: '',
     goalId: null,
-    stepId: null,
+    starter: '',
+    order: index,
     dueDate: null,
     scheduledStart: null,
     scheduledEnd: null,

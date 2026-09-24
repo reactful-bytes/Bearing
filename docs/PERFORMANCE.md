@@ -27,7 +27,7 @@ Automated tests verify the write-only note action, bounded month-list properties
 
 ## Release Measurement
 
-1. Install a preview or production build with representative test data: 200 events in the visible month, 100 tasks, 50 goals with 10 steps each, and 200 notes.
+1. Install a preview or production build with representative test data: 200 events in the visible month, 100 tasks, 50 goals with 10 tasks each, and 200 notes.
 2. Force-stop the app, start a screen recording or platform trace, and launch Bearing five times.
 3. Record cold-launch time from process start until Calendar controls accept input. Report median and slowest run.
 4. Switch through Goals, Tasks, Calendar, Notes, and Profile ten times. Record any transition above 300 milliseconds.

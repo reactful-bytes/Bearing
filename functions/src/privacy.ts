@@ -17,7 +17,6 @@ export type UserDataExport = {
   aiCreditOperations: unknown[];
   events: unknown[];
   goals: unknown[];
-  goalSteps: unknown[];
   notes: unknown[];
   tasks: unknown[];
 };

@@ -16,7 +16,7 @@ type AddNoteModalProps = {
   onClose: () => void;
   onSave: (input: CreateNoteInput) => Promise<void>;
   sourceEventId?: string | null;
-  sourceStepId?: string | null;
+  sourceTaskId?: string | null;
   fullScreen?: boolean;
 };
 
@@ -25,7 +25,7 @@ export function AddNoteModal({
   onClose,
   onSave,
   sourceEventId = null,
-  sourceStepId = null,
+  sourceTaskId = null,
   fullScreen = false,
 }: AddNoteModalProps) {
   const styles = useThemedStyles(createStyles);
@@ -63,7 +63,7 @@ export function AddNoteModal({
         body: trimmedBody,
         source: 'manual',
         sourceEventId,
-        sourceStepId,
+        sourceTaskId,
       });
       handleClose();
     } catch {

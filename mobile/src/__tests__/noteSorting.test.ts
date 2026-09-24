@@ -12,7 +12,7 @@ function note(id: string, updatedAt: string, pinned = false): NoteRecord {
     body: id,
     source: 'manual',
     sourceEventId: null,
-    sourceStepId: null,
+    sourceTaskId: null,
     pinned,
     processed: false,
     archived: false,

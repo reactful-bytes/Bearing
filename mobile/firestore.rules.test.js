@@ -18,7 +18,7 @@ const path = require('node:path');
 const PROJECT_ID = 'bearing-rules-test';
 const OWNER_ID = 'owner-user';
 const OTHER_ID = 'other-user';
-const OWNED_COLLECTIONS = ['events', 'notes', 'goals', 'goalSteps', 'tasks'];
+const OWNED_COLLECTIONS = ['events', 'notes', 'goals', 'tasks'];
 const AI_CREDIT_COLLECTIONS = ['aiCreditOperations', 'aiCreditLocks'];
 
 let testEnvironment;

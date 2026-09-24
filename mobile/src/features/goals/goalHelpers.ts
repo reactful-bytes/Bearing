@@ -1,65 +1,50 @@
-import { GoalRecord, GoalStatus, GoalStepRecord, GoalWithSteps } from './goalTypes';
+import { TaskRecord } from '../tasks/taskTypes';
+import { GoalRecord, GoalStatus, GoalWithTasks } from './goalTypes';
 
-function isIncompleteStep(step: GoalStepRecord): boolean {
-  return step.status !== 'completed';
+function isIncompleteTask(task: TaskRecord): boolean {
+  return task.status !== 'completed';
 }
 
-export function sortGoalSteps(steps: GoalStepRecord[]): GoalStepRecord[] {
-  return [...steps].sort((left, right) => {
-    if (left.order !== right.order) {
-      return left.order - right.order;
-    }
-
+export function sortGoalTasks(tasks: TaskRecord[]): TaskRecord[] {
+  return [...tasks].sort((left, right) => {
+    if (left.order !== right.order) return left.order - right.order;
     return left.createdAt.getTime() - right.createdAt.getTime();
   });
 }
 
-export function normalizeGoalSteps(steps: GoalStepRecord[]): GoalStepRecord[] {
-  return sortGoalSteps(steps).map((step, index) => ({
-    ...step,
-    order: index,
-  }));
+export function normalizeGoalTasks(tasks: TaskRecord[]): TaskRecord[] {
+  return sortGoalTasks(tasks).map((task, index) => ({ ...task, order: index }));
 }
 
-export function getFirstIncompleteStep(steps: GoalStepRecord[]): GoalStepRecord | null {
-  const orderedSteps = sortGoalSteps(steps);
-  return orderedSteps.find(isIncompleteStep) ?? null;
+export function getFirstIncompleteTask(tasks: TaskRecord[]): TaskRecord | null {
+  return sortGoalTasks(tasks).find(isIncompleteTask) ?? null;
 }
 
-export function countCompletedSteps(steps: GoalStepRecord[]): number {
-  return steps.filter((step) => step.status === 'completed').length;
+export function countCompletedTasks(tasks: TaskRecord[]): number {
+  return tasks.filter((task) => task.status === 'completed').length;
 }
 
-export function buildGoalProgressText(steps: GoalStepRecord[]): string {
-  if (steps.length === 0) {
-    return 'No steps yet';
-  }
-
-  return `${countCompletedSteps(steps)} of ${steps.length} steps completed`;
+export function buildGoalProgressText(tasks: TaskRecord[]): string {
+  if (tasks.length === 0) return 'No tasks yet';
+  return `${countCompletedTasks(tasks)} of ${tasks.length} tasks completed`;
 }
 
-export function deriveGoalStatus(currentStatus: GoalStatus, steps: GoalStepRecord[]): GoalStatus {
-  if (currentStatus === 'archived' || currentStatus === 'completed') {
-    return currentStatus;
-  }
-
-  if (steps.length > 0 && steps.every((step) => step.status === 'completed')) {
-    return 'completed';
-  }
-
+export function deriveGoalStatus(currentStatus: GoalStatus, tasks: TaskRecord[]): GoalStatus {
+  if (currentStatus === 'archived' || currentStatus === 'completed') return currentStatus;
+  if (tasks.length > 0 && tasks.every((task) => task.status === 'completed')) return 'completed';
   return 'active';
 }
 
-export function composeGoalWithSteps(goal: GoalRecord, steps: GoalStepRecord[]): GoalWithSteps {
-  const orderedSteps = normalizeGoalSteps(steps);
-  const nextStep = goal.status === 'completed' ? null : getFirstIncompleteStep(orderedSteps);
+export function composeGoalWithTasks(goal: GoalRecord, tasks: TaskRecord[]): GoalWithTasks {
+  const orderedTasks = normalizeGoalTasks(tasks);
+  const nextTask = goal.status === 'completed' ? null : getFirstIncompleteTask(orderedTasks);
 
   return {
     ...goal,
-    steps: orderedSteps,
-    nextStep,
-    completedStepCount: countCompletedSteps(orderedSteps),
-    totalStepCount: orderedSteps.length,
-    progressText: buildGoalProgressText(orderedSteps),
+    tasks: orderedTasks,
+    nextTask,
+    completedTaskCount: countCompletedTasks(orderedTasks),
+    totalTaskCount: orderedTasks.length,
+    progressText: buildGoalProgressText(orderedTasks),
   };
 }

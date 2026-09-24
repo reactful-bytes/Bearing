@@ -33,7 +33,6 @@ describe("privacy handlers", () => {
           aiCreditOperations: [],
           events: [],
           goals: [],
-          goalSteps: [],
           notes: [],
           tasks: [],
         };

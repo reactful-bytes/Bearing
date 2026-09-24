@@ -87,7 +87,7 @@ export function buildEventPayload(
     url: input.url ?? null,
     sourceTaskId,
     goalId: input.goalId ?? null,
-    stepId: input.stepId ?? null,
+    taskId: input.taskId ?? null,
     status: 'scheduled',
     publication,
     createdAt: now,
@@ -132,9 +132,9 @@ export function subscribeToEventsByDateRange(
   );
 }
 
-export function subscribeToEventsByStepId(
+export function subscribeToEventsByTaskId(
   userId: string,
-  stepId: string,
+  taskId: string,
   onNext: (events: CalendarEvent[]) => void,
   onError: (error: Error) => void,
 ): Unsubscribe {
@@ -142,7 +142,7 @@ export function subscribeToEventsByStepId(
   const q = query(
     collection(db, 'events'),
     where('userId', '==', userId),
-    where('stepId', '==', stepId),
+    where('taskId', '==', taskId),
     orderBy('startAt', 'asc'),
   );
 
@@ -152,7 +152,7 @@ export function subscribeToEventsByStepId(
       onNext(snapshot.docs.map(docToCalendarEvent));
     },
     (firestoreError) => {
-      onError(new Error('Failed to load linked step events.', { cause: firestoreError }));
+      onError(new Error('Failed to load linked task events.', { cause: firestoreError }));
     },
   );
 }

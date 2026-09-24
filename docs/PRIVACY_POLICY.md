@@ -24,7 +24,7 @@ Account information includes Firebase UID, email address, display name, authenti
 timezone, locale, and account timestamps. Firebase Authentication handles password credentials;
 passwords are not stored in Bearing application documents.
 
-User content includes Bearing calendar events, goals, SMART goal fields, milestones, steps, tasks,
+User content includes Bearing calendar events, goals, SMART goal fields, milestones, tasks,
 notes, completion history, links among those records, and accepted AI-assisted plan fields.
 
 Subscription records include platform, product identifier, entitlement state, period dates, and

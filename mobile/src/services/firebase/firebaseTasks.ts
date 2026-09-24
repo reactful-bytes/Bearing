@@ -7,6 +7,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getFirestore,
   onSnapshot,
   orderBy,
@@ -34,6 +35,7 @@ import {
 } from '../../features/tasks/taskTypes';
 import { decodeTaskData } from '../../features/tasks/taskDecoder';
 import { buildTaskCreateFields, buildTaskUpdateFields } from '../../features/tasks/taskPersistence';
+import { syncGoalRollup } from './firebaseGoals';
 
 let cachedDb: Firestore | null = null;
 
@@ -90,15 +92,23 @@ export async function createTask(userId: string, input: CreateTaskInput): Promis
     updatedAt: now,
   });
 
+  if (input.goalId) {
+    await syncGoalRollup(userId, input.goalId);
+  }
+
   return docRef.id;
 }
 
 export async function updateTask(
-  _userId: string,
+  userId: string,
   taskId: string,
   fields: UpdateTaskInput,
 ): Promise<void> {
   const db = getFirebaseFirestore();
+  const taskSnapshot = await getDoc(doc(db, 'tasks', taskId));
+  const previousGoalId = taskSnapshot.exists()
+    ? ((taskSnapshot.data().goalId as string | null) ?? null)
+    : null;
   const updates: Record<string, unknown> = {
     updatedAt: Timestamp.now(),
   };
@@ -112,6 +122,12 @@ export async function updateTask(
   Object.assign(updates, buildTaskUpdateFields(fields, Timestamp.fromDate));
 
   await updateDoc(doc(db, 'tasks', taskId), updates);
+  const goalIds = new Set<string>();
+  if (previousGoalId) goalIds.add(previousGoalId);
+  if (fields.goalId) goalIds.add(fields.goalId);
+  for (const goalId of goalIds) {
+    await syncGoalRollup(userId, goalId);
+  }
 }
 
 export async function completeTask(
@@ -129,6 +145,12 @@ export async function completeTask(
     completedEventId: input.completedEventId ?? null,
     updatedAt: now,
   });
+
+  const taskSnapshot = await getDoc(doc(db, 'tasks', taskId));
+  const goalId = taskSnapshot.exists() ? (taskSnapshot.data().goalId as string | null) : null;
+  if (goalId) {
+    await syncGoalRollup(_userId, goalId);
+  }
 }
 
 function eventToConversionInput(eventId: string, data: DocumentData): TaskConversionEvent {
@@ -149,7 +171,7 @@ function eventToConversionInput(eventId: string, data: DocumentData): TaskConver
       availability: event.availability,
       url: event.url,
       goalId: event.goalId,
-      stepId: event.stepId,
+      taskId: event.taskId,
     },
   };
 }
@@ -162,7 +184,7 @@ export async function convertTaskToEvent(
 ): Promise<TaskConversionResult> {
   const db = getFirebaseFirestore();
 
-  return convertTaskToEventAtomically(
+  const conversion = await convertTaskToEventAtomically(
     {
       runTransaction: (operation) =>
         runTransaction(db, async (firestoreTransaction) =>
@@ -173,6 +195,7 @@ export async function convertTaskToEvent(
               const data = snapshot.data();
               return {
                 userId: data.userId as string,
+                goalId: (data.goalId as string | null) ?? null,
                 status: data.status as TaskRecord['status'],
                 completionSource: (data.completionSource as TaskRecord['completionSource']) ?? null,
                 completedEventId: (data.completedEventId as string | null) ?? null,
@@ -211,9 +234,18 @@ export async function convertTaskToEvent(
     input,
     completionSource,
   );
+  if (conversion.goalId) {
+    await syncGoalRollup(userId, conversion.goalId);
+  }
+  return conversion;
 }
 
 export async function deleteTask(_userId: string, taskId: string): Promise<void> {
   const db = getFirebaseFirestore();
+  const taskSnapshot = await getDoc(doc(db, 'tasks', taskId));
+  const goalId = taskSnapshot.exists() ? (taskSnapshot.data().goalId as string | null) : null;
   await deleteDoc(doc(db, 'tasks', taskId));
+  if (goalId) {
+    await syncGoalRollup(_userId, goalId);
+  }
 }

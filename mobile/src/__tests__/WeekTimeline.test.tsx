@@ -28,7 +28,7 @@ function makeEvent(
     url: null,
     sourceTaskId: null,
     goalId: null,
-    stepId: null,
+    taskId: null,
     status: 'scheduled',
     publication: createUnpublishedMetadata(),
     createdAt: startAt,

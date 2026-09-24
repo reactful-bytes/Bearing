@@ -18,11 +18,12 @@ import {
 } from './GoalDatePicker';
 import { radii, spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
-import { GoalStepRecord, GoalWithSteps } from '../../features/goals/goalTypes';
-import { DraggableStepList } from './DraggableStepList';
+import { GoalWithTasks } from '../../features/goals/goalTypes';
+import { TaskRecord } from '../../features/tasks/taskTypes';
+import { TaskRow } from '../presentation/TaskRow';
 
 type GoalDetailsModalProps = {
-  goal: GoalWithSteps | null;
+  goal: GoalWithTasks | null;
   visible: boolean;
   onClose: () => void;
   onSaveGoal: (
@@ -30,10 +31,9 @@ type GoalDetailsModalProps = {
     fields: { title: string; description: string; estimatedCompletionDate: Date },
   ) => Promise<void>;
   onMarkGoalCompleted: (goalId: string) => Promise<void>;
-  onAddStep: () => void;
-  onOpenStep: (step: GoalStepRecord) => void;
-  onToggleStepStatus: (step: GoalStepRecord) => Promise<void>;
-  onReorderSteps: (goalId: string, orderedStepIds: string[]) => Promise<void>;
+  onAddTask: () => void;
+  onOpenTask: (task: TaskRecord) => void;
+  onToggleTaskStatus: (task: TaskRecord) => Promise<void>;
 };
 
 function formatDateString(date: Date): string {
@@ -50,10 +50,9 @@ export function GoalDetailsModal({
   onClose,
   onSaveGoal,
   onMarkGoalCompleted,
-  onAddStep,
-  onOpenStep,
-  onToggleStepStatus,
-  onReorderSteps,
+  onAddTask,
+  onOpenTask,
+  onToggleTaskStatus,
 }: GoalDetailsModalProps) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
@@ -157,13 +156,7 @@ export function GoalDetailsModal({
   ) : null;
 
   return (
-    <AppModal
-      visible={visible}
-      title="Goal Details"
-      onClose={handleClose}
-      fullScreen
-      hideHeader
-    >
+    <AppModal visible={visible} title="Goal Details" onClose={handleClose} fullScreen hideHeader>
       {goal ? (
         <ScrollView
           contentContainerStyle={[
@@ -260,30 +253,33 @@ export function GoalDetailsModal({
 
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Steps</Text>
+              <Text style={styles.sectionTitle}>Tasks</Text>
               <AppButton
-                label="Add Step"
+                label="Add Task"
                 variant="secondary"
-                accessibilityLabel="Add step"
-                onPress={onAddStep}
+                accessibilityLabel="Add task"
+                onPress={onAddTask}
                 style={styles.headerButton}
                 textStyle={styles.headerButtonText}
               />
             </View>
 
-            {goal.steps.length === 0 ? (
+            {goal.tasks.length === 0 ? (
               <AppCard style={styles.summaryCard}>
                 <Text style={styles.goalDescription}>
-                  No steps yet. Add the first action for this goal.
+                  No tasks yet. Add the first action for this goal.
                 </Text>
               </AppCard>
             ) : (
-              <DraggableStepList
-                steps={goal.steps}
-                onOpenStep={onOpenStep}
-                onToggleStepStatus={(step) => void onToggleStepStatus(step)}
-                onReorder={(orderedStepIds) => onReorderSteps(goal.id, orderedStepIds)}
-              />
+              goal.tasks.map((task) => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  onPress={() => onOpenTask(task)}
+                  onToggleComplete={() => void onToggleTaskStatus(task)}
+                  context={task.dueDate ? `Due ${formatDateString(task.dueDate)}` : undefined}
+                />
+              ))
             )}
           </View>
 

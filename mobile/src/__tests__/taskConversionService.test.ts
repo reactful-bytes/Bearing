@@ -21,6 +21,7 @@ const input: CreateEventInput = {
 function activeTask(): TaskConversionTask {
   return {
     userId: 'user-1',
+    goalId: 'goal-1',
     status: 'active',
     completionSource: null,
     completedEventId: null,
@@ -47,6 +48,7 @@ function makeStore(
     (_taskId, completionSource, eventId) => {
       task = {
         userId: task?.userId ?? 'user-1',
+        goalId: task?.goalId ?? null,
         status: 'completed',
         completionSource,
         completedEventId: eventId,
@@ -84,6 +86,7 @@ describe('taskConversionService', () => {
       eventId: 'task-task-1',
       eventInput: input,
       created: true,
+      goalId: 'goal-1',
     });
     expect(createEvent).toHaveBeenCalledWith(
       'task-task-1',
@@ -115,6 +118,7 @@ describe('taskConversionService', () => {
     const { store, createEvent, completeTask } = makeStore({
       task: {
         userId: 'user-1',
+        goalId: 'goal-1',
         status: 'completed',
         completionSource: 'start_now',
         completedEventId: eventId,
@@ -124,7 +128,7 @@ describe('taskConversionService', () => {
 
     await expect(
       convertTaskToEventAtomically(store, 'user-1', 'task-1', input, 'start_now'),
-    ).resolves.toEqual({ eventId, eventInput: input, created: false });
+    ).resolves.toEqual({ eventId, eventInput: input, created: false, goalId: 'goal-1' });
     expect(createEvent).not.toHaveBeenCalled();
     expect(completeTask).not.toHaveBeenCalled();
   });
@@ -146,6 +150,7 @@ describe('taskConversionService', () => {
     const { store } = makeStore({
       task: {
         userId: 'user-1',
+        goalId: 'goal-1',
         status: 'completed',
         completionSource: 'manual',
         completedEventId: null,

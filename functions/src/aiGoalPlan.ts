@@ -17,7 +17,7 @@ import { CallableIdentityRequest } from "./security";
 const MAX_TITLE_LENGTH = 120;
 const MAX_DESCRIPTION_LENGTH = 1_000;
 const MAX_MILESTONES = 6;
-const MAX_STEPS = 8;
+const MAX_TASKS = 8;
 
 export type GoalPlanInput = {
   title: string;
@@ -42,7 +42,7 @@ export type GoalPlanDraft = {
     title: string;
     description: string;
   }>;
-  steps: Array<{
+  tasks: Array<{
     title: string;
     description: string;
     starter: string;
@@ -203,17 +203,17 @@ export function validateGoalPlanDraft(
   const draft = value as Record<string, unknown>;
   const smartMeta = draft.smartMeta as Record<string, unknown> | undefined;
   const milestones = draft.milestones;
-  const steps = draft.steps;
+  const tasks = draft.tasks;
 
-  if (!smartMeta || !Array.isArray(milestones) || !Array.isArray(steps)) {
+  if (!smartMeta || !Array.isArray(milestones) || !Array.isArray(tasks)) {
     throw new Error("AI goal plan is incomplete.");
   }
 
   if (
     milestones.length === 0 ||
     milestones.length > MAX_MILESTONES ||
-    steps.length === 0 ||
-    steps.length > MAX_STEPS
+    tasks.length === 0 ||
+    tasks.length > MAX_TASKS
   ) {
     throw new Error("AI goal plan exceeds item limits.");
   }
@@ -242,16 +242,16 @@ export function validateGoalPlanDraft(
         ),
       };
     }),
-    steps: steps.map((item, index) => {
-      const step = item as Record<string, unknown>;
+    tasks: tasks.map((item, index) => {
+      const task = item as Record<string, unknown>;
       const targetDate = requireIsoDate(
-        step.targetDate,
-        `step ${index + 1} targetDate`,
+        task.targetDate,
+        `task ${index + 1} targetDate`,
       );
 
       if (latestTargetDate && targetDate > latestTargetDate) {
         throw new Error(
-          `step ${index + 1} targetDate exceeds the goal target date.`,
+          `task ${index + 1} targetDate exceeds the goal target date.`,
         );
       }
       if (
@@ -259,19 +259,19 @@ export function validateGoalPlanDraft(
         targetDate <= earliestExclusiveTargetDate
       ) {
         throw new Error(
-          `step ${index + 1} targetDate must be after the planning start date.`,
+          `task ${index + 1} targetDate must be after the planning start date.`,
         );
       }
 
       return {
-        title: requireTrimmedString(step.title, `step ${index + 1} title`, 120),
+        title: requireTrimmedString(task.title, `task ${index + 1} title`, 120),
         description: requireTrimmedString(
-          step.description,
-          `step ${index + 1} description`,
+          task.description,
+          `task ${index + 1} description`,
           500,
         ),
         starter: requireTrimmedString(
-          step.starter,
+          task.starter,
           `step ${index + 1} starter`,
           240,
         ),

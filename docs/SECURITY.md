@@ -5,7 +5,7 @@ Last reviewed: 2026-08-27
 ## Firestore Authorization
 
 The repository-root `firestore.rules` file is authoritative. It enforces authenticated ownership for
-events, notes, goals, goal steps, and tasks; prevents ownership transfer during updates; limits user
+events, notes, goals, and tasks; prevents ownership transfer during updates; limits user
 profile updates to client-owned preferences; keeps premium entitlement and subscription writes
 server-owned; explicitly denies client access to `aiCreditOperations` and `aiCreditLocks`; and denies unknown
 collections by default.

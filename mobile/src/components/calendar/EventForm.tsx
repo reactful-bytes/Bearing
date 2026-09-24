@@ -197,7 +197,7 @@ export function EventForm({
     setError(null);
     const result = parseCalendarEventForm(values, {
       goalId: initialValues?.goalId ?? null,
-      stepId: initialValues?.stepId ?? null,
+      taskId: initialValues?.taskId ?? null,
     });
     if (!result.input) {
       setError(result.errors[0] ?? 'Event details are invalid.');

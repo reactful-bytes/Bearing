@@ -61,7 +61,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | Task ID | Status    | Description                                                 | Notes                                                                                          |
 | ------- | --------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | M4.1    | completed | Implement goals list cards with required fields             | Goal cards show title, estimated completion date, derived next step, and progress text         |
-| M4.2    | completed | Build SMART onboarding + goal creation wizard (manual path) | Manual wizard creates goals and steps with SMART framing; AI planning remains clearly disabled |
+| M4.2    | completed | Build SMART onboarding + goal creation wizard (manual path) | Manual wizard creates goals and tasks with SMART framing; AI planning remains clearly disabled |
 | M4.3    | completed | Implement Goal Details modal with edit capabilities         | Goal details support editing, scrolling, and manual completion from edit mode                  |
 | M4.4    | completed | Implement step list interactions (add, complete, reorder)   | Steps support add, complete, delete, and arrow-based reorder with persisted goal rollups       |
 | M4.5    | completed | Implement Step Details modal with schedule action           | Step details support edit, delete, linked events, and prefilled schedule-to-calendar flow      |
@@ -404,7 +404,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 | Task ID | Status    | Description                         | Notes                                                                              |
 | ------- | --------- | ----------------------------------- | ---------------------------------------------------------------------------------- |
-| M24.1   | completed | Build goal presentation components  | Fixture-driven `GoalWithSteps` components and extracted progress helper are tested |
+| M24.1   | completed | Build goal presentation components  | Fixture-driven `GoalWithTasks` components and extracted progress helper are tested |
 | M24.2   | completed | Build TaskRow                       | Row press and completion toggle are independent; optional context is tested        |
 | M24.3   | completed | Build event presentation components | Caller supplies date/time and timezone strings                                     |
 | M24.4   | completed | Build BottomNavigation              | Four content destinations plus raised Create action, safe areas, and rail pass     |
@@ -444,7 +444,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M27.1   | completed | Extend task contracts                   | Add nullable goal/step/due/schedule fields with safe legacy decoding                  |
 | M27.2   | completed | Expose event sourceTaskId               | Serialize and decode nullable task provenance; Calendar must not infer IDs            |
 | M27.3   | completed | Add note pinned field                   | Missing legacy documents decode as `false`; update mutations and sorting              |
-| M27.4   | completed | Confirm operational goal-step timeline  | GoalStepRecord is the only editable timeline source                                   |
+| M27.4   | completed | Confirm task-based goal timeline   | Tasks are the only editable timeline source                                         |
 | M27.5   | completed | Decide Focus persistence                | Either define the minimum persistent session model or document process-local behavior |
 | M27.6   | completed | Deploy-compatible backend updates       | Update services, export/delete, rules, indexes, docs, and emulator tests              |
 | M27.7   | completed | Validate compatibility and deploy order | Deploy rules and indexes before releasing field-writing clients                       |
@@ -481,8 +481,8 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M30.1   | completed | Restyle Goals List               | Map Current to existing persisted `active` status                             |
 | M30.2   | completed | Add goal list actions and states | Use GoalCard plus Create Goal and explicit loading/empty/error states         |
 | M30.3   | completed | Route Goal Detail                | Replace modal only after task/timeline and mutation parity exists             |
-| M30.4   | completed | Link tasks to goals and steps    | Support toggle, edit, delete, due/schedule, and optional step context         |
-| M30.5   | completed | Render operational timeline      | Use ordered operational steps with linked tasks; no duplicate milestone model |
+| M30.4   | completed | Link tasks to goals              | Support toggle, edit, delete, due/schedule, and optional goal context          |
+| M30.5   | completed | Render operational timeline      | Use ordered goal tasks; no duplicate milestone model                           |
 | M30.6   | completed | Preserve standalone task access  | Keep unlinked task access from Plan and Create                                |
 | M30.7   | completed | Validate goals and tasks         | Cover filters, mutations, ordering, and navigation                            |
 

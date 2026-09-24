@@ -47,7 +47,7 @@ const validDraft: Omit<GoalPlanDraft, "promptVersion"> = {
       description: "Develop a consistent weekly routine.",
     },
   ],
-  steps: [
+  tasks: [
     {
       title: "Choose three weekly run windows",
       description: "Reserve repeatable times that fit the week.",
@@ -76,18 +76,18 @@ describe("AI goal plan", () => {
   });
 
   it("rejects malformed provider output", () => {
-    assert.throws(() => validateGoalPlanDraft({ ...validDraft, steps: [] }));
+    assert.throws(() => validateGoalPlanDraft({ ...validDraft, tasks: [] }));
     assert.throws(() =>
       validateGoalPlanDraft({
         ...validDraft,
-        steps: [{ ...validDraft.steps[0], targetDate: "2027-02-31" }],
+        tasks: [{ ...validDraft.tasks[0], targetDate: "2027-02-31" }],
       }),
     );
     assert.throws(() =>
       validateGoalPlanDraft(
         {
           ...validDraft,
-          steps: [{ ...validDraft.steps[0], targetDate: "2028-01-01" }],
+          tasks: [{ ...validDraft.tasks[0], targetDate: "2028-01-01" }],
         },
         "2027-06-01",
       ),
@@ -240,7 +240,7 @@ describe("AI goal plan", () => {
             requestId: "123e4567-e89b-42d3-a456-426614174000",
           },
         },
-        async () => ({ ...validDraft, steps: [] }),
+        async () => ({ ...validDraft, tasks: [] }),
         async () => "active",
         creditService({
           run: async (_userId, _requestId, _fingerprint, generate) => {

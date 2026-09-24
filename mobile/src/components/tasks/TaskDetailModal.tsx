@@ -74,6 +74,7 @@ export function TaskDetailModal({
   const [editMode, setEditMode] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [starter, setStarter] = useState('');
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,6 +87,7 @@ export function TaskDetailModal({
     setEditMode(false);
     setTitle(task.title);
     setDescription(task.description);
+    setStarter(task.starter);
     setSaving(false);
     setConfirmingDelete(false);
     setError(null);
@@ -117,6 +119,7 @@ export function TaskDetailModal({
       await onSave(task.id, {
         title: trimmedTitle,
         description: description.trim(),
+        starter: starter.trim(),
       });
       setEditMode(false);
       setConfirmingDelete(false);
@@ -193,6 +196,10 @@ export function TaskDetailModal({
             <Text style={styles.summaryDate}>
               Updated {formatDateTime(task.updatedAt, timeFormat, locale)}
             </Text>
+            <Text style={styles.summaryDate}>
+              Due{' '}
+              {task.dueDate ? formatDateTime(task.dueDate, timeFormat, locale) : 'Not scheduled'}
+            </Text>
             {task.status === 'completed' ? (
               <Text style={styles.summaryDate}>
                 Completed {formatDateTime(task.completedAt, timeFormat, locale)}
@@ -218,6 +225,15 @@ export function TaskDetailModal({
                 onChangeText={setDescription}
                 multiline
                 placeholder="Optional details"
+              />
+
+              <FormField
+                label="Starter"
+                accessibilityLabel="Edit task starter"
+                value={starter}
+                onChangeText={setStarter}
+                multiline
+                placeholder="Optional first move"
               />
             </View>
           ) : (

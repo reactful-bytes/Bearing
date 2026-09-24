@@ -39,7 +39,6 @@ function toTaskFocusEvent(task: {
   title: string;
   description: string;
   goalId: string | null;
-  stepId: string | null;
   scheduledStart: Date | null;
   scheduledEnd: Date | null;
   allDay: boolean;
@@ -65,7 +64,7 @@ function toTaskFocusEvent(task: {
     url: null,
     sourceTaskId: task.id,
     goalId: task.goalId,
-    stepId: task.stepId,
+    taskId: task.id,
     status: 'scheduled',
     publication: createUnpublishedMetadata(),
     createdAt: task.scheduledStart,
@@ -102,7 +101,7 @@ function toLaunchFocusEvent(params: PlanStackParamList['FocusMode']): BearingEve
     url: null,
     sourceTaskId: params.taskId ?? null,
     goalId: null,
-    stepId: null,
+    taskId: null,
     status: 'scheduled',
     publication: createUnpublishedMetadata(),
     createdAt: now,

@@ -59,17 +59,17 @@ The calendar event query requires a composite index on `userId` + `startAt`:
 
 For M4+ milestones, consider creating these indexes preemptively:
 
-| Collection  | Fields                                    | Purpose                                   |
-| ----------- | ----------------------------------------- | ----------------------------------------- |
-| `events`    | userId + stepId + startAt                 | Filter events by goal step                |
-| `events`    | userId + publicationStatus + updatedAt    | Recover pending linked-event operations   |
-| `goals`     | userId + status + estimatedCompletionDate | List active goals by target date          |
-| `goals`     | userId + updatedAt                        | Sort goals by recent update               |
-| `goalSteps` | goalId + order                            | List steps within a goal                  |
-| `goalSteps` | userId + goalId + status                  | Filter goal steps by status               |
-| `notes`     | userId + updatedAt                        | Sort notes by recent update               |
-| `notes`     | userId + source + createdAt               | Filter notes by source (manual/idea_dump) |
-| `tasks`     | userId + updatedAt                        | Sort tasks by recent update               |
+| Collection | Fields                                    | Purpose                                   |
+| ---------- | ----------------------------------------- | ----------------------------------------- |
+| `events`   | userId + taskId + startAt                 | Filter events by goal task                |
+| `events`   | userId + publicationStatus + updatedAt    | Recover pending linked-event operations   |
+| `goals`    | userId + status + estimatedCompletionDate | List active goals by target date          |
+| `goals`    | userId + updatedAt                        | Sort goals by recent update               |
+| `tasks`    | goalId + order                            | List tasks within a goal                  |
+| `tasks`    | userId + goalId + status                  | Filter goal tasks by status               |
+| `notes`    | userId + updatedAt                        | Sort notes by recent update               |
+| `notes`    | userId + source + createdAt               | Filter notes by source (manual/idea_dump) |
+| `tasks`    | userId + updatedAt                        | Sort tasks by recent update               |
 
 ## 4) Test Firestore Connectivity
 

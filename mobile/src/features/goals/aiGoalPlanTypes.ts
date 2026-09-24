@@ -21,7 +21,7 @@ export type AiGoalPlanDraft = {
   promptVersion: number;
   smartMeta: GoalSmartMeta;
   milestones: AiGoalMilestone[];
-  steps: {
+  tasks: {
     title: string;
     description: string;
     starter: string;

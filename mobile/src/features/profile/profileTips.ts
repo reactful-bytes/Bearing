@@ -24,7 +24,7 @@ export const PROFILE_TIPS: ProfileTip[] = [
   {
     id: 'tip-5',
     title: 'Bearing Tip',
-    body: 'Tie goal steps to real calendar time whenever possible. Planned intent is weaker than scheduled intent.',
+    body: 'Tie goal tasks to real calendar time whenever possible. Planned intent is weaker than scheduled intent.',
   },
 ];
 

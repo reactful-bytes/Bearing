@@ -13,7 +13,7 @@ import {
 import { EventCard, EventRow, EventSourceChip } from '../presentation/EventPresentation';
 import { TaskRow } from '../presentation/TaskRow';
 import { CalendarDisplayEvent } from '../../features/calendar/calendarTypes';
-import { GoalStepRecord, GoalWithSteps } from '../../features/goals/goalTypes';
+import { GoalWithTasks } from '../../features/goals/goalTypes';
 import { TaskRecord } from '../../features/tasks/taskTypes';
 import { useTheme } from '../../design/ThemeProvider';
 import { icons } from '../../design/icons';
@@ -39,39 +39,43 @@ import { SectionHeading } from './SectionHeading';
 import { SegmentedControl } from './SegmentedControl';
 import { TextLink } from './TextLink';
 
-const fixtureStep: GoalStepRecord = {
-  id: 'gallery-step',
+const fixtureTask: TaskRecord = {
+  id: 'gallery-task',
   userId: 'gallery-user',
   goalId: 'gallery-goal',
   title: 'Schedule three runs',
   description: 'Put sessions on the calendar.',
   starter: 'Choose two weekday runs and one weekend run.',
-  estimatedFinishDate: new Date(2026, 4, 1),
   order: 0,
-  status: 'pending',
+  dueDate: new Date(2026, 4, 1),
+  scheduledStart: null,
+  scheduledEnd: null,
+  allDay: false,
+  status: 'active',
+  completionSource: null,
   completedAt: null,
+  completedEventId: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
 
-const fixtureGoal: GoalWithSteps = {
+const fixtureGoal: GoalWithTasks = {
   id: 'gallery-goal',
   userId: 'gallery-user',
   title: 'Run a comfortable 10k',
   description: 'Build a steady weekly practice.',
   smartMeta: { specific: '', measurable: '', achievable: '', relevant: '', timeBound: '' },
   estimatedCompletionDate: new Date(2026, 8, 1),
-  nextStepId: fixtureStep.id,
   status: 'active',
   isAiAssisted: false,
   aiPlanVersion: null,
   createdAt: new Date(),
   updatedAt: new Date(),
-  steps: [fixtureStep],
-  nextStep: fixtureStep,
-  completedStepCount: 1,
-  totalStepCount: 4,
-  progressText: '1 of 4 steps completed',
+  tasks: [fixtureTask],
+  nextTask: fixtureTask,
+  completedTaskCount: 0,
+  totalTaskCount: 1,
+  progressText: '0 of 1 tasks completed',
 };
 
 const fixtureEvent: CalendarDisplayEvent = {
@@ -92,7 +96,7 @@ const fixtureEvent: CalendarDisplayEvent = {
   userId: 'gallery-user',
   sourceTaskId: null,
   goalId: fixtureGoal.id,
-  stepId: fixtureStep.id,
+  taskId: fixtureTask.id,
   publication: {
     status: 'unpublished',
     markerId: null,
@@ -130,7 +134,8 @@ export function FoundationGallery() {
     title: 'Lay out running clothes',
     description: '',
     goalId: null,
-    stepId: null,
+    starter: '',
+    order: 0,
     dueDate: null,
     scheduledStart: null,
     scheduledEnd: null,
@@ -322,7 +327,7 @@ export function FoundationGallery() {
         />
         <RecoveryCard
           title="Could not refresh"
-          description="Recovery actions retain a clear next step."
+          description="Recovery actions retain a clear next task."
           onRetry={() => announce('Retry requested.')}
         />
         <EmptyState
@@ -375,8 +380,8 @@ export function FoundationGallery() {
           onPress={() => announce('Goal card pressed.')}
         />
         <GoalTimeline
-          steps={[fixtureStep]}
-          onPressStep={(step) => announce(`Step selected: ${step.title}`)}
+          tasks={[fixtureTask]}
+          onPressTask={(task) => announce(`Task selected: ${task.title}`)}
         />
         <GoalMilestones
           milestones={[{ title: 'First 5k', description: 'Build a dependable rhythm.' }]}

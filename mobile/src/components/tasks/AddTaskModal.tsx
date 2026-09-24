@@ -19,7 +19,6 @@ type AddTaskModalProps = {
   onClose: () => void;
   onSave: (input: CreateTaskInput) => Promise<void>;
   initialGoalId?: string | null;
-  initialStepId?: string | null;
   initialTitle?: string;
   initialDescription?: string;
   contextLabel?: string;
@@ -31,7 +30,6 @@ export function AddTaskModal({
   onClose,
   onSave,
   initialGoalId = null,
-  initialStepId = null,
   initialTitle = '',
   initialDescription = '',
   contextLabel,
@@ -42,6 +40,7 @@ export function AddTaskModal({
   const { profile } = useUserProfile();
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
+  const [starter, setStarter] = useState('');
   const [scheduleVisible, setScheduleVisible] = useState(false);
   const [dueDate, setDueDate] = useState('');
   const [scheduledStartDate, setScheduledStartDate] = useState('');
@@ -61,6 +60,7 @@ export function AddTaskModal({
   function resetForm(): void {
     setTitle('');
     setDescription('');
+    setStarter('');
     setScheduleVisible(false);
     setDueDate('');
     setScheduledStartDate('');
@@ -127,8 +127,8 @@ export function AddTaskModal({
       await onSave({
         title: trimmedTitle,
         description: description.trim(),
+        starter: starter.trim(),
         ...(initialGoalId ? { goalId: initialGoalId } : {}),
-        ...(initialStepId ? { stepId: initialStepId } : {}),
         ...(dueDateValue ? { dueDate: dueDateValue } : {}),
         ...(scheduledStart ? { scheduledStart } : {}),
         ...(scheduledEnd ? { scheduledEnd } : {}),
@@ -179,6 +179,15 @@ export function AddTaskModal({
           multiline
           labelStyle={styles.fieldLabel}
           inputStyle={styles.textArea}
+        />
+
+        <FormField
+          label="Starter"
+          accessibilityLabel="Task starter"
+          placeholder="Optional first move"
+          value={starter}
+          onChangeText={setStarter}
+          multiline
         />
 
         <AppButton

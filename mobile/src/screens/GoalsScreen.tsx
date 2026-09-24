@@ -4,10 +4,10 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { useThemedStyles } from '../design/useThemedStyles';
 import { AddEventModal } from '../components/calendar/AddEventModal';
-import { AddStepModal } from '../components/goals/AddStepModal';
 import { CreateGoalModal } from '../components/goals/CreateGoalModal';
 import { GoalDetailsModal } from '../components/goals/GoalDetailsModal';
-import { StepDetailModal } from '../components/goals/StepDetailModal';
+import { AddTaskModal } from '../components/tasks/AddTaskModal';
+import { TaskDetailModal } from '../components/tasks/TaskDetailModal';
 import { GoalCard, GoalStatusTabs } from '../components/presentation/GoalPresentation';
 import type { GoalFilter } from '../components/presentation/GoalPresentation';
 import { AppCard } from '../components/ui/AppCard';
@@ -15,19 +15,15 @@ import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { layout, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
-import {
-  CreateGoalInput,
-  CreateGoalStepInput,
-  GoalStepRecord,
-  GoalWithSteps,
-} from '../features/goals/goalTypes';
+import { CreateGoalInput, GoalWithTasks } from '../features/goals/goalTypes';
 import { hasActivePremiumStatus } from '../features/premium/premiumAccess';
 import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { useGoals } from '../features/goals/useGoals';
-import { useGoalStepEvents } from '../features/goals/useGoalStepEvents';
 import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
+import { useTasks } from '../features/tasks/useTasks';
+import { CreateTaskInput, TaskRecord, UpdateTaskInput } from '../features/tasks/taskTypes';
 import { PlanStackParamList, RootStackParamList } from '../navigation/navigationTypes';
 import {
   generateAiGoalPlanDraft,
@@ -62,26 +58,16 @@ type GoalsScreenProps = {
 export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
-  const { createEvent, publicationCalendarTitle } = useCalendarPublication();
+  const { publicationCalendarTitle, publishEvent } = useCalendarPublication();
   const { authUser, isAnonymous, profile } = useUserProfile();
   const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
-  const {
-    goals,
-    uiState,
-    createGoal,
-    updateGoal,
-    markGoalCompleted,
-    createStep,
-    deleteStep,
-    updateStep,
-    reorderSteps,
-    retry,
-  } = useGoals();
+  const { goals, uiState, createGoal, updateGoal, markGoalCompleted, retry } = useGoals();
+  const { createTask, updateTask, completeTask, convertTaskToEvent, deleteTask } = useTasks();
   const [createGoalVisible, setCreateGoalVisible] = useState(false);
-  const [addStepVisible, setAddStepVisible] = useState(false);
+  const [addTaskVisible, setAddTaskVisible] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
-  const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
-  const [scheduleStepId, setScheduleStepId] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [scheduleTaskId, setScheduleTaskId] = useState<string | null>(null);
   const [goalFilter, setGoalFilter] = useState<GoalFilter>('active');
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
 
@@ -120,49 +106,61 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
     () => goals.find((goal) => goal.id === selectedGoalId) ?? null,
     [goals, selectedGoalId],
   );
-  const selectedStep = useMemo(() => {
-    if (!selectedStepId) {
-      return null;
-    }
-
-    const foundGoal = goals.find((goal) => goal.steps.some((step) => step.id === selectedStepId));
-    return foundGoal?.steps.find((step) => step.id === selectedStepId) ?? null;
-  }, [goals, selectedStepId]);
-  const scheduleStep = useMemo(() => {
-    if (!scheduleStepId) {
-      return null;
-    }
-
-    const foundGoal = goals.find((goal) => goal.steps.some((step) => step.id === scheduleStepId));
-    return foundGoal?.steps.find((step) => step.id === scheduleStepId) ?? null;
-  }, [goals, scheduleStepId]);
-  const scheduleGoal = useMemo(() => {
-    if (!scheduleStepId) {
-      return null;
-    }
-
-    return goals.find((goal) => goal.steps.some((step) => step.id === scheduleStepId)) ?? null;
-  }, [goals, scheduleStepId]);
-  const { events: linkedEvents, uiState: linkedEventsState } = useGoalStepEvents(
-    selectedStep?.id ?? null,
-  );
+  const selectedTask = selectedGoal?.tasks.find((task) => task.id === selectedTaskId) ?? null;
+  const scheduleTask = selectedGoal?.tasks.find((task) => task.id === scheduleTaskId) ?? null;
 
   async function handleCreateGoal(input: CreateGoalInput): Promise<void> {
     await createGoal(input);
     setCreateGoalVisible(false);
   }
 
-  async function handleCreateStep(input: CreateGoalStepInput): Promise<void> {
+  async function handleCreateTask(input: CreateTaskInput): Promise<void> {
     if (!selectedGoal) {
       throw new Error('Goal not found.');
     }
 
-    await createStep(selectedGoal.id, input);
+    await createTask({ ...input, goalId: selectedGoal.id });
+    setAddTaskVisible(false);
   }
 
-  async function handleDeleteStep(step: GoalStepRecord): Promise<void> {
-    await deleteStep(step.id);
-    setSelectedStepId(null);
+  async function handleUpdateTask(taskId: string, fields: UpdateTaskInput): Promise<void> {
+    await updateTask(taskId, fields);
+  }
+
+  async function handleDeleteTask(taskId: string): Promise<void> {
+    await deleteTask(taskId);
+    setSelectedTaskId(null);
+  }
+
+  async function handleToggleTask(task: TaskRecord): Promise<void> {
+    await completeTask(task.id, { completionSource: 'manual' });
+  }
+
+  async function handleScheduleTaskEvent(
+    input: CreateEventInput,
+    options: CreateEventOptions,
+  ): Promise<void> {
+    if (!scheduleTask) throw new Error('Task not found.');
+    const conversion = await convertTaskToEvent(scheduleTask.id, input, 'scheduled');
+    if (options.publishToDevice) await publishEvent(conversion.eventId, conversion.eventInput);
+    setScheduleTaskId(null);
+  }
+
+  async function handleStartNow(task: TaskRecord, options: CreateEventOptions): Promise<void> {
+    const startAt = new Date();
+    const endAt = new Date(startAt.getTime() + 30 * 60_000);
+    const input: CreateEventInput = {
+      title: task.title,
+      description: task.description,
+      startAt,
+      endAt,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      goalId: task.goalId,
+      taskId: task.id,
+    };
+    const conversion = await convertTaskToEvent(task.id, input, 'start_now');
+    if (options.publishToDevice) await publishEvent(conversion.eventId, conversion.eventInput);
+    setSelectedTaskId(null);
   }
 
   async function handleSaveGoal(
@@ -172,33 +170,14 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
     await updateGoal(goalId, fields);
   }
 
-  async function handleSaveStep(
-    stepId: string,
-    fields: {
-      title: string;
-      description: string;
-      starter: string;
-      estimatedFinishDate: Date | null;
-    },
-  ): Promise<void> {
-    await updateStep(stepId, fields);
-  }
-
-  async function handleToggleStepStatus(step: GoalStepRecord): Promise<void> {
-    await updateStep(step.id, {
-      status: step.status === 'completed' ? 'pending' : 'completed',
-    });
-  }
-
-  async function handleScheduleStepEvent(
+  async function handleScheduleTaskFromModal(
     input: CreateEventInput,
     options: CreateEventOptions,
   ): Promise<void> {
-    await createEvent(input, options);
-    setScheduleStepId(null);
+    await handleScheduleTaskEvent(input, options);
   }
 
-  function openGoal(goal: GoalWithSteps): void {
+  function openGoal(goal: GoalWithTasks): void {
     if (navigation?.navigate) {
       navigation.navigate('GoalDetail', { goalId: goal.id });
       return;
@@ -209,8 +188,8 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
 
   function closeGoalDetails(): void {
     setSelectedGoalId(null);
-    setSelectedStepId(null);
-    setAddStepVisible(false);
+    setSelectedTaskId(null);
+    setAddTaskVisible(false);
   }
 
   return (
@@ -243,7 +222,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
           <AppCard>
             <Text style={styles.stateTitle}>Loading goals...</Text>
             <Text style={styles.stateDescription}>
-              Pulling in your current goals and step order.
+              Pulling in your current goals and task order.
             </Text>
           </AppCard>
         ) : null}
@@ -269,12 +248,12 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
             </Text>
             <Text style={styles.stateDescription}>
               {goalFilter === 'active'
-                ? 'Create a goal to start building a step-by-step plan.'
+                ? 'Create a goal to start building a task plan.'
                 : goalFilter === 'completed'
                   ? 'Goals you finish will stay available here.'
                   : goalFilter === 'archived'
                     ? 'Archived goals will stay available here for reference.'
-                    : 'Create your first goal to start building a step-by-step plan.'}
+                    : 'Create your first goal to start building a task plan.'}
             </Text>
           </AppCard>
         ) : null}
@@ -310,58 +289,60 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
 
       <GoalDetailsModal
         goal={selectedGoal}
-        visible={selectedGoal !== null && !addStepVisible}
+        visible={selectedGoal !== null && !addTaskVisible}
         onClose={closeGoalDetails}
         onSaveGoal={handleSaveGoal}
         onMarkGoalCompleted={markGoalCompleted}
-        onAddStep={() => setAddStepVisible(true)}
-        onOpenStep={(step) => setSelectedStepId(step.id)}
-        onToggleStepStatus={handleToggleStepStatus}
-        onReorderSteps={reorderSteps}
+        onAddTask={() => setAddTaskVisible(true)}
+        onOpenTask={(task) => setSelectedTaskId(task.id)}
+        onToggleTaskStatus={handleToggleTask}
       />
 
-      <AddStepModal
-        visible={addStepVisible}
-        onClose={() => setAddStepVisible(false)}
-        onSave={handleCreateStep}
+      <AddTaskModal
+        visible={addTaskVisible}
+        onClose={() => setAddTaskVisible(false)}
+        onSave={handleCreateTask}
+        initialGoalId={selectedGoal?.id ?? null}
+        contextLabel="Linked to this goal"
       />
 
-      <StepDetailModal
-        goalTitle={selectedGoal?.title ?? scheduleGoal?.title ?? 'Goal'}
-        step={selectedStep}
-        visible={selectedStep !== null}
-        linkedEvents={linkedEvents}
-        linkedEventsState={linkedEventsState}
+      <TaskDetailModal
+        task={selectedTask}
+        visible={selectedTask !== null}
         locale={profile?.locale}
         timeFormat={profile?.timeFormat}
-        onClose={() => setSelectedStepId(null)}
-        onSaveStep={handleSaveStep}
-        onDeleteStep={handleDeleteStep}
-        onSchedule={(step) => setScheduleStepId(step.id)}
-        onToggleComplete={handleToggleStepStatus}
+        onClose={() => setSelectedTaskId(null)}
+        onSave={handleUpdateTask}
+        onDelete={handleDeleteTask}
+        onSchedule={(task) => setScheduleTaskId(task.id)}
+        onStartNow={(task) => {
+          void handleStartNow(task, { publishToDevice: false });
+        }}
+        onMarkComplete={async (task) => {
+          await handleToggleTask(task);
+          setSelectedTaskId(null);
+        }}
       />
 
       <AddEventModal
-        visible={scheduleStep !== null}
-        modalTitle="Schedule Step Event"
-        initialDate={
-          scheduleStep?.estimatedFinishDate ?? scheduleGoal?.estimatedCompletionDate ?? new Date()
-        }
+        visible={scheduleTask !== null}
+        modalTitle="Schedule Task"
+        initialDate={scheduleTask?.dueDate ?? new Date()}
         initialValues={
-          scheduleStep
+          scheduleTask
             ? {
-                title: scheduleStep.title,
-                description: scheduleStep.description,
-                goalId: scheduleGoal?.id ?? null,
-                stepId: scheduleStep.id,
+                title: scheduleTask.title,
+                description: scheduleTask.description,
+                goalId: scheduleTask.goalId,
+                taskId: scheduleTask.id,
               }
             : undefined
         }
         publicationCalendarTitle={publicationCalendarTitle}
         locale={profile?.locale}
         timeFormat={profile?.timeFormat}
-        onClose={() => setScheduleStepId(null)}
-        onSave={handleScheduleStepEvent}
+        onClose={() => setScheduleTaskId(null)}
+        onSave={handleScheduleTaskFromModal}
       />
     </SafeAreaView>
   );

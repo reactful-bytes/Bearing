@@ -425,8 +425,8 @@ export function FocusModeOverlay({
         body: trimmedBody,
         source: 'idea_dump',
         sourceEventId: focusSummary.event?.id ?? null,
-        sourceStepId:
-          focusSummary.event?.ownership === 'bearing' ? focusSummary.event.stepId : null,
+        sourceTaskId:
+          focusSummary.event?.ownership === 'bearing' ? focusSummary.event.taskId : null,
       });
       setIdeaBody('');
       setSavedCount((count) => count + 1);

@@ -5,7 +5,7 @@
 - Recovery point objective (RPO): 24 hours for Firestore account data.
 - Recovery time objective (RTO): 4 hours after incident declaration.
 - Retention: 30 daily exports, 12 monthly exports, and one pre-migration export per production schema change.
-- Scope: `users`, `events`, `goals`, `goalSteps`, `notes`, `tasks`, and `subscriptions`.
+- Scope: `users`, `events`, `goals`, `notes`, `tasks`, and `subscriptions`.
 - RevenueCat V2 balances, grants, and transactions are provider authority and are not recoverable
   from Firestore exports. Temporary `aiCreditOperations`/`aiCreditLocks` are coordination state,
   not ledger data, and are excluded from the durable backup objective.

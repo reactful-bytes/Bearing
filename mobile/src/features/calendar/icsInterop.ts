@@ -199,7 +199,7 @@ export function serializeEventsToIcs(events: readonly CalendarDisplayEvent[]): s
       appendRecurrence(lines, event);
       event.alarms.forEach((alarm) => appendAlarm(lines, alarm, event.title));
       if (event.goalId) pushContentLine(lines, `X-BEARING-GOAL-ID:${escapeText(event.goalId)}`);
-      if (event.stepId) pushContentLine(lines, `X-BEARING-STEP-ID:${escapeText(event.stepId)}`);
+      if (event.taskId) pushContentLine(lines, `X-BEARING-TASK-ID:${escapeText(event.taskId)}`);
 
       pushContentLine(lines, 'END:VEVENT');
     });

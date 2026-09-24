@@ -47,7 +47,8 @@ function makeTask(overrides: Partial<TaskRecord> = {}): TaskRecord {
     title: 'Inbox zero',
     description: 'Clear the remaining work messages.',
     goalId: null,
-    stepId: null,
+    starter: '',
+    order: 0,
     dueDate: null,
     scheduledStart: null,
     scheduledEnd: null,
@@ -91,6 +92,7 @@ describe('TasksScreen', () => {
           timezone: 'UTC',
         },
         created: true,
+        goalId: null,
       }),
       deleteTask: async () => undefined,
       retry,
@@ -130,6 +132,7 @@ describe('TasksScreen', () => {
           timezone: 'UTC',
         },
         created: true,
+        goalId: null,
       }),
       deleteTask: async () => undefined,
       retry: jest.fn(),
@@ -174,6 +177,7 @@ describe('TasksScreen', () => {
           timezone: 'UTC',
         },
         created: true,
+        goalId: null,
       }),
       deleteTask: async () => undefined,
       retry: jest.fn(),
@@ -209,14 +213,13 @@ describe('TasksScreen', () => {
           timezone: 'UTC',
         },
         created: true,
+        goalId: null,
       }),
       deleteTask: async () => undefined,
       retry: jest.fn(),
     });
 
-    render(
-      <TasksScreen route={{ params: { createTask: true } }} navigation={{ setParams }} />,
-    );
+    render(<TasksScreen route={{ params: { createTask: true } }} navigation={{ setParams }} />);
 
     expect(screen.queryByRole('button', { name: 'New task' })).toBeNull();
     expect(setParams).toHaveBeenCalledWith({ createTask: undefined });
@@ -234,6 +237,7 @@ describe('TasksScreen', () => {
       expect(createTaskMock).toHaveBeenCalledWith({
         title: 'Plan weekly meals',
         description: 'Make a simple shopping list first.',
+        starter: '',
       });
     });
   });
@@ -248,6 +252,7 @@ describe('TasksScreen', () => {
       eventId: 'task-task-1',
       eventInput,
       created: true,
+      goalId: null,
     }));
 
     (useCalendarPublication as jest.MockedFunction<typeof useCalendarPublication>).mockReturnValue({
@@ -305,6 +310,7 @@ describe('TasksScreen', () => {
       eventId: 'task-task-1',
       eventInput,
       created: true,
+      goalId: null,
     }));
     const publishEvent = jest.fn(async () => undefined);
 

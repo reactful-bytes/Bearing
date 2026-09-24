@@ -83,7 +83,7 @@ export function CreditPackPurchaseModal({
         <Text style={styles.headline}>Keep your planning momentum</Text>
         <Text style={styles.body}>
           Add AI planning credits when you want more help turning goals into editable milestones and
-          next steps.
+          next tasks.
         </Text>
       </View>
 

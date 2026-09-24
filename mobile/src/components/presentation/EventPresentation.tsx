@@ -12,7 +12,7 @@ type EventSourceChipProps = {
 
 export function getEventKindLabel(event: CalendarDisplayEvent): string {
   if (event.ownership === 'bearing' && event.sourceTaskId !== null) return 'Task';
-  if (event.ownership === 'bearing' && event.stepId !== null) return 'Milestone';
+  if (event.ownership === 'bearing' && event.taskId !== null) return 'Task';
   return '';
 }
 

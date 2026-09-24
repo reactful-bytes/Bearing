@@ -42,19 +42,19 @@ Map user flows for all five tabs, modal transitions, and key branch points so im
    - Goal input
    - Bearing 360 AI branch or manual branch
    - Completion date (manual path)
-   - Step creation
+   - Task creation
    - Finish
 4. User taps existing goal card.
 5. Goal Details modal opens (read mode).
 6. User options in Goal Details:
    - Edit goal
-   - Add step
-   - Reorder steps (drag handle)
-   - Tap step card to open Step Details
+   - Add task
+   - Reorder tasks (drag handle)
+   - Tap task card to open Task Details
    - Close modal
-7. Step Details modal options:
-   - Edit step
-   - Schedule event tied to goal + step
+7. Task Details modal options:
+   - Edit task
+   - Schedule event tied to goal + task
    - View linked event list
    - Back to Goal Details
 

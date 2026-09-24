@@ -27,7 +27,7 @@ function makeNote(): NoteRecord {
     body: 'Turn this into something useful.',
     source: 'manual',
     sourceEventId: null,
-    sourceStepId: null,
+    sourceTaskId: null,
     processed: false,
     pinned: false,
     archived: false,

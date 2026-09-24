@@ -101,7 +101,7 @@ export function decodeCalendarEventData(id: string, data: Record<string, unknown
     url: typeof data.url === 'string' ? data.url : null,
     sourceTaskId: typeof data.sourceTaskId === 'string' ? data.sourceTaskId : null,
     goalId: (data.goalId as string | null) ?? null,
-    stepId: (data.stepId as string | null) ?? null,
+    taskId: (data.taskId as string | null) ?? null,
     status: data.status as EventStatus,
     publication: decodePublication(data.publication),
     createdAt: (data.createdAt as TimestampLike).toDate(),

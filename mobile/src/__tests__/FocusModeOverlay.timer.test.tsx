@@ -38,7 +38,7 @@ function makeActiveEvent(startAt: Date, endAt: Date): CalendarDisplayEvent {
     sourceTaskId: null,
     status: 'scheduled',
     goalId: null,
-    stepId: null,
+    taskId: null,
     publication: createUnpublishedMetadata(),
     createdAt: startAt,
     updatedAt: startAt,
