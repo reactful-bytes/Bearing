@@ -4,6 +4,26 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { EventForm } from '../components/calendar/EventForm';
 
 describe('EventForm', () => {
+  it('uses clear labels when toggling advanced fields', () => {
+    render(
+      <EventForm
+        active
+        initialDate={new Date('2026-07-31T09:00:00.000Z')}
+        onSave={jest.fn(async () => undefined)}
+      />,
+    );
+
+    const toggle = screen.getByRole('button', { name: 'Show more event options' });
+    expect(toggle.props.accessibilityState.expanded).toBe(false);
+    fireEvent.press(toggle);
+
+    expect(screen.getByText('Fewer options')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Show fewer event options' }).props.accessibilityState
+        .expanded,
+    ).toBe(true);
+  });
+
   it('selects a time zone through the searchable selector', async () => {
     const onSave = jest.fn(async () => undefined);
     render(
@@ -15,7 +35,7 @@ describe('EventForm', () => {
       />,
     );
 
-    fireEvent.press(screen.getByLabelText('Show advanced event fields'));
+    fireEvent.press(screen.getByLabelText('Show more event options'));
     fireEvent.press(screen.getByLabelText('Open event timezone picker'));
     fireEvent.changeText(screen.getByLabelText('Time zone search'), 'New York');
     fireEvent.press(screen.getByLabelText('Select Time zone America/New_York'));
@@ -44,7 +64,7 @@ describe('EventForm', () => {
     fireEvent.changeText(screen.getByLabelText('Event title'), 'Release planning');
     fireEvent.changeText(screen.getByLabelText('Event description'), 'Prepare the release');
     fireEvent(screen.getByLabelText('All-day event'), 'valueChange', true);
-    fireEvent.press(screen.getByLabelText('Show advanced event fields'));
+    fireEvent.press(screen.getByLabelText('Show more event options'));
     fireEvent.changeText(screen.getByLabelText('Event location'), 'Office');
     fireEvent.press(screen.getByText('Weekly'));
     fireEvent.changeText(screen.getByLabelText('Recurrence interval'), '2');
@@ -120,7 +140,7 @@ describe('EventForm', () => {
     );
 
     fireEvent.changeText(screen.getByLabelText('Event title'), 'Custom schedule');
-    fireEvent.press(screen.getByLabelText('Show advanced event fields'));
+    fireEvent.press(screen.getByLabelText('Show more event options'));
     expect(screen.queryByLabelText('Repeat on Monday')).toBeNull();
 
     fireEvent.press(screen.getByText('Custom'));
@@ -162,7 +182,7 @@ describe('EventForm', () => {
       />,
     );
 
-    fireEvent.press(screen.getByLabelText('Show advanced event fields'));
+    fireEvent.press(screen.getByLabelText('Show more event options'));
 
     expect(screen.getByRole('button', { name: 'Custom' }).props.accessibilityState.selected).toBe(
       true,

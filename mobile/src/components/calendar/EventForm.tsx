@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../design/ThemeProvider';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppButton } from '../ui/AppButton';
+import { AppIcon } from '../ui/AppIcon';
 import { FormField } from '../ui/FormField';
 import { ListItem } from '../ui/ListItem';
 import { EventDateTimePickerField } from './EventDateTimePickerField';
@@ -347,15 +348,27 @@ export function EventForm({
           </View>
         ) : null}
 
-        <AppButton
-          label={advancedVisible ? 'Hide Advanced' : 'Advanced'}
-          variant="secondary"
-          accessibilityLabel={
-            advancedVisible ? 'Hide advanced event fields' : 'Show advanced event fields'
-          }
-          onPress={() => setAdvancedVisible((current) => !current)}
-          style={styles.advancedButton}
-        />
+        <View style={styles.advancedToggleRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              advancedVisible ? 'Show fewer event options' : 'Show more event options'
+            }
+            accessibilityState={{ expanded: advancedVisible }}
+            onPress={() => setAdvancedVisible((current) => !current)}
+            style={({ pressed }) => [styles.advancedToggle, pressed ? styles.pressed : null]}
+          >
+            <Text style={styles.advancedToggleText}>
+              {advancedVisible ? 'Fewer options' : 'More options'}
+            </Text>
+            <AppIcon
+              name={advancedVisible ? 'collapse' : 'expand'}
+              size={18}
+              color={theme.colors.brand}
+              decorative
+            />
+          </Pressable>
+        </View>
 
         {advancedVisible ? (
           <View style={styles.advancedFields}>
@@ -681,9 +694,20 @@ const createStyles = (theme: Theme) =>
       flex: 1,
       minWidth: 0,
     },
-    advancedButton: {
-      alignSelf: 'flex-start',
+    advancedToggleRow: {
+      alignItems: 'center',
       paddingVertical: spacing.sm,
+    },
+    advancedToggle: {
+      minHeight: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      paddingHorizontal: spacing.md,
+    },
+    advancedToggleText: {
+      ...typography.button,
+      color: theme.colors.brand,
     },
     advancedButtonText: {
       ...typography.button,
