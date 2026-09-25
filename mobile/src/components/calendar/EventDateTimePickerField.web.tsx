@@ -1,7 +1,7 @@
 import { CSSProperties } from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
-import { useTheme } from '../../design/ThemeProvider';
+import { ThemePreference, useTheme } from '../../design/ThemeProvider';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { radii, spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
@@ -23,7 +23,7 @@ type EventDateTimePickerFieldProps = {
   onChange: (value: string) => void;
 };
 
-function createWebInputStyle(theme: Theme): CSSProperties {
+function createWebInputStyle(theme: Theme, preference: ThemePreference): CSSProperties {
   return {
     boxSizing: 'border-box',
     width: '100%',
@@ -33,6 +33,7 @@ function createWebInputStyle(theme: Theme): CSSProperties {
     borderRadius: radii.sm,
     backgroundColor: theme.colors.surface,
     color: theme.colors.text,
+    colorScheme: preference,
     fontSize: typography.body.fontSize,
     lineHeight: `${typography.body.lineHeight}px`,
     padding: `${spacing.sm}px ${spacing.md}px`,
@@ -50,7 +51,7 @@ export function EventDateTimePickerField({
   containerStyle,
   onChange,
 }: EventDateTimePickerFieldProps) {
-  const { theme } = useTheme();
+  const { preference, theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const language = mode === 'time' ? (timeFormat === '24-hour' ? 'en-GB' : 'en-US') : locale;
 
@@ -66,7 +67,7 @@ export function EventDateTimePickerField({
             value={value}
             step={mode === 'time' ? 60 : undefined}
             onChange={(event) => onChange(event.currentTarget.value)}
-            style={createWebInputStyle(theme)}
+            style={createWebInputStyle(theme, preference)}
           />
         </View>
         {allowClear && value ? (

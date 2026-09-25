@@ -4,6 +4,7 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { Platform, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
+import { useTheme } from '../../design/ThemeProvider';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppModal } from '../ui/AppModal';
 import { radii, spacing, typography } from '../../design/tokens';
@@ -89,6 +90,7 @@ export function EventDateTimePickerField({
   containerStyle,
   onChange,
 }: EventDateTimePickerFieldProps) {
+  const { preference } = useTheme();
   const styles = useThemedStyles(createStyles);
   const [iosPickerVisible, setIosPickerVisible] = useState(false);
   const [pickerError, setPickerError] = useState<string | null>(null);
@@ -190,7 +192,7 @@ export function EventDateTimePickerField({
             display="spinner"
             timeZoneName={timezone}
             locale={mode === 'time' ? (timeFormat === '24-hour' ? 'en-GB' : 'en-US') : locale}
-            themeVariant="light"
+            themeVariant={preference}
             onValueChange={handleValueChange}
             style={styles.iosPicker}
           />
