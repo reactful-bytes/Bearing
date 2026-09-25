@@ -305,8 +305,8 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
           setAddTaskVisible(false);
         }}
         onSave={handleCreateTask}
+        goals={goals}
         initialGoalId={goal.id}
-        contextLabel="Linked to this goal"
       />
       <TaskDetailModal
         visible={selectedTask !== null}

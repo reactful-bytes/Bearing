@@ -16,6 +16,7 @@ import { layout, radii, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
+import { useGoals } from '../features/goals/useGoals';
 import { useTasks } from '../features/tasks/useTasks';
 import { CreateTaskInput, TaskRecord, UpdateTaskInput } from '../features/tasks/taskTypes';
 import { AppTabParamList, PlanStackParamList } from '../navigation/navigationTypes';
@@ -62,6 +63,7 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
   const { profile } = useUserProfile();
   const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
   const { publicationCalendarTitle, publishEvent } = useCalendarPublication();
+  const { goals } = useGoals();
   const {
     tasks,
     uiState,
@@ -280,6 +282,7 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
         visible={addTaskVisible}
         onClose={() => setAddTaskVisible(false)}
         onSave={handleCreateTask}
+        goals={goals}
       />
 
       <TaskDetailModal

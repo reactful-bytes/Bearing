@@ -25,6 +25,10 @@ jest.mock('../features/tasks/useTasks', () => ({
   useTasks: jest.fn(),
 }));
 
+jest.mock('../features/goals/useGoals', () => ({
+  useGoals: jest.fn(() => ({ goals: [] })),
+}));
+
 jest.mock('../features/calendar/useCalendarPublication', () => ({
   useCalendarPublication: jest.fn(),
 }));
@@ -238,6 +242,7 @@ describe('TasksScreen', () => {
         title: 'Plan weekly meals',
         description: 'Make a simple shopping list first.',
         starter: '',
+        goalId: null,
       });
     });
   });

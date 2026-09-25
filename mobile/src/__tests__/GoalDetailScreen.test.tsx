@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { GoalDetailScreen } from '../screens/GoalDetailScreen';
@@ -7,7 +7,7 @@ import { useTasks } from '../features/tasks/useTasks';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { GoalWithTasks } from '../features/goals/goalTypes';
-import { CompleteTaskInput, TaskRecord } from '../features/tasks/taskTypes';
+import { CompleteTaskInput, CreateTaskInput, TaskRecord } from '../features/tasks/taskTypes';
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(() => ({ goBack: jest.fn(), navigate: jest.fn() })),
@@ -58,7 +58,8 @@ const goal: GoalWithTasks = {
   progressText: '0 of 1 tasks completed',
 };
 
-function mockHooks(): void {
+function mockHooks(): jest.MockedFunction<(input: CreateTaskInput) => Promise<void>> {
+  const createTask = jest.fn(async (_input: CreateTaskInput) => undefined);
   (useUserProfile as jest.MockedFunction<typeof useUserProfile>).mockReturnValue({
     profile: { locale: 'en-US', timeFormat: '12-hour' },
   } as never);
@@ -77,7 +78,7 @@ function mockHooks(): void {
   (useTasks as jest.MockedFunction<typeof useTasks>).mockReturnValue({
     tasks: [task],
     uiState: 'ready',
-    createTask: jest.fn(async () => undefined),
+    createTask,
     updateTask: jest.fn(async () => undefined),
     completeTask: jest.fn(async (_id: string, _input: CompleteTaskInput) => undefined),
     convertTaskToEvent: jest.fn(async () => ({
@@ -95,6 +96,8 @@ function mockHooks(): void {
     deleteTask: jest.fn(async () => undefined),
     retry: jest.fn(),
   });
+
+  return createTask;
 }
 
 describe('GoalDetailScreen', () => {
@@ -106,5 +109,25 @@ describe('GoalDetailScreen', () => {
     fireEvent.press(screen.getAllByLabelText('Open task Choose a race date')[0]);
     expect(screen.getByText('Task Details')).toBeTruthy();
     expect(screen.getAllByText(/Search race calendars/).length).toBeGreaterThan(0);
+  });
+
+  it('preselects the current goal when creating a task', async () => {
+    const createTask = mockHooks();
+    render(<GoalDetailScreen route={{ params: { goalId: goal.id } }} />);
+
+    fireEvent.press(screen.getAllByRole('button', { name: 'Add task' })[0]);
+    expect(screen.getByLabelText('Select task goal')).toHaveTextContent('Run a 10k');
+
+    fireEvent.changeText(screen.getByLabelText('Task title'), 'Register for race day');
+    fireEvent.press(screen.getByLabelText('Save task'));
+
+    await waitFor(() =>
+      expect(createTask).toHaveBeenCalledWith({
+        title: 'Register for race day',
+        description: '',
+        starter: '',
+        goalId: 'goal-1',
+      }),
+    );
   });
 });

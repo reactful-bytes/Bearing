@@ -119,7 +119,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
       throw new Error('Goal not found.');
     }
 
-    await createTask({ ...input, goalId: selectedGoal.id });
+    await createTask(input);
     setAddTaskVisible(false);
   }
 
@@ -302,8 +302,8 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
         visible={addTaskVisible}
         onClose={() => setAddTaskVisible(false)}
         onSave={handleCreateTask}
+        goals={goals}
         initialGoalId={selectedGoal?.id ?? null}
-        contextLabel="Linked to this goal"
       />
 
       <TaskDetailModal
@@ -338,7 +338,6 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
               }
             : undefined
         }
-        publicationCalendarTitle={publicationCalendarTitle}
         locale={profile?.locale}
         timeFormat={profile?.timeFormat}
         onClose={() => setScheduleTaskId(null)}

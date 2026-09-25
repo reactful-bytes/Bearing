@@ -485,6 +485,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M30.5   | completed | Render operational timeline      | Use ordered goal tasks; no duplicate milestone model                           |
 | M30.6   | completed | Preserve standalone task access  | Keep unlinked task access from Plan and Create                                |
 | M30.7   | completed | Validate goals and tasks         | Cover filters, mutations, ordering, and navigation                            |
+| M30.8   | completed | Select a goal during task creation | Unaffiliated and goal-detail defaults pass focused tests, typecheck, and lint |
 
 ### M31 - Calendar
 

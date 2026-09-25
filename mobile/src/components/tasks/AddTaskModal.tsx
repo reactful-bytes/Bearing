@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EventDateTimePickerField } from '../calendar/EventDateTimePickerField';
 import { AppButton } from '../ui/AppButton';
+import { AppIcon } from '../ui/AppIcon';
 import { AppModal } from '../ui/AppModal';
 import { FormField } from '../ui/FormField';
 import { ScreenHeader } from '../ui/ScreenHeader';
@@ -11,17 +12,24 @@ import { layout, radii, spacing, typography } from '../../design/tokens';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import type { Theme } from '../../design/tokens';
 import { eventFormValueToDate } from '../../features/calendar/eventEditor';
+import type { GoalStatus } from '../../features/goals/goalTypes';
 import { useUserProfile } from '../../features/profile/useUserProfile';
 import { CreateTaskInput } from '../../features/tasks/taskTypes';
+
+type TaskGoalOption = {
+  id: string;
+  title: string;
+  status: GoalStatus;
+};
 
 type AddTaskModalProps = {
   visible: boolean;
   onClose: () => void;
   onSave: (input: CreateTaskInput) => Promise<void>;
+  goals?: TaskGoalOption[];
   initialGoalId?: string | null;
   initialTitle?: string;
   initialDescription?: string;
-  contextLabel?: string;
   fullScreen?: boolean;
 };
 
@@ -29,10 +37,10 @@ export function AddTaskModal({
   visible,
   onClose,
   onSave,
+  goals = [],
   initialGoalId = null,
   initialTitle = '',
   initialDescription = '',
-  contextLabel,
   fullScreen = false,
 }: AddTaskModalProps) {
   const styles = useThemedStyles(createStyles);
@@ -41,6 +49,8 @@ export function AddTaskModal({
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
   const [starter, setStarter] = useState('');
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(initialGoalId);
+  const [goalDropdownVisible, setGoalDropdownVisible] = useState(false);
   const [scheduleVisible, setScheduleVisible] = useState(false);
   const [dueDate, setDueDate] = useState('');
   const [scheduledStartDate, setScheduledStartDate] = useState('');
@@ -50,17 +60,30 @@ export function AddTaskModal({
   const [allDay, setAllDay] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const availableGoals = useMemo(
+    () =>
+      goals
+        .filter((goal) => goal.status === 'active' || goal.id === initialGoalId)
+        .sort((left, right) => left.title.localeCompare(right.title)),
+    [goals, initialGoalId],
+  );
+  const selectedGoalTitle =
+    availableGoals.find((goal) => goal.id === selectedGoalId)?.title ?? 'Unaffiliated';
 
   useEffect(() => {
     if (!visible) return;
     setTitle(initialTitle);
     setDescription(initialDescription);
-  }, [initialDescription, initialTitle, visible]);
+    setSelectedGoalId(initialGoalId);
+    setGoalDropdownVisible(false);
+  }, [initialDescription, initialGoalId, initialTitle, visible]);
 
   function resetForm(): void {
     setTitle('');
     setDescription('');
     setStarter('');
+    setSelectedGoalId(null);
+    setGoalDropdownVisible(false);
     setScheduleVisible(false);
     setDueDate('');
     setScheduledStartDate('');
@@ -128,7 +151,7 @@ export function AddTaskModal({
         title: trimmedTitle,
         description: description.trim(),
         starter: starter.trim(),
-        ...(initialGoalId ? { goalId: initialGoalId } : {}),
+        goalId: selectedGoalId,
         ...(dueDateValue ? { dueDate: dueDateValue } : {}),
         ...(scheduledStart ? { scheduledStart } : {}),
         ...(scheduledEnd ? { scheduledEnd } : {}),
@@ -189,6 +212,60 @@ export function AddTaskModal({
           onChangeText={setStarter}
           multiline
         />
+
+        <View style={styles.goalField}>
+          <Text style={styles.fieldLabel}>Goal:</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Select task goal"
+            accessibilityState={{ expanded: goalDropdownVisible }}
+            onPress={() => setGoalDropdownVisible((current) => !current)}
+            style={({ pressed }) => [styles.goalSelector, pressed ? styles.pressed : null]}
+          >
+            <Text numberOfLines={1} style={styles.goalSelectorValue}>
+              {selectedGoalTitle}
+            </Text>
+            <AppIcon
+              name={goalDropdownVisible ? 'collapse' : 'expand'}
+              size={20}
+              color={styles.goalSelectorIcon.color}
+            />
+          </Pressable>
+
+          {goalDropdownVisible ? (
+            <View accessibilityRole="radiogroup" style={styles.goalOptions}>
+              {[{ id: null, title: 'Unaffiliated' }, ...availableGoals].map((goal) => {
+                const isSelected = goal.id === selectedGoalId;
+                return (
+                  <Pressable
+                    key={goal.id ?? 'unaffiliated'}
+                    accessibilityRole="radio"
+                    accessibilityLabel={`Select goal ${goal.title}`}
+                    accessibilityState={{ checked: isSelected }}
+                    onPress={() => {
+                      setSelectedGoalId(goal.id);
+                      setGoalDropdownVisible(false);
+                    }}
+                    style={({ pressed }) => [
+                      styles.goalOption,
+                      isSelected ? styles.goalOptionSelected : null,
+                      pressed ? styles.pressed : null,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.goalOptionText,
+                        isSelected ? styles.goalOptionTextSelected : null,
+                      ]}
+                    >
+                      {goal.title}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+        </View>
 
         <AppButton
           label={scheduleVisible ? 'Hide schedule details' : 'Add schedule details'}
@@ -285,12 +362,6 @@ export function AddTaskModal({
           </View>
         ) : null}
 
-        {contextLabel ? (
-          <Text accessibilityLabel="Task context" style={styles.contextLabel}>
-            {contextLabel}
-          </Text>
-        ) : null}
-
         <AppButton
           label="Save Task"
           accessibilityLabel="Save task"
@@ -329,6 +400,56 @@ const createStyles = (theme: Theme) =>
       borderRadius: radii.md,
       paddingVertical: spacing.sm,
     },
+    goalField: {
+      gap: spacing.xs,
+    },
+    goalSelector: {
+      minHeight: layout.minimumTouchTarget,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surface,
+    },
+    goalSelectorValue: {
+      ...typography.body,
+      flex: 1,
+      color: theme.colors.text,
+    },
+    goalSelectorIcon: {
+      color: theme.colors.textSecondary,
+    },
+    goalOptions: {
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surfaceRaised,
+    },
+    goalOption: {
+      minHeight: layout.minimumTouchTarget,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    goalOptionSelected: {
+      backgroundColor: theme.colors.surfaceBrand,
+    },
+    goalOptionText: {
+      ...typography.body,
+      color: theme.colors.text,
+    },
+    goalOptionTextSelected: {
+      color: theme.colors.brand,
+      fontWeight: '700',
+    },
+    pressed: {
+      opacity: 0.85,
+    },
     scheduleSection: {
       gap: spacing.md,
       padding: spacing.md,
@@ -347,9 +468,5 @@ const createStyles = (theme: Theme) =>
     allDayToggleText: {
       ...typography.body,
       color: theme.colors.text,
-    },
-    contextLabel: {
-      ...typography.helper,
-      color: theme.colors.textSecondary,
     },
   });
