@@ -13,7 +13,7 @@ const config: ExpoConfig = {
   scheme: 'bearing',
   orientation: 'portrait',
   icon: './assets/icon.png',
-  userInterfaceStyle: 'light',
+  userInterfaceStyle: 'automatic',
   plugins: [
     './plugins/withAndroidDnd',
     'expo-dev-client',

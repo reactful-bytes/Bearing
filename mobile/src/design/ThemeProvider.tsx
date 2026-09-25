@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { Appearance } from 'react-native';
 
 import { darkTheme, Theme, themes } from './tokens';
 
@@ -30,6 +31,10 @@ type ThemeProviderProps = {
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const [preference, setPreferenceState] = useState<ThemePreference>('dark');
   const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    Appearance.setColorScheme(preference);
+  }, [preference]);
 
   useEffect(() => {
     let isMounted = true;

@@ -21,6 +21,7 @@ describe('EventDateTimePickerField web fallback', () => {
 
     const input = screen.getByLabelText('Start date');
     expect(input.props.type).toBe('date');
+    expect(input.props.style).toEqual(expect.objectContaining({ colorScheme: 'dark' }));
     fireEvent(input, 'change', { currentTarget: { value: '2026-08-05' } });
 
     expect(onChange).toHaveBeenCalledWith('2026-08-05');

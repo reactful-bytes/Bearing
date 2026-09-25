@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { beforeEach, describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, render, screen, waitFor } from '@testing-library/react-native';
-import { Text } from 'react-native';
+import { Appearance, Text } from 'react-native';
 
 import { ThemeProvider, useTheme } from '../design/ThemeProvider';
 import { useThemedStyles } from '../design/useThemedStyles';
@@ -27,6 +27,7 @@ function ThemeProbe() {
 
 describe('ThemeProvider', () => {
   beforeEach(async () => {
+    jest.restoreAllMocks();
     await AsyncStorage.clear();
   });
 
@@ -50,6 +51,7 @@ describe('ThemeProvider', () => {
   });
 
   it('persists a changed preference', async () => {
+    const setColorScheme = jest.spyOn(Appearance, 'setColorScheme');
     render(
       <ThemeProvider>
         <ThemeProbe />
@@ -61,5 +63,6 @@ describe('ThemeProvider', () => {
     });
 
     expect(await AsyncStorage.getItem('@bearing/theme-preference')).toBe('light');
+    expect(setColorScheme).toHaveBeenLastCalledWith('light');
   });
 });
