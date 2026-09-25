@@ -532,7 +532,7 @@ export function CreateGoalModal({
                 accessibilityLabel="Goal outcome"
                 value={title}
                 onChangeText={setTitle}
-                placeholder="Complete my first 10k"
+                placeholder="Example: Complete my first 10k by next month."
                 placeholderTextColor={theme.colors.textSecondary}
               />
 
