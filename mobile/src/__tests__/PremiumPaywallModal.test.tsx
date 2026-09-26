@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PremiumPaywallModal } from '../components/premium/PremiumPaywallModal';
 import { PremiumPlan } from '../features/premium/purchaseTypes';
@@ -56,13 +57,14 @@ describe('PremiumPaywallModal', () => {
       restore: jest.fn(async () => undefined),
     });
 
-    render(
+    const { UNSAFE_getByType } = render(
       <PremiumPaywallModal
         visible
         feature="premium_overview"
         userId="user-1"
         isAnonymous={false}
         hasPremiumAccess={false}
+        fullScreen
         onClose={jest.fn()}
         onOpenLegalDocument={jest.fn()}
       />,
@@ -84,6 +86,7 @@ describe('PremiumPaywallModal', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Continue with Yearly Bearing 360 plan' }));
 
     expect(screen.getByRole('header', { name: 'Confirm Bearing 360' })).toBeTruthy();
+    expect(UNSAFE_getByType(SafeAreaView).props.edges).toEqual(['top', 'right', 'bottom', 'left']);
     expect(screen.getByText('Yearly')).toBeTruthy();
     expect(screen.getByText('$59.99/yr')).toBeTruthy();
     expect(screen.getByText('Only $5.00/mo')).toBeTruthy();

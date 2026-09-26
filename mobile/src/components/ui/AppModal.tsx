@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Edge, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppButton } from './AppButton';
 import { AppIcon } from './AppIcon';
 import { CreateFabGroup } from '../presentation/CreateFabGroup';
@@ -26,6 +26,7 @@ type AppModalProps = {
   closeLabel?: string;
   headerAccessory?: ReactNode;
   fullScreen?: boolean;
+  safeAreaEdges?: Edge[];
   hideHeader?: boolean;
   embedded?: boolean;
   children: ReactNode;
@@ -38,6 +39,7 @@ export function AppModal({
   closeLabel = 'Close',
   headerAccessory,
   fullScreen = false,
+  safeAreaEdges,
   hideHeader = false,
   embedded = false,
   children,
@@ -81,7 +83,7 @@ export function AppModal({
           />
         ) : null}
         <SafeAreaView
-          edges={fullScreen ? [] : ['top', 'right', 'bottom', 'left']}
+          edges={safeAreaEdges ?? (fullScreen ? [] : ['top', 'right', 'bottom', 'left'])}
           style={[fullScreen ? styles.fullScreenSheet : styles.sheet]}
         >
           {!hideHeader ? (

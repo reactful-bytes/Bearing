@@ -329,6 +329,7 @@ export function PremiumPaywallModal({
           visible={visible && confirmationPlan === null && transactionPlan === null}
           onClose={onClose}
           fullScreen={fullScreen}
+          safeAreaEdges={fullScreen ? ['top', 'right', 'bottom', 'left'] : undefined}
           hideHeader={fullScreen}
         >
           {paywallContent}
@@ -345,6 +346,7 @@ export function PremiumPaywallModal({
         }
         closeLabel={transactionPlan ? 'Close' : 'Back'}
         fullScreen={fullScreen}
+        safeAreaEdges={fullScreen ? ['top', 'right', 'bottom', 'left'] : undefined}
         onClose={() => {
           if (transactionPlan) {
             if (!isPurchaseInProgress) setTransactionPlan(null);
