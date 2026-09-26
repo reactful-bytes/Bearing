@@ -15,7 +15,7 @@ import {
 } from '../services/calendar/deviceCalendarSettings';
 import {
   deleteEvent as deleteFirebaseEvent,
-  subscribeToEventsByDateRange,
+  subscribeToCalendarEvents,
   updateEvent as updateFirebaseEvent,
 } from '../services/firebase/firebaseEvents';
 
@@ -24,7 +24,7 @@ jest.mock('../services/firebase/firebaseAuth', () => ({
 }));
 
 jest.mock('../services/firebase/firebaseEvents', () => ({
-  subscribeToEventsByDateRange: jest.fn(),
+  subscribeToCalendarEvents: jest.fn(),
   createEvent: jest.fn(async () => 'bearing-new'),
   updateEvent: jest.fn(async () => undefined),
   deleteEvent: jest.fn(async () => undefined),
@@ -74,7 +74,7 @@ function makeBearingEvent(): BearingEvent {
 
 function makeAdapter(listEvents: DeviceCalendarAdapter['listEvents']): DeviceCalendarAdapter {
   return {
-    capabilities: { recurringEventMutationScopes: [] },
+    capabilities: { recurringEventMutationScopes: [], recurringEventUpdateScopes: [] },
     getPermissionState: jest.fn(async (): Promise<'granted'> => 'granted'),
     requestPermission: jest.fn(async (): Promise<'granted'> => 'granted'),
     getCalendars: jest.fn(async () => []),
@@ -136,8 +136,8 @@ describe('useCalendarEvents', () => {
       openSettings: jest.fn(async () => undefined),
     });
     (
-      subscribeToEventsByDateRange as jest.MockedFunction<typeof subscribeToEventsByDateRange>
-    ).mockImplementation((_userId, _start, _end, onNext) => {
+      subscribeToCalendarEvents as jest.MockedFunction<typeof subscribeToCalendarEvents>
+    ).mockImplementation((_userId, onNext) => {
       onNext([makeBearingEvent()]);
       return jest.fn();
     });
@@ -170,15 +170,15 @@ describe('useCalendarEvents', () => {
   it('re-subscribes to Firestore when refresh follows a listener error', async () => {
     const unsubscribeFirst = jest.fn();
     let reportError: ((error: Error) => void) | null = null;
-    const mockedSubscribe = subscribeToEventsByDateRange as jest.MockedFunction<
-      typeof subscribeToEventsByDateRange
+    const mockedSubscribe = subscribeToCalendarEvents as jest.MockedFunction<
+      typeof subscribeToCalendarEvents
     >;
     mockedSubscribe
-      .mockImplementationOnce((_userId, _start, _end, _onNext, onError) => {
+      .mockImplementationOnce((_userId, _onNext, onError) => {
         reportError = onError;
         return unsubscribeFirst;
       })
-      .mockImplementationOnce((_userId, _start, _end, onNext) => {
+      .mockImplementationOnce((_userId, onNext) => {
         onNext([]);
         return jest.fn();
       });
@@ -234,11 +234,9 @@ describe('useCalendarEvents', () => {
 
     renderHook(() => useCalendarEvents(new Date(2026, 6, 31), adapter, range));
 
-    await waitFor(() => expect(subscribeToEventsByDateRange).toHaveBeenCalled());
-    expect(subscribeToEventsByDateRange).toHaveBeenCalledWith(
+    await waitFor(() => expect(subscribeToCalendarEvents).toHaveBeenCalled());
+    expect(subscribeToCalendarEvents).toHaveBeenCalledWith(
       'user-1',
-      range.start,
-      range.end,
       expect.any(Function),
       expect.any(Function),
     );
@@ -292,10 +290,17 @@ describe('useCalendarEvents', () => {
       title: 'Bearing updated',
     });
     expect(deleteFirebaseEvent).toHaveBeenCalledWith('user-1', 'bearing-1');
-    expect(adapter.updateEvent).toHaveBeenCalledWith('device-planning', {
-      title: 'Device updated',
-    });
-    expect(adapter.deleteEvent).toHaveBeenCalledWith('device-planning');
+    expect(adapter.updateEvent).toHaveBeenCalledWith(
+      'device-planning',
+      { title: 'Device updated' },
+      'series',
+      new Date('2026-07-31T13:00:00.000Z'),
+    );
+    expect(adapter.deleteEvent).toHaveBeenCalledWith(
+      'device-planning',
+      'series',
+      deviceEvent!.startAt,
+    );
     expect(adapter.updateEvent).not.toHaveBeenCalledWith(deviceEvent!.id, expect.anything());
   });
 

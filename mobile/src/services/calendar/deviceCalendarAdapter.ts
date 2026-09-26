@@ -5,6 +5,7 @@ import {
   EVENT_WEEKDAYS,
   EventAlarm,
   EventAvailability,
+  CalendarDeletionScope,
   EventRecurrenceRule,
   EventStatus,
   UpdateEventInput,
@@ -65,6 +66,15 @@ export type DeviceCalendarModule = {
   EntityTypes: { EVENT: string };
   ExpoCalendar: { get(calendarId: string): Promise<NativeCalendar> };
   ExpoCalendarEvent: { get(eventId: string): Promise<NativeCalendarEvent> };
+  deleteEventAsync(
+    eventId: string,
+    options: { futureEvents: boolean; instanceStartDate?: Date },
+  ): Promise<void>;
+  updateEventAsync(
+    eventId: string,
+    fields: DeviceCalendarEventUpdate,
+    options: { futureEvents: boolean; instanceStartDate?: Date },
+  ): Promise<string>;
   getCalendarPermissions(writeOnly?: boolean): Promise<CalendarPermissionResponse>;
   requestCalendarPermissions(writeOnly?: boolean): Promise<CalendarPermissionResponse>;
   getCalendars(entityType?: string): Promise<NativeCalendar[]>;
@@ -73,7 +83,8 @@ export type DeviceCalendarModule = {
 
 export type DeviceCalendarAdapter = {
   capabilities: {
-    recurringEventMutationScopes: readonly [];
+    recurringEventMutationScopes: readonly ('instance' | 'following')[];
+    recurringEventUpdateScopes: readonly ('instance' | 'following')[];
   };
   getPermissionState(): Promise<DeviceCalendarPermissionState>;
   requestPermission(): Promise<DeviceCalendarPermissionState>;
@@ -85,8 +96,17 @@ export type DeviceCalendarAdapter = {
   ): Promise<DeviceCalendarEventRecord[]>;
   createEvent(calendarId: string, input: CreateEventInput): Promise<DeviceCalendarEventRecord>;
   lookupEvent(eventId: string): Promise<DeviceCalendarEventLookupResult>;
-  updateEvent(eventId: string, fields: UpdateEventInput): Promise<void>;
-  deleteEvent(eventId: string): Promise<void>;
+  updateEvent(
+    eventId: string,
+    fields: UpdateEventInput,
+    scope?: CalendarDeletionScope,
+    occurrenceStartAt?: Date,
+  ): Promise<void>;
+  deleteEvent(
+    eventId: string,
+    scope?: CalendarDeletionScope,
+    occurrenceStartAt?: Date,
+  ): Promise<void>;
   openSettings(): Promise<void>;
 };
 
@@ -249,7 +269,16 @@ function mapEventFields(
 }
 
 async function loadExpoCalendarModule(): Promise<DeviceCalendarModule> {
-  return (await import('expo-calendar')) as unknown as DeviceCalendarModule;
+  const [calendarModule, legacyModule] = await Promise.all([
+    import('expo-calendar'),
+    import('expo-calendar/legacy'),
+  ]);
+  return {
+    ...(calendarModule as unknown as DeviceCalendarModule),
+    deleteEventAsync: legacyModule.deleteEventAsync,
+    updateEventAsync:
+      legacyModule.updateEventAsync as unknown as DeviceCalendarModule['updateEventAsync'],
+  };
 }
 
 export function createDeviceCalendarAdapter(
@@ -257,6 +286,10 @@ export function createDeviceCalendarAdapter(
   platform: string = Platform.OS,
 ): DeviceCalendarAdapter {
   const isSupportedPlatform = platform === 'ios' || platform === 'android';
+  const recurringEventMutationScopes: readonly ('instance' | 'following')[] =
+    platform === 'ios' ? ['instance', 'following'] : platform === 'android' ? ['instance'] : [];
+  const recurringEventUpdateScopes: readonly ('instance' | 'following')[] =
+    platform === 'ios' ? ['instance', 'following'] : [];
 
   async function withModule<T>(
     operation: (module: DeviceCalendarModule) => Promise<T>,
@@ -274,7 +307,8 @@ export function createDeviceCalendarAdapter(
 
   return {
     capabilities: {
-      recurringEventMutationScopes: [],
+      recurringEventMutationScopes,
+      recurringEventUpdateScopes,
     },
     async getPermissionState() {
       if (!isSupportedPlatform) {
@@ -338,18 +372,48 @@ export function createDeviceCalendarAdapter(
         return { status: 'unavailable', error: asError(error) };
       }
     },
-    async updateEvent(eventId, fields) {
+    async updateEvent(eventId, fields, scope = 'series', occurrenceStartAt) {
       const mappedFields = mapEventFields(fields, platform);
+      if (scope !== 'series') {
+        if (!occurrenceStartAt) {
+          throw new Error('An occurrence date is required to update part of a recurring event.');
+        }
+        if (!recurringEventUpdateScopes.includes(scope)) {
+          throw new Error('This recurring-event update option is unavailable on this device.');
+        }
+        return withModule(async (module) => {
+          await module.updateEventAsync(eventId, mappedFields, {
+            instanceStartDate: occurrenceStartAt,
+            futureEvents: scope === 'following',
+          });
+        });
+      }
       return withModule(async (module) => {
         const event = await module.ExpoCalendarEvent.get(eventId);
         await event.update(mappedFields);
       });
     },
-    deleteEvent: (eventId) =>
-      withModule(async (module) => {
+    async deleteEvent(eventId, scope = 'series', occurrenceStartAt) {
+      if (scope !== 'series') {
+        if (!occurrenceStartAt) {
+          throw new Error('An occurrence date is required to delete part of a recurring event.');
+        }
+        if (!recurringEventMutationScopes.includes(scope)) {
+          throw new Error('This recurring-event deletion option is unavailable on this device.');
+        }
+      }
+      return withModule(async (module) => {
+        if (scope !== 'series') {
+          await module.deleteEventAsync(eventId, {
+            instanceStartDate: occurrenceStartAt,
+            futureEvents: scope === 'following',
+          });
+          return;
+        }
         const event = await module.ExpoCalendarEvent.get(eventId);
         await event.delete();
-      }),
+      });
+    },
     openSettings: () => Linking.openSettings(),
   };
 }

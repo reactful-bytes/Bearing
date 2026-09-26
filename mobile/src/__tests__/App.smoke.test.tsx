@@ -57,6 +57,7 @@ jest.mock('../services/firebase/firebaseAuth', () => ({
 
 jest.mock('../services/firebase/firebaseEvents', () => ({
   subscribeToEventsByDateRange: jest.fn(() => jest.fn()),
+  subscribeToCalendarEvents: jest.fn(() => jest.fn()),
   createEvent: jest.fn(),
   updateEvent: jest.fn(),
   deleteEvent: jest.fn(),

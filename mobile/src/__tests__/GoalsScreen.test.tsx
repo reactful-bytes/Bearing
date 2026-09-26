@@ -49,6 +49,7 @@ jest.mock('../services/firebase/firebaseAiGoalPlans', () => ({
 jest.mock('../services/firebase/firebaseEvents', () => ({
   createEvent: jest.fn(),
   subscribeToEventsByDateRange: jest.fn(() => jest.fn()),
+  subscribeToCalendarEvents: jest.fn(() => jest.fn()),
   subscribeToEventsByStepId: jest.fn(() => jest.fn()),
   updateEvent: jest.fn(),
   deleteEvent: jest.fn(),

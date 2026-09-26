@@ -8,6 +8,7 @@ import {
   EventRecurrenceRule,
   EventWeekday,
   EventStatus,
+  CalendarRecurrenceOverride,
   createUnpublishedMetadata,
 } from './calendarTypes';
 
@@ -83,6 +84,39 @@ function decodePublication(value: unknown): CalendarPublicationMetadata {
   };
 }
 
+function decodeRecurrenceOverrides(value: unknown): Record<string, CalendarRecurrenceOverride> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const overrides: Record<string, CalendarRecurrenceOverride> = {};
+  for (const [date, candidate] of Object.entries(value)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !candidate || typeof candidate !== 'object') continue;
+    const data = candidate as Record<string, unknown>;
+    const override: CalendarRecurrenceOverride = {};
+    if (typeof data.title === 'string') override.title = data.title;
+    if (typeof data.description === 'string') override.description = data.description;
+    const startAt = toDate(data.startAt);
+    if (startAt) override.startAt = startAt;
+    const endAt = toDate(data.endAt);
+    if (endAt) override.endAt = endAt;
+    if (typeof data.timezone === 'string') override.timezone = data.timezone;
+    if (typeof data.allDay === 'boolean') override.allDay = data.allDay;
+    if (typeof data.location === 'string') override.location = data.location;
+    if (Array.isArray(data.alarms)) override.alarms = decodeAlarms(data.alarms);
+    if (
+      ['busy', 'free', 'tentative', 'unavailable', 'not-supported'].includes(
+        String(data.availability),
+      )
+    ) {
+      override.availability = data.availability as EventAvailability;
+    }
+    if (typeof data.url === 'string' || data.url === null) override.url = data.url;
+    if (['scheduled', 'completed', 'canceled'].includes(String(data.status))) {
+      override.status = data.status as EventStatus;
+    }
+    overrides[date] = override;
+  }
+  return overrides;
+}
+
 export function decodeCalendarEventData(id: string, data: Record<string, unknown>): CalendarEvent {
   return {
     ownership: 'bearing',
@@ -96,6 +130,17 @@ export function decodeCalendarEventData(id: string, data: Record<string, unknown
     allDay: data.allDay === true,
     location: typeof data.location === 'string' ? data.location : '',
     recurrenceRule: decodeRecurrenceRule(data.recurrenceRule),
+    recurrenceOverrides: decodeRecurrenceOverrides(data.recurrenceOverrides),
+    excludedOccurrenceDates: Array.isArray(data.excludedOccurrenceDates)
+      ? [
+          ...new Set(
+            data.excludedOccurrenceDates.filter(
+              (date): date is string =>
+                typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date),
+            ),
+          ),
+        ]
+      : [],
     alarms: decodeAlarms(data.alarms),
     availability: decodeAvailability(data.availability),
     url: typeof data.url === 'string' ? data.url : null,

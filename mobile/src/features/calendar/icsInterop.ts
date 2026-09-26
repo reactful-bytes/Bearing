@@ -197,6 +197,27 @@ export function serializeEventsToIcs(events: readonly CalendarDisplayEvent[]): s
       pushContentLine(lines, `X-BEARING-AVAILABILITY:${event.availability.toUpperCase()}`);
 
       appendRecurrence(lines, event);
+      if (event.excludedOccurrenceDates?.length) {
+        const dates = [...new Set(event.excludedOccurrenceDates)].sort();
+        if (event.allDay) {
+          pushContentLine(
+            lines,
+            `EXDATE;VALUE=DATE:${dates.map((date) => date.replace(/-/g, '')).join(',')}`,
+          );
+        } else if (event.timezone === 'UTC') {
+          const time = formatUtcDateTime(event.startAt).slice(9);
+          pushContentLine(
+            lines,
+            `EXDATE:${dates.map((date) => `${date.replace(/-/g, '')}T${time}`).join(',')}`,
+          );
+        } else {
+          const time = formatLocalDateTime(event.startAt, event.timezone).slice(9);
+          pushContentLine(
+            lines,
+            `EXDATE;TZID=${event.timezone}:${dates.map((date) => `${date.replace(/-/g, '')}T${time}`).join(',')}`,
+          );
+        }
+      }
       event.alarms.forEach((alarm) => appendAlarm(lines, alarm, event.title));
       if (event.goalId) pushContentLine(lines, `X-BEARING-GOAL-ID:${escapeText(event.goalId)}`);
       if (event.stepId) pushContentLine(lines, `X-BEARING-STEP-ID:${escapeText(event.stepId)}`);

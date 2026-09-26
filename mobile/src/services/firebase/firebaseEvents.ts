@@ -82,6 +82,8 @@ export function buildEventPayload(
     allDay: input.allDay ?? false,
     location: input.location ?? '',
     recurrenceRule,
+    excludedOccurrenceDates: [],
+    recurrenceOverrides: {},
     alarms,
     availability: input.availability ?? 'busy',
     url: input.url ?? null,
@@ -132,6 +134,30 @@ export function subscribeToEventsByDateRange(
   );
 }
 
+/** Real-time subscription to a user's event series, including recurrence masters from prior dates. */
+export function subscribeToCalendarEvents(
+  userId: string,
+  onNext: (events: CalendarEvent[]) => void,
+  onError: (error: Error) => void,
+): Unsubscribe {
+  const db = getFirebaseFirestore();
+  const q = query(
+    collection(db, 'events'),
+    where('userId', '==', userId),
+    orderBy('startAt', 'asc'),
+  );
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      onNext(snapshot.docs.map(docToCalendarEvent));
+    },
+    (firestoreError) => {
+      onError(new Error('Failed to load calendar events.', { cause: firestoreError }));
+    },
+  );
+}
+
 export function subscribeToEventsByStepId(
   userId: string,
   stepId: string,
@@ -165,11 +191,12 @@ export async function createEvent(
   userId: string,
   input: CreateEventInput,
   publication: CalendarPublicationMetadata = createUnpublishedMetadata(),
+  sourceTaskId: string | null = null,
 ): Promise<string> {
   const db = getFirebaseFirestore();
   const docRef = await addDoc(
     collection(db, 'events'),
-    buildEventPayload(userId, input, publication),
+    buildEventPayload(userId, input, publication, Timestamp.now(), sourceTaskId),
   );
 
   return docRef.id;
@@ -227,6 +254,29 @@ export async function updateEvent(
             : null,
         }
       : null;
+  }
+  if (fields.excludedOccurrenceDates !== undefined) {
+    updates.excludedOccurrenceDates = [...new Set(fields.excludedOccurrenceDates)];
+  }
+  if (fields.recurrenceOverrides !== undefined) {
+    updates.recurrenceOverrides = Object.fromEntries(
+      Object.entries(fields.recurrenceOverrides).map(([date, override]) => [
+        date,
+        {
+          ...override,
+          ...(override.startAt ? { startAt: Timestamp.fromDate(override.startAt) } : {}),
+          ...(override.endAt ? { endAt: Timestamp.fromDate(override.endAt) } : {}),
+          ...(override.alarms
+            ? {
+                alarms: override.alarms.map((alarm) => ({
+                  absoluteAt: alarm.absoluteAt ? Timestamp.fromDate(alarm.absoluteAt) : null,
+                  relativeOffsetMinutes: alarm.relativeOffsetMinutes,
+                })),
+              }
+            : {}),
+        },
+      ]),
+    );
   }
   if (fields.alarms !== undefined) {
     updates.alarms = fields.alarms.map((alarm) => ({

@@ -43,6 +43,8 @@ function makeModule(overrides: Partial<DeviceCalendarModule> = {}): DeviceCalend
     EntityTypes: { EVENT: 'event' },
     ExpoCalendar: { get: jest.fn(async () => nativeCalendar) },
     ExpoCalendarEvent: { get: jest.fn(async () => nativeEvent) },
+    deleteEventAsync: jest.fn(async () => undefined),
+    updateEventAsync: jest.fn(async () => 'event-1'),
     getCalendarPermissions: jest.fn(async () => ({
       status: 'granted',
       granted: true,
@@ -143,7 +145,73 @@ describe('deviceCalendarAdapter', () => {
       availability: 'tentative',
       url: 'https://example.com/plan',
     });
-    expect(adapter.capabilities.recurringEventMutationScopes).toEqual([]);
+    expect(adapter.capabilities.recurringEventMutationScopes).toEqual(['instance']);
+    expect(adapter.capabilities.recurringEventUpdateScopes).toEqual([]);
+  });
+
+  it('uses iOS native scope options to update one occurrence or this and following', async () => {
+    const module = makeModule();
+    const iosAdapter = createDeviceCalendarAdapter(async () => module, 'ios');
+    const occurrenceStartAt = new Date(2026, 7, 14, 9);
+
+    await iosAdapter.updateEvent('event-1', { title: 'Changed' }, 'instance', occurrenceStartAt);
+    await iosAdapter.updateEvent(
+      'event-1',
+      { title: 'Changed future' },
+      'following',
+      occurrenceStartAt,
+    );
+
+    expect(module.updateEventAsync).toHaveBeenNthCalledWith(
+      1,
+      'event-1',
+      expect.objectContaining({ title: 'Changed' }),
+      { instanceStartDate: occurrenceStartAt, futureEvents: false },
+    );
+    expect(module.updateEventAsync).toHaveBeenNthCalledWith(
+      2,
+      'event-1',
+      expect.objectContaining({ title: 'Changed future' }),
+      { instanceStartDate: occurrenceStartAt, futureEvents: true },
+    );
+  });
+
+  it('rejects partial recurring updates on Android', async () => {
+    const module = makeModule();
+    const androidAdapter = createDeviceCalendarAdapter(async () => module, 'android');
+
+    await expect(
+      androidAdapter.updateEvent('event-1', { title: 'Changed' }, 'instance', new Date()),
+    ).rejects.toThrow('This recurring-event update option is unavailable on this device.');
+    expect(module.updateEventAsync).not.toHaveBeenCalled();
+  });
+
+  it('uses native recurrence options for a single occurrence and future occurrences', async () => {
+    const module = makeModule();
+    const iosAdapter = createDeviceCalendarAdapter(async () => module, 'ios');
+    const occurrenceStartAt = new Date(2026, 7, 14, 9);
+
+    await iosAdapter.deleteEvent('event-1', 'instance', occurrenceStartAt);
+    await iosAdapter.deleteEvent('event-1', 'following', occurrenceStartAt);
+
+    expect(module.deleteEventAsync).toHaveBeenNthCalledWith(1, 'event-1', {
+      instanceStartDate: occurrenceStartAt,
+      futureEvents: false,
+    });
+    expect(module.deleteEventAsync).toHaveBeenNthCalledWith(2, 'event-1', {
+      instanceStartDate: occurrenceStartAt,
+      futureEvents: true,
+    });
+  });
+
+  it('does not claim native future-scope support on Android', async () => {
+    const module = makeModule();
+    const androidAdapter = createDeviceCalendarAdapter(async () => module, 'android');
+
+    await expect(
+      androidAdapter.deleteEvent('event-1', 'following', new Date(2026, 7, 14, 9)),
+    ).rejects.toThrow('This recurring-event deletion option is unavailable on this device.');
+    expect(module.deleteEventAsync).not.toHaveBeenCalled();
   });
 
   it('maps custom weekdays on iOS and rejects them on Android before native access', async () => {

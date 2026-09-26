@@ -133,6 +133,26 @@ describe('icsInterop', () => {
     expect(icsContent).toContain('TRIGGER;VALUE=DATE-TIME:20260703T130000Z');
   });
 
+  it('exports removed recurring instances as EXDATE values', () => {
+    const icsContent = serializeEventsToIcs([
+      makeEvent({
+        timezone: 'UTC',
+        startAt: new Date('2026-09-28T09:00:00.000Z'),
+        endAt: new Date('2026-09-28T10:00:00.000Z'),
+        recurrenceRule: {
+          frequency: 'daily',
+          interval: 1,
+          endAt: null,
+          occurrenceCount: null,
+          weekdays: [],
+        },
+        excludedOccurrenceDates: ['2026-09-30', '2026-09-29'],
+      }),
+    ]);
+
+    expect(icsContent).toContain('EXDATE:20260929T090000Z,20260930T090000Z');
+  });
+
   it('excludes device events even when passed a merged display list', () => {
     const icsContent = serializeEventsToIcs([makeEvent(), makeDeviceEvent()]);
 

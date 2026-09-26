@@ -48,7 +48,8 @@ describe('EventForm', () => {
     fireEvent.changeText(screen.getByLabelText('Event location'), 'Office');
     fireEvent.press(screen.getByText('Weekly'));
     fireEvent.changeText(screen.getByLabelText('Recurrence interval'), '2');
-    fireEvent.changeText(screen.getByLabelText('Recurrence occurrences'), '3');
+    fireEvent.press(screen.getByLabelText('Repeat ends After'));
+    fireEvent.changeText(screen.getByLabelText('Recurrence count'), '3');
     fireEvent.press(screen.getByLabelText('Open first alert selector'));
     fireEvent.press(screen.getByLabelText('Select first alert 60 minutes before'));
     fireEvent.press(screen.getByLabelText('Open second alert selector'));
@@ -141,6 +142,65 @@ describe('EventForm', () => {
       }),
       { publishToDevice: false },
     );
+  });
+
+  it('describes the selected repeat interval and its unit in plain language', () => {
+    render(
+      <EventForm
+        active
+        initialDate={new Date('2026-08-03T09:00:00.000Z')}
+        initialValues={{ timezone: 'UTC' }}
+        onSave={jest.fn(async () => undefined)}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText('Show advanced event fields'));
+    fireEvent.press(screen.getByText('Weekly'));
+    expect(screen.getByText('Repeats every 1 week.')).toBeTruthy();
+    expect(screen.getByText('Repeat interval (in weeks)')).toBeTruthy();
+
+    fireEvent.changeText(screen.getByLabelText('Recurrence interval'), '2');
+    expect(screen.getByText('Repeats every 2 weeks.')).toBeTruthy();
+
+    fireEvent.press(screen.getByText('Custom'));
+    fireEvent.press(screen.getByLabelText('Repeat on Wednesday'));
+    fireEvent.press(screen.getByLabelText('Repeat on Friday'));
+    expect(screen.getByText('Repeats every 2 weeks on Monday, Wednesday, Friday.')).toBeTruthy();
+  });
+
+  it('defaults repeat ending to Forever and selects one ending option at a time', () => {
+    render(
+      <EventForm
+        active
+        initialDate={new Date('2026-08-03T09:00:00.000Z')}
+        initialValues={{ timezone: 'UTC' }}
+        onSave={jest.fn(async () => undefined)}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText('Show advanced event fields'));
+    fireEvent.press(screen.getByText('Daily'));
+    expect(screen.getByLabelText('Repeat ends Forever').props.accessibilityState.selected).toBe(
+      true,
+    );
+    expect(screen.getByLabelText('Repeat ends After').props.accessibilityState.selected).toBe(
+      false,
+    );
+
+    fireEvent.press(screen.getByLabelText('Repeat ends After'));
+    expect(screen.getByLabelText('Repeat ends After').props.accessibilityState.selected).toBe(true);
+    expect(screen.getByLabelText('Repeat ends Forever').props.accessibilityState.selected).toBe(
+      false,
+    );
+    expect(screen.getByLabelText('Recurrence count').props.value).toBe('10');
+
+    fireEvent.press(screen.getByLabelText('Repeat ends Until'));
+    expect(screen.getByLabelText('Repeat ends Until').props.accessibilityState.selected).toBe(true);
+    expect(screen.getByLabelText('Repeat ends After').props.accessibilityState.selected).toBe(
+      false,
+    );
+    expect(screen.queryByLabelText('Recurrence count')).toBeNull();
+    expect(screen.getByLabelText('Recurrence end date')).toBeTruthy();
   });
 
   it('restores custom weekday selections when editing', () => {

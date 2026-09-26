@@ -124,4 +124,65 @@ describe('firebaseEvents legacy decoding', () => {
 
     expect(decoded.recurrenceRule?.weekdays).toEqual(['monday', 'saturday']);
   });
+
+  it('decodes distinct valid excluded recurrence dates', () => {
+    const at = new Date(2026, 7, 3, 9);
+    const decoded = decodeCalendarEventData('excluded-recurrence', {
+      userId: 'user-1',
+      title: 'Excluded recurrence',
+      description: '',
+      startAt: timestamp(at),
+      endAt: timestamp(new Date(2026, 7, 3, 10)),
+      timezone: 'UTC',
+      recurrenceRule: {
+        frequency: 'daily',
+        interval: 1,
+        endAt: null,
+        occurrenceCount: null,
+        weekdays: [],
+      },
+      excludedOccurrenceDates: ['2026-08-04', 'invalid', '2026-08-04'],
+      status: 'scheduled',
+      createdAt: timestamp(at),
+      updatedAt: timestamp(at),
+    });
+
+    expect(decoded.excludedOccurrenceDates).toEqual(['2026-08-04']);
+  });
+
+  it('decodes valid per-occurrence overrides and ignores invalid date keys', () => {
+    const at = new Date(2026, 7, 3, 9);
+    const movedStart = new Date(2026, 7, 5, 11);
+    const movedEnd = new Date(2026, 7, 5, 12);
+    const decoded = decodeCalendarEventData('override-recurrence', {
+      userId: 'user-1',
+      title: 'Recurring',
+      description: '',
+      startAt: timestamp(at),
+      endAt: timestamp(new Date(2026, 7, 3, 10)),
+      timezone: 'UTC',
+      recurrenceRule: {
+        frequency: 'daily',
+        interval: 1,
+        endAt: null,
+        occurrenceCount: null,
+        weekdays: [],
+      },
+      recurrenceOverrides: {
+        '2026-08-03': {
+          title: 'Moved',
+          startAt: timestamp(movedStart),
+          endAt: timestamp(movedEnd),
+        },
+        invalid: { title: 'Ignored' },
+      },
+      status: 'scheduled',
+      createdAt: timestamp(at),
+      updatedAt: timestamp(at),
+    });
+
+    expect(decoded.recurrenceOverrides).toEqual({
+      '2026-08-03': { title: 'Moved', startAt: movedStart, endAt: movedEnd },
+    });
+  });
 });

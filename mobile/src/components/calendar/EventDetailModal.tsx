@@ -13,10 +13,13 @@ import { spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
 import {
   BearingEvent,
+  CalendarDeletionScope,
   CalendarDisplayEvent,
+  CalendarUpdateScope,
   CreateEventInput,
 } from '../../features/calendar/calendarTypes';
 import { EventEditForm } from './EventEditForm';
+import { EventUpdateScopePrompt } from './EventUpdateScopePrompt';
 import {
   DEFAULT_TIME_FORMAT,
   TimeFormat,
@@ -26,8 +29,14 @@ import {
 type EventDetailModalProps = {
   event: CalendarDisplayEvent | null;
   onClose: () => void;
-  onUpdate: (event: CalendarDisplayEvent, input: CreateEventInput) => Promise<void>;
-  onDelete: (event: CalendarDisplayEvent) => Promise<void>;
+  onUpdate: (
+    event: CalendarDisplayEvent,
+    input: CreateEventInput,
+    scope?: CalendarUpdateScope,
+  ) => Promise<void>;
+  onDelete: (event: CalendarDisplayEvent, scope: CalendarDeletionScope) => Promise<void>;
+  supportedDeleteScopes?: CalendarDeletionScope[];
+  supportedUpdateScopes?: CalendarUpdateScope[];
   onRetryPublication?: (event: BearingEvent) => Promise<void>;
   locale?: string;
   timeFormat?: TimeFormat;
@@ -94,6 +103,8 @@ export function EventDetailModal({
   onClose,
   onUpdate,
   onDelete,
+  supportedDeleteScopes = ['instance', 'following', 'series'],
+  supportedUpdateScopes = ['instance', 'following', 'series'],
   onRetryPublication,
   locale,
   timeFormat = DEFAULT_TIME_FORMAT,
@@ -104,22 +115,35 @@ export function EventDetailModal({
   const insets = useSafeAreaInsets();
   const styles = useThemedStyles(createStyles);
   const [editing, setEditing] = useState(false);
+  const [choosingUpdateScope, setChoosingUpdateScope] = useState(false);
+  const [selectedUpdateScope, setSelectedUpdateScope] = useState<CalendarUpdateScope | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [selectedDeleteScope, setSelectedDeleteScope] = useState<CalendarDeletionScope | null>(
+    null,
+  );
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [retryingPublication, setRetryingPublication] = useState(false);
   const [publicationError, setPublicationError] = useState<string | null>(null);
-
   useEffect(() => {
     setEditing(false);
+    setChoosingUpdateScope(false);
+    setSelectedUpdateScope(null);
+    setUpdateError(null);
     setConfirmingDelete(false);
+    setSelectedDeleteScope(null);
     setDeleteError(null);
     setPublicationError(null);
   }, [event]);
 
   function handleClose(): void {
     setEditing(false);
+    setChoosingUpdateScope(false);
+    setSelectedUpdateScope(null);
+    setUpdateError(null);
     setConfirmingDelete(false);
+    setSelectedDeleteScope(null);
     setDeleteError(null);
     onClose();
   }
@@ -129,7 +153,7 @@ export function EventDetailModal({
     setDeleting(true);
     setDeleteError(null);
     try {
-      await onDelete(event);
+      await onDelete(event, selectedDeleteScope ?? 'series');
       handleClose();
     } catch {
       setDeleteError('Failed to delete event. Please try again.');
@@ -140,8 +164,27 @@ export function EventDetailModal({
 
   async function handleUpdate(input: CreateEventInput): Promise<void> {
     if (!event) return;
-    await onUpdate(event, input);
-    setEditing(false);
+    if (event.recurrenceRule && !choosingUpdateScope) {
+      setSelectedUpdateScope(null);
+      setUpdateError(null);
+      setChoosingUpdateScope(true);
+      return;
+    }
+    if (choosingUpdateScope && !selectedUpdateScope) return;
+    if (!event.recurrenceRule) {
+      await onUpdate(event, input);
+      setEditing(false);
+      return;
+    }
+
+    try {
+      await onUpdate(event, input, selectedUpdateScope ?? undefined);
+      setEditing(false);
+      setChoosingUpdateScope(false);
+      setSelectedUpdateScope(null);
+    } catch {
+      setUpdateError('Failed to update event. Please try again.');
+    }
   }
 
   async function handleRetryPublication(): Promise<void> {
@@ -174,7 +217,7 @@ export function EventDetailModal({
           active
           initialDate={event.startAt}
           initialValues={event}
-          saveLabel="Update Event"
+          saveLabel={choosingUpdateScope ? 'Yes, update' : 'Update Event'}
           locale={locale}
           timeFormat={timeFormat}
           fullScreen
@@ -185,6 +228,24 @@ export function EventDetailModal({
               backAccessibilityLabel="Back to event details"
             />
           }
+          beforeSave={
+            choosingUpdateScope ? (
+              <>
+                <EventUpdateScopePrompt
+                  supportedScopes={supportedUpdateScopes}
+                  selectedScope={selectedUpdateScope}
+                  onSelect={setSelectedUpdateScope}
+                />
+                {updateError ? <Text style={styles.errorText}>{updateError}</Text> : null}
+              </>
+            ) : null
+          }
+          cancelSave={{
+            accessibilityLabel: 'Cancel edit event',
+            onPress: handleClose,
+          }}
+          saveDisabled={choosingUpdateScope && selectedUpdateScope === null}
+          saveAccessibilityLabel={choosingUpdateScope ? 'Confirm recurring update' : 'Save event'}
           onSave={handleUpdate}
         />
       ) : event ? (
@@ -337,19 +398,52 @@ export function EventDetailModal({
                 label="Delete"
                 variant="danger"
                 accessibilityLabel="Delete event"
-                onPress={() => setConfirmingDelete(true)}
+                onPress={() => {
+                  setSelectedDeleteScope(null);
+                  setConfirmingDelete(true);
+                }}
                 style={styles.flexButton}
               />
             </View>
           ) : mutable ? (
             <View style={styles.confirmRow}>
-              <Text style={styles.confirmText}>Delete this event permanently?</Text>
+              <Text style={styles.confirmText}>
+                {event.recurrenceRule ? 'Delete which events?' : 'Delete this event permanently?'}
+              </Text>
+              {event.recurrenceRule ? (
+                <View style={styles.deleteScopeOptions}>
+                  {(
+                    [
+                      ['instance', 'This event only'],
+                      ['following', 'This and following'],
+                      ['series', 'All events'],
+                    ] as const
+                  ).map(([scope, label]) => (
+                    <AppButton
+                      key={scope}
+                      label={
+                        supportedDeleteScopes.includes(scope)
+                          ? label
+                          : `${label} (not supported here)`
+                      }
+                      accessibilityLabel={`Delete ${label.toLowerCase()}${supportedDeleteScopes.includes(scope) ? '' : ' (not supported here)'}`}
+                      accessibilityState={{ selected: selectedDeleteScope === scope }}
+                      variant={selectedDeleteScope === scope ? 'danger' : 'secondary'}
+                      disabled={!supportedDeleteScopes.includes(scope)}
+                      onPress={() => setSelectedDeleteScope(scope)}
+                    />
+                  ))}
+                </View>
+              ) : null}
               <View style={styles.actionRow}>
                 <AppButton
                   label="Cancel"
                   variant="secondary"
                   accessibilityLabel="Cancel delete"
-                  onPress={() => setConfirmingDelete(false)}
+                  onPress={() => {
+                    setConfirmingDelete(false);
+                    setSelectedDeleteScope(null);
+                  }}
                   style={styles.flexButton}
                 />
                 <AppButton
@@ -357,6 +451,7 @@ export function EventDetailModal({
                   variant="danger"
                   accessibilityLabel="Confirm delete"
                   onPress={() => void handleConfirmDelete()}
+                  disabled={Boolean(event.recurrenceRule) && selectedDeleteScope === null}
                   loading={deleting}
                   loadingLabel="Deleting..."
                   style={styles.flexButton}
@@ -496,6 +591,9 @@ const createStyles = (theme: Theme) =>
       flex: 1,
     },
     confirmRow: {
+      gap: spacing.sm,
+    },
+    deleteScopeOptions: {
       gap: spacing.sm,
     },
     confirmText: {

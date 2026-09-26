@@ -7,6 +7,9 @@ import {
 } from './calendarReconciliation';
 import {
   BearingEvent,
+  CalendarDeletionScope,
+  CalendarUpdateScope,
+  CalendarRecurrenceOverride,
   CalendarPublicationMetadata,
   CreateEventInput,
   CreateEventOptions,
@@ -14,6 +17,8 @@ import {
   createUnpublishedMetadata,
 } from './calendarTypes';
 import { DeviceCalendarEventRecord, DeviceCalendarLink } from './deviceCalendarTypes';
+import { getRecurrenceOccurrenceNumberForEvent } from './calendarRecurrence';
+import { toEventDateString } from './eventEditor';
 import {
   CUSTOM_WEEKDAY_RECURRENCE_UNSUPPORTED_MESSAGE,
   DeviceCalendarAdapter,
@@ -420,7 +425,133 @@ export function createCalendarPublicationService(
       userId: string,
       event: BearingEvent,
       fields: UpdateEventInput,
+      scope: CalendarUpdateScope = 'series',
     ): Promise<'published' | 'failed' | 'not-applicable'> {
+      if (scope !== 'series') {
+        if (event.publication.status !== 'unpublished') {
+          throw new Error(
+            'Partial edits are unavailable while this event has a linked device copy.',
+          );
+        }
+        if (!event.recurrenceRule) throw new Error('This event does not repeat.');
+        const instanceDate =
+          event.recurrenceInstanceDate ?? toEventDateString(event.startAt, event.timezone);
+        const occurrenceNumber = getRecurrenceOccurrenceNumberForEvent(event, event.startAt);
+        if (occurrenceNumber === null) {
+          throw new Error('The selected date is not part of this recurring event.');
+        }
+
+        // “This and following” from the first occurrence is equivalent to the whole series.
+        if (scope === 'following' && occurrenceNumber === 1) {
+          await dependencies.updateBearingEvent(userId, event.id, fields);
+          return 'not-applicable';
+        }
+
+        if (scope === 'instance') {
+          const override: CalendarRecurrenceOverride = {};
+          const overrideFields: (keyof CalendarRecurrenceOverride)[] = [
+            'title',
+            'description',
+            'startAt',
+            'endAt',
+            'timezone',
+            'allDay',
+            'location',
+            'alarms',
+            'availability',
+            'url',
+            'status',
+          ];
+          for (const key of overrideFields) {
+            const value = fields[key];
+            if (value !== undefined) {
+              (override as Record<string, unknown>)[key] = value;
+            }
+          }
+          await dependencies.updateBearingEvent(userId, event.id, {
+            recurrenceOverrides: {
+              ...(event.recurrenceOverrides ?? {}),
+              [instanceDate]: {
+                ...(event.recurrenceOverrides?.[instanceDate] ?? {}),
+                ...override,
+              },
+            },
+          });
+          return 'not-applicable';
+        }
+
+        const originalRule = event.recurrenceRule;
+        const oldRule = {
+          ...originalRule,
+          occurrenceCount: occurrenceNumber - 1,
+          endAt: null,
+        };
+        const nextRule = fields.recurrenceRule === undefined ? originalRule : fields.recurrenceRule;
+        const countIsUnchanged =
+          nextRule?.occurrenceCount === originalRule.occurrenceCount &&
+          nextRule?.endAt?.getTime() === originalRule.endAt?.getTime();
+        const remainingRule = nextRule
+          ? {
+              ...nextRule,
+              occurrenceCount:
+                countIsUnchanged && originalRule.occurrenceCount !== null
+                  ? originalRule.occurrenceCount - occurrenceNumber + 1
+                  : nextRule.occurrenceCount,
+            }
+          : null;
+        const earlierOverrides = Object.fromEntries(
+          Object.entries(event.recurrenceOverrides ?? {}).filter(([date]) => date < instanceDate),
+        );
+        const laterOverrides = Object.fromEntries(
+          Object.entries(event.recurrenceOverrides ?? {}).filter(([date]) => date > instanceDate),
+        );
+        const earlierExclusions = (event.excludedOccurrenceDates ?? []).filter(
+          (date) => date < instanceDate,
+        );
+        const laterExclusions = (event.excludedOccurrenceDates ?? []).filter(
+          (date) => date > instanceDate,
+        );
+        const newInput: CreateEventInput = {
+          title: fields.title ?? event.title,
+          description: fields.description ?? event.description,
+          startAt: fields.startAt ?? event.startAt,
+          endAt: fields.endAt ?? event.endAt,
+          timezone: fields.timezone ?? event.timezone,
+          allDay: fields.allDay ?? event.allDay,
+          location: fields.location ?? event.location,
+          recurrenceRule: remainingRule,
+          alarms: fields.alarms ?? event.alarms,
+          availability: fields.availability ?? event.availability,
+          url: fields.url === undefined ? event.url : fields.url,
+          goalId: event.goalId,
+          stepId: event.stepId,
+        };
+
+        const newEventId = await dependencies.createBearingEvent(
+          userId,
+          newInput,
+          createUnpublishedMetadata(),
+          event.sourceTaskId,
+        );
+        try {
+          if (Object.keys(laterOverrides).length || laterExclusions.length) {
+            await dependencies.updateBearingEvent(userId, newEventId, {
+              recurrenceOverrides: laterOverrides,
+              excludedOccurrenceDates: laterExclusions,
+            });
+          }
+          await dependencies.updateBearingEvent(userId, event.id, {
+            recurrenceRule: oldRule,
+            recurrenceOverrides: earlierOverrides,
+            excludedOccurrenceDates: earlierExclusions,
+          });
+        } catch (error) {
+          await dependencies.deleteBearingEvent(userId, newEventId);
+          throw error;
+        }
+        return 'not-applicable';
+      }
+
       await dependencies.updateBearingEvent(userId, event.id, fields);
       if (event.publication.status !== 'published' || !event.publication.markerId) {
         return 'not-applicable';
@@ -452,7 +583,53 @@ export function createCalendarPublicationService(
       }
     },
 
-    async deleteEvent(userId: string, event: BearingEvent): Promise<void> {
+    async deleteEvent(
+      userId: string,
+      event: BearingEvent,
+      scope: CalendarDeletionScope = 'series',
+    ): Promise<void> {
+      if (scope !== 'series') {
+        if (!event.recurrenceRule) throw new Error('This event does not repeat.');
+        const occurrenceNumber = getRecurrenceOccurrenceNumberForEvent(event, event.startAt);
+        if (occurrenceNumber === null) {
+          throw new Error('The selected date is not part of this recurring event.');
+        }
+        if (scope === 'following' && occurrenceNumber <= 1) {
+          return this.deleteEvent(userId, event, 'series');
+        }
+
+        if (event.publication.status !== 'unpublished') {
+          const settings = await dependencies.loadSettings(userId);
+          const link = settings?.linkCache[event.id];
+          if (!link) throw new Error(DELETION_ERROR);
+          await dependencies.adapter.deleteEvent(link.eventId, scope, event.startAt);
+        }
+
+        if (scope === 'instance') {
+          const occurrenceDate = toEventDateString(event.startAt, event.timezone);
+          const excludedOccurrenceDates = [
+            ...new Set([...(event.excludedOccurrenceDates ?? []), occurrenceDate]),
+          ];
+          await dependencies.updateBearingEvent(userId, event.id, { excludedOccurrenceDates });
+        } else {
+          const updatedRule = {
+            ...event.recurrenceRule,
+            occurrenceCount: occurrenceNumber - 1,
+            endAt: null,
+          };
+          await dependencies.updateBearingEvent(userId, event.id, { recurrenceRule: updatedRule });
+          if (event.publication.status === 'published') {
+            await dependencies.updatePublication(userId, event.id, {
+              commonHash: canonicalCalendarFieldHash({
+                ...eventFields(event),
+                recurrenceRule: updatedRule,
+              }),
+            });
+          }
+        }
+        return;
+      }
+
       if (event.publication.status === 'unpublished') {
         await dependencies.deleteBearingEvent(userId, event.id);
         return;

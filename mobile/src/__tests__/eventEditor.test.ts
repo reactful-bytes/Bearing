@@ -40,6 +40,7 @@ describe('event editor validation', () => {
       location: 'Office',
       recurrenceFrequency: 'weekly',
       recurrenceInterval: '2',
+      recurrenceEndMode: 'count',
       recurrenceOccurrenceCount: '4',
       firstAlertTiming: '-30',
       secondAlertTiming: '0',
@@ -119,21 +120,80 @@ describe('event editor validation', () => {
     expect(result.errors).toContain('Start date or time is invalid for this timezone.');
   });
 
-  it('rejects conflicting or out-of-range recurrence limits', () => {
+  it('rejects an out-of-range selected recurrence count', () => {
     const result = parseCalendarEventForm({
       ...validValues(),
       recurrenceFrequency: 'daily',
       recurrenceInterval: '0',
+      recurrenceEndMode: 'count',
+      recurrenceOccurrenceCount: '5',
+    });
+
+    expect(result.errors).toContain('Recurrence interval must be between 1 and 999.');
+  });
+
+  it('defaults new repeat schedules to Forever and serializes no end limit', () => {
+    const values = buildCalendarEventFormValues(new Date('2026-07-31T09:00:00.000Z'));
+    expect(values.recurrenceEndMode).toBe('forever');
+
+    const result = parseCalendarEventForm({
+      ...validValues(),
+      recurrenceFrequency: 'daily',
+      recurrenceEndMode: 'forever',
       recurrenceEndDate: '2026-08-31',
       recurrenceOccurrenceCount: '5',
     });
 
-    expect(result.errors).toEqual(
-      expect.arrayContaining([
-        'Recurrence interval must be between 1 and 999.',
-        'Choose either a recurrence end date or occurrence count, not both.',
-      ]),
-    );
+    expect(result.errors).toEqual([]);
+    expect(result.input?.recurrenceRule).toEqual({
+      frequency: 'daily',
+      interval: 1,
+      endAt: null,
+      occurrenceCount: null,
+      weekdays: [],
+    });
+  });
+
+  it('serializes only the selected count or until condition', () => {
+    const countResult = parseCalendarEventForm({
+      ...validValues(),
+      recurrenceFrequency: 'daily',
+      recurrenceEndMode: 'count',
+      recurrenceOccurrenceCount: '10',
+      recurrenceEndDate: '2026-08-31',
+    });
+    const untilResult = parseCalendarEventForm({
+      ...validValues(),
+      recurrenceFrequency: 'daily',
+      recurrenceEndMode: 'until',
+      recurrenceOccurrenceCount: '10',
+      recurrenceEndDate: '2026-08-31',
+    });
+
+    expect(countResult.input?.recurrenceRule).toMatchObject({
+      occurrenceCount: 10,
+      endAt: null,
+    });
+    expect(untilResult.input?.recurrenceRule?.occurrenceCount).toBeNull();
+    expect(untilResult.input?.recurrenceRule?.endAt).toEqual(new Date('2026-08-31T23:59:00.000Z'));
+  });
+
+  it('requires a count or until date only when that ending mode is selected', () => {
+    const missingCount = parseCalendarEventForm({
+      ...validValues(),
+      recurrenceFrequency: 'weekly',
+      recurrenceEndMode: 'count',
+      recurrenceOccurrenceCount: '',
+    });
+    const missingUntilDate = parseCalendarEventForm({
+      ...validValues(),
+      recurrenceFrequency: 'weekly',
+      recurrenceEndMode: 'until',
+      recurrenceEndDate: '',
+    });
+
+    expect(missingCount.errors).toContain('Repeat count must be between 1 and 9999.');
+    expect(missingUntilDate.errors).toContain('Choose an end date for this repeat schedule.');
   });
 
   it('builds and restores custom weekday recurrence', () => {

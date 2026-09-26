@@ -21,9 +21,24 @@ type EventDetailScreenProps = {
 export function EventDetailScreen({ route, navigation }: EventDetailScreenProps) {
   const { profile } = useUserProfile();
   const [eventDate] = useState(() => new Date(route.params.dateIso ?? Date.now()));
-  const { events, uiState, retryPublication, updateEvent, deleteEvent, refresh } =
-    useCalendarEvents(eventDate);
-  const event = events.find((candidate) => candidate.id === route.params.eventId) ?? null;
+  const {
+    events,
+    uiState,
+    retryPublication,
+    updateEvent,
+    getSupportedUpdateScopes,
+    deleteEvent,
+    getSupportedDeletionScopes,
+    refresh,
+  } = useCalendarEvents(eventDate);
+  const event =
+    events.find(
+      (candidate) =>
+        candidate.id === route.params.eventId &&
+        candidate.startAt.getTime() === eventDate.getTime(),
+    ) ??
+    events.find((candidate) => candidate.id === route.params.eventId) ??
+    null;
 
   if (uiState === 'loading' && !event) {
     return (
@@ -69,8 +84,10 @@ export function EventDetailScreen({ route, navigation }: EventDetailScreenProps)
         })
       }
       onClose={navigation.goBack}
-      onUpdate={async (selectedEvent, input) => updateEvent(selectedEvent, input)}
-      onDelete={async (selectedEvent) => deleteEvent(selectedEvent)}
+      onUpdate={async (selectedEvent, input, scope) => updateEvent(selectedEvent, input, scope)}
+      supportedUpdateScopes={getSupportedUpdateScopes?.(event) ?? ['series']}
+      onDelete={async (selectedEvent, scope) => deleteEvent(selectedEvent, scope)}
+      supportedDeleteScopes={getSupportedDeletionScopes?.(event) ?? ['series']}
       onRetryPublication={retryPublication}
       locale={profile?.locale}
       timeFormat={profile?.timeFormat ?? DEFAULT_TIME_FORMAT}

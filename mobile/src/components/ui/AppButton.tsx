@@ -14,7 +14,7 @@ import { useThemedStyles } from '../../design/useThemedStyles';
 import { radii, spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
 
-export type AppButtonVariant = 'primary' | 'secondary' | 'danger';
+export type AppButtonVariant = 'primary' | 'secondary' | 'danger' | 'brandOutline';
 
 type AppButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   label: ReactNode;
@@ -91,6 +91,11 @@ const createStyles = (theme: Theme) =>
       borderWidth: 1,
       borderColor: theme.colors.dangerText,
     },
+    brandOutline: {
+      backgroundColor: theme.colors.surfaceBrand,
+      borderWidth: 1,
+      borderColor: theme.colors.brand,
+    },
     pressed: {
       opacity: 0.86,
     },
@@ -109,5 +114,8 @@ const createStyles = (theme: Theme) =>
     },
     dangerText: {
       color: theme.colors.dangerText,
+    },
+    brandOutlineText: {
+      color: theme.colors.brand,
     },
   });

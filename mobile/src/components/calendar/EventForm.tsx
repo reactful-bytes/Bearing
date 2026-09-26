@@ -29,6 +29,7 @@ import {
 } from '../../features/calendar/calendarTypes';
 import {
   CalendarEventFormValues,
+  EventFormRecurrenceEndMode,
   EventFormRecurrenceFrequency,
   buildCalendarEventFormValues,
   parseCalendarEventForm,
@@ -48,6 +49,13 @@ export type EventFormProps = {
   fullScreen?: boolean;
   contentContainerStyle?: StyleProp<ViewStyle>;
   header?: ReactNode;
+  beforeSave?: ReactNode;
+  cancelSave?: {
+    accessibilityLabel: string;
+    onPress: () => void;
+  };
+  saveDisabled?: boolean;
+  saveAccessibilityLabel?: string;
   onSave: (input: CreateEventInput, options: CreateEventOptions) => Promise<void>;
 };
 
@@ -55,9 +63,9 @@ const RECURRENCE_OPTIONS: { label: string; value: EventFormRecurrenceFrequency }
   { label: 'None', value: 'none' },
   { label: 'Daily', value: 'daily' },
   { label: 'Weekly', value: 'weekly' },
-  { label: 'Custom', value: 'custom' },
   { label: 'Monthly', value: 'monthly' },
   { label: 'Yearly', value: 'yearly' },
+  { label: 'Custom', value: 'custom' },
 ];
 
 const WEEKDAY_LABELS: Record<EventWeekday, { short: string; full: string }> = {
@@ -108,6 +116,38 @@ function formatAlertTiming(timing: string): string {
   return `Custom: ${minutes} minute${minutes === 1 ? '' : 's'} ${offset < 0 ? 'before' : 'after'}`;
 }
 
+function getRecurrenceIntervalCopy(values: CalendarEventFormValues): {
+  unit: string;
+  helperText: string;
+} {
+  const frequency = values.recurrenceFrequency === 'custom' ? 'weekly' : values.recurrenceFrequency;
+  const unit =
+    frequency === 'daily'
+      ? 'day'
+      : frequency === 'weekly'
+        ? 'week'
+        : frequency === 'monthly'
+          ? 'month'
+          : 'year';
+  const interval = /^\d+$/.test(values.recurrenceInterval)
+    ? Number(values.recurrenceInterval)
+    : Number.NaN;
+
+  if (!Number.isSafeInteger(interval) || interval < 1 || interval > 999) {
+    return { unit, helperText: 'Enter a whole number from 1 to 999.' };
+  }
+
+  const weekdayNames = values.recurrenceWeekdays.map((weekday) => WEEKDAY_LABELS[weekday].full);
+  const weekdayCopy =
+    values.recurrenceFrequency === 'custom' && weekdayNames.length > 0
+      ? ` on ${weekdayNames.join(', ')}`
+      : '';
+  return {
+    unit,
+    helperText: `Repeats every ${interval} ${unit}${interval === 1 ? '' : 's'}${weekdayCopy}.`,
+  };
+}
+
 export function EventForm({
   active,
   initialDate,
@@ -119,6 +159,10 @@ export function EventForm({
   fullScreen = false,
   contentContainerStyle,
   header,
+  beforeSave,
+  cancelSave,
+  saveDisabled = false,
+  saveAccessibilityLabel = 'Save event',
   onSave,
 }: EventFormProps) {
   const { theme } = useTheme();
@@ -193,6 +237,15 @@ export function EventForm({
     }));
   }
 
+  function handleRecurrenceEndModeChange(mode: EventFormRecurrenceEndMode): void {
+    setValues((current) => ({
+      ...current,
+      recurrenceEndMode: mode,
+      recurrenceEndDate: mode === 'until' ? current.recurrenceEndDate : '',
+      recurrenceOccurrenceCount: mode === 'count' ? current.recurrenceOccurrenceCount || '10' : '',
+    }));
+  }
+
   async function handleSave(): Promise<void> {
     setError(null);
     const result = parseCalendarEventForm(values, {
@@ -213,6 +266,9 @@ export function EventForm({
       setSaving(false);
     }
   }
+
+  const recurrenceCopy =
+    values.recurrenceFrequency !== 'none' ? getRecurrenceIntervalCopy(values) : null;
 
   return (
     <>
@@ -440,18 +496,62 @@ export function EventForm({
             {values.recurrenceFrequency !== 'none' ? (
               <>
                 <FormField
-                  label="Repeat interval"
+                  label={`Repeat interval (in ${recurrenceCopy?.unit ?? 'weeks'}s)`}
                   value={values.recurrenceInterval}
                   onChangeText={(value) => updateValue('recurrenceInterval', value)}
                   keyboardType="number-pad"
                   accessibilityLabel="Recurrence interval"
+                  helperText={recurrenceCopy?.helperText}
+                  helperStyle={styles.helperText}
                   labelStyle={styles.compactLabel}
                   inputStyle={styles.input}
                 />
-                <View style={styles.dateRow}>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.fieldLabel}>Duration</Text>
+                  <View style={styles.optionWrap}>
+                    {(
+                      [
+                        { label: 'Forever', value: 'forever' },
+                        { label: 'After', value: 'count' },
+                        { label: 'Until', value: 'until' },
+                      ] as const
+                    ).map((option) => {
+                      const selected = values.recurrenceEndMode === option.value;
+                      return (
+                        <Pressable
+                          key={option.value}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Repeat ends ${option.label}`}
+                          accessibilityState={{ selected }}
+                          onPress={() => handleRecurrenceEndModeChange(option.value)}
+                          style={[styles.option, selected ? styles.optionSelected : null]}
+                        >
+                          <Text
+                            style={[styles.optionText, selected ? styles.optionTextSelected : null]}
+                          >
+                            {option.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+                {values.recurrenceEndMode === 'count' ? (
+                  <FormField
+                    label="Times"
+                    value={values.recurrenceOccurrenceCount}
+                    onChangeText={(value) => updateValue('recurrenceOccurrenceCount', value)}
+                    keyboardType="number-pad"
+                    accessibilityLabel="Recurrence count"
+                    helperText="Number of events in this repeat schedule."
+                    helperStyle={styles.helperText}
+                    labelStyle={styles.compactLabel}
+                    inputStyle={styles.input}
+                  />
+                ) : null}
+                {values.recurrenceEndMode === 'until' ? (
                   <EventDateTimePickerField
-                    label="End date (optional)"
-                    containerStyle={styles.flexField}
+                    label="Until date"
                     value={values.recurrenceEndDate}
                     accessibilityLabel="Recurrence end date"
                     mode="date"
@@ -462,20 +562,9 @@ export function EventForm({
                     locale={locale}
                     timeFormat={timeFormat}
                     compact
-                    allowClear
                     onChange={(value) => updateValue('recurrenceEndDate', value)}
                   />
-                  <FormField
-                    label="Occurrences (optional)"
-                    containerStyle={styles.flexField}
-                    value={values.recurrenceOccurrenceCount}
-                    onChangeText={(value) => updateValue('recurrenceOccurrenceCount', value)}
-                    keyboardType="number-pad"
-                    accessibilityLabel="Recurrence occurrences"
-                    labelStyle={styles.compactLabel}
-                    inputStyle={styles.input}
-                  />
-                </View>
+                ) : null}
               </>
             ) : null}
 
@@ -594,13 +683,41 @@ export function EventForm({
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        <AppButton
-          label={saveLabel}
-          accessibilityLabel="Save event"
-          onPress={handleSave}
-          loading={saving}
-          loadingLabel="Saving..."
-        />
+        {cancelSave ? (
+          <View style={styles.scopePromptActions}>
+            {beforeSave}
+            <View style={styles.saveActionRow}>
+              <AppButton
+                label="Cancel"
+                variant="secondary"
+                accessibilityLabel={cancelSave.accessibilityLabel}
+                onPress={cancelSave.onPress}
+                style={styles.saveActionButton}
+              />
+              <AppButton
+                label={saveLabel}
+                accessibilityLabel={saveAccessibilityLabel}
+                onPress={handleSave}
+                disabled={saveDisabled}
+                loading={saving}
+                loadingLabel="Saving..."
+                style={styles.saveActionButton}
+              />
+            </View>
+          </View>
+        ) : (
+          <>
+            {beforeSave}
+            <AppButton
+              label={saveLabel}
+              accessibilityLabel={saveAccessibilityLabel}
+              onPress={handleSave}
+              disabled={saveDisabled}
+              loading={saving}
+              loadingLabel="Saving..."
+            />
+          </>
+        )}
       </ScrollView>
       <TimeZoneModal
         visible={timezonePickerVisible}
@@ -624,6 +741,16 @@ const createStyles = (theme: Theme) =>
     content: {
       gap: spacing.lg,
       paddingBottom: spacing.sm,
+    },
+    scopePromptActions: {
+      gap: spacing.sm,
+    },
+    saveActionRow: {
+      flexDirection: 'row',
+      gap: spacing.md,
+    },
+    saveActionButton: {
+      flex: 1,
     },
     fieldGroup: {
       gap: spacing.xs,

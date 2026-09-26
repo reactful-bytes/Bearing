@@ -124,7 +124,111 @@ describe('EventDetailModal', () => {
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Confirm delete'));
     });
-    expect(onDelete).toHaveBeenCalledWith(event);
+    expect(onDelete).toHaveBeenCalledWith(event, 'series');
+  });
+
+  it('asks which part of a recurring series to delete and confirms the chosen scope', async () => {
+    const event = makeBearingEvent({
+      recurrenceRule: {
+        frequency: 'weekly',
+        interval: 1,
+        endAt: null,
+        occurrenceCount: null,
+        weekdays: [],
+      },
+    });
+    const onDelete = jest.fn(async () => undefined);
+    render(
+      <EventDetailModal
+        event={event}
+        onClose={jest.fn()}
+        onUpdate={jest.fn(async () => undefined)}
+        onDelete={onDelete}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText('Delete event'));
+    expect(screen.getByText('Delete which events?')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Delete this event only'));
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Confirm delete'));
+    });
+
+    expect(onDelete).toHaveBeenCalledWith(event, 'instance');
+  });
+
+  it('requires an explicit supported scope before updating a recurring event', async () => {
+    const event = makeBearingEvent({
+      recurrenceRule: {
+        frequency: 'weekly',
+        interval: 1,
+        endAt: null,
+        occurrenceCount: null,
+        weekdays: [],
+      },
+    });
+    const onUpdate = jest.fn(async () => undefined);
+    render(
+      <EventDetailModal
+        event={event}
+        onClose={jest.fn()}
+        onUpdate={onUpdate}
+        onDelete={jest.fn(async () => undefined)}
+        supportedUpdateScopes={['series']}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText('Edit event'));
+    fireEvent.changeText(screen.getByLabelText('Event title'), 'Updated planning');
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Save event'));
+    });
+
+    expect(screen.getByText('Apply these changes to which events?')).toBeTruthy();
+    expect(screen.getByLabelText('Event title').props.value).toBe('Updated planning');
+    expect(screen.getByText('Yes, update')).toBeTruthy();
+    expect(screen.getByLabelText('Cancel edit event')).toBeTruthy();
+    expect(screen.queryByText('Update Recurring Event')).toBeNull();
+    expect(onUpdate).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Update this event only (not supported here)')).toBeDisabled();
+    expect(screen.getByLabelText('Update this and following (not supported here)')).toBeDisabled();
+    expect(screen.getByLabelText('Confirm recurring update')).toBeDisabled();
+
+    fireEvent.press(screen.getByLabelText('Update all events'));
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Confirm recurring update'));
+    });
+
+    expect(onUpdate).toHaveBeenCalledWith(
+      event,
+      expect.objectContaining({ title: 'Updated planning' }),
+      'series',
+    );
+  });
+
+  it('omits native deletion scopes unsupported by the selected calendar platform', () => {
+    const event = makeBearingEvent({
+      recurrenceRule: {
+        frequency: 'daily',
+        interval: 1,
+        endAt: null,
+        occurrenceCount: null,
+        weekdays: [],
+      },
+    });
+    render(
+      <EventDetailModal
+        event={event}
+        onClose={jest.fn()}
+        onUpdate={jest.fn(async () => undefined)}
+        onDelete={jest.fn(async () => undefined)}
+        supportedDeleteScopes={['instance', 'series']}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText('Delete event'));
+    expect(screen.getByLabelText('Delete this and following (not supported here)')).toBeTruthy();
+    expect(screen.getByLabelText('Delete all events')).toBeTruthy();
   });
 
   it('shows read-only state without edit or delete actions', () => {

@@ -14,7 +14,7 @@ import { loadTelemetryConsent, saveTelemetryConsent } from '../services/telemetr
 
 function makeAdapter(): jest.Mocked<DeviceCalendarAdapter> {
   return {
-    capabilities: { recurringEventMutationScopes: [] },
+    capabilities: { recurringEventMutationScopes: [], recurringEventUpdateScopes: [] },
     getPermissionState: jest.fn(),
     requestPermission: jest.fn(),
     getCalendars: jest.fn(),

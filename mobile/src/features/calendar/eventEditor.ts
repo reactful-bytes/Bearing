@@ -7,6 +7,7 @@ import {
 } from './calendarTypes';
 
 export type EventFormRecurrenceFrequency = 'none' | EventRecurrenceFrequency | 'custom';
+export type EventFormRecurrenceEndMode = 'forever' | 'count' | 'until';
 
 export type CalendarEventFormValues = {
   title: string;
@@ -20,6 +21,7 @@ export type CalendarEventFormValues = {
   location: string;
   recurrenceFrequency: EventFormRecurrenceFrequency;
   recurrenceInterval: string;
+  recurrenceEndMode: EventFormRecurrenceEndMode;
   recurrenceEndDate: string;
   recurrenceOccurrenceCount: string;
   recurrenceWeekdays: EventWeekday[];
@@ -201,6 +203,12 @@ export function buildCalendarEventFormValues(
   const alertTimings = (initialValues?.alarms ?? []).flatMap((alarm) =>
     alarm.relativeOffsetMinutes === null ? [] : [String(alarm.relativeOffsetMinutes)],
   );
+  const recurrenceEndMode: EventFormRecurrenceEndMode = initialValues?.recurrenceRule
+    ?.occurrenceCount
+    ? 'count'
+    : initialValues?.recurrenceRule?.endAt
+      ? 'until'
+      : 'forever';
 
   return {
     title: initialValues?.title ?? '',
@@ -218,12 +226,15 @@ export function buildCalendarEventFormValues(
         ? 'custom'
         : (initialValues?.recurrenceRule?.frequency ?? 'none'),
     recurrenceInterval: String(initialValues?.recurrenceRule?.interval ?? 1),
-    recurrenceEndDate: initialValues?.recurrenceRule?.endAt
-      ? toEventDateString(initialValues.recurrenceRule.endAt, timezone)
-      : '',
-    recurrenceOccurrenceCount: initialValues?.recurrenceRule?.occurrenceCount
-      ? String(initialValues.recurrenceRule.occurrenceCount)
-      : '',
+    recurrenceEndMode,
+    recurrenceEndDate:
+      recurrenceEndMode === 'until' && initialValues?.recurrenceRule?.endAt
+        ? toEventDateString(initialValues.recurrenceRule.endAt, timezone)
+        : '',
+    recurrenceOccurrenceCount:
+      recurrenceEndMode === 'count' && initialValues?.recurrenceRule?.occurrenceCount
+        ? String(initialValues.recurrenceRule.occurrenceCount)
+        : '',
     recurrenceWeekdays: initialValues?.recurrenceRule?.weekdays ?? [],
     firstAlertTiming: alertTimings[0] ?? 'none',
     secondAlertTiming: alertTimings[1] ?? 'none',
@@ -276,30 +287,29 @@ export function parseCalendarEventForm(
       errors.push(`Recurrence interval must be between 1 and ${MAX_RECURRENCE_INTERVAL}.`);
     }
 
-    const occurrenceCount = values.recurrenceOccurrenceCount.trim()
-      ? parsePositiveInteger(values.recurrenceOccurrenceCount.trim())
-      : null;
+    const occurrenceCount =
+      values.recurrenceEndMode === 'count' && values.recurrenceOccurrenceCount.trim()
+        ? parsePositiveInteger(values.recurrenceOccurrenceCount.trim())
+        : null;
     if (
-      values.recurrenceOccurrenceCount.trim() &&
+      values.recurrenceEndMode === 'count' &&
       (!occurrenceCount || occurrenceCount > MAX_RECURRENCE_OCCURRENCES)
     ) {
-      errors.push(`Recurrence occurrences must be between 1 and ${MAX_RECURRENCE_OCCURRENCES}.`);
+      errors.push(`Repeat count must be between 1 and ${MAX_RECURRENCE_OCCURRENCES}.`);
     }
 
     const recurrenceEndAt =
-      values.recurrenceEndDate.trim() && timezoneValid
+      values.recurrenceEndMode === 'until' && values.recurrenceEndDate.trim() && timezoneValid
         ? parseWallTime(values.recurrenceEndDate.trim(), '23:59', timezone)
         : null;
-    if (values.recurrenceEndDate.trim() && !recurrenceEndAt) {
+    if (values.recurrenceEndMode === 'until' && !values.recurrenceEndDate.trim()) {
+      errors.push('Choose an end date for this repeat schedule.');
+    } else if (values.recurrenceEndMode === 'until' && !recurrenceEndAt) {
       errors.push('Recurrence end date is invalid.');
     }
     if (recurrenceEndAt && startAt && recurrenceEndAt <= startAt) {
       errors.push('Recurrence end date must be after the event starts.');
     }
-    if (values.recurrenceEndDate.trim() && values.recurrenceOccurrenceCount.trim()) {
-      errors.push('Choose either a recurrence end date or occurrence count, not both.');
-    }
-
     if (interval) {
       recurrenceRule = {
         frequency: values.recurrenceFrequency === 'custom' ? 'weekly' : values.recurrenceFrequency,

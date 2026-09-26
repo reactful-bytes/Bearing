@@ -28,6 +28,8 @@ import { layout, radii, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import {
   CalendarDisplayEvent,
+  CalendarDeletionScope,
+  CalendarUpdateScope,
   CalendarEvent,
   CalendarUiState,
   CreateEventInput,
@@ -36,11 +38,11 @@ import {
   createUnpublishedMetadata,
   eventOverlapsCalendarDay,
 } from '../features/calendar/calendarTypes';
+import { getFirebaseAuth } from '../services/firebase/firebaseAuth';
 import { useCalendarEvents } from '../features/calendar/useCalendarEvents';
 import { CreateNoteInput as CreateNotePayload } from '../features/notes/noteTypes';
-import { AppTabParamList, CalendarFocusLaunch } from '../navigation/navigationTypes';
-import { getFirebaseAuth } from '../services/firebase/firebaseAuth';
 import { useCreateNote } from '../features/notes/useNotes';
+import { AppTabParamList, CalendarFocusLaunch } from '../navigation/navigationTypes';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { DEFAULT_TIME_FORMAT, formatClockTime } from '../features/profile/timeFormat';
 
@@ -203,7 +205,9 @@ export function CalendarScreen({
     uiState: realUiState,
     createEvent,
     updateEvent,
+    getSupportedUpdateScopes,
     deleteEvent,
+    getSupportedDeletionScopes,
     retryPublication,
     deviceError,
     publicationCalendarTitle,
@@ -324,12 +328,30 @@ export function CalendarScreen({
 
   const handleViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: { index: number | null }[] }) => {
-      if (viewableItems[0]?.index != null) {
-        setVisibleMonthIndex(viewableItems[0].index);
-      }
+      const index = viewableItems[0]?.index;
+      const item = index == null ? undefined : monthList[index];
+      if (index == null || !item) return;
+
+      setVisibleMonthIndex(index);
+      setSelectedDate((current) => {
+        if (current.getFullYear() === item.year && current.getMonth() === item.month)
+          return current;
+        const day = Math.min(current.getDate(), new Date(item.year, item.month + 1, 0).getDate());
+        return new Date(item.year, item.month, day, current.getHours(), current.getMinutes());
+      });
     },
-    [],
+    [monthList],
   );
+
+  useEffect(() => {
+    if (viewMode !== 'month') return;
+    const selectedMonthIndex = monthList.findIndex(
+      (item) => item.year === selectedDate.getFullYear() && item.month === selectedDate.getMonth(),
+    );
+    if (selectedMonthIndex < 0 || selectedMonthIndex === visibleMonthIndex) return;
+    setVisibleMonthIndex(selectedMonthIndex);
+    flatListRef.current?.scrollToIndex({ index: selectedMonthIndex, animated: false });
+  }, [monthList, selectedDate, viewMode, visibleMonthIndex]);
 
   function handlePrevDay(): void {
     setSelectedDate((d) => addDays(d, -1));
@@ -388,9 +410,10 @@ export function CalendarScreen({
   async function handleUpdateEvent(
     event: CalendarDisplayEvent,
     input: CreateEventInput,
+    scope?: CalendarUpdateScope,
   ): Promise<void> {
     try {
-      await updateEvent(event, input);
+      await updateEvent(event, input, scope);
       setActiveEvent(null);
     } catch (error) {
       console.error('Failed to update event:', error);
@@ -398,9 +421,12 @@ export function CalendarScreen({
     }
   }
 
-  async function handleDeleteEvent(event: CalendarDisplayEvent): Promise<void> {
+  async function handleDeleteEvent(
+    event: CalendarDisplayEvent,
+    scope: CalendarDeletionScope,
+  ): Promise<void> {
     try {
-      await deleteEvent(event);
+      await deleteEvent(event, scope);
       setActiveEvent(null);
     } catch (error) {
       console.error('Failed to delete event:', error);
@@ -552,7 +578,7 @@ export function CalendarScreen({
                 ? { height: getMonthGridHeight(visibleMonth.year, visibleMonth.month) }
                 : null,
             ]}
-            initialScrollIndex={initialMonthIndex}
+            initialScrollIndex={visibleMonthIndex}
             initialNumToRender={1}
             maxToRenderPerBatch={2}
             windowSize={3}
@@ -616,7 +642,7 @@ export function CalendarScreen({
                   .sort((left, right) => left.startAt.getTime() - right.startAt.getTime())
                   .map((event) => (
                     <EventRow
-                      key={event.id}
+                      key={`${event.id}-${event.startAt.toISOString()}`}
                       event={event}
                       dateTime={
                         event.allDay
@@ -649,7 +675,13 @@ export function CalendarScreen({
         event={activeEvent}
         onClose={() => setActiveEvent(null)}
         onUpdate={handleUpdateEvent}
+        supportedUpdateScopes={
+          activeEvent ? (getSupportedUpdateScopes?.(activeEvent) ?? ['series']) : []
+        }
         onDelete={handleDeleteEvent}
+        supportedDeleteScopes={
+          activeEvent ? (getSupportedDeletionScopes?.(activeEvent) ?? ['series']) : []
+        }
         onRetryPublication={retryPublication}
         locale={profile?.locale}
         timeFormat={timeFormat}

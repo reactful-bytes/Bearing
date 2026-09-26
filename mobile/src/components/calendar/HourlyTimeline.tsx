@@ -220,7 +220,7 @@ export function HourlyTimeline({
               const textColor = getEventTextColor(event.status, theme);
               return (
                 <Pressable
-                  key={event.id}
+                  key={`${event.id}-${event.startAt.toISOString()}`}
                   accessibilityRole="button"
                   accessibilityLabel={event.title}
                   onPress={() => onPressEvent(event)}
@@ -285,7 +285,7 @@ export function HourlyTimeline({
                 const showCompactDetails = eventHeight >= COMPACT_CALENDAR_EVENT_HEIGHT;
                 return (
                   <View
-                    key={event.id}
+                    key={`${event.id}-${event.startAt.toISOString()}`}
                     style={[
                       styles.eventLane,
                       {

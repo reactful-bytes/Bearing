@@ -89,7 +89,7 @@ function bearingEvent(overrides: Partial<BearingEvent> = {}): BearingEvent {
 
 function makeAdapter(): DeviceCalendarAdapter {
   return {
-    capabilities: { recurringEventMutationScopes: [] },
+    capabilities: { recurringEventMutationScopes: [], recurringEventUpdateScopes: [] },
     getPermissionState: jest.fn(async () => 'granted' as const),
     requestPermission: jest.fn(async () => 'granted' as const),
     getCalendars: jest.fn(async () => []),
@@ -374,6 +374,146 @@ describe('calendarPublicationService', () => {
     expect(dependencies.updatePublication).not.toHaveBeenCalled();
   });
 
+  it('deletes only the selected Bearing recurrence instance by persisting its local date exclusion', async () => {
+    const dependencies = makeDependencies();
+    const service = createCalendarPublicationService(dependencies);
+    const event = bearingEvent({
+      recurrenceRule: {
+        frequency: 'weekly',
+        interval: 1,
+        endAt: null,
+        occurrenceCount: null,
+        weekdays: ['monday', 'wednesday', 'friday'],
+      },
+      startAt: new Date('2026-09-30T13:00:00.000Z'),
+      recurrenceStartAt: new Date('2026-09-28T13:00:00.000Z'),
+    });
+
+    await service.deleteEvent('user-1', event, 'instance');
+
+    expect(dependencies.updateBearingEvent).toHaveBeenCalledWith('user-1', 'bearing-1', {
+      excludedOccurrenceDates: ['2026-09-30'],
+    });
+    expect(dependencies.deleteBearingEvent).not.toHaveBeenCalled();
+  });
+
+  it('truncates a custom weekday series before the selected occurrence', async () => {
+    const dependencies = makeDependencies();
+    const service = createCalendarPublicationService(dependencies);
+    const event = bearingEvent({
+      recurrenceRule: {
+        frequency: 'weekly',
+        interval: 1,
+        endAt: null,
+        occurrenceCount: null,
+        weekdays: ['monday', 'wednesday', 'friday'],
+      },
+      startAt: new Date('2026-09-30T13:00:00.000Z'),
+      recurrenceStartAt: new Date('2026-09-28T13:00:00.000Z'),
+    });
+
+    await service.deleteEvent('user-1', event, 'following');
+
+    expect(dependencies.updateBearingEvent).toHaveBeenCalledWith('user-1', 'bearing-1', {
+      recurrenceRule: {
+        ...event.recurrenceRule,
+        occurrenceCount: 1,
+        endAt: null,
+      },
+    });
+    expect(dependencies.deleteBearingEvent).not.toHaveBeenCalled();
+  });
+
+  it('applies a partial deletion to a linked native copy before changing Bearing data', async () => {
+    const adapter = makeAdapter();
+    const dependencies = makeDependencies(adapter);
+    (
+      dependencies.loadSettings as jest.MockedFunction<typeof dependencies.loadSettings>
+    ).mockResolvedValue({
+      selectedCalendarIds: ['work'],
+      defaultCalendarId: 'work',
+      linkCache: {
+        'bearing-1': {
+          calendarId: 'work',
+          eventId: 'native-1',
+          updatedAt: startAt.toISOString(),
+        },
+      },
+    });
+    const service = createCalendarPublicationService(dependencies);
+    const event = bearingEvent({
+      recurrenceRule: {
+        frequency: 'daily',
+        interval: 1,
+        endAt: null,
+        occurrenceCount: null,
+        weekdays: [],
+      },
+      publication: {
+        status: 'published',
+        markerId: '0123456789abcdef0123456789abcdef',
+        commonHash: 'h1-0123456789abcdef',
+        lastError: null,
+        retryable: false,
+        deletionIntent: false,
+      },
+    });
+
+    await service.deleteEvent('user-1', event, 'instance');
+
+    expect(adapter.deleteEvent).toHaveBeenCalledWith('native-1', 'instance', event.startAt);
+    expect(dependencies.updateBearingEvent).toHaveBeenCalledWith('user-1', 'bearing-1', {
+      excludedOccurrenceDates: ['2026-07-31'],
+    });
+    expect((adapter.deleteEvent as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan(
+      (dependencies.updateBearingEvent as jest.Mock).mock.invocationCallOrder[0],
+    );
+  });
+
+  it('preserves Bearing data when a linked native partial deletion fails', async () => {
+    const adapter = makeAdapter();
+    (adapter.deleteEvent as jest.MockedFunction<typeof adapter.deleteEvent>).mockRejectedValue(
+      new Error('Permission revoked'),
+    );
+    const dependencies = makeDependencies(adapter);
+    (
+      dependencies.loadSettings as jest.MockedFunction<typeof dependencies.loadSettings>
+    ).mockResolvedValue({
+      selectedCalendarIds: ['work'],
+      defaultCalendarId: 'work',
+      linkCache: {
+        'bearing-1': {
+          calendarId: 'work',
+          eventId: 'native-1',
+          updatedAt: startAt.toISOString(),
+        },
+      },
+    });
+    const service = createCalendarPublicationService(dependencies);
+    const event = bearingEvent({
+      recurrenceRule: {
+        frequency: 'daily',
+        interval: 1,
+        endAt: null,
+        occurrenceCount: null,
+        weekdays: [],
+      },
+      publication: {
+        status: 'published',
+        markerId: '0123456789abcdef0123456789abcdef',
+        commonHash: 'h1-0123456789abcdef',
+        lastError: null,
+        retryable: false,
+        deletionIntent: false,
+      },
+    });
+
+    await expect(service.deleteEvent('user-1', event, 'instance')).rejects.toThrow(
+      'Permission revoked',
+    );
+    expect(dependencies.updateBearingEvent).not.toHaveBeenCalled();
+  });
+
   it('propagates one-sided Bearing edits to the linked native copy', async () => {
     const dependencies = makeDependencies();
     const service = createCalendarPublicationService(dependencies);
@@ -451,6 +591,73 @@ describe('calendarPublicationService', () => {
       'bearing-1',
       expect.objectContaining({ lastError: CUSTOM_WEEKDAY_RECURRENCE_UNSUPPORTED_MESSAGE }),
     );
+  });
+
+  it('stores a single-occurrence edit as an override keyed by its scheduled date', async () => {
+    const dependencies = makeDependencies();
+    const service = createCalendarPublicationService(dependencies);
+    const event = bearingEvent({
+      recurrenceRule: {
+        frequency: 'weekly',
+        interval: 1,
+        endAt: null,
+        occurrenceCount: null,
+        weekdays: [],
+      },
+      recurrenceStartAt: startAt,
+      recurrenceInstanceDate: '2026-08-07',
+      startAt: new Date('2026-08-07T13:00:00.000Z'),
+      endAt: new Date('2026-08-07T14:00:00.000Z'),
+    });
+
+    await expect(
+      service.updateEvent('user-1', event, { title: 'One changed event' }, 'instance'),
+    ).resolves.toBe('not-applicable');
+    expect(dependencies.updateBearingEvent).toHaveBeenCalledWith('user-1', 'bearing-1', {
+      recurrenceOverrides: {
+        '2026-08-07': { title: 'One changed event' },
+      },
+    });
+    expect(dependencies.createBearingEvent).not.toHaveBeenCalled();
+  });
+
+  it('splits an edited future series and carries forward its remaining count', async () => {
+    const dependencies = makeDependencies();
+    const service = createCalendarPublicationService(dependencies);
+    const event = bearingEvent({
+      recurrenceRule: {
+        frequency: 'weekly',
+        interval: 1,
+        endAt: null,
+        occurrenceCount: 5,
+        weekdays: [],
+      },
+      recurrenceStartAt: startAt,
+      recurrenceInstanceDate: '2026-08-07',
+      startAt: new Date('2026-08-07T13:00:00.000Z'),
+      endAt: new Date('2026-08-07T14:00:00.000Z'),
+      sourceTaskId: 'task-7',
+    });
+
+    await expect(
+      service.updateEvent('user-1', event, { title: 'Future planning' }, 'following'),
+    ).resolves.toBe('not-applicable');
+
+    expect(dependencies.createBearingEvent).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({
+        title: 'Future planning',
+        startAt: new Date('2026-08-07T13:00:00.000Z'),
+        recurrenceRule: expect.objectContaining({ occurrenceCount: 4 }),
+      }),
+      createUnpublishedMetadata(),
+      'task-7',
+    );
+    expect(dependencies.updateBearingEvent).toHaveBeenCalledWith('user-1', 'bearing-1', {
+      recurrenceRule: expect.objectContaining({ occurrenceCount: 1, endAt: null }),
+      recurrenceOverrides: {},
+      excludedOccurrenceDates: [],
+    });
   });
 
   it('applies the device version when both linked copies changed', async () => {

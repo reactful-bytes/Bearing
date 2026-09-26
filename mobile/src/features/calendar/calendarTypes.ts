@@ -22,6 +22,25 @@ export type EventRecurrenceRule = {
   weekdays: EventWeekday[];
 };
 
+export type CalendarDeletionScope = 'instance' | 'following' | 'series';
+export type CalendarUpdateScope = 'instance' | 'following' | 'series';
+
+export type CalendarRecurrenceOverride = Partial<
+  Pick<
+    CreateEventInput,
+    | 'title'
+    | 'description'
+    | 'startAt'
+    | 'endAt'
+    | 'timezone'
+    | 'allDay'
+    | 'location'
+    | 'alarms'
+    | 'availability'
+    | 'url'
+  > & { status: EventStatus }
+>;
+
 export type EventAlarm = {
   absoluteAt: Date | null;
   relativeOffsetMinutes: number | null;
@@ -64,6 +83,14 @@ type CalendarDisplayFields = {
   allDay: boolean;
   location: string;
   recurrenceRule: EventRecurrenceRule | null;
+  /** Master start retained only on projected occurrences. */
+  recurrenceStartAt?: Date;
+  /** Original scheduled date key for this projected recurrence occurrence. */
+  recurrenceInstanceDate?: string;
+  /** Local recurrence dates removed from this series, formatted as YYYY-MM-DD. */
+  excludedOccurrenceDates?: string[];
+  /** Per-occurrence edits keyed by the original scheduled date. */
+  recurrenceOverrides?: Record<string, CalendarRecurrenceOverride>;
   alarms: EventAlarm[];
   availability: EventAvailability;
   url: string | null;
@@ -117,7 +144,13 @@ export type CreateEventInput = {
   stepId?: string | null;
 };
 
-export type UpdateEventInput = Partial<CreateEventInput & { status: EventStatus }>;
+export type UpdateEventInput = Partial<
+  CreateEventInput & {
+    status: EventStatus;
+    excludedOccurrenceDates: string[];
+    recurrenceOverrides: Record<string, CalendarRecurrenceOverride>;
+  }
+>;
 
 export type CalendarUiState = 'loading' | 'error' | 'empty' | 'ready';
 

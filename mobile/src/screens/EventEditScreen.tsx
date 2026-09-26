@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Text } from 'react-native';
 
 import { EventEditForm } from '../components/calendar/EventEditForm';
+import { EventUpdateScopePrompt } from '../components/calendar/EventUpdateScopePrompt';
 import { AppCard } from '../components/ui/AppCard';
 import { AppScreen } from '../components/ui/AppScreen';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { useCalendarEvents } from '../features/calendar/useCalendarEvents';
+import { CalendarUpdateScope, CreateEventInput } from '../features/calendar/calendarTypes';
 import { CalendarStackParamList } from '../navigation/navigationTypes';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { DEFAULT_TIME_FORMAT } from '../features/profile/timeFormat';
@@ -18,9 +20,17 @@ type EventEditScreenProps = {
 export function EventEditScreen({ route, navigation }: EventEditScreenProps) {
   const { profile } = useUserProfile();
   const [eventDate] = useState(() => new Date(route.params.dateIso ?? Date.now()));
-  const { events, uiState, updateEvent } = useCalendarEvents(eventDate);
-  const event = events.find((candidate) => candidate.id === route.params.eventId) ?? null;
-
+  const { events, uiState, updateEvent, getSupportedUpdateScopes } = useCalendarEvents(eventDate);
+  const [choosingUpdateScope, setChoosingUpdateScope] = useState(false);
+  const [selectedScope, setSelectedScope] = useState<CalendarUpdateScope | null>(null);
+  const event =
+    events.find(
+      (candidate) =>
+        candidate.id === route.params.eventId &&
+        candidate.startAt.getTime() === eventDate.getTime(),
+    ) ??
+    events.find((candidate) => candidate.id === route.params.eventId) ??
+    null;
   if (uiState === 'loading' || !event) {
     return (
       <AppScreen mode="scroll" testID="event-edit-loading">
@@ -31,15 +41,33 @@ export function EventEditScreen({ route, navigation }: EventEditScreenProps) {
     );
   }
 
+  const selectedEvent = event;
+  const supportedUpdateScopes = getSupportedUpdateScopes?.(selectedEvent) ?? ['series'];
+
+  async function handleSave(input: CreateEventInput): Promise<void> {
+    if (selectedEvent.recurrenceRule) {
+      if (!choosingUpdateScope) {
+        setSelectedScope(null);
+        setChoosingUpdateScope(true);
+        return;
+      }
+      if (!selectedScope) return;
+      await updateEvent(selectedEvent, input, selectedScope);
+    } else {
+      await updateEvent(selectedEvent, input);
+    }
+    navigation.goBack();
+  }
+
   return (
     <EventEditForm
       active
-      initialDate={event.startAt}
-      initialValues={event}
-      saveLabel="Update Event"
+      initialDate={selectedEvent.startAt}
+      initialValues={selectedEvent}
+      saveLabel={choosingUpdateScope ? 'Yes, update' : 'Update Event'}
+      fullScreen
       locale={profile?.locale}
       timeFormat={profile?.timeFormat ?? DEFAULT_TIME_FORMAT}
-      fullScreen
       header={
         <ScreenHeader
           title="Edit Event"
@@ -47,10 +75,22 @@ export function EventEditScreen({ route, navigation }: EventEditScreenProps) {
           backAccessibilityLabel="Back to event details"
         />
       }
-      onSave={async (input) => {
-        await updateEvent(event, input);
-        navigation.goBack();
+      beforeSave={
+        choosingUpdateScope ? (
+          <EventUpdateScopePrompt
+            supportedScopes={supportedUpdateScopes}
+            selectedScope={selectedScope}
+            onSelect={setSelectedScope}
+          />
+        ) : null
+      }
+      cancelSave={{
+        accessibilityLabel: 'Cancel edit event',
+        onPress: navigation.goBack,
       }}
+      saveDisabled={choosingUpdateScope && selectedScope === null}
+      saveAccessibilityLabel={choosingUpdateScope ? 'Confirm recurring update' : 'Save event'}
+      onSave={handleSave}
     />
   );
 }

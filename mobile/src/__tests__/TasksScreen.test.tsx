@@ -32,6 +32,7 @@ jest.mock('../features/calendar/useCalendarPublication', () => ({
 jest.mock('../services/firebase/firebaseEvents', () => ({
   createEvent: jest.fn(),
   subscribeToEventsByDateRange: jest.fn(() => jest.fn()),
+  subscribeToCalendarEvents: jest.fn(() => jest.fn()),
   updateEvent: jest.fn(),
   deleteEvent: jest.fn(),
 }));

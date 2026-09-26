@@ -304,7 +304,10 @@ export function StepDetailModal({
 
             {linkedEventsState === 'ready'
               ? linkedEvents.map((event) => (
-                  <AppCard key={event.id} style={styles.summaryCard}>
+                  <AppCard
+                    key={`${event.id}-${event.startAt.toISOString()}`}
+                    style={styles.summaryCard}
+                  >
                     <Text
                       style={[styles.infoValue, event.endAt < new Date() ? styles.pastEvent : null]}
                     >

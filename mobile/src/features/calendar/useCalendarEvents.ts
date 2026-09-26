@@ -10,11 +10,13 @@ import {
   loadDeviceCalendarSettings,
   subscribeDeviceCalendarSettings,
 } from '../../services/calendar/deviceCalendarSettings';
-import { subscribeToEventsByDateRange } from '../../services/firebase/firebaseEvents';
+import { subscribeToCalendarEvents } from '../../services/firebase/firebaseEvents';
 import { recordTelemetryEvent } from '../../services/telemetry/telemetry';
 import {
   BearingEvent,
   CalendarDisplayEvent,
+  CalendarDeletionScope,
+  CalendarUpdateScope,
   eventOverlapsCalendarDay,
   DeviceCalendarEvent,
   CalendarUiState,
@@ -23,6 +25,7 @@ import {
   UpdateEventInput,
 } from './calendarTypes';
 import { mergeCalendarEvents, normalizeDeviceCalendarEvents } from './calendarEventAggregation';
+import { expandCalendarEventsForRange } from './calendarRecurrence';
 import { DeviceCalendarLink } from './deviceCalendarTypes';
 import { useDeviceCalendars } from './useDeviceCalendars';
 import { createCalendarPublicationService } from './calendarPublicationService';
@@ -53,8 +56,14 @@ export type UseCalendarEventsReturn = {
   publicationCalendarTitle: string | null;
   refresh: () => Promise<void>;
   createEvent: (input: CreateEventInput, options?: CreateEventOptions) => Promise<string>;
-  updateEvent: (event: CalendarDisplayEvent, fields: UpdateEventInput) => Promise<void>;
-  deleteEvent: (event: CalendarDisplayEvent) => Promise<void>;
+  updateEvent: (
+    event: CalendarDisplayEvent,
+    fields: UpdateEventInput,
+    scope?: CalendarUpdateScope,
+  ) => Promise<void>;
+  deleteEvent: (event: CalendarDisplayEvent, scope?: CalendarDeletionScope) => Promise<void>;
+  getSupportedDeletionScopes: (event: CalendarDisplayEvent) => CalendarDeletionScope[];
+  getSupportedUpdateScopes: (event: CalendarDisplayEvent) => CalendarUpdateScope[];
   retryPublication: (event: BearingEvent) => Promise<void>;
 };
 
@@ -118,10 +127,8 @@ export function useCalendarEvents(
 
     setFirestoreState('loading');
 
-    const unsubscribe = subscribeToEventsByDateRange(
+    const unsubscribe = subscribeToCalendarEvents(
       userId,
-      monthStart,
-      monthEnd,
       (fetched) => {
         bearingEventsRef.current = fetched;
         setBearingEvents(fetched);
@@ -133,7 +140,7 @@ export function useCalendarEvents(
     );
 
     return unsubscribe;
-  }, [firestoreRevision, monthEnd, monthStart, userId]);
+  }, [firestoreRevision, userId]);
 
   const refreshDeviceEvents = useCallback(async (): Promise<void> => {
     const requestId = ++nativeRequestIdRef.current;
@@ -220,9 +227,13 @@ export function useCalendarEvents(
     });
   }, [refreshDeviceCalendars, userId]);
 
-  const events = useMemo(
+  const mergedEvents = useMemo(
     () => mergeCalendarEvents(bearingEvents, deviceEvents, linkCache),
     [bearingEvents, deviceEvents, linkCache],
+  );
+  const events = useMemo(
+    () => expandCalendarEventsForRange(mergedEvents, monthStart, monthEnd),
+    [mergedEvents, monthEnd, monthStart],
   );
   const uiState: CalendarUiState =
     firestoreState === 'loading' || firestoreState === 'error'
@@ -239,6 +250,36 @@ export function useCalendarEvents(
     (date: Date): CalendarDisplayEvent[] =>
       events.filter((event) => eventOverlapsCalendarDay(event, date)),
     [events],
+  );
+
+  const getSupportedDeletionScopes = useCallback(
+    (event: CalendarDisplayEvent): CalendarDeletionScope[] => {
+      if (!event.recurrenceRule) return ['series'];
+      if (event.ownership === 'device') {
+        return [...adapter.capabilities.recurringEventMutationScopes, 'series'];
+      }
+      const hasLinkedCopy =
+        Boolean(linkCache[event.id]) ||
+        event.publication.status === 'published' ||
+        event.publication.status === 'deleting';
+      return hasLinkedCopy
+        ? [...adapter.capabilities.recurringEventMutationScopes, 'series']
+        : ['instance', 'following', 'series'];
+    },
+    [adapter, linkCache],
+  );
+
+  const getSupportedUpdateScopes = useCallback(
+    (event: CalendarDisplayEvent): CalendarUpdateScope[] => {
+      if (!event.recurrenceRule) return ['series'];
+      if (event.ownership === 'device') {
+        return [...adapter.capabilities.recurringEventUpdateScopes, 'series'];
+      }
+      return event.publication.status === 'unpublished'
+        ? ['instance', 'following', 'series']
+        : ['series'];
+    },
+    [adapter],
   );
 
   const refresh = useCallback(async (): Promise<void> => {
@@ -278,7 +319,11 @@ export function useCalendarEvents(
   );
 
   const updateEvent = useCallback(
-    async (event: CalendarDisplayEvent, fields: UpdateEventInput): Promise<void> => {
+    async (
+      event: CalendarDisplayEvent,
+      fields: UpdateEventInput,
+      scope: CalendarUpdateScope = 'series',
+    ): Promise<void> => {
       const userId = getFirebaseAuth().currentUser?.uid;
       if (!userId) throw new Error('User is not authenticated.');
 
@@ -287,12 +332,12 @@ export function useCalendarEvents(
       try {
         let publicationOutcome: 'published' | 'failed' | 'not-applicable' = 'not-applicable';
         if (event.ownership === 'bearing') {
-          publicationOutcome = await publicationService.updateEvent(userId, event, fields);
+          publicationOutcome = await publicationService.updateEvent(userId, event, fields, scope);
         } else {
           if (!event.allowsModifications) {
             throw new Error('This device calendar event is read-only.');
           }
-          await adapter.updateEvent(event.nativeEventId, fields);
+          await adapter.updateEvent(event.nativeEventId, fields, scope, event.startAt);
         }
         await refreshDeviceEvents();
         if (tracksPublication) {
@@ -315,7 +360,7 @@ export function useCalendarEvents(
   );
 
   const deleteEvent = useCallback(
-    async (event: CalendarDisplayEvent): Promise<void> => {
+    async (event: CalendarDisplayEvent, scope: CalendarDeletionScope = 'series'): Promise<void> => {
       const userId = getFirebaseAuth().currentUser?.uid;
       if (!userId) throw new Error('User is not authenticated.');
 
@@ -323,12 +368,12 @@ export function useCalendarEvents(
         event.ownership === 'bearing' && event.publication.status !== 'unpublished';
       try {
         if (event.ownership === 'bearing') {
-          await publicationService.deleteEvent(userId, event);
+          await publicationService.deleteEvent(userId, event, scope);
         } else {
           if (!event.allowsModifications) {
             throw new Error('This device calendar event is read-only.');
           }
-          await adapter.deleteEvent(event.nativeEventId);
+          await adapter.deleteEvent(event.nativeEventId, scope, event.startAt);
         }
         await refreshDeviceEvents();
         if (tracksPublication) {
@@ -367,6 +412,8 @@ export function useCalendarEvents(
   return {
     events,
     eventsForDate,
+    getSupportedDeletionScopes,
+    getSupportedUpdateScopes,
     uiState,
     deviceError,
     publicationCalendarTitle,

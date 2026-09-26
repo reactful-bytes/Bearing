@@ -46,6 +46,7 @@ jest.mock('../services/firebase/firebaseApp', () => ({
 
 jest.mock('../services/firebase/firebaseEvents', () => ({
   subscribeToEventsByDateRange: jest.fn(() => jest.fn()),
+  subscribeToCalendarEvents: jest.fn(() => jest.fn()),
   createEvent: jest.fn(),
   updateEvent: jest.fn(),
   deleteEvent: jest.fn(),
@@ -181,6 +182,17 @@ describe('CalendarScreen navigation', () => {
     expect(screen.getByText(expectedLabel)).toBeTruthy();
     expect(screen.getByTestId('month-selected-date-agenda')).toBeTruthy();
     expect(screen.queryByLabelText('Previous day')).toBeNull();
+  });
+
+  it('updates the selected date and month header when swiping to another month', () => {
+    render(<CalendarScreen initialDateOverride={FIXED_DATE} initialViewMode="month" />);
+
+    fireEvent(screen.getByTestId('month-carousel'), 'viewableItemsChanged', {
+      viewableItems: [{ index: 13 }],
+    });
+
+    expect(screen.getByText('August 2026')).toBeTruthy();
+    expect(screen.getByText('Monday, August 17, 2026')).toBeTruthy();
   });
 
   it('opens Focus Mode for a Start Now launch from the Tasks tab', () => {

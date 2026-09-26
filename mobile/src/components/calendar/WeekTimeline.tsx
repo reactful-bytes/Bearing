@@ -230,7 +230,7 @@ export function WeekTimeline({
                 <View key={day.toISOString()} style={styles.allDayColumn}>
                   {allDayEvents.map((event) => (
                     <Pressable
-                      key={event.id}
+                      key={`${event.id}-${event.startAt.toISOString()}`}
                       accessibilityRole="button"
                       accessibilityLabel={event.title}
                       onPress={() => onPressEvent(event)}
@@ -276,7 +276,7 @@ export function WeekTimeline({
                 ) : null}
                 {positionOverlappingEvents(timedEvents).map(({ event, lane, laneCount }) => (
                   <Pressable
-                    key={event.id}
+                    key={`${event.id}-${event.startAt.toISOString()}`}
                     accessibilityRole="button"
                     accessibilityLabel={event.title}
                     onPress={() => onPressEvent(event)}
