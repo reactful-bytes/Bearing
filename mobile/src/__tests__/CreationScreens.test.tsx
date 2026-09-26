@@ -118,7 +118,10 @@ jest.mock('../components/premium/PremiumPaywallModal', () => ({
 }));
 
 jest.mock('../features/goals/useGoals', () => ({
-  useGoals: () => ({ createGoal: mockCreateGoal }),
+  useGoals: () => ({
+    goals: [],
+    createGoal: mockCreateGoal,
+  }),
 }));
 
 jest.mock('../features/tasks/useTasks', () => ({

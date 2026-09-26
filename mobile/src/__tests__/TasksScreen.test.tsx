@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { CreateEventInput } from '../features/calendar/calendarTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
+import { useGoals } from '../features/goals/useGoals';
 import { TaskRecord } from '../features/tasks/taskTypes';
 import { useTasks } from '../features/tasks/useTasks';
 import { TasksScreen } from '../screens/TasksScreen';
@@ -23,6 +24,10 @@ jest.mock('@react-navigation/native', () => ({
 
 jest.mock('../features/tasks/useTasks', () => ({
   useTasks: jest.fn(),
+}));
+
+jest.mock('../features/goals/useGoals', () => ({
+  useGoals: jest.fn(),
 }));
 
 jest.mock('../features/calendar/useCalendarPublication', () => ({
@@ -71,6 +76,14 @@ describe('TasksScreen', () => {
       createEvent: jest.fn(async () => 'event-new'),
       publishEvent: jest.fn(async () => undefined),
     });
+    (useGoals as jest.MockedFunction<typeof useGoals>).mockReturnValue({
+      goals: [],
+      uiState: 'empty',
+      createGoal: jest.fn(async () => undefined),
+      updateGoal: jest.fn(async () => undefined),
+      markGoalCompleted: jest.fn(async () => undefined),
+      retry: jest.fn(),
+    });
   });
 
   it('retries after the tasks subscription fails', () => {
@@ -82,6 +95,7 @@ describe('TasksScreen', () => {
       createTask: async () => undefined,
       updateTask: async () => undefined,
       completeTask: async () => undefined,
+      uncompleteTask: async () => undefined,
       convertTaskToEvent: async () => ({
         eventId: 'task-task-1',
         eventInput: {
@@ -122,6 +136,7 @@ describe('TasksScreen', () => {
       createTask: async () => undefined,
       updateTask: async () => undefined,
       completeTask: async () => undefined,
+      uncompleteTask: async () => undefined,
       convertTaskToEvent: async () => ({
         eventId: 'task-task-1',
         eventInput: {
@@ -167,6 +182,7 @@ describe('TasksScreen', () => {
       createTask: async () => undefined,
       updateTask: async () => undefined,
       completeTask: async () => undefined,
+      uncompleteTask: async () => undefined,
       convertTaskToEvent: async () => ({
         eventId: 'task-task-1',
         eventInput: {
@@ -203,6 +219,7 @@ describe('TasksScreen', () => {
       createTask: createTaskMock,
       updateTask: async () => undefined,
       completeTask: async () => undefined,
+      uncompleteTask: async () => undefined,
       convertTaskToEvent: async () => ({
         eventId: 'task-task-1',
         eventInput: {
@@ -266,6 +283,7 @@ describe('TasksScreen', () => {
       createTask: async () => undefined,
       updateTask: async () => undefined,
       completeTask: completeTaskMock,
+      uncompleteTask: async () => undefined,
       convertTaskToEvent,
       deleteTask: async () => undefined,
       retry: jest.fn(),
@@ -327,6 +345,7 @@ describe('TasksScreen', () => {
       createTask: async () => undefined,
       updateTask: async () => undefined,
       completeTask: completeTaskMock,
+      uncompleteTask: async () => undefined,
       convertTaskToEvent,
       deleteTask: async () => undefined,
       retry: jest.fn(),

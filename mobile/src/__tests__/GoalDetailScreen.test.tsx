@@ -80,6 +80,7 @@ function mockHooks(): void {
     createTask: jest.fn(async () => undefined),
     updateTask: jest.fn(async () => undefined),
     completeTask: jest.fn(async (_id: string, _input: CompleteTaskInput) => undefined),
+    uncompleteTask: jest.fn(async () => undefined),
     convertTaskToEvent: jest.fn(async () => ({
       eventId: 'event-1',
       eventInput: {

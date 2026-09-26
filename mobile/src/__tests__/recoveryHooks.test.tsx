@@ -5,7 +5,7 @@ import { TaskRecord } from '../features/tasks/taskTypes';
 import { useCreateNote } from '../features/notes/useNotes';
 import { useTasks } from '../features/tasks/useTasks';
 import { createNote, subscribeToNotes } from '../services/firebase/firebaseNotes';
-import { subscribeToTasks } from '../services/firebase/firebaseTasks';
+import { subscribeToTasks, uncompleteTask } from '../services/firebase/firebaseTasks';
 
 jest.mock('../services/firebase/firebaseAuth', () => ({
   getFirebaseAuth: jest.fn(() => ({ currentUser: { uid: 'user-1' } })),
@@ -17,6 +17,7 @@ jest.mock('../services/firebase/firebaseTasks', () => ({
   createTask: jest.fn(),
   deleteTask: jest.fn(),
   subscribeToTasks: jest.fn(),
+  uncompleteTask: jest.fn(),
   updateTask: jest.fn(),
 }));
 
@@ -70,5 +71,13 @@ describe('subscription recovery hooks', () => {
 
     unmount();
     expect(unsubscribeSecond).toHaveBeenCalledTimes(1);
+  });
+
+  it('uncompletes a task through the Firebase boundary', async () => {
+    const { result } = renderHook(() => useTasks());
+
+    await act(async () => result.current.uncompleteTask('task-1'));
+
+    expect(uncompleteTask).toHaveBeenCalledWith('user-1', 'task-1');
   });
 });

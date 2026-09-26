@@ -3,7 +3,6 @@ import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AddEventModal } from '../components/calendar/AddEventModal';
 import { GoalDetailsModal } from '../components/goals/GoalDetailsModal';
 import { GoalTimeline, getGoalProgressPercent } from '../components/presentation/GoalPresentation';
 import { TaskRow } from '../components/presentation/TaskRow';
@@ -18,7 +17,6 @@ import { spacing } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
-import { GoalWithTasks } from '../features/goals/goalTypes';
 import { useGoals } from '../features/goals/useGoals';
 import { useTasks } from '../features/tasks/useTasks';
 import { CreateTaskInput, TaskRecord, UpdateTaskInput } from '../features/tasks/taskTypes';
@@ -28,6 +26,8 @@ import { AppTabParamList, PlanStackParamList } from '../navigation/navigationTyp
 import { AddTaskModal } from '../components/tasks/AddTaskModal';
 import { StartNowModal } from '../components/tasks/StartNowModal';
 import { TaskDetailModal } from '../components/tasks/TaskDetailModal';
+import { TaskEditModal } from '../components/tasks/TaskEditModal';
+import { ScheduleTaskModal } from '../components/tasks/ScheduleTaskModal';
 
 const DETAIL_TABS = ['tasks', 'timeline'] as const;
 type DetailTab = (typeof DETAIL_TABS)[number];
@@ -51,11 +51,19 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
   const { profile } = useUserProfile();
   const { publicationCalendarTitle, publishEvent } = useCalendarPublication();
   const { goals, uiState, updateGoal, markGoalCompleted, retry } = useGoals();
-  const { tasks, createTask, updateTask, completeTask, convertTaskToEvent, deleteTask } =
-    useTasks();
+  const {
+    tasks,
+    createTask,
+    updateTask,
+    completeTask,
+    uncompleteTask,
+    convertTaskToEvent,
+    deleteTask,
+  } = useTasks();
   const [activeTab, setActiveTab] = useState<DetailTab>(route.params.initialTab ?? 'tasks');
   const [addTaskVisible, setAddTaskVisible] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [scheduleTaskId, setScheduleTaskId] = useState<string | null>(null);
   const [startNowTaskId, setStartNowTaskId] = useState<string | null>(null);
   const [editGoalVisible, setEditGoalVisible] = useState(false);
@@ -78,6 +86,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
   const selectedTask = goalTasks.find((task) => task.id === selectedTaskId) ?? null;
   const scheduleTask = goalTasks.find((task) => task.id === scheduleTaskId) ?? null;
   const startNowTask = goalTasks.find((task) => task.id === startNowTaskId) ?? null;
+  const editingTask = goalTasks.find((task) => task.id === editingTaskId) ?? null;
   const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
 
   async function handleCreateTask(input: CreateTaskInput): Promise<void> {
@@ -96,6 +105,11 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
 
   async function handleToggleTask(task: TaskRecord): Promise<void> {
     await completeTask(task.id, { completionSource: 'manual' });
+  }
+
+  async function handleUncompleteTask(task: TaskRecord): Promise<void> {
+    await uncompleteTask(task.id);
+    setSelectedTaskId(null);
   }
 
   async function handleScheduleTaskEvent(
@@ -306,6 +320,8 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
         }}
         onSave={handleCreateTask}
         initialGoalId={goal.id}
+        goals={goals}
+        fullScreen
         contextLabel="Linked to this goal"
       />
       <TaskDetailModal
@@ -314,29 +330,36 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
         locale={profile?.locale}
         timeFormat={timeFormat}
         onClose={() => setSelectedTaskId(null)}
-        onSave={handleUpdateTask}
+        onEdit={(task) => {
+          setSelectedTaskId(null);
+          setEditingTaskId(task.id);
+        }}
         onDelete={handleDeleteTask}
-        onSchedule={(task) => setScheduleTaskId(task.id)}
-        onStartNow={(task) => setStartNowTaskId(task.id)}
+        onSchedule={(task) => {
+          setSelectedTaskId(null);
+          setScheduleTaskId(task.id);
+        }}
+        onStartNow={(task) => {
+          setSelectedTaskId(null);
+          setStartNowTaskId(task.id);
+        }}
         onMarkComplete={async (task) => {
           await handleToggleTask(task);
           setSelectedTaskId(null);
         }}
+        onUncomplete={handleUncompleteTask}
+        goals={goals}
       />
-      <AddEventModal
+      <TaskEditModal
+        visible={editingTask !== null}
+        task={editingTask}
+        goals={goals}
+        onClose={() => setEditingTaskId(null)}
+        onSave={handleUpdateTask}
+      />
+      <ScheduleTaskModal
         visible={scheduleTask !== null}
-        modalTitle="Schedule Task"
-        initialDate={scheduleTask?.dueDate ?? new Date()}
-        initialValues={
-          scheduleTask
-            ? {
-                title: scheduleTask.title,
-                description: scheduleTask.description,
-                goalId: scheduleTask.goalId,
-                taskId: scheduleTask.id,
-              }
-            : undefined
-        }
+        task={scheduleTask}
         publicationCalendarTitle={publicationCalendarTitle}
         locale={profile?.locale}
         timeFormat={timeFormat}

@@ -1,37 +1,39 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useThemedStyles } from '../../design/useThemedStyles';
-import { AppCard } from '../ui/AppCard';
-import { AppButton } from '../ui/AppButton';
-import { AppModal } from '../ui/AppModal';
-import { FormField } from '../ui/FormField';
-import { radii, spacing, typography } from '../../design/tokens';
+import { spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
-import { TaskRecord, UpdateTaskInput } from '../../features/tasks/taskTypes';
+import { useThemedStyles } from '../../design/useThemedStyles';
+import type { GoalWithTasks } from '../../features/goals/goalTypes';
 import {
   DEFAULT_TIME_FORMAT,
   TimeFormat,
   timeFormatOptions,
 } from '../../features/profile/timeFormat';
+import type { TaskRecord } from '../../features/tasks/taskTypes';
+import { AppCard } from '../ui/AppCard';
+import { AppButton } from '../ui/AppButton';
+import { AppModal } from '../ui/AppModal';
+import { ScreenHeader } from '../ui/ScreenHeader';
 
 type TaskDetailModalProps = {
   visible: boolean;
   task: TaskRecord | null;
+  goals?: GoalWithTasks[];
   locale?: string;
   timeFormat?: TimeFormat;
   onClose: () => void;
-  onSave: (taskId: string, fields: UpdateTaskInput) => Promise<void>;
+  onEdit: (task: TaskRecord) => void;
   onDelete: (taskId: string) => Promise<void>;
   onSchedule: (task: TaskRecord) => void;
   onStartNow: (task: TaskRecord) => void;
   onMarkComplete: (task: TaskRecord) => Promise<void>;
+  onUncomplete: (task: TaskRecord) => Promise<void>;
 };
 
 function formatDateTime(date: Date | null, timeFormat: TimeFormat, locale?: string): string {
-  if (!date) {
-    return 'Not completed';
-  }
+  if (!date) return 'Not set';
 
   return date.toLocaleString(locale, {
     month: 'short',
@@ -43,104 +45,39 @@ function formatDateTime(date: Date | null, timeFormat: TimeFormat, locale?: stri
 }
 
 function getCompletionLabel(task: TaskRecord): string {
-  if (task.status === 'active') {
-    return 'Active';
-  }
-
-  if (task.completionSource === 'scheduled') {
-    return 'Completed by scheduling';
-  }
-
-  if (task.completionSource === 'start_now') {
-    return 'Completed by Start Now';
-  }
-
+  if (task.status === 'active') return 'Active';
+  if (task.completionSource === 'scheduled') return 'Completed by scheduling';
+  if (task.completionSource === 'start_now') return 'Completed by Start Now';
   return 'Completed manually';
 }
 
 export function TaskDetailModal({
   visible,
   task,
+  goals = [],
   locale,
   timeFormat = DEFAULT_TIME_FORMAT,
   onClose,
-  onSave,
+  onEdit,
   onDelete,
   onSchedule,
   onStartNow,
   onMarkComplete,
+  onUncomplete,
 }: TaskDetailModalProps) {
   const styles = useThemedStyles(createStyles);
-  const [editMode, setEditMode] = useState(false);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [starter, setStarter] = useState('');
+  const insets = useSafeAreaInsets();
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!task || !visible) {
-      return;
-    }
-
-    setEditMode(false);
-    setTitle(task.title);
-    setDescription(task.description);
-    setStarter(task.starter);
-    setSaving(false);
-    setConfirmingDelete(false);
-    setError(null);
-  }, [task, visible]);
-
-  function handleClose(): void {
-    setEditMode(false);
-    setSaving(false);
-    setConfirmingDelete(false);
-    setError(null);
-    onClose();
-  }
-
-  async function handleSave(): Promise<void> {
-    if (!task) {
-      return;
-    }
-
-    const trimmedTitle = title.trim();
-    if (!trimmedTitle) {
-      setError('Task title is required.');
-      return;
-    }
-
-    setSaving(true);
-    setError(null);
-
-    try {
-      await onSave(task.id, {
-        title: trimmedTitle,
-        description: description.trim(),
-        starter: starter.trim(),
-      });
-      setEditMode(false);
-      setConfirmingDelete(false);
-    } catch {
-      setError('Failed to save task changes.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
   async function handleDelete(): Promise<void> {
-    if (!task) {
-      return;
-    }
-
+    if (!task) return;
     setSaving(true);
     setError(null);
-
     try {
       await onDelete(task.id);
-      handleClose();
+      onClose();
     } catch {
       setError('Failed to delete task.');
     } finally {
@@ -148,138 +85,112 @@ export function TaskDetailModal({
     }
   }
 
-  async function handleMarkComplete(): Promise<void> {
-    if (!task) {
-      return;
-    }
-
+  async function handleComplete(action: (task: TaskRecord) => Promise<void>): Promise<void> {
+    if (!task) return;
     setSaving(true);
     setError(null);
-
     try {
-      await onMarkComplete(task);
-      handleClose();
+      await action(task);
+      onClose();
     } catch {
-      setError('Failed to mark task complete.');
+      setError(
+        task.status === 'completed'
+          ? 'Failed to return task to active.'
+          : 'Failed to mark task complete.',
+      );
     } finally {
       setSaving(false);
     }
   }
 
-  const headerAccessory = task ? (
-    <AppButton
-      label={editMode ? 'Cancel' : 'Edit'}
-      variant={editMode ? 'secondary' : 'primary'}
-      accessibilityLabel={editMode ? 'Cancel task editing' : 'Edit task'}
-      onPress={() => {
-        setError(null);
-        setConfirmingDelete(false);
-        setEditMode((current) => !current);
-      }}
-      style={styles.headerButton}
-      textStyle={styles.headerButtonText}
-    />
-  ) : null;
+  const goalTitle = task?.goalId
+    ? (goals.find((goal) => goal.id === task.goalId)?.title ?? 'Unavailable')
+    : 'No goal';
 
   return (
-    <AppModal
-      visible={visible}
-      title="Task Details"
-      onClose={handleClose}
-      headerAccessory={headerAccessory}
-    >
+    <AppModal visible={visible} onClose={onClose} fullScreen hideHeader>
       {task ? (
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={{ paddingTop: insets.top, paddingBottom: spacing.sm + insets.bottom }}
+        >
+          <ScreenHeader
+            title="Task Details"
+            onPressBack={onClose}
+            trailing={
+              <AppButton
+                label="Edit"
+                accessibilityLabel="Edit task"
+                onPress={() => onEdit(task)}
+                variant="secondary"
+              />
+            }
+          />
+
           <AppCard style={styles.summaryCard}>
             <Text style={styles.statusLabel}>{getCompletionLabel(task)}</Text>
             <Text style={styles.summaryTitle}>{task.title}</Text>
             <Text style={styles.summaryDate}>
               Updated {formatDateTime(task.updatedAt, timeFormat, locale)}
             </Text>
-            <Text style={styles.summaryDate}>
-              Due{' '}
-              {task.dueDate ? formatDateTime(task.dueDate, timeFormat, locale) : 'Not scheduled'}
-            </Text>
-            {task.status === 'completed' ? (
-              <Text style={styles.summaryDate}>
-                Completed {formatDateTime(task.completedAt, timeFormat, locale)}
-              </Text>
-            ) : null}
           </AppCard>
 
-          {editMode ? (
-            <View style={styles.section}>
-              <FormField
-                label="Title"
-                accessibilityLabel="Edit task title"
-                value={title}
-                onChangeText={setTitle}
-                placeholder="Task title"
-                error={error}
-              />
+          <AppCard style={styles.detailCard}>
+            <Text style={styles.detailLabel}>Goal</Text>
+            <Text style={styles.detailValue}>{goalTitle}</Text>
+            <Text style={styles.detailLabel}>Due date</Text>
+            <Text style={styles.detailValue}>
+              {formatDateTime(task.dueDate, timeFormat, locale)}
+            </Text>
+            <Text style={styles.detailLabel}>Scheduled</Text>
+            <Text style={styles.detailValue}>
+              {task.scheduledStart && task.scheduledEnd
+                ? `${formatDateTime(task.scheduledStart, timeFormat, locale)} to ${formatDateTime(task.scheduledEnd, timeFormat, locale)}${task.allDay ? ' (all day)' : ''}`
+                : 'Not scheduled'}
+            </Text>
+            <Text style={styles.detailLabel}>Starter</Text>
+            <Text style={styles.detailValue}>{task.starter.trim() || 'No starter added.'}</Text>
+          </AppCard>
 
-              <FormField
-                label="Description"
-                accessibilityLabel="Edit task description"
-                value={description}
-                onChangeText={setDescription}
-                multiline
-                placeholder="Optional details"
-              />
+          <AppCard style={styles.detailCard}>
+            <Text style={styles.detailLabel}>Description</Text>
+            <Text style={styles.description}>{task.description.trim() || 'No description added.'}</Text>
+          </AppCard>
 
-              <FormField
-                label="Starter"
-                accessibilityLabel="Edit task starter"
-                value={starter}
-                onChangeText={setStarter}
-                multiline
-                placeholder="Optional first move"
-              />
-            </View>
-          ) : (
-            <AppCard style={styles.readOnlyCard}>
-              <Text style={styles.taskTitle}>{task.title}</Text>
-              <Text style={styles.taskDescription}>
-                {task.description.trim() ? task.description : 'No description added.'}
-              </Text>
-            </AppCard>
-          )}
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-          {!editMode && error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-          {editMode ? (
-            <AppButton
-              label="Save Changes"
-              accessibilityLabel="Save task changes"
-              onPress={handleSave}
-              loading={saving}
-              loadingLabel="Saving..."
-            />
-          ) : task.status === 'active' ? (
+          {task.status === 'active' ? (
             <View style={styles.actionStack}>
               <AppButton
                 label="Schedule"
                 accessibilityLabel="Schedule task"
                 onPress={() => onSchedule(task)}
               />
-
               <AppButton
                 label="Start Now"
                 variant="secondary"
                 accessibilityLabel="Start task now"
                 onPress={() => onStartNow(task)}
               />
-
               <AppButton
                 label="Mark Complete"
                 variant="secondary"
                 accessibilityLabel="Mark task complete"
-                onPress={handleMarkComplete}
+                onPress={() => void handleComplete(onMarkComplete)}
                 loading={saving}
                 loadingLabel="Working..."
               />
             </View>
-          ) : null}
+          ) : (
+            <AppButton
+              label="Uncomplete Task"
+              variant="secondary"
+              accessibilityLabel="Uncomplete task"
+              onPress={() => void handleComplete(onUncomplete)}
+              loading={saving}
+              loadingLabel="Working..."
+            />
+          )}
 
           {!confirmingDelete ? (
             <AppButton
@@ -303,7 +214,7 @@ export function TaskDetailModal({
                   label="Yes, Delete"
                   variant="danger"
                   accessibilityLabel="Confirm task delete"
-                  onPress={handleDelete}
+                  onPress={() => void handleDelete()}
                   loading={saving}
                   loadingLabel="Deleting..."
                   style={styles.flexButton}
@@ -319,149 +230,19 @@ export function TaskDetailModal({
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
-    content: {
-      gap: spacing.lg,
-    },
-    summaryCard: {
-      gap: spacing.xs,
-    },
-    readOnlyCard: {
-      gap: spacing.md,
-    },
-    section: {
-      gap: spacing.md,
-    },
-    fieldGroup: {
-      gap: spacing.sm,
-    },
-    label: {
-      ...typography.label,
-      color: theme.colors.textSecondary,
-    },
-    input: {
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: radii.md,
-      backgroundColor: theme.colors.surface,
-      color: theme.colors.text,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.md,
-    },
-    textArea: {
-      minHeight: 180,
-    },
-    statusLabel: {
-      ...typography.label,
-      color: theme.colors.brand,
-    },
-    summaryTitle: {
-      ...typography.button,
-      fontSize: 18,
-      color: theme.colors.text,
-    },
-    summaryDate: {
-      ...typography.helper,
-      color: theme.colors.textSecondary,
-    },
-    taskTitle: {
-      ...typography.button,
-      fontSize: 18,
-      color: theme.colors.text,
-    },
-    taskDescription: {
-      ...typography.body,
-      color: theme.colors.textPrimary,
-    },
-    errorText: {
-      ...typography.helper,
-      color: theme.colors.dangerText,
-    },
-    headerButton: {
-      minHeight: 44,
-    },
-    headerButtonText: {
-      ...typography.helper,
-      fontWeight: '600',
-    },
-    actionStack: {
-      gap: spacing.md,
-    },
-    primaryButton: {
-      borderRadius: radii.md,
-      backgroundColor: theme.colors.brand,
-      alignItems: 'center',
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.md,
-    },
-    primaryButtonText: {
-      ...typography.button,
-      color: theme.colors.surface,
-    },
-    secondaryButton: {
-      borderRadius: radii.md,
-      backgroundColor: theme.colors.surfaceMuted,
-      alignItems: 'center',
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.md,
-    },
-    secondaryButtonText: {
-      ...typography.button,
-      color: theme.colors.textPrimary,
-    },
-    tertiaryButton: {
-      borderRadius: radii.md,
-      backgroundColor: theme.colors.surface,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      alignItems: 'center',
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.md,
-    },
-    tertiaryButtonText: {
-      ...typography.button,
-      color: theme.colors.text,
-    },
-    dangerButton: {
-      borderRadius: radii.md,
-      backgroundColor: theme.colors.dangerSurface,
-      alignItems: 'center',
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.md,
-    },
-    dangerButtonText: {
-      ...typography.button,
-      color: theme.colors.dangerText,
-    },
-    confirmBlock: {
-      gap: spacing.md,
-    },
-    confirmText: {
-      ...typography.body,
-      color: theme.colors.text,
-    },
-    confirmActions: {
-      flexDirection: 'row',
-      gap: spacing.md,
-    },
-    flexButton: {
-      flex: 1,
-    },
-    confirmDeleteButton: {
-      flex: 1,
-      borderRadius: radii.md,
-      backgroundColor: theme.colors.dangerText,
-      alignItems: 'center',
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.md,
-    },
-    confirmDeleteButtonText: {
-      ...typography.button,
-      color: theme.colors.surface,
-    },
-    buttonPressed: {
-      opacity: 0.88,
-    },
-    buttonDisabled: {
-      opacity: 0.6,
-    },
+    scrollView: { flex: 1 },
+    summaryCard: { gap: spacing.xs },
+    detailCard: { gap: spacing.xs },
+    statusLabel: { ...typography.label, color: theme.colors.brand },
+    summaryTitle: { ...typography.button, fontSize: 18, color: theme.colors.text },
+    summaryDate: { ...typography.helper, color: theme.colors.textSecondary },
+    detailLabel: { ...typography.label, color: theme.colors.textSecondary },
+    detailValue: { ...typography.body, color: theme.colors.text, marginBottom: spacing.sm },
+    description: { ...typography.body, color: theme.colors.textPrimary },
+    errorText: { ...typography.helper, color: theme.colors.dangerText },
+    actionStack: { gap: spacing.md },
+    confirmBlock: { gap: spacing.md },
+    confirmText: { ...typography.body, color: theme.colors.text },
+    confirmActions: { flexDirection: 'row', gap: spacing.md },
+    flexButton: { flex: 1 },
   });

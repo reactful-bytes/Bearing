@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { EventDateTimePickerField } from '../calendar/EventDateTimePickerField';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { FormField } from '../ui/FormField';
 import { ScreenHeader } from '../ui/ScreenHeader';
-import { layout, radii, spacing, typography } from '../../design/tokens';
+import { radii, spacing, typography } from '../../design/tokens';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import type { Theme } from '../../design/tokens';
-import { eventFormValueToDate } from '../../features/calendar/eventEditor';
+import type { GoalWithTasks } from '../../features/goals/goalTypes';
 import { useUserProfile } from '../../features/profile/useUserProfile';
+import { parseTaskScheduleForm } from '../../features/tasks/taskScheduling';
 import { CreateTaskInput } from '../../features/tasks/taskTypes';
+import { TaskGoalLinker } from './TaskGoalLinker';
+import { TaskScheduleFields } from './TaskScheduleFields';
 
 type AddTaskModalProps = {
   visible: boolean;
@@ -21,6 +23,7 @@ type AddTaskModalProps = {
   initialGoalId?: string | null;
   initialTitle?: string;
   initialDescription?: string;
+  goals?: GoalWithTasks[];
   contextLabel?: string;
   fullScreen?: boolean;
 };
@@ -32,6 +35,7 @@ export function AddTaskModal({
   initialGoalId = null,
   initialTitle = '',
   initialDescription = '',
+  goals = [],
   contextLabel,
   fullScreen = false,
 }: AddTaskModalProps) {
@@ -41,6 +45,7 @@ export function AddTaskModal({
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
   const [starter, setStarter] = useState('');
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(initialGoalId);
   const [scheduleVisible, setScheduleVisible] = useState(false);
   const [dueDate, setDueDate] = useState('');
   const [scheduledStartDate, setScheduledStartDate] = useState('');
@@ -55,12 +60,14 @@ export function AddTaskModal({
     if (!visible) return;
     setTitle(initialTitle);
     setDescription(initialDescription);
-  }, [initialDescription, initialTitle, visible]);
+    setSelectedGoalId(initialGoalId);
+  }, [initialDescription, initialGoalId, initialTitle, visible]);
 
   function resetForm(): void {
     setTitle('');
     setDescription('');
     setStarter('');
+    setSelectedGoalId(initialGoalId);
     setScheduleVisible(false);
     setDueDate('');
     setScheduledStartDate('');
@@ -85,38 +92,20 @@ export function AddTaskModal({
     }
 
     const timezone = profile?.timezone ?? 'UTC';
-    const dueDateValue = dueDate ? eventFormValueToDate(dueDate, '12:00', timezone) : null;
-    const scheduledStart = scheduledStartDate
-      ? eventFormValueToDate(
-          scheduledStartDate,
-          allDay ? '00:00' : scheduledStartTime || '',
-          timezone,
-        )
-      : null;
-    const scheduledEnd = scheduledEndDate
-      ? eventFormValueToDate(scheduledEndDate, allDay ? '23:59' : scheduledEndTime || '', timezone)
-      : null;
-
-    if (
-      scheduleVisible &&
-      ((scheduledStartDate && !scheduledStart) || (scheduledEndDate && !scheduledEnd))
-    ) {
-      setError('Schedule dates and times must be valid.');
-      return;
-    }
-
-    if (scheduledStart && !scheduledEnd) {
-      setError('Add an end date and time for a scheduled task.');
-      return;
-    }
-
-    if (!scheduledStart && scheduledEnd) {
-      setError('Add a start date and time for a scheduled task.');
-      return;
-    }
-
-    if (scheduledStart && scheduledEnd && scheduledEnd <= scheduledStart) {
-      setError('Task end must be after task start.');
+    const scheduleResult = parseTaskScheduleForm(
+      {
+        scheduleVisible,
+        dueDate,
+        scheduledStartDate,
+        scheduledStartTime,
+        scheduledEndDate,
+        scheduledEndTime,
+        allDay,
+      },
+      timezone,
+    );
+    if (scheduleResult.error) {
+      setError(scheduleResult.error);
       return;
     }
 
@@ -128,11 +117,8 @@ export function AddTaskModal({
         title: trimmedTitle,
         description: description.trim(),
         starter: starter.trim(),
-        ...(initialGoalId ? { goalId: initialGoalId } : {}),
-        ...(dueDateValue ? { dueDate: dueDateValue } : {}),
-        ...(scheduledStart ? { scheduledStart } : {}),
-        ...(scheduledEnd ? { scheduledEnd } : {}),
-        ...(scheduleVisible ? { allDay } : {}),
+        ...(selectedGoalId ? { goalId: selectedGoalId } : {}),
+        ...(scheduleVisible ? scheduleResult.fields : {}),
       });
       handleClose();
     } catch {
@@ -190,100 +176,27 @@ export function AddTaskModal({
           multiline
         />
 
-        <AppButton
-          label={scheduleVisible ? 'Hide schedule details' : 'Add schedule details'}
-          variant="secondary"
-          accessibilityLabel={scheduleVisible ? 'Hide schedule details' : 'Add schedule details'}
-          onPress={() => setScheduleVisible((current) => !current)}
-        />
+        <TaskGoalLinker goals={goals} value={selectedGoalId} onChange={setSelectedGoalId} />
 
-        {scheduleVisible ? (
-          <View style={styles.scheduleSection}>
-            <EventDateTimePickerField
-              label="Due date"
-              accessibilityLabel="Task due date"
-              mode="date"
-              value={dueDate}
-              dateValue={dueDate}
-              timeValue="12:00"
-              timezone={profile?.timezone ?? 'UTC'}
-              locale={profile?.locale}
-              timeFormat={profile?.timeFormat}
-              allowClear
-              compact
-              onChange={setDueDate}
-            />
-            <Pressable
-              accessibilityRole="checkbox"
-              accessibilityLabel="All-day task"
-              accessibilityState={{ checked: allDay }}
-              onPress={() => setAllDay((current) => !current)}
-              style={styles.allDayToggle}
-            >
-              <Text style={styles.allDayToggleText}>{allDay ? 'All day: On' : 'All day: Off'}</Text>
-            </Pressable>
-            <EventDateTimePickerField
-              label="Schedule start date"
-              accessibilityLabel="Task schedule start date"
-              mode="date"
-              value={scheduledStartDate}
-              dateValue={scheduledStartDate}
-              timeValue={scheduledStartTime}
-              timezone={profile?.timezone ?? 'UTC'}
-              locale={profile?.locale}
-              timeFormat={profile?.timeFormat}
-              allowClear
-              compact
-              onChange={setScheduledStartDate}
-            />
-            {!allDay ? (
-              <EventDateTimePickerField
-                label="Schedule start time"
-                accessibilityLabel="Task schedule start time"
-                mode="time"
-                value={scheduledStartTime}
-                dateValue={scheduledStartDate}
-                timeValue={scheduledStartTime}
-                timezone={profile?.timezone ?? 'UTC'}
-                locale={profile?.locale}
-                timeFormat={profile?.timeFormat}
-                allowClear
-                compact
-                onChange={setScheduledStartTime}
-              />
-            ) : null}
-            <EventDateTimePickerField
-              label="Schedule end date"
-              accessibilityLabel="Task schedule end date"
-              mode="date"
-              value={scheduledEndDate}
-              dateValue={scheduledEndDate}
-              timeValue={scheduledEndTime}
-              timezone={profile?.timezone ?? 'UTC'}
-              locale={profile?.locale}
-              timeFormat={profile?.timeFormat}
-              allowClear
-              compact
-              onChange={setScheduledEndDate}
-            />
-            {!allDay ? (
-              <EventDateTimePickerField
-                label="Schedule end time"
-                accessibilityLabel="Task schedule end time"
-                mode="time"
-                value={scheduledEndTime}
-                dateValue={scheduledEndDate}
-                timeValue={scheduledEndTime}
-                timezone={profile?.timezone ?? 'UTC'}
-                locale={profile?.locale}
-                timeFormat={profile?.timeFormat}
-                allowClear
-                compact
-                onChange={setScheduledEndTime}
-              />
-            ) : null}
-          </View>
-        ) : null}
+        <TaskScheduleFields
+          visible={scheduleVisible}
+          onToggle={() => setScheduleVisible((current) => !current)}
+          dueDate={dueDate}
+          scheduledStartDate={scheduledStartDate}
+          scheduledStartTime={scheduledStartTime}
+          scheduledEndDate={scheduledEndDate}
+          scheduledEndTime={scheduledEndTime}
+          allDay={allDay}
+          onDueDateChange={setDueDate}
+          onScheduledStartDateChange={setScheduledStartDate}
+          onScheduledStartTimeChange={setScheduledStartTime}
+          onScheduledEndDateChange={setScheduledEndDate}
+          onScheduledEndTimeChange={setScheduledEndTime}
+          onAllDayChange={setAllDay}
+          timezone={profile?.timezone ?? 'UTC'}
+          locale={profile?.locale}
+          timeFormat={profile?.timeFormat}
+        />
 
         {contextLabel ? (
           <Text accessibilityLabel="Task context" style={styles.contextLabel}>
@@ -328,25 +241,6 @@ const createStyles = (theme: Theme) =>
       minHeight: 76,
       borderRadius: radii.md,
       paddingVertical: spacing.sm,
-    },
-    scheduleSection: {
-      gap: spacing.md,
-      padding: spacing.md,
-      borderRadius: radii.lg,
-      backgroundColor: theme.colors.surfaceRaised,
-    },
-    allDayToggle: {
-      minHeight: layout.minimumTouchTarget,
-      justifyContent: 'center',
-      paddingHorizontal: spacing.md,
-      borderWidth: 1,
-      borderColor: theme.colors.borderStrong,
-      borderRadius: radii.md,
-      backgroundColor: theme.colors.surface,
-    },
-    allDayToggleText: {
-      ...typography.body,
-      color: theme.colors.text,
     },
     contextLabel: {
       ...typography.helper,

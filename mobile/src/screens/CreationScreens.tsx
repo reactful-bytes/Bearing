@@ -113,6 +113,7 @@ export function CreateGoalScreen({ navigation }: CreateGoalScreenProps) {
 
 export function CreateTaskScreen({ route, navigation }: CreateTaskScreenProps) {
   const { createTask } = useTasks();
+  const { goals } = useGoals();
   const params = route?.params;
 
   return (
@@ -123,6 +124,7 @@ export function CreateTaskScreen({ route, navigation }: CreateTaskScreenProps) {
         onSave={createTask}
         fullScreen
         initialGoalId={params?.goalId ?? null}
+        goals={goals}
       />
     </AppScreen>
   );
@@ -217,6 +219,7 @@ export function CreateTaskFromNoteScreen({ route, navigation }: NoteConversionPr
   const { notes } = useNotes();
   const note = notes.find((item) => item.id === route?.params?.noteId);
   const { createTask } = useTasks();
+  const { goals } = useGoals();
 
   if (!note) {
     return (
@@ -232,6 +235,8 @@ export function CreateTaskFromNoteScreen({ route, navigation }: NoteConversionPr
         visible
         initialTitle={note.title}
         initialDescription={note.body}
+        goals={goals}
+        fullScreen
         onClose={() => navigation?.goBack?.()}
         onSave={createTask}
       />

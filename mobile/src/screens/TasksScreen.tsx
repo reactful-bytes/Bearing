@@ -4,8 +4,9 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
-import { AddEventModal } from '../components/calendar/AddEventModal';
 import { AddTaskModal } from '../components/tasks/AddTaskModal';
+import { TaskEditModal } from '../components/tasks/TaskEditModal';
+import { ScheduleTaskModal } from '../components/tasks/ScheduleTaskModal';
 import { StartNowModal } from '../components/tasks/StartNowModal';
 import { TaskDetailModal } from '../components/tasks/TaskDetailModal';
 import { AppCard } from '../components/ui/AppCard';
@@ -16,6 +17,7 @@ import { layout, radii, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
+import { useGoals } from '../features/goals/useGoals';
 import { useTasks } from '../features/tasks/useTasks';
 import { CreateTaskInput, TaskRecord, UpdateTaskInput } from '../features/tasks/taskTypes';
 import { AppTabParamList, PlanStackParamList } from '../navigation/navigationTypes';
@@ -62,12 +64,14 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
   const { profile } = useUserProfile();
   const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
   const { publicationCalendarTitle, publishEvent } = useCalendarPublication();
+  const { goals } = useGoals();
   const {
     tasks,
     uiState,
     createTask,
     updateTask,
     completeTask,
+    uncompleteTask,
     convertTaskToEvent,
     deleteTask,
     retry,
@@ -75,6 +79,7 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
   const [addTaskVisible, setAddTaskVisible] = useState(false);
   const [taskFilter, setTaskFilter] = useState<TaskFilter>('active');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [scheduleTaskId, setScheduleTaskId] = useState<string | null>(null);
   const [startNowTaskId, setStartNowTaskId] = useState<string | null>(null);
 
@@ -94,6 +99,10 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
   const scheduleTask = useMemo(
     () => tasks.find((task) => task.id === scheduleTaskId) ?? null,
     [scheduleTaskId, tasks],
+  );
+  const editingTask = useMemo(
+    () => tasks.find((task) => task.id === editingTaskId) ?? null,
+    [editingTaskId, tasks],
   );
   const startNowTask = useMemo(
     () => tasks.find((task) => task.id === startNowTaskId) ?? null,
@@ -119,6 +128,10 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
 
     return tasks.filter((task) => task.status === taskFilter);
   }, [taskFilter, tasks]);
+  const goalTitleById = useMemo(
+    () => new Map(goals.map((goal) => [goal.id, goal.title])),
+    [goals],
+  );
 
   async function handleCreateTask(input: CreateTaskInput): Promise<void> {
     await createTask(input);
@@ -139,6 +152,11 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
     await completeTask(task.id, {
       completionSource: 'manual',
     });
+    setSelectedTaskId(null);
+  }
+
+  async function handleUncompleteTask(task: TaskRecord): Promise<void> {
+    await uncompleteTask(task.id);
     setSelectedTaskId(null);
   }
 
@@ -267,6 +285,9 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
                   <Text numberOfLines={2} style={styles.taskDescription}>
                     {task.description.trim() ? task.description : 'No description added.'}
                   </Text>
+                  <Text style={styles.taskGoal}>
+                    {task.goalId ? `Goal: ${goalTitleById.get(task.goalId) ?? 'Unavailable'}` : 'No goal'}
+                  </Text>
                   <Text style={styles.taskDate}>
                     Updated {formatDateTime(task.updatedAt, timeFormat, profile?.locale)}
                   </Text>
@@ -280,6 +301,8 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
         visible={addTaskVisible}
         onClose={() => setAddTaskVisible(false)}
         onSave={handleCreateTask}
+        goals={goals}
+        fullScreen
       />
 
       <TaskDetailModal
@@ -288,25 +311,35 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
         locale={profile?.locale}
         timeFormat={timeFormat}
         onClose={() => setSelectedTaskId(null)}
-        onSave={handleUpdateTask}
+        onEdit={(task) => {
+          setSelectedTaskId(null);
+          setEditingTaskId(task.id);
+        }}
         onDelete={handleDeleteTask}
-        onSchedule={(task) => setScheduleTaskId(task.id)}
-        onStartNow={(task) => setStartNowTaskId(task.id)}
+        onSchedule={(task) => {
+          setSelectedTaskId(null);
+          setScheduleTaskId(task.id);
+        }}
+        onStartNow={(task) => {
+          setSelectedTaskId(null);
+          setStartNowTaskId(task.id);
+        }}
         onMarkComplete={handleMarkTaskComplete}
+        onUncomplete={handleUncompleteTask}
+        goals={goals}
       />
 
-      <AddEventModal
+      <TaskEditModal
+        visible={editingTask !== null}
+        task={editingTask}
+        goals={goals}
+        onClose={() => setEditingTaskId(null)}
+        onSave={handleUpdateTask}
+      />
+
+      <ScheduleTaskModal
         visible={scheduleTask !== null}
-        modalTitle="Schedule Task"
-        initialDate={new Date()}
-        initialValues={
-          scheduleTask
-            ? {
-                title: scheduleTask.title,
-                description: scheduleTask.description,
-              }
-            : undefined
-        }
+        task={scheduleTask}
         publicationCalendarTitle={publicationCalendarTitle}
         locale={profile?.locale}
         timeFormat={timeFormat}
@@ -369,6 +402,10 @@ const createStyles = (theme: Theme) =>
     taskDate: {
       ...typography.helper,
       color: theme.colors.textSecondary,
+    },
+    taskGoal: {
+      ...typography.helper,
+      color: theme.colors.brand,
     },
     taskTitle: {
       ...typography.button,

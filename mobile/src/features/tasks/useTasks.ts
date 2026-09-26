@@ -7,6 +7,7 @@ import {
   createTask as createFirebaseTask,
   deleteTask as deleteFirebaseTask,
   subscribeToTasks,
+  uncompleteTask as uncompleteFirebaseTask,
   updateTask as updateFirebaseTask,
 } from '../../services/firebase/firebaseTasks';
 import {
@@ -25,6 +26,7 @@ export type UseTasksReturn = {
   createTask: (input: CreateTaskInput) => Promise<void>;
   updateTask: (taskId: string, fields: UpdateTaskInput) => Promise<void>;
   completeTask: (taskId: string, input: CompleteTaskInput) => Promise<void>;
+  uncompleteTask: (taskId: string) => Promise<void>;
   convertTaskToEvent: (
     taskId: string,
     input: CreateEventInput,
@@ -98,6 +100,15 @@ export function useTasks(): UseTasksReturn {
     [],
   );
 
+  const uncompleteTask = useCallback(async (taskId: string): Promise<void> => {
+    const userId = getFirebaseAuth().currentUser?.uid;
+    if (!userId) {
+      throw new Error('User is not authenticated.');
+    }
+
+    await uncompleteFirebaseTask(userId, taskId);
+  }, []);
+
   const deleteTask = useCallback(async (taskId: string): Promise<void> => {
     const userId = getFirebaseAuth().currentUser?.uid;
     if (!userId) {
@@ -126,6 +137,7 @@ export function useTasks(): UseTasksReturn {
     createTask,
     updateTask,
     completeTask,
+    uncompleteTask,
     convertTaskToEvent,
     deleteTask,
     retry,

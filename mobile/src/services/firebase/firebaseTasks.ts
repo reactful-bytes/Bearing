@@ -153,6 +153,26 @@ export async function completeTask(
   }
 }
 
+export async function uncompleteTask(userId: string, taskId: string): Promise<void> {
+  const db = getFirebaseFirestore();
+  const taskRef = doc(db, 'tasks', taskId);
+  const taskSnapshot = await getDoc(taskRef);
+  const goalId = taskSnapshot.exists() ? (taskSnapshot.data().goalId as string | null) : null;
+  const now = Timestamp.now();
+
+  await updateDoc(taskRef, {
+    status: 'active',
+    completionSource: null,
+    completedAt: null,
+    completedEventId: null,
+    updatedAt: now,
+  });
+
+  if (goalId) {
+    await syncGoalRollup(userId, goalId);
+  }
+}
+
 function eventToConversionInput(eventId: string, data: DocumentData): TaskConversionEvent {
   const event = decodeCalendarEventData(eventId, data);
   return {

@@ -3,10 +3,12 @@ import { ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
-import { AddEventModal } from '../components/calendar/AddEventModal';
+import { ScheduleTaskModal } from '../components/tasks/ScheduleTaskModal';
 import { CreateGoalModal } from '../components/goals/CreateGoalModal';
 import { GoalDetailsModal } from '../components/goals/GoalDetailsModal';
 import { AddTaskModal } from '../components/tasks/AddTaskModal';
+import { TaskEditModal } from '../components/tasks/TaskEditModal';
+import { StartNowModal } from '../components/tasks/StartNowModal';
 import { TaskDetailModal } from '../components/tasks/TaskDetailModal';
 import { GoalCard, GoalStatusTabs } from '../components/presentation/GoalPresentation';
 import type { GoalFilter } from '../components/presentation/GoalPresentation';
@@ -62,12 +64,15 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   const { authUser, isAnonymous, profile } = useUserProfile();
   const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
   const { goals, uiState, createGoal, updateGoal, markGoalCompleted, retry } = useGoals();
-  const { createTask, updateTask, completeTask, convertTaskToEvent, deleteTask } = useTasks();
+  const { createTask, updateTask, completeTask, uncompleteTask, convertTaskToEvent, deleteTask } =
+    useTasks();
   const [createGoalVisible, setCreateGoalVisible] = useState(false);
   const [addTaskVisible, setAddTaskVisible] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [scheduleTaskId, setScheduleTaskId] = useState<string | null>(null);
+  const [startNowTaskId, setStartNowTaskId] = useState<string | null>(null);
   const [goalFilter, setGoalFilter] = useState<GoalFilter>('active');
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
 
@@ -108,6 +113,8 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   );
   const selectedTask = selectedGoal?.tasks.find((task) => task.id === selectedTaskId) ?? null;
   const scheduleTask = selectedGoal?.tasks.find((task) => task.id === scheduleTaskId) ?? null;
+  const editingTask = selectedGoal?.tasks.find((task) => task.id === editingTaskId) ?? null;
+  const startNowTask = selectedGoal?.tasks.find((task) => task.id === startNowTaskId) ?? null;
 
   async function handleCreateGoal(input: CreateGoalInput): Promise<void> {
     await createGoal(input);
@@ -136,6 +143,11 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
     await completeTask(task.id, { completionSource: 'manual' });
   }
 
+  async function handleUncompleteTask(task: TaskRecord): Promise<void> {
+    await uncompleteTask(task.id);
+    setSelectedTaskId(null);
+  }
+
   async function handleScheduleTaskEvent(
     input: CreateEventInput,
     options: CreateEventOptions,
@@ -146,20 +158,22 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
     setScheduleTaskId(null);
   }
 
-  async function handleStartNow(task: TaskRecord, options: CreateEventOptions): Promise<void> {
+  async function handleStartNow(minutes: number, options: CreateEventOptions): Promise<void> {
+    if (!startNowTask) throw new Error('Task not found.');
     const startAt = new Date();
-    const endAt = new Date(startAt.getTime() + 30 * 60_000);
+    const endAt = new Date(startAt.getTime() + minutes * 60_000);
     const input: CreateEventInput = {
-      title: task.title,
-      description: task.description,
+      title: startNowTask.title,
+      description: startNowTask.description,
       startAt,
       endAt,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      goalId: task.goalId,
-      taskId: task.id,
+      timezone: profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+      goalId: startNowTask.goalId,
+      taskId: startNowTask.id,
     };
-    const conversion = await convertTaskToEvent(task.id, input, 'start_now');
+    const conversion = await convertTaskToEvent(startNowTask.id, input, 'start_now');
     if (options.publishToDevice) await publishEvent(conversion.eventId, conversion.eventInput);
+    setStartNowTaskId(null);
     setSelectedTaskId(null);
   }
 
@@ -303,6 +317,8 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
         onClose={() => setAddTaskVisible(false)}
         onSave={handleCreateTask}
         initialGoalId={selectedGoal?.id ?? null}
+        goals={goals}
+        fullScreen
         contextLabel="Linked to this goal"
       />
 
@@ -312,32 +328,46 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
         locale={profile?.locale}
         timeFormat={profile?.timeFormat}
         onClose={() => setSelectedTaskId(null)}
-        onSave={handleUpdateTask}
+        onEdit={(task) => {
+          setSelectedTaskId(null);
+          setEditingTaskId(task.id);
+        }}
         onDelete={handleDeleteTask}
-        onSchedule={(task) => setScheduleTaskId(task.id)}
+        onSchedule={(task) => {
+          setSelectedTaskId(null);
+          setScheduleTaskId(task.id);
+        }}
         onStartNow={(task) => {
-          void handleStartNow(task, { publishToDevice: false });
+          setSelectedTaskId(null);
+          setStartNowTaskId(task.id);
         }}
         onMarkComplete={async (task) => {
           await handleToggleTask(task);
           setSelectedTaskId(null);
         }}
+        onUncomplete={handleUncompleteTask}
+        goals={goals}
       />
 
-      <AddEventModal
+      <TaskEditModal
+        visible={editingTask !== null}
+        task={editingTask}
+        goals={goals}
+        onClose={() => setEditingTaskId(null)}
+        onSave={handleUpdateTask}
+      />
+
+      <StartNowModal
+        visible={startNowTask !== null}
+        task={startNowTask}
+        publicationCalendarTitle={publicationCalendarTitle}
+        onClose={() => setStartNowTaskId(null)}
+        onConfirm={handleStartNow}
+      />
+
+      <ScheduleTaskModal
         visible={scheduleTask !== null}
-        modalTitle="Schedule Task"
-        initialDate={scheduleTask?.dueDate ?? new Date()}
-        initialValues={
-          scheduleTask
-            ? {
-                title: scheduleTask.title,
-                description: scheduleTask.description,
-                goalId: scheduleTask.goalId,
-                taskId: scheduleTask.id,
-              }
-            : undefined
-        }
+        task={scheduleTask}
         publicationCalendarTitle={publicationCalendarTitle}
         locale={profile?.locale}
         timeFormat={profile?.timeFormat}

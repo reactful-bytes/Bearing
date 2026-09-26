@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../../design/ThemeProvider';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { FormField } from '../ui/FormField';
+import { ScreenHeader } from '../ui/ScreenHeader';
 import { radii, spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
 import { TaskRecord } from '../../features/tasks/taskTypes';
@@ -30,6 +32,7 @@ export function StartNowModal({
 }: StartNowModalProps) {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const [minutes, setMinutes] = useState(DEFAULT_MINUTES);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -68,11 +71,17 @@ export function StartNowModal({
   }
 
   return (
-    <AppModal visible={visible} title="Start Now" onClose={onClose}>
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryLabel}>Task</Text>
-        <Text style={styles.summaryTitle}>{task?.title ?? 'Task'}</Text>
-      </View>
+    <AppModal visible={visible} title="Start Now" onClose={onClose} fullScreen hideHeader>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={{ paddingTop: insets.top, paddingBottom: spacing.sm + insets.bottom }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <ScreenHeader title="Start Now" onPressBack={onClose} />
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryLabel}>Task</Text>
+          <Text style={styles.summaryTitle}>{task?.title ?? 'Task'}</Text>
+        </View>
 
       {publicationCalendarTitle ? (
         <View style={styles.switchRow}>
@@ -102,19 +111,23 @@ export function StartNowModal({
         error={error}
       />
 
-      <AppButton
-        label="Start Focus Session"
-        accessibilityLabel="Confirm start now"
-        onPress={handleConfirm}
-        loading={saving}
-        loadingLabel="Starting..."
-      />
+        <AppButton
+          label="Start Focus Session"
+          accessibilityLabel="Confirm start now"
+          onPress={handleConfirm}
+          loading={saving}
+          loadingLabel="Starting..."
+        />
+      </ScrollView>
     </AppModal>
   );
 }
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
+    scrollView: {
+      flex: 1,
+    },
     summaryCard: {
       gap: spacing.xs,
       borderRadius: radii.lg,
