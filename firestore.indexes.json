@@ -23,7 +23,7 @@
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "stepId",
+          "fieldPath": "milestoneId",
           "order": "ASCENDING"
         },
         {
@@ -33,7 +33,7 @@
       ]
     },
     {
-      "collectionGroup": "goalSteps",
+      "collectionGroup": "milestones",
       "queryScope": "COLLECTION",
       "fields": [
         {
@@ -42,6 +42,20 @@
         },
         {
           "fieldPath": "goalId",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "notes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sourceMilestoneId",
           "order": "ASCENDING"
         }
       ]
@@ -89,6 +103,20 @@
         {
           "fieldPath": "updatedAt",
           "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "tasks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "milestoneId",
+          "order": "ASCENDING"
         }
       ]
     },

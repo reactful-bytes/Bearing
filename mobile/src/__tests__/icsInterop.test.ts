@@ -25,7 +25,7 @@ function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
     url: null,
     sourceTaskId: null,
     goalId: 'goal-1',
-    stepId: 'step-1',
+    milestoneId: 'milestone-1',
     status: 'scheduled',
     createdAt: new Date(Date.UTC(2026, 6, 20, 10, 0, 0)),
     updatedAt: new Date(Date.UTC(2026, 6, 20, 10, 0, 0)),

@@ -123,7 +123,7 @@ export function CreateTaskScreen({ route, navigation }: CreateTaskScreenProps) {
         onSave={createTask}
         fullScreen
         initialGoalId={params?.goalId ?? null}
-        initialStepId={params?.stepId ?? null}
+        initialMilestoneId={params?.milestoneId ?? null}
       />
     </AppScreen>
   );
@@ -140,7 +140,7 @@ export function CreateNoteScreen({ route, navigation }: CreateNoteScreenProps) {
         onClose={() => dismissCreationScreen(navigation, 'NotesHome')}
         fullScreen
         sourceEventId={params?.sourceEventId ?? null}
-        sourceStepId={params?.sourceStepId ?? null}
+        sourceMilestoneId={params?.sourceMilestoneId ?? null}
         onSave={createNote}
       />
     </AppScreen>
@@ -160,7 +160,7 @@ export function CreateEventScreen({ route, navigation }: CreateEventScreenProps)
         fullScreen
         initialValues={{
           goalId: params?.goalId ?? null,
-          stepId: params?.stepId ?? null,
+          milestoneId: params?.milestoneId ?? null,
         }}
         publicationCalendarTitle={publicationCalendarTitle}
         locale={profile?.locale}

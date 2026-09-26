@@ -72,7 +72,7 @@ function makeEvent(): CalendarDisplayEvent {
     url: null,
     sourceTaskId: null,
     goalId: null,
-    stepId: null,
+    milestoneId: null,
     status: 'scheduled',
     ownership: 'bearing',
     publication: {

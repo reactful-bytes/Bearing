@@ -149,7 +149,7 @@ type(scope): imperative message
 Long description source:
 
 > Bearing brings your calendar, goals, tasks, and notes into one practical planning flow. Schedule
-> Bearing events, view selected device calendars, turn tasks and goal steps into time, use Focus
+> Bearing events, view selected device calendars, turn tasks and goal milestones into time, use Focus
 > Mode during active events, and capture ideas without leaving the moment. Your Bearing data syncs
 > through your secured account. Optional calendar access stays under your control, and Bearing 360
 > adds editable AI-assisted goal-planning drafts using credits. Subscriptions are available monthly

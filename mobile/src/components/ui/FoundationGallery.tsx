@@ -13,7 +13,7 @@ import {
 import { EventCard, EventRow, EventSourceChip } from '../presentation/EventPresentation';
 import { TaskRow } from '../presentation/TaskRow';
 import { CalendarDisplayEvent } from '../../features/calendar/calendarTypes';
-import { GoalStepRecord, GoalWithSteps } from '../../features/goals/goalTypes';
+import { GoalMilestoneRecord, GoalWithMilestones } from '../../features/goals/goalTypes';
 import { TaskRecord } from '../../features/tasks/taskTypes';
 import { useTheme } from '../../design/ThemeProvider';
 import { icons } from '../../design/icons';
@@ -39,39 +39,42 @@ import { SectionHeading } from './SectionHeading';
 import { SegmentedControl } from './SegmentedControl';
 import { TextLink } from './TextLink';
 
-const fixtureStep: GoalStepRecord = {
-  id: 'gallery-step',
+const fixtureMilestoneRecord: GoalMilestoneRecord = {
+  id: 'gallery-milestone',
   userId: 'gallery-user',
   goalId: 'gallery-goal',
-  title: 'Schedule three runs',
+  title: 'Build a running rhythm',
   description: 'Put sessions on the calendar.',
-  starter: 'Choose two weekday runs and one weekend run.',
   estimatedFinishDate: new Date(2026, 4, 1),
   order: 0,
-  status: 'pending',
-  completedAt: null,
+  manuallyCompletedAt: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
 
-const fixtureGoal: GoalWithSteps = {
+const fixtureGoal: GoalWithMilestones = {
   id: 'gallery-goal',
   userId: 'gallery-user',
   title: 'Run a comfortable 10k',
   description: 'Build a steady weekly practice.',
   smartMeta: { specific: '', measurable: '', achievable: '', relevant: '', timeBound: '' },
   estimatedCompletionDate: new Date(2026, 8, 1),
-  nextStepId: fixtureStep.id,
+  nextMilestoneId: fixtureMilestoneRecord.id,
+  manuallyCompletedAt: null,
   status: 'active',
   isAiAssisted: false,
   aiPlanVersion: null,
   createdAt: new Date(),
   updatedAt: new Date(),
-  steps: [fixtureStep],
-  nextStep: fixtureStep,
-  completedStepCount: 1,
-  totalStepCount: 4,
-  progressText: '1 of 4 steps completed',
+  milestones: [],
+  tasks: [],
+  nextMilestone: null,
+  nextTask: null,
+  completedTaskCount: 0,
+  totalTaskCount: 0,
+  completedMilestoneCount: 0,
+  totalMilestoneCount: 1,
+  progressText: '0 of 1 milestones complete',
 };
 
 const fixtureEvent: CalendarDisplayEvent = {
@@ -92,7 +95,7 @@ const fixtureEvent: CalendarDisplayEvent = {
   userId: 'gallery-user',
   sourceTaskId: null,
   goalId: fixtureGoal.id,
-  stepId: fixtureStep.id,
+  milestoneId: fixtureMilestoneRecord.id,
   publication: {
     status: 'unpublished',
     markerId: null,
@@ -129,8 +132,9 @@ export function FoundationGallery() {
     userId: 'gallery-user',
     title: 'Lay out running clothes',
     description: '',
+    starter: '',
     goalId: null,
-    stepId: null,
+    milestoneId: null,
     dueDate: null,
     scheduledStart: null,
     scheduledEnd: null,
@@ -375,11 +379,33 @@ export function FoundationGallery() {
           onPress={() => announce('Goal card pressed.')}
         />
         <GoalTimeline
-          steps={[fixtureStep]}
-          onPressStep={(step) => announce(`Step selected: ${step.title}`)}
+          milestones={[
+            {
+              ...fixtureMilestoneRecord,
+              tasks: [],
+              status: 'pending',
+              completedTaskCount: 0,
+              totalTaskCount: 0,
+              progressPercent: 0,
+              progressText: '0 of 0 tasks',
+            },
+          ]}
+          onPressMilestone={(milestone) => announce(`Milestone selected: ${milestone.title}`)}
         />
         <GoalMilestones
-          milestones={[{ title: 'First 5k', description: 'Build a dependable rhythm.' }]}
+          milestones={[
+            {
+              ...fixtureMilestoneRecord,
+              title: 'First 5k',
+              description: 'Build a dependable rhythm.',
+              tasks: [],
+              status: 'pending',
+              completedTaskCount: 0,
+              totalTaskCount: 0,
+              progressPercent: 0,
+              progressText: '0 of 0 tasks',
+            },
+          ]}
         />
         <TaskRow
           task={task}

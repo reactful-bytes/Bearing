@@ -1,29 +1,24 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
-  buildGoalProgressText,
-  composeGoalWithSteps,
+  composeGoalWithMilestones,
   deriveGoalStatus,
-  getFirstIncompleteStep,
-  normalizeGoalSteps,
+  deriveMilestoneStatus,
+  normalizeGoalMilestones,
 } from '../features/goals/goalHelpers';
-import { GoalRecord, GoalStepRecord } from '../features/goals/goalTypes';
+import { GoalMilestoneRecord, GoalRecord } from '../features/goals/goalTypes';
+import { TaskRecord } from '../features/tasks/taskTypes';
 
 function makeGoal(overrides: Partial<GoalRecord> = {}): GoalRecord {
   return {
     id: 'goal-1',
     userId: 'user-1',
     title: 'Run a 10k',
-    description: 'Build up endurance over eight weeks.',
-    smartMeta: {
-      specific: 'Run a 10k race',
-      measurable: 'Finish the race',
-      achievable: 'Train four times a week',
-      relevant: 'Improve health',
-      timeBound: 'By October 1',
-    },
+    description: 'Build endurance.',
+    smartMeta: { specific: '', measurable: '', achievable: '', relevant: '', timeBound: '' },
     estimatedCompletionDate: new Date(2026, 8, 1),
-    nextStepId: null,
+    nextMilestoneId: null,
+    manuallyCompletedAt: null,
     status: 'active',
     isAiAssisted: false,
     aiPlanVersion: null,
@@ -33,83 +28,106 @@ function makeGoal(overrides: Partial<GoalRecord> = {}): GoalRecord {
   };
 }
 
-function makeStep(overrides: Partial<GoalStepRecord> = {}): GoalStepRecord {
+function makeMilestone(overrides: Partial<GoalMilestoneRecord> = {}): GoalMilestoneRecord {
   return {
-    id: 'step-1',
+    id: 'milestone-1',
     userId: 'user-1',
     goalId: 'goal-1',
-    title: 'Buy running shoes',
-    description: 'Pick up a supportive pair.',
-    starter: 'Research two stores',
-    estimatedFinishDate: null,
+    title: 'Build weekly distance',
+    description: '',
     order: 0,
-    status: 'pending',
+    estimatedFinishDate: null,
+    manuallyCompletedAt: null,
+    createdAt: new Date(2026, 6, 20),
+    updatedAt: new Date(2026, 6, 20),
+    ...overrides,
+  };
+}
+
+function makeTask(overrides: Partial<TaskRecord> = {}): TaskRecord {
+  return {
+    id: 'task-1',
+    userId: 'user-1',
+    title: 'Run twice this week',
+    description: '',
+    starter: '',
+    goalId: 'goal-1',
+    milestoneId: 'milestone-1',
+    dueDate: null,
+    scheduledStart: null,
+    scheduledEnd: null,
+    allDay: false,
+    status: 'active',
+    completionSource: null,
     completedAt: null,
-    createdAt: new Date(2026, 6, 20, 9, 0, 0),
-    updatedAt: new Date(2026, 6, 20, 9, 0, 0),
+    completedEventId: null,
+    createdAt: new Date(2026, 6, 20),
+    updatedAt: new Date(2026, 6, 20),
     ...overrides,
   };
 }
 
 describe('goalHelpers', () => {
-  it('normalizes step order before deriving the next step', () => {
-    const steps = [
-      makeStep({ id: 'step-2', order: 5, title: 'Week two run' }),
-      makeStep({ id: 'step-1', order: 3, title: 'Week one run', status: 'completed' }),
-      makeStep({ id: 'step-3', order: 1, title: 'Buy shoes' }),
+  it('normalizes milestone order', () => {
+    const normalized = normalizeGoalMilestones([
+      makeMilestone({ id: 'later', order: 5 }),
+      makeMilestone({ id: 'first', order: 1 }),
+    ]);
+    expect(normalized.map((milestone) => milestone.order)).toEqual([0, 1]);
+  });
+
+  it('derives pending, in-progress, and completed status from task counts', () => {
+    expect(deriveMilestoneStatus(makeMilestone(), [])).toBe('pending');
+    expect(deriveMilestoneStatus(makeMilestone(), [makeTask()])).toBe('pending');
+    expect(
+      deriveMilestoneStatus(makeMilestone(), [
+        makeTask({ status: 'completed' }),
+        makeTask({ id: 'task-2' }),
+      ]),
+    ).toBe('in_progress');
+    expect(deriveMilestoneStatus(makeMilestone(), [makeTask({ status: 'completed' })])).toBe(
+      'completed',
+    );
+  });
+
+  it('keeps manual milestone completion sticky while preserving task progress', () => {
+    const milestone = makeMilestone({ manuallyCompletedAt: new Date() });
+    const composed = composeGoalWithMilestones(makeGoal(), [milestone], [makeTask()]);
+    expect(composed.milestones[0].status).toBe('completed');
+    expect(composed.milestones[0].progressPercent).toBe(0);
+    expect(composed.milestones[0].progressText).toBe('0 of 1 tasks');
+  });
+
+  it('completes a goal only when all milestones complete, and derived completion regresses', () => {
+    const first = makeMilestone({ id: 'one', order: 0 });
+    const second = makeMilestone({ id: 'two', order: 1 });
+    const completedTasks = [
+      makeTask({ id: 'task-one', milestoneId: 'one', status: 'completed' }),
+      makeTask({ id: 'task-two', milestoneId: 'two', status: 'completed' }),
     ];
-
-    const normalized = normalizeGoalSteps(steps);
-
-    expect(normalized.map((step) => step.order)).toEqual([0, 1, 2]);
-    expect(getFirstIncompleteStep(normalized)?.id).toBe('step-3');
+    const complete = composeGoalWithMilestones(makeGoal(), [first, second], completedTasks);
+    expect(complete.status).toBe('completed');
+    expect(complete.completedMilestoneCount).toBe(2);
+    expect(complete.nextMilestone).toBeNull();
+    const regressed = composeGoalWithMilestones(
+      makeGoal(),
+      [first, second],
+      [...completedTasks, makeTask({ id: 'new-task', milestoneId: 'one', status: 'active' })],
+    );
+    expect(regressed.status).toBe('active');
   });
 
-  it('derives completed status when every step is complete', () => {
-    const steps = [
-      makeStep({ id: 'step-1', status: 'completed' }),
-      makeStep({ id: 'step-2', order: 1, status: 'completed' }),
-    ];
-
-    expect(deriveGoalStatus('active', steps)).toBe('completed');
-  });
-
-  it('preserves manual completion once a goal is completed', () => {
-    const steps = [makeStep({ status: 'pending' })];
-
-    expect(deriveGoalStatus('completed', steps)).toBe('completed');
-  });
-
-  it('builds progress text and omits next step for completed goals', () => {
-    const goal = makeGoal({ status: 'completed' });
-    const steps = [
-      makeStep({ id: 'step-1', status: 'completed' }),
-      makeStep({ id: 'step-2', order: 1, status: 'completed' }),
-    ];
-
-    const composed = composeGoalWithSteps(goal, steps);
-
-    expect(composed.nextStep).toBeNull();
-    expect(composed.progressText).toBe('2 of 2 steps completed');
-    expect(buildGoalProgressText(steps)).toBe('2 of 2 steps completed');
-  });
-
-  it('derives operational progress from goal steps, not AI milestone metadata', () => {
-    const goal = makeGoal({
-      isAiAssisted: true,
-      aiPlanVersion: 1,
-      aiMilestones: [{ title: 'Ignored for progress', description: '' }],
-    });
-    const step = makeStep({
-      status: 'completed',
-      completedAt: new Date('2026-07-31T10:00:00.000Z'),
-      updatedAt: new Date('2026-07-31T10:00:00.000Z'),
-    });
-
-    const composed = composeGoalWithSteps(goal, [step]);
-
-    expect(composed.progressText).toBe('1 of 1 steps completed');
-    expect(composed.nextStep).toBeNull();
-    expect(composed.totalStepCount).toBe(1);
+  it('preserves manual and archived goal completion', () => {
+    const milestone = makeMilestone();
+    const task = makeTask();
+    expect(
+      deriveGoalStatus(makeGoal({ manuallyCompletedAt: new Date() }), [milestone], new Map()),
+    ).toBe('completed');
+    expect(deriveGoalStatus(makeGoal({ status: 'archived' }), [milestone], new Map())).toBe(
+      'archived',
+    );
+    expect(deriveGoalStatus(makeGoal(), [milestone], new Map([[milestone.id, [task]]]))).toBe(
+      'active',
+    );
   });
 });

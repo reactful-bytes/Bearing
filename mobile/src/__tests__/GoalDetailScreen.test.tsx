@@ -6,10 +6,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GoalDetailScreen } from '../screens/GoalDetailScreen';
 import { useGoals } from '../features/goals/useGoals';
 import { useTasks } from '../features/tasks/useTasks';
-import { useGoalStepEvents } from '../features/goals/useGoalStepEvents';
+import { useMilestoneEvents } from '../features/goals/useMilestoneEvents';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { useUserProfile } from '../features/profile/useUserProfile';
-import { GoalWithSteps } from '../features/goals/goalTypes';
+import { GoalMilestoneWithTasks, GoalWithMilestones } from '../features/goals/goalTypes';
 import { CompleteTaskInput, CreateTaskInput, TaskRecord } from '../features/tasks/taskTypes';
 
 const mockGoBack = jest.fn();
@@ -21,48 +21,57 @@ jest.mock('@react-navigation/native', () => ({
 
 jest.mock('../features/goals/useGoals', () => ({ useGoals: jest.fn() }));
 jest.mock('../features/tasks/useTasks', () => ({ useTasks: jest.fn() }));
-jest.mock('../features/goals/useGoalStepEvents', () => ({ useGoalStepEvents: jest.fn() }));
+jest.mock('../features/goals/useMilestoneEvents', () => ({ useMilestoneEvents: jest.fn() }));
 jest.mock('../features/calendar/useCalendarPublication', () => ({
   useCalendarPublication: jest.fn(),
 }));
 jest.mock('../features/profile/useUserProfile', () => ({ useUserProfile: jest.fn() }));
 jest.mock('../services/firebase/firebaseEvents', () => ({
-  subscribeToEventsByStepId: jest.fn(() => jest.fn()),
+  subscribeToEventsByMilestoneId: jest.fn(() => jest.fn()),
 }));
 
-const step = {
-  id: 'step-1',
+const milestone: GoalMilestoneWithTasks = {
+  id: 'milestone-1',
   userId: 'user-1',
   goalId: 'goal-1',
   title: 'Choose a race date',
   description: 'Pick a local event.',
-  starter: 'Search race calendars',
   estimatedFinishDate: new Date(2026, 8, 10),
   order: 0,
   status: 'pending' as const,
-  completedAt: null,
+  manuallyCompletedAt: null,
   createdAt: new Date(2026, 6, 20),
   updatedAt: new Date(2026, 6, 20),
+  tasks: [],
+  completedTaskCount: 0,
+  totalTaskCount: 0,
+  progressPercent: 0,
+  progressText: '0 of 0 tasks',
 };
 
-const goal: GoalWithSteps = {
+const goal: GoalWithMilestones = {
   id: 'goal-1',
   userId: 'user-1',
   title: 'Run a 10k',
   description: 'Build an eight-week training block.',
   smartMeta: { specific: '', measurable: '', achievable: '', relevant: '', timeBound: '' },
   estimatedCompletionDate: new Date(2026, 9, 1),
-  nextStepId: step.id,
+  nextMilestoneId: milestone.id,
+  manuallyCompletedAt: null,
   status: 'active',
   isAiAssisted: false,
   aiPlanVersion: null,
   createdAt: new Date(2026, 6, 20),
   updatedAt: new Date(2026, 6, 20),
-  steps: [step],
-  nextStep: step,
-  completedStepCount: 0,
-  totalStepCount: 1,
-  progressText: '0 of 1 steps completed',
+  milestones: [milestone],
+  tasks: [],
+  nextMilestone: milestone,
+  nextTask: null,
+  completedTaskCount: 0,
+  totalTaskCount: 1,
+  completedMilestoneCount: 0,
+  totalMilestoneCount: 1,
+  progressText: '0 of 1 milestones complete',
 };
 
 const task: TaskRecord = {
@@ -70,8 +79,9 @@ const task: TaskRecord = {
   userId: 'user-1',
   title: 'Book the race',
   description: 'Choose and register for the event.',
+  starter: '',
   goalId: 'goal-1',
-  stepId: 'step-1',
+  milestoneId: 'milestone-1',
   dueDate: new Date(2026, 8, 8),
   scheduledStart: null,
   scheduledEnd: null,
@@ -98,7 +108,7 @@ function mockHooks(
     createEvent: jest.fn(async () => 'event-1'),
     publishEvent: jest.fn(async () => undefined),
   });
-  (useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>).mockReturnValue({
+  (useMilestoneEvents as jest.MockedFunction<typeof useMilestoneEvents>).mockReturnValue({
     events: [],
     uiState: 'idle',
   });
@@ -107,11 +117,12 @@ function mockHooks(
     uiState: 'ready',
     createGoal: jest.fn(async () => undefined),
     updateGoal: jest.fn(async () => undefined),
-    markGoalCompleted: jest.fn(async () => undefined),
-    createStep: jest.fn(async () => undefined),
-    deleteStep: jest.fn(async () => undefined),
-    updateStep: jest.fn(async () => undefined),
-    reorderSteps: jest.fn(async () => undefined),
+    setGoalManuallyCompleted: jest.fn(async () => undefined),
+    setMilestoneManuallyCompleted: jest.fn(async () => undefined),
+    createMilestone: jest.fn(async () => undefined),
+    deleteMilestone: jest.fn(async () => undefined),
+    updateMilestone: jest.fn(async () => undefined),
+    reorderMilestones: jest.fn(async () => undefined),
     retry: jest.fn(),
   });
   (useTasks as jest.MockedFunction<typeof useTasks>).mockReturnValue({
@@ -183,7 +194,7 @@ describe('GoalDetailScreen', () => {
     ).toEqual(expect.objectContaining({ paddingTop: 32 }));
   });
 
-  it('creates a task with the goal and next-step context', async () => {
+  it('creates a task with the goal and milestone context', async () => {
     const createTask = jest.fn(async () => undefined);
     mockHooks({ createTask });
 
@@ -198,8 +209,9 @@ describe('GoalDetailScreen', () => {
       expect(createTask).toHaveBeenCalledWith({
         title: 'Register for the race',
         description: '',
+        starter: '',
         goalId: 'goal-1',
-        stepId: 'step-1',
+        milestoneId: 'milestone-1',
       });
     });
   });
@@ -208,7 +220,7 @@ describe('GoalDetailScreen', () => {
     render(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'timeline' } }} />);
 
     expect(screen.getAllByText('Timeline')).toHaveLength(2);
-    expect(screen.getByText('Current · 1 task')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Open step Choose a race date' })).toBeTruthy();
+    expect(screen.getByText('Current · 0 of 0 tasks')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Open milestone Choose a race date' })).toBeTruthy();
   });
 });

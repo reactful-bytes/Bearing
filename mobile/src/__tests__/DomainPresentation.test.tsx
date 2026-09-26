@@ -14,49 +14,59 @@ import { BottomNavigation } from '../components/presentation/BottomNavigation';
 import { CreateFabGroup } from '../components/presentation/CreateFabGroup';
 import { CalendarDisplayEvent } from '../features/calendar/calendarTypes';
 import { ThemeProvider } from '../design/ThemeProvider';
-import { GoalStepRecord, GoalWithSteps } from '../features/goals/goalTypes';
+import { GoalMilestoneWithTasks, GoalWithMilestones } from '../features/goals/goalTypes';
 import { TaskRecord } from '../features/tasks/taskTypes';
 
-const step: GoalStepRecord = {
-  id: 'step-1',
+const milestone: GoalMilestoneWithTasks = {
+  id: 'milestone-1',
   userId: 'user-1',
   goalId: 'goal-1',
   title: 'Buy shoes',
   description: '',
-  starter: '',
   estimatedFinishDate: null,
   order: 0,
   status: 'pending',
-  completedAt: null,
+  manuallyCompletedAt: null,
   createdAt: new Date(),
   updatedAt: new Date(),
+  tasks: [],
+  completedTaskCount: 0,
+  totalTaskCount: 0,
+  progressPercent: 0,
+  progressText: '0 of 0 tasks',
 };
-const goal: GoalWithSteps = {
+const goal: GoalWithMilestones = {
   id: 'goal-1',
   userId: 'user-1',
   title: 'Run a 10k',
   description: '',
   smartMeta: { specific: '', measurable: '', achievable: '', relevant: '', timeBound: '' },
   estimatedCompletionDate: new Date(2026, 8, 1),
-  nextStepId: step.id,
+  nextMilestoneId: milestone.id,
+  manuallyCompletedAt: null,
   status: 'active',
   isAiAssisted: false,
   aiPlanVersion: null,
   createdAt: new Date(),
   updatedAt: new Date(),
-  steps: [step],
-  nextStep: step,
-  completedStepCount: 0,
-  totalStepCount: 1,
-  progressText: '0 of 1 steps completed',
+  milestones: [milestone],
+  tasks: [],
+  nextMilestone: milestone,
+  nextTask: null,
+  completedTaskCount: 0,
+  totalTaskCount: 0,
+  completedMilestoneCount: 0,
+  totalMilestoneCount: 1,
+  progressText: '0 of 1 milestones complete',
 };
 const task: TaskRecord = {
   id: 'task-1',
   userId: 'user-1',
   title: 'Plan meals',
   description: '',
+  starter: '',
   goalId: null,
-  stepId: null,
+  milestoneId: null,
   dueDate: null,
   scheduledStart: null,
   scheduledEnd: null,
@@ -86,7 +96,7 @@ const event: CalendarDisplayEvent = {
   userId: 'user-1',
   sourceTaskId: null,
   goalId: null,
-  stepId: null,
+  milestoneId: null,
   publication: {
     status: 'unpublished',
     markerId: null,
@@ -103,7 +113,7 @@ describe('domain presentation', () => {
   it('renders supplied goal data and delegates card, tab, and timeline callbacks', () => {
     const onGoalPress = jest.fn();
     const onFilterChange = jest.fn();
-    const onStepPress = jest.fn();
+    const onMilestonePress = jest.fn();
     render(
       <>
         <GoalCard goal={goal} formatDate={() => 'Sep 1, 2026'} onPress={onGoalPress} />
@@ -115,18 +125,20 @@ describe('domain presentation', () => {
           ]}
           onChange={onFilterChange}
         />
-        <GoalTimeline steps={[step]} onPressStep={onStepPress} />
-        <GoalMilestones milestones={[{ title: 'First 5k', description: 'Build consistency.' }]} />
+        <GoalTimeline milestones={[milestone]} onPressMilestone={onMilestonePress} />
+        <GoalMilestones
+          milestones={[{ ...milestone, title: 'First 5k', description: 'Build consistency.' }]}
+        />
       </>,
     );
     expect(screen.getByText('Target: Sep 1, 2026')).toBeTruthy();
     expect(screen.getByLabelText('Goal progress Run a 10k').props.accessibilityValue.now).toBe(0);
     fireEvent.press(screen.getByRole('button', { name: 'Open goal Run a 10k' }));
     fireEvent.press(screen.getByRole('button', { name: 'Completed, 0' }));
-    fireEvent.press(screen.getByRole('button', { name: 'Open step Buy shoes' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Open milestone Buy shoes' }));
     expect(onGoalPress).toHaveBeenCalledTimes(1);
     expect(onFilterChange).toHaveBeenCalledWith('completed');
-    expect(onStepPress).toHaveBeenCalledWith(step);
+    expect(onMilestonePress).toHaveBeenCalledWith(milestone);
     expect(screen.getByText('First 5k')).toBeTruthy();
   });
 

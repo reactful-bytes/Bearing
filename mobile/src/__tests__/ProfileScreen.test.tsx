@@ -158,7 +158,7 @@ function makeCalendarEvent(overrides: Partial<CalendarEvent> = {}): CalendarEven
     url: null,
     sourceTaskId: null,
     goalId: null,
-    stepId: null,
+    milestoneId: null,
     status: 'scheduled',
     publication: createUnpublishedMetadata(),
     createdAt: startAt,
@@ -979,7 +979,7 @@ describe('ProfileScreen', () => {
       subscription: null,
       events: [],
       goals: [],
-      goalSteps: [],
+      milestones: [],
       notes: [],
       tasks: [],
     });

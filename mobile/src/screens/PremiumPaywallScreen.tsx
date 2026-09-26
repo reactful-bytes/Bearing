@@ -22,7 +22,6 @@ export function PremiumPaywallScreen({ route, navigation }: PremiumPaywallScreen
   const { authUser, isAnonymous } = useUserProfile();
   const { entitlement } = usePremiumEntitlement(authUser?.uid ?? null);
   const insets = useSafeAreaInsets();
-  const hasSystemBottomInset = route.params.source === 'ai_goal_builder';
 
   return (
     <AppScreen

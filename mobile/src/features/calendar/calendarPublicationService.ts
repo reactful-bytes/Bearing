@@ -524,7 +524,7 @@ export function createCalendarPublicationService(
           availability: fields.availability ?? event.availability,
           url: fields.url === undefined ? event.url : fields.url,
           goalId: event.goalId,
-          stepId: event.stepId,
+          milestoneId: event.milestoneId,
         };
 
         const newEventId = await dependencies.createBearingEvent(

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { GoalMilestone, GoalStepRecord, GoalWithSteps } from '../../features/goals/goalTypes';
+import { GoalMilestoneWithTasks, GoalWithMilestones } from '../../features/goals/goalTypes';
 import { useTheme } from '../../design/ThemeProvider';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import type { Theme } from '../../design/tokens';
@@ -13,15 +13,15 @@ import { SegmentedControl, SegmentedControlOption } from '../ui/SegmentedControl
 export type GoalFilter = 'active' | 'completed' | 'archived' | 'all';
 
 export function getGoalProgressPercent(
-  goal: Pick<GoalWithSteps, 'status' | 'completedStepCount' | 'totalStepCount'>,
+  goal: Pick<GoalWithMilestones, 'status' | 'completedMilestoneCount' | 'totalMilestoneCount'>,
 ): number {
   if (goal.status === 'completed') return 100;
-  if (goal.totalStepCount === 0) return 0;
-  return Math.round((goal.completedStepCount / goal.totalStepCount) * 100);
+  if (goal.totalMilestoneCount === 0) return 0;
+  return Math.round((goal.completedMilestoneCount / goal.totalMilestoneCount) * 100);
 }
 
 type GoalCardProps = {
-  goal: GoalWithSteps;
+  goal: GoalWithMilestones;
   formatDate: (date: Date) => string;
   onPress: () => void;
 };
@@ -29,13 +29,13 @@ type GoalCardProps = {
 export function GoalCard({ goal, formatDate, onPress }: GoalCardProps) {
   const styles = useThemedStyles(createStyles);
   const progressPercent = getGoalProgressPercent(goal);
-  const nextStep =
-    goal.nextStep?.title ??
+  const nextMilestone =
+    goal.nextMilestone?.title ??
     (goal.status === 'completed'
       ? 'Completed'
       : goal.status === 'archived'
         ? 'Archived'
-        : 'Add a step');
+        : 'Add a milestone');
   const badgeStyle =
     goal.status === 'completed'
       ? styles.badgeCompleted
@@ -70,7 +70,7 @@ export function GoalCard({ goal, formatDate, onPress }: GoalCardProps) {
           </View>
           <Text style={styles.meta}>Target: {formatDate(goal.estimatedCompletionDate)}</Text>
           <Text numberOfLines={1} style={styles.nextStep}>
-            Next: {nextStep}
+            Next milestone: {nextMilestone}
           </Text>
           <Text style={styles.meta}>{goal.progressText}</Text>
           <ProgressBar
@@ -118,35 +118,33 @@ export function GoalStatusTabs({
 }
 
 type GoalTimelineProps = {
-  steps: readonly GoalStepRecord[];
-  onPressStep?: (step: GoalStepRecord) => void;
-  taskCountsByStepId?: Readonly<Record<string, number>>;
+  milestones: readonly GoalMilestoneWithTasks[];
+  onPressMilestone?: (milestone: GoalMilestoneWithTasks) => void;
 };
 
-// Nearest incomplete step by order, mirroring the goal's own nextStep/nextTask derivation.
-function getCurrentStepId(steps: readonly GoalStepRecord[]): string | null {
-  const ordered = [...steps].sort((left, right) => left.order - right.order);
-  return ordered.find((step) => step.status !== 'completed')?.id ?? null;
+function getCurrentMilestoneId(milestones: readonly GoalMilestoneWithTasks[]): string | null {
+  const ordered = [...milestones].sort((left, right) => left.order - right.order);
+  return ordered.find((milestone) => milestone.status !== 'completed')?.id ?? null;
 }
 
-export function GoalTimeline({ steps, onPressStep, taskCountsByStepId = {} }: GoalTimelineProps) {
+export function GoalTimeline({ milestones, onPressMilestone }: GoalTimelineProps) {
   const styles = useThemedStyles(createStyles);
   const { theme } = useTheme();
-  const currentStepId = useMemo(() => getCurrentStepId(steps), [steps]);
+  const currentMilestoneId = useMemo(() => getCurrentMilestoneId(milestones), [milestones]);
 
   return (
-    <View accessibilityLabel="Goal timeline" style={styles.timeline}>
-      {steps.map((step, index) => {
-        const isCompleted = step.status === 'completed';
-        const isCurrent = !isCompleted && step.id === currentStepId;
+    <View accessibilityLabel="Goal milestone timeline" style={styles.timeline}>
+      {milestones.map((milestone, index) => {
+        const isCompleted = milestone.status === 'completed';
+        const isCurrent = !isCompleted && milestone.id === currentMilestoneId;
 
         return (
           <Pressable
-            key={step.id}
-            accessibilityRole={onPressStep ? 'button' : undefined}
-            accessibilityLabel={onPressStep ? `Open step ${step.title}` : undefined}
-            disabled={!onPressStep}
-            onPress={() => onPressStep?.(step)}
+            key={milestone.id}
+            accessibilityRole={onPressMilestone ? 'button' : undefined}
+            accessibilityLabel={onPressMilestone ? `Open milestone ${milestone.title}` : undefined}
+            disabled={!onPressMilestone}
+            onPress={() => onPressMilestone?.(milestone)}
             style={styles.timelineItem}
           >
             <View style={styles.timelineMarkerColumn}>
@@ -164,25 +162,15 @@ export function GoalTimeline({ steps, onPressStep, taskCountsByStepId = {} }: Go
                   <AppIcon name="complete" size={12} color={theme.colors.onBrand} decorative />
                 ) : null}
               </View>
-              {index < steps.length - 1 ? <View style={styles.timelineConnector} /> : null}
+              {index < milestones.length - 1 ? <View style={styles.timelineConnector} /> : null}
             </View>
             <View style={styles.timelineCopy}>
               <View style={styles.timelineTitleRow}>
-                <Text style={styles.timelineTitle}>{step.title}</Text>
-                {step.estimatedFinishDate ? (
-                  <Text style={styles.timelineDate}>
-                    {step.estimatedFinishDate.toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                    })}
-                  </Text>
-                ) : null}
+                <Text style={styles.timelineTitle}>{milestone.title}</Text>
               </View>
               <Text style={styles.meta}>
                 {isCompleted ? 'Completed' : isCurrent ? 'Current' : 'Upcoming'}
-                {taskCountsByStepId[step.id]
-                  ? ` · ${taskCountsByStepId[step.id]} task${taskCountsByStepId[step.id] === 1 ? '' : 's'}`
-                  : ''}
+                {` · ${milestone.progressText}`}
               </Text>
             </View>
           </Pressable>
@@ -193,7 +181,7 @@ export function GoalTimeline({ steps, onPressStep, taskCountsByStepId = {} }: Go
 }
 
 type GoalMilestonesProps = {
-  milestones: readonly GoalMilestone[];
+  milestones: readonly GoalMilestoneWithTasks[];
 };
 
 export function GoalMilestones({ milestones }: GoalMilestonesProps) {
@@ -204,7 +192,7 @@ export function GoalMilestones({ milestones }: GoalMilestonesProps) {
         <Card key={`${milestone.title}-${index}`} variant="outlined" style={styles.milestone}>
           <Text style={styles.milestoneLabel}>Milestone {index + 1}</Text>
           <Text style={styles.timelineTitle}>{milestone.title}</Text>
-          <Text style={styles.meta}>{milestone.description}</Text>
+          <Text style={styles.meta}>{milestone.description || milestone.progressText}</Text>
         </Card>
       ))}
     </View>

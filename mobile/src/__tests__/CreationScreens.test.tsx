@@ -74,15 +74,15 @@ jest.mock('../components/notes/AddNoteModal', () => {
       onClose,
       onSave,
       sourceEventId,
-      sourceStepId,
+      sourceMilestoneId,
     }: {
       onClose: () => void;
       onSave: (input: unknown) => void;
       sourceEventId: string | null;
-      sourceStepId: string | null;
+      sourceMilestoneId: string | null;
     }) => (
       <>
-        <Text testID="note-source">{`${sourceEventId}:${sourceStepId}`}</Text>
+        <Text testID="note-source">{`${sourceEventId}:${sourceMilestoneId}`}</Text>
         <Button title="Save note" onPress={() => void onSave({ body: 'Note' })} />
         <Button title="Cancel note" onPress={onClose} />
       </>
@@ -182,11 +182,11 @@ describe('creation route screens', () => {
     render(
       <CreateNoteScreen
         navigation={{ canGoBack: () => true, goBack }}
-        route={{ params: { sourceEventId: 'event-1', sourceStepId: 'step-1' } }}
+        route={{ params: { sourceEventId: 'event-1', sourceMilestoneId: 'milestone-1' } }}
       />,
     );
 
-    expect(screen.getByTestId('note-source').props.children).toBe('event-1:step-1');
+    expect(screen.getByTestId('note-source').props.children).toBe('event-1:milestone-1');
     fireEvent.press(screen.getByText('Save note'));
     await waitFor(() => expect(mockCreateNote).toHaveBeenCalledWith({ body: 'Note' }));
 

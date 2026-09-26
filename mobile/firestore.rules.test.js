@@ -18,7 +18,7 @@ const path = require('node:path');
 const PROJECT_ID = 'bearing-rules-test';
 const OWNER_ID = 'owner-user';
 const OTHER_ID = 'other-user';
-const OWNED_COLLECTIONS = ['events', 'notes', 'goals', 'goalSteps', 'tasks'];
+const OWNED_COLLECTIONS = ['events', 'notes', 'goals', 'milestones', 'tasks'];
 const AI_CREDIT_COLLECTIONS = ['aiCreditOperations', 'aiCreditLocks'];
 
 let testEnvironment;
@@ -83,6 +83,48 @@ describe('Firestore ownership rules', () => {
     await assertFails(
       updateDoc(doc(firestoreFor(OWNER_ID), collectionName, 'owned-record'), {
         userId: OTHER_ID,
+      }),
+    );
+  });
+
+  it('requires milestone-linked tasks to reference a milestone owned by the same user and goal', async () => {
+    await seedDocument('milestones', 'milestone-1', {
+      userId: OWNER_ID,
+      goalId: 'goal-1',
+      title: 'Build a base',
+    });
+    await seedDocument('milestones', 'other-milestone', {
+      userId: OTHER_ID,
+      goalId: 'other-goal',
+      title: 'Other user milestone',
+    });
+    const ownerDb = firestoreFor(OWNER_ID);
+
+    await assertSucceeds(
+      setDoc(doc(ownerDb, 'tasks', 'valid-linked-task'), {
+        userId: OWNER_ID,
+        goalId: 'goal-1',
+        milestoneId: 'milestone-1',
+      }),
+    );
+    await assertFails(
+      setDoc(doc(ownerDb, 'tasks', 'wrong-goal-task'), {
+        userId: OWNER_ID,
+        goalId: 'different-goal',
+        milestoneId: 'milestone-1',
+      }),
+    );
+    await assertFails(
+      setDoc(doc(ownerDb, 'tasks', 'wrong-owner-task'), {
+        userId: OWNER_ID,
+        goalId: 'other-goal',
+        milestoneId: 'other-milestone',
+      }),
+    );
+    await assertFails(
+      setDoc(doc(ownerDb, 'tasks', 'missing-goal-task'), {
+        userId: OWNER_ID,
+        milestoneId: 'milestone-1',
       }),
     );
   });

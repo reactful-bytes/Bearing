@@ -245,9 +245,9 @@ export function buildCalendarEventFormValues(
 
 export function parseCalendarEventForm(
   values: CalendarEventFormValues,
-  linkedFields: Pick<CreateEventInput, 'goalId' | 'stepId'> = {
+  linkedFields: Pick<CreateEventInput, 'goalId' | 'milestoneId'> = {
     goalId: null,
-    stepId: null,
+    milestoneId: null,
   },
 ): CalendarEventValidationResult {
   const errors: string[] = [];
@@ -364,7 +364,7 @@ export function parseCalendarEventForm(
       availability: values.availability,
       url: url || null,
       goalId: linkedFields.goalId ?? null,
-      stepId: linkedFields.stepId ?? null,
+      milestoneId: linkedFields.milestoneId ?? null,
     },
     errors: [],
   };

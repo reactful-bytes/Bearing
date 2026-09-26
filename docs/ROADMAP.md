@@ -321,10 +321,10 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 
 | Task ID | Status    | Description                             | Exit Criteria                                                                       |
 | ------- | --------- | --------------------------------------- | ----------------------------------------------------------------------------------- |
-| M27.1   | completed | Extend task contracts                   | Nullable links, due/schedule/all-day fields decode legacy documents and round-trip  |
+| M27.1   | completed | Extend task contracts                   | Nullable goal/milestone links, due/schedule/all-day fields decode and round-trip   |
 | M27.2   | completed | Expose event sourceTaskId               | Event serialization and decoding retain nullable task provenance                    |
 | M27.3   | completed | Add note pinned field                   | Missing legacy value is false; mutations and sorting preserve pinned behavior       |
-| M27.4   | completed | Confirm operational goal-step timeline  | One GoalStepRecord source is used; no parallel editable milestone tree remains      |
+| M27.4   | completed | Confirm historical goal-step timeline  | Historical GoalStepRecord source; superseded by the direct M39 milestone conversion |
 | M27.5   | completed | Decide Focus persistence                | Persist smallest required session model or document process-local decision          |
 | M27.6   | completed | Deploy-compatible backend updates       | Services, export/delete, rules, indexes, docs, and emulator tests cover all fields  |
 | M27.7   | completed | Validate compatibility and deploy order | Round trips pass and rules/indexes deployment precedes field-writing client release |
@@ -361,10 +361,27 @@ Deliver Bearing from initial setup to production release on iOS App Store and Go
 | M30.1   | completed | Restyle Goals List               | Current maps to persisted active and all three filters have deterministic states |
 | M30.2   | completed | Add goal list actions and states | Goal cards, Create Goal, and loading/empty/error states use shared components    |
 | M30.3   | completed | Route Goal Detail                | Tasks and Timeline tabs replace modal only after mutation parity                 |
-| M30.4   | completed | Link tasks to goals and steps    | Next Up/task lists support all required mutations and display context            |
-| M30.5   | completed | Render operational timeline      | Ordered steps show state and linked tasks without duplicate milestone data       |
+| M30.4   | completed | Link tasks to goals and steps    | Historical GoalStep links supported task mutations and displayed context          |
+| M30.5   | completed | Render operational timeline      | Historical ordered step timeline; superseded by the M39 milestone/task model      |
 | M30.6   | completed | Preserve standalone task access  | Plan and Create can open unlinked task flows                                     |
 | M30.7   | completed | Validate goals and tasks         | Filters, mutations, ordering, and navigation tests pass                          |
+
+### M39 - Goal → Milestone → Task Hierarchy
+
+**Status:** completed
+
+The GoalStep model is superseded by operational milestones with actionable nested tasks. With no
+production data, the Firestore and API contracts are renamed directly; no migration or legacy aliases
+are planned. Preserve calendar recurrence, exceptions, publication, reconciliation, and ICS behavior.
+
+| Task ID | Status    | Description                          | Exit Criteria                                                                             |
+| ------- | --------- | ------------------------------------ | ----------------------------------------------------------------------------------------- |
+| M39.1   | completed | Replace step records and links       | `milestones`, `nextMilestoneId`, `milestoneId`, and `sourceMilestoneId` are canonical     |
+| M39.2   | completed | Derive milestone and goal completion | Live task rollups, manual latches, regressions, and guarded reopen are validated          |
+| M39.3   | completed | Nest AI tasks under milestones       | Server validation/schema and client draft/save use the same nested data shape             |
+| M39.4   | completed | Finish milestone/task UI flows       | Milestone CRUD, ordering, completion controls, task creation, and event links are covered |
+| M39.5   | completed | Update Firestore lifecycle surfaces  | Rules, indexes, privacy, backup, and canonical documentation use the new field names      |
+| M39.6   | completed | Verify conversion and regressions    | Mobile, Functions, and rules tests pass; recurrence/ICS behavior remains unchanged        |
 
 ### M31 - Calendar
 
@@ -477,6 +494,7 @@ Second UI redesign pass driven by an updated mockup spec after M36 closed: premi
 18. M26-M35 migrate auth, persistence, navigation, and product surfaces in dependency order
 19. M36 closes UI redesign with cross-platform acceptance and release polish
 20. M37 restyles the closed UI to an updated premium dark palette mockup spec without reopening M22-M36 scope
+21. M39 replaces the operational GoalStep model with Goal → Milestone → Task, using a direct fresh-schema rename and no production-data migration
 
 ## Validation Gates Per Milestone
 

@@ -47,8 +47,9 @@ function makeTask(overrides: Partial<TaskRecord> = {}): TaskRecord {
     userId: 'user-1',
     title: 'Inbox zero',
     description: 'Clear the remaining work messages.',
+    starter: '',
     goalId: null,
-    stepId: null,
+    milestoneId: null,
     dueDate: null,
     scheduledStart: null,
     scheduledEnd: null,
@@ -215,9 +216,7 @@ describe('TasksScreen', () => {
       retry: jest.fn(),
     });
 
-    render(
-      <TasksScreen route={{ params: { createTask: true } }} navigation={{ setParams }} />,
-    );
+    render(<TasksScreen route={{ params: { createTask: true } }} navigation={{ setParams }} />);
 
     expect(screen.queryByRole('button', { name: 'New task' })).toBeNull();
     expect(setParams).toHaveBeenCalledWith({ createTask: undefined });
@@ -235,6 +234,7 @@ describe('TasksScreen', () => {
       expect(createTaskMock).toHaveBeenCalledWith({
         title: 'Plan weekly meals',
         description: 'Make a simple shopping list first.',
+        starter: '',
       });
     });
   });

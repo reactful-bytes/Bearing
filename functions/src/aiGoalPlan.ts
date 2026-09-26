@@ -17,7 +17,7 @@ import { CallableIdentityRequest } from "./security";
 const MAX_TITLE_LENGTH = 120;
 const MAX_DESCRIPTION_LENGTH = 1_000;
 const MAX_MILESTONES = 6;
-const MAX_STEPS = 8;
+const MAX_TASKS = 8;
 
 export type GoalPlanInput = {
   title: string;
@@ -41,12 +41,13 @@ export type GoalPlanDraft = {
   milestones: Array<{
     title: string;
     description: string;
-  }>;
-  steps: Array<{
-    title: string;
-    description: string;
-    starter: string;
     targetDate: string;
+    tasks: Array<{
+      title: string;
+      description: string;
+      starter: string;
+      targetDate: string;
+    }>;
   }>;
   timelineSummary: string;
 };
@@ -203,20 +204,16 @@ export function validateGoalPlanDraft(
   const draft = value as Record<string, unknown>;
   const smartMeta = draft.smartMeta as Record<string, unknown> | undefined;
   const milestones = draft.milestones;
-  const steps = draft.steps;
 
-  if (!smartMeta || !Array.isArray(milestones) || !Array.isArray(steps)) {
+  if (!smartMeta || !Array.isArray(milestones)) {
     throw new Error("AI goal plan is incomplete.");
   }
 
-  if (
-    milestones.length === 0 ||
-    milestones.length > MAX_MILESTONES ||
-    steps.length === 0 ||
-    steps.length > MAX_STEPS
-  ) {
+  if (milestones.length === 0 || milestones.length > MAX_MILESTONES) {
     throw new Error("AI goal plan exceeds item limits.");
   }
+
+  let taskCount = 0;
 
   return {
     promptVersion: 1,
@@ -229,6 +226,30 @@ export function validateGoalPlanDraft(
     },
     milestones: milestones.map((item, index) => {
       const milestone = item as Record<string, unknown>;
+      const targetDate = requireIsoDate(
+        milestone.targetDate,
+        `milestone ${index + 1} targetDate`,
+      );
+      if (latestTargetDate && targetDate > latestTargetDate) {
+        throw new Error(
+          `milestone ${index + 1} targetDate exceeds the goal target date.`,
+        );
+      }
+      if (
+        earliestExclusiveTargetDate &&
+        targetDate <= earliestExclusiveTargetDate
+      ) {
+        throw new Error(
+          `milestone ${index + 1} targetDate must be after the planning start date.`,
+        );
+      }
+      if (!Array.isArray(milestone.tasks) || milestone.tasks.length === 0) {
+        throw new Error(`milestone ${index + 1} has no actionable tasks.`);
+      }
+      taskCount += milestone.tasks.length;
+      if (taskCount > MAX_TASKS) {
+        throw new Error("AI goal plan exceeds item limits.");
+      }
       return {
         title: requireTrimmedString(
           milestone.title,
@@ -240,42 +261,45 @@ export function validateGoalPlanDraft(
           `milestone ${index + 1} description`,
           500,
         ),
-      };
-    }),
-    steps: steps.map((item, index) => {
-      const step = item as Record<string, unknown>;
-      const targetDate = requireIsoDate(
-        step.targetDate,
-        `step ${index + 1} targetDate`,
-      );
-
-      if (latestTargetDate && targetDate > latestTargetDate) {
-        throw new Error(
-          `step ${index + 1} targetDate exceeds the goal target date.`,
-        );
-      }
-      if (
-        earliestExclusiveTargetDate &&
-        targetDate <= earliestExclusiveTargetDate
-      ) {
-        throw new Error(
-          `step ${index + 1} targetDate must be after the planning start date.`,
-        );
-      }
-
-      return {
-        title: requireTrimmedString(step.title, `step ${index + 1} title`, 120),
-        description: requireTrimmedString(
-          step.description,
-          `step ${index + 1} description`,
-          500,
-        ),
-        starter: requireTrimmedString(
-          step.starter,
-          `step ${index + 1} starter`,
-          240,
-        ),
         targetDate,
+        tasks: milestone.tasks.map((item, taskIndex) => {
+          const task = item as Record<string, unknown>;
+          const targetDate = requireIsoDate(
+            task.targetDate,
+            `milestone ${index + 1} task ${taskIndex + 1} targetDate`,
+          );
+          if (latestTargetDate && targetDate > latestTargetDate) {
+            throw new Error(
+              `milestone ${index + 1} task ${taskIndex + 1} targetDate exceeds the goal target date.`,
+            );
+          }
+          if (
+            earliestExclusiveTargetDate &&
+            targetDate <= earliestExclusiveTargetDate
+          ) {
+            throw new Error(
+              `milestone ${index + 1} task ${taskIndex + 1} targetDate must be after the planning start date.`,
+            );
+          }
+          return {
+            title: requireTrimmedString(
+              task.title,
+              `milestone ${index + 1} task ${taskIndex + 1} title`,
+              120,
+            ),
+            description: requireTrimmedString(
+              task.description,
+              `milestone ${index + 1} task ${taskIndex + 1} description`,
+              500,
+            ),
+            starter: requireTrimmedString(
+              task.starter,
+              `milestone ${index + 1} task ${taskIndex + 1} starter`,
+              240,
+            ),
+            targetDate,
+          };
+        }),
       };
     }),
     timelineSummary: requireTrimmedString(

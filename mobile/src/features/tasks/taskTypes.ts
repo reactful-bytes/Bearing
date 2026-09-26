@@ -7,8 +7,9 @@ export type TaskRecord = {
   userId: string;
   title: string;
   description: string;
+  starter: string;
   goalId: string | null;
-  stepId: string | null;
+  milestoneId: string | null;
   dueDate: Date | null;
   scheduledStart: Date | null;
   scheduledEnd: Date | null;
@@ -24,8 +25,9 @@ export type TaskRecord = {
 export type CreateTaskInput = {
   title: string;
   description: string;
+  starter?: string;
   goalId?: string | null;
-  stepId?: string | null;
+  milestoneId?: string | null;
   dueDate?: Date | null;
   scheduledStart?: Date | null;
   scheduledEnd?: Date | null;
@@ -37,8 +39,9 @@ export type UpdateTaskInput = Partial<
     TaskRecord,
     | 'title'
     | 'description'
+    | 'starter'
     | 'goalId'
-    | 'stepId'
+    | 'milestoneId'
     | 'dueDate'
     | 'scheduledStart'
     | 'scheduledEnd'

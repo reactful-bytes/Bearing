@@ -38,7 +38,7 @@ function makeEvent(): BearingEvent {
     url: null,
     sourceTaskId: null,
     goalId: null,
-    stepId: null,
+    milestoneId: null,
     status: 'scheduled',
     ownership: 'bearing',
     publication: createUnpublishedMetadata(),

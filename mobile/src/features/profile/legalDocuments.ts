@@ -18,7 +18,7 @@ export const LEGAL_DOCUMENTS: Record<LegalDocumentId, LegalDocument> = {
     sections: [
       {
         heading: 'Information you provide',
-        body: 'Bearing stores account details such as email, display name, timezone, and locale, plus the events, goals, steps, tasks, and notes you choose to save. Passwords are handled by Firebase Authentication and are not stored in Bearing application records.',
+        body: 'Bearing stores account details such as email, display name, timezone, and locale, plus the events, goals, milestones, tasks, and notes you choose to save. Passwords are handled by Firebase Authentication and are not stored in Bearing application records.',
       },
       {
         heading: 'How information is used',

@@ -1,5 +1,8 @@
+import type { TaskRecord } from '../tasks/taskTypes';
+
 export type GoalStatus = 'active' | 'completed' | 'archived';
-export type GoalStepStatus = 'pending' | 'in_progress' | 'completed';
+
+export type GoalMilestoneStatus = 'pending' | 'in_progress' | 'completed';
 
 export type GoalSmartMeta = {
   specific: string;
@@ -9,9 +12,40 @@ export type GoalSmartMeta = {
   timeBound: string;
 };
 
-export type GoalMilestone = {
+export type GoalMilestoneDraft = {
   title: string;
   description: string;
+  estimatedFinishDate: Date | null;
+  tasks: GoalTaskInput[];
+};
+
+export type GoalTaskInput = {
+  title: string;
+  description: string;
+  starter: string;
+  dueDate: Date | null;
+};
+
+export type GoalMilestoneRecord = {
+  id: string;
+  userId: string;
+  goalId: string;
+  title: string;
+  description: string;
+  order: number;
+  estimatedFinishDate: Date | null;
+  manuallyCompletedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type GoalMilestoneWithTasks = GoalMilestoneRecord & {
+  tasks: TaskRecord[];
+  status: GoalMilestoneStatus;
+  completedTaskCount: number;
+  totalTaskCount: number;
+  progressPercent: number;
+  progressText: string;
 };
 
 export type GoalRecord = {
@@ -21,43 +55,32 @@ export type GoalRecord = {
   description: string;
   smartMeta: GoalSmartMeta;
   estimatedCompletionDate: Date;
-  nextStepId: string | null;
+  nextMilestoneId: string | null;
+  manuallyCompletedAt: Date | null;
   status: GoalStatus;
   isAiAssisted: boolean;
   aiPlanVersion: number | null;
-  aiMilestones?: GoalMilestone[];
   createdAt: Date;
   updatedAt: Date;
 };
 
-export type GoalStepRecord = {
-  id: string;
-  userId: string;
-  goalId: string;
-  title: string;
-  description: string;
-  starter: string;
-  estimatedFinishDate: Date | null;
-  order: number;
-  status: GoalStepStatus;
-  completedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type GoalWithSteps = GoalRecord & {
-  steps: GoalStepRecord[];
-  nextStep: GoalStepRecord | null;
-  completedStepCount: number;
-  totalStepCount: number;
+export type GoalWithMilestones = GoalRecord & {
+  milestones: GoalMilestoneWithTasks[];
+  tasks: TaskRecord[];
+  nextMilestone: GoalMilestoneWithTasks | null;
+  nextTask: TaskRecord | null;
+  completedTaskCount: number;
+  totalTaskCount: number;
+  completedMilestoneCount: number;
+  totalMilestoneCount: number;
   progressText: string;
 };
 
-export type CreateGoalStepInput = {
+export type CreateGoalMilestoneInput = {
   title: string;
   description: string;
-  starter: string;
   estimatedFinishDate: Date | null;
+  tasks: GoalTaskInput[];
 };
 
 export type CreateGoalInput = {
@@ -67,19 +90,16 @@ export type CreateGoalInput = {
   estimatedCompletionDate: Date;
   isAiAssisted: boolean;
   aiPlanVersion?: number | null;
-  aiMilestones?: GoalMilestone[];
-  steps: CreateGoalStepInput[];
+  milestones: CreateGoalMilestoneInput[];
+  tasks?: GoalTaskInput[];
 };
 
 export type UpdateGoalInput = Partial<
   Pick<GoalRecord, 'title' | 'description' | 'smartMeta' | 'estimatedCompletionDate' | 'status'>
 >;
 
-export type UpdateGoalStepInput = Partial<
-  Pick<
-    GoalStepRecord,
-    'title' | 'description' | 'starter' | 'estimatedFinishDate' | 'order' | 'status'
-  >
+export type UpdateGoalMilestoneInput = Partial<
+  Pick<GoalMilestoneRecord, 'title' | 'description' | 'order' | 'estimatedFinishDate'>
 >;
 
 export type GoalUiState = 'loading' | 'error' | 'empty' | 'ready';

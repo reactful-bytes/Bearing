@@ -14,7 +14,7 @@ describe('task persistence fields', () => {
       buildTaskCreateFields(
         {
           goalId: 'goal-1',
-          stepId: 'step-1',
+          milestoneId: 'milestone-1',
           dueDate,
           scheduledStart,
           scheduledEnd,
@@ -24,7 +24,8 @@ describe('task persistence fields', () => {
       ),
     ).toEqual({
       goalId: 'goal-1',
-      stepId: 'step-1',
+      milestoneId: 'milestone-1',
+      starter: '',
       dueDate: dueDate.toISOString(),
       scheduledStart: scheduledStart.toISOString(),
       scheduledEnd: scheduledEnd.toISOString(),
@@ -35,7 +36,8 @@ describe('task persistence fields', () => {
   it('writes safe defaults and preserves explicit null-clears', () => {
     expect(buildTaskCreateFields({}, timestampFactory)).toEqual({
       goalId: null,
-      stepId: null,
+      milestoneId: null,
+      starter: '',
       dueDate: null,
       scheduledStart: null,
       scheduledEnd: null,
@@ -46,7 +48,7 @@ describe('task persistence fields', () => {
       buildTaskUpdateFields(
         {
           goalId: null,
-          stepId: null,
+          milestoneId: null,
           dueDate: null,
           scheduledStart: null,
           scheduledEnd: null,
@@ -56,7 +58,7 @@ describe('task persistence fields', () => {
       ),
     ).toEqual({
       goalId: null,
-      stepId: null,
+      milestoneId: null,
       dueDate: null,
       scheduledStart: null,
       scheduledEnd: null,

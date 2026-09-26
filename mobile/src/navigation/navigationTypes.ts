@@ -31,7 +31,7 @@ export type PlanStackParamList = {
       }
     | undefined;
   CreateGoal: { sourceNoteId?: string } | undefined;
-  CreateTask: { goalId?: string; stepId?: string } | undefined;
+  CreateTask: { goalId?: string; milestoneId?: string } | undefined;
 };
 
 export type CalendarStackParamList = {
@@ -40,14 +40,14 @@ export type CalendarStackParamList = {
   EventDetail: { eventId: string; dateIso?: string };
   EventEdit: { eventId: string; dateIso?: string };
   CalendarSources: undefined;
-  CreateEvent: { goalId?: string; stepId?: string; returnTo?: string } | undefined;
-  CreateTask: { goalId?: string; stepId?: string; returnTo?: string } | undefined;
+  CreateEvent: { goalId?: string; milestoneId?: string; returnTo?: string } | undefined;
+  CreateTask: { goalId?: string; milestoneId?: string; returnTo?: string } | undefined;
 };
 
 export type NotesStackParamList = {
   NotesHome: { createNote?: boolean } | undefined;
-  CreateNote: { sourceEventId?: string; sourceStepId?: string } | undefined;
-  NoteEditor: { noteId?: string; sourceEventId?: string; sourceStepId?: string } | undefined;
+  CreateNote: { sourceEventId?: string; sourceMilestoneId?: string } | undefined;
+  NoteEditor: { noteId?: string; sourceEventId?: string; sourceMilestoneId?: string } | undefined;
   CreateGoalFromNote: { noteId: string };
   CreateTaskFromNote: { noteId: string };
   CreateEventFromNote: { noteId: string };

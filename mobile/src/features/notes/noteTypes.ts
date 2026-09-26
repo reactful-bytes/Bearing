@@ -9,7 +9,7 @@ export type NoteRecord = {
   body: string;
   source: NoteSource;
   sourceEventId: string | null;
-  sourceStepId: string | null;
+  sourceMilestoneId: string | null;
   pinned: boolean;
   processed: boolean;
   archived: boolean;
@@ -22,7 +22,7 @@ export type CreateNoteInput = {
   body: string;
   source: NoteSource;
   sourceEventId?: string | null;
-  sourceStepId?: string | null;
+  sourceMilestoneId?: string | null;
   pinned?: boolean;
 };
 

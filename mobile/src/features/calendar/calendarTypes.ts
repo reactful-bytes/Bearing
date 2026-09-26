@@ -102,7 +102,7 @@ export type BearingEvent = CalendarDisplayFields & {
   userId: string;
   sourceTaskId: string | null;
   goalId: string | null;
-  stepId: string | null;
+  milestoneId: string | null;
   publication: CalendarPublicationMetadata;
   createdAt: Date;
   updatedAt: Date;
@@ -141,7 +141,7 @@ export type CreateEventInput = {
   availability?: EventAvailability;
   url?: string | null;
   goalId?: string | null;
-  stepId?: string | null;
+  milestoneId?: string | null;
 };
 
 export type UpdateEventInput = Partial<

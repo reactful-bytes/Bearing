@@ -149,7 +149,7 @@ function eventToConversionInput(eventId: string, data: DocumentData): TaskConver
       availability: event.availability,
       url: event.url,
       goalId: event.goalId,
-      stepId: event.stepId,
+      milestoneId: event.milestoneId,
     },
   };
 }

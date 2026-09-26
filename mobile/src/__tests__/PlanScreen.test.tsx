@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { BearingEvent, CalendarDisplayEvent } from '../features/calendar/calendarTypes';
-import { GoalWithSteps } from '../features/goals/goalTypes';
+import { GoalWithMilestones } from '../features/goals/goalTypes';
 import { NoteRecord } from '../features/notes/noteTypes';
 import { UserProfileRecord } from '../features/profile/profileTypes';
 import { TaskRecord } from '../features/tasks/taskTypes';
@@ -85,7 +85,7 @@ function makeEvent(index: number): BearingEvent {
     userId: 'user-1',
     sourceTaskId: null,
     goalId: null,
-    stepId: null,
+    milestoneId: null,
     publication: {
       status: 'unpublished',
       markerId: null,
@@ -99,7 +99,7 @@ function makeEvent(index: number): BearingEvent {
   };
 }
 
-function makeGoal(): GoalWithSteps {
+function makeGoal(): GoalWithMilestones {
   return {
     id: 'goal-1',
     userId: 'user-1',
@@ -107,15 +107,20 @@ function makeGoal(): GoalWithSteps {
     description: '',
     smartMeta: { specific: '', measurable: '', achievable: '', relevant: '', timeBound: '' },
     estimatedCompletionDate: new Date(2026, 8, 30),
-    nextStepId: null,
+    nextMilestoneId: null,
+    manuallyCompletedAt: null,
     status: 'active',
     isAiAssisted: false,
     aiPlanVersion: null,
-    steps: [],
-    nextStep: null,
-    completedStepCount: 1,
-    totalStepCount: 2,
-    progressText: '1 of 2 steps completed',
+    milestones: [],
+    tasks: [],
+    nextMilestone: null,
+    nextTask: null,
+    completedTaskCount: 0,
+    totalTaskCount: 0,
+    completedMilestoneCount: 1,
+    totalMilestoneCount: 2,
+    progressText: '1 of 2 milestones complete',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -129,7 +134,7 @@ function makeNote(): NoteRecord {
     body: 'Try a smaller release.',
     source: 'idea_dump',
     sourceEventId: null,
-    sourceStepId: null,
+    sourceMilestoneId: null,
     pinned: false,
     processed: false,
     archived: false,
@@ -145,8 +150,9 @@ function makeTask(index: number): TaskRecord {
     userId: 'user-1',
     title: `Task ${index}`,
     description: '',
+    starter: '',
     goalId: null,
-    stepId: null,
+    milestoneId: null,
     dueDate: null,
     scheduledStart: null,
     scheduledEnd: null,

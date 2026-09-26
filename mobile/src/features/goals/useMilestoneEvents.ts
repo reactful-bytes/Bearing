@@ -2,19 +2,19 @@ import { useEffect, useState } from 'react';
 
 import { CalendarEvent } from '../calendar/calendarTypes';
 import { getFirebaseAuth } from '../../services/firebase/firebaseAuth';
-import { subscribeToEventsByStepId } from '../../services/firebase/firebaseEvents';
+import { subscribeToEventsByMilestoneId } from '../../services/firebase/firebaseEvents';
 
-export type GoalStepEventsUiState = 'idle' | 'loading' | 'error' | 'empty' | 'ready';
+export type MilestoneEventsUiState = 'idle' | 'loading' | 'error' | 'empty' | 'ready';
 
-export function useGoalStepEvents(stepId: string | null): {
+export function useMilestoneEvents(milestoneId: string | null): {
   events: CalendarEvent[];
-  uiState: GoalStepEventsUiState;
+  uiState: MilestoneEventsUiState;
 } {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [uiState, setUiState] = useState<GoalStepEventsUiState>('idle');
+  const [uiState, setUiState] = useState<MilestoneEventsUiState>('idle');
 
   useEffect(() => {
-    if (!stepId) {
+    if (!milestoneId) {
       setEvents([]);
       setUiState('idle');
       return;
@@ -28,10 +28,9 @@ export function useGoalStepEvents(stepId: string | null): {
     }
 
     setUiState('loading');
-
-    const unsubscribe = subscribeToEventsByStepId(
+    return subscribeToEventsByMilestoneId(
       userId,
-      stepId,
+      milestoneId,
       (fetchedEvents) => {
         setEvents(fetchedEvents);
         setUiState(fetchedEvents.length === 0 ? 'empty' : 'ready');
@@ -41,9 +40,7 @@ export function useGoalStepEvents(stepId: string | null): {
         setUiState('error');
       },
     );
-
-    return unsubscribe;
-  }, [stepId]);
+  }, [milestoneId]);
 
   return { events, uiState };
 }

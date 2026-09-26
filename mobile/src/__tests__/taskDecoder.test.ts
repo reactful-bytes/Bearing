@@ -23,7 +23,7 @@ describe('decodeTaskData', () => {
     expect(task).toMatchObject({
       id: 'task-legacy',
       goalId: null,
-      stepId: null,
+      milestoneId: null,
       dueDate: null,
       scheduledStart: null,
       scheduledEnd: null,
@@ -44,7 +44,7 @@ describe('decodeTaskData', () => {
       title: 'Scheduled task',
       description: 'Task with context.',
       goalId: 'goal-1',
-      stepId: 'step-1',
+      milestoneId: 'milestone-1',
       dueDate: timestamp(dueDate),
       scheduledStart: timestamp(scheduledStart),
       scheduledEnd: timestamp(scheduledEnd),
@@ -58,7 +58,7 @@ describe('decodeTaskData', () => {
     });
 
     expect(task.goalId).toBe('goal-1');
-    expect(task.stepId).toBe('step-1');
+    expect(task.milestoneId).toBe('milestone-1');
     expect(task.dueDate).toEqual(dueDate);
     expect(task.scheduledStart).toEqual(scheduledStart);
     expect(task.scheduledEnd).toEqual(scheduledEnd);

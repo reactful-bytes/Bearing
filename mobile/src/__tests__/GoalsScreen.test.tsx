@@ -2,13 +2,18 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { GoalsScreen } from '../screens/GoalsScreen';
-import { CreateGoalInput, GoalStepRecord, GoalWithSteps } from '../features/goals/goalTypes';
+import {
+  CreateGoalInput,
+  GoalMilestoneWithTasks,
+  GoalWithMilestones,
+} from '../features/goals/goalTypes';
 import { useGoals } from '../features/goals/useGoals';
-import { useGoalStepEvents } from '../features/goals/useGoalStepEvents';
+import { useMilestoneEvents } from '../features/goals/useMilestoneEvents';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { UserProfileRecord } from '../features/profile/profileTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
+import { TaskRecord } from '../features/tasks/taskTypes';
 import {
   generateAiGoalPlanDraft,
   getAiCreditStatus,
@@ -22,8 +27,12 @@ jest.mock('../features/goals/useGoals', () => ({
   useGoals: jest.fn(),
 }));
 
-jest.mock('../features/goals/useGoalStepEvents', () => ({
-  useGoalStepEvents: jest.fn(),
+jest.mock('../features/tasks/useTasks', () => ({
+  useTasks: jest.fn(() => ({ createTask: jest.fn(async () => undefined) })),
+}));
+
+jest.mock('../features/goals/useMilestoneEvents', () => ({
+  useMilestoneEvents: jest.fn(),
 }));
 
 jest.mock('../features/profile/useUserProfile', () => ({
@@ -50,7 +59,7 @@ jest.mock('../services/firebase/firebaseEvents', () => ({
   createEvent: jest.fn(),
   subscribeToEventsByDateRange: jest.fn(() => jest.fn()),
   subscribeToCalendarEvents: jest.fn(() => jest.fn()),
-  subscribeToEventsByStepId: jest.fn(() => jest.fn()),
+  subscribeToEventsByMilestoneId: jest.fn(() => jest.fn()),
   updateEvent: jest.fn(),
   deleteEvent: jest.fn(),
 }));
@@ -103,26 +112,53 @@ function mockUserProfile(overrides: Partial<ReturnType<typeof useUserProfile>> =
   });
 }
 
-function makeStep(overrides: Partial<GoalStepRecord> = {}): GoalStepRecord {
+function makeMilestone(overrides: Partial<GoalMilestoneWithTasks> = {}): GoalMilestoneWithTasks {
   return {
-    id: 'step-1',
+    id: 'milestone-1',
     userId: 'user-1',
     goalId: 'goal-1',
     title: 'Buy running shoes',
     description: 'Pick a pair that can handle weekly mileage.',
-    starter: 'Check two stores',
     estimatedFinishDate: new Date(2026, 6, 25),
     order: 0,
     status: 'pending',
+    createdAt: new Date(2026, 6, 20),
+    updatedAt: new Date(2026, 6, 20),
+    manuallyCompletedAt: null,
+    tasks: [],
+    completedTaskCount: 0,
+    totalTaskCount: 0,
+    progressPercent: 0,
+    progressText: '0 of 0 tasks',
+    ...overrides,
+  };
+}
+
+function makeTask(overrides: Partial<TaskRecord> = {}): TaskRecord {
+  return {
+    id: 'task-1',
+    userId: 'user-1',
+    title: 'Run twice this week',
+    description: '',
+    starter: '',
+    goalId: 'goal-1',
+    milestoneId: 'milestone-1',
+    dueDate: null,
+    scheduledStart: null,
+    scheduledEnd: null,
+    allDay: false,
+    status: 'active',
+    completionSource: null,
     completedAt: null,
+    completedEventId: null,
     createdAt: new Date(2026, 6, 20),
     updatedAt: new Date(2026, 6, 20),
     ...overrides,
   };
 }
 
-function makeGoal(overrides: Partial<GoalWithSteps> = {}): GoalWithSteps {
-  const steps = overrides.steps ?? [makeStep()];
+function makeGoal(overrides: Partial<GoalWithMilestones> = {}): GoalWithMilestones {
+  const milestones = overrides.milestones ?? [makeMilestone()];
 
   return {
     id: 'goal-1',
@@ -137,57 +173,67 @@ function makeGoal(overrides: Partial<GoalWithSteps> = {}): GoalWithSteps {
       timeBound: 'By October 1',
     },
     estimatedCompletionDate: new Date(2026, 8, 1),
-    nextStepId: steps[0]?.id ?? null,
+    nextMilestoneId: milestones[0]?.id ?? null,
+    manuallyCompletedAt: null,
     status: 'active',
     isAiAssisted: false,
     aiPlanVersion: null,
     createdAt: new Date(2026, 6, 20),
     updatedAt: new Date(2026, 6, 20),
-    steps,
-    nextStep: steps[0] ?? null,
-    completedStepCount: 0,
-    totalStepCount: steps.length,
-    progressText: `0 of ${steps.length} steps completed`,
+    milestones,
+    tasks: milestones.flatMap((milestone) => milestone.tasks),
+    nextMilestone: milestones[0] ?? null,
+    nextTask: milestones[0]?.tasks[0] ?? null,
+    completedTaskCount: 0,
+    totalTaskCount: milestones.reduce((count, milestone) => count + milestone.totalTaskCount, 0),
+    completedMilestoneCount: 0,
+    totalMilestoneCount: milestones.length,
+    progressText: `0 of ${milestones.length} milestones complete`,
     ...overrides,
   };
 }
 
-function makeOrderedGoal(): GoalWithSteps {
-  const firstStep = makeStep();
-  const secondStep = makeStep({
-    id: 'step-2',
+function makeOrderedGoal(): GoalWithMilestones {
+  const firstMilestone = makeMilestone();
+  const secondMilestone = makeMilestone({
+    id: 'milestone-2',
     title: 'Pick a race date',
     description: 'Choose the event to train for.',
-    starter: 'Check local race calendars',
     order: 1,
   });
 
   return makeGoal({
-    steps: [firstStep, secondStep],
-    nextStep: firstStep,
-    nextStepId: firstStep.id,
-    totalStepCount: 2,
-    progressText: '0 of 2 steps completed',
+    milestones: [firstMilestone, secondMilestone],
+    nextMilestone: firstMilestone,
+    nextMilestoneId: firstMilestone.id,
+    totalMilestoneCount: 2,
+    progressText: '0 of 2 milestones complete',
   });
 }
 
-function mockEmptyGoals(): void {
+function mockGoals(overrides: Partial<ReturnType<typeof useGoals>> = {}): void {
   (useGoals as jest.MockedFunction<typeof useGoals>).mockReturnValue({
     goals: [],
     uiState: 'empty',
     createGoal: async () => undefined,
     updateGoal: async () => undefined,
-    markGoalCompleted: async () => undefined,
-    createStep: async () => undefined,
-    deleteStep: async () => undefined,
-    updateStep: async () => undefined,
-    reorderSteps: async () => undefined,
+    setGoalManuallyCompleted: async () => undefined,
+    setMilestoneManuallyCompleted: async () => undefined,
+    createMilestone: async () => undefined,
+    deleteMilestone: async () => undefined,
+    updateMilestone: async () => undefined,
+    reorderMilestones: async () => undefined,
     retry: jest.fn(),
+    ...overrides,
   });
-  (useGoalStepEvents as jest.MockedFunction<typeof useGoalStepEvents>).mockReturnValue({
+  (useMilestoneEvents as jest.MockedFunction<typeof useMilestoneEvents>).mockReturnValue({
     events: [],
     uiState: 'idle',
   });
+}
+
+function mockEmptyGoals(): void {
+  mockGoals();
 }
 
 function openAiPlanningStep(): void {
@@ -228,22 +274,23 @@ describe('GoalsScreen', () => {
   it('retries after the goals subscriptions fail', () => {
     const retry = jest.fn();
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
-      typeof useGoalStepEvents
+    const mockedUseMilestoneEvents = useMilestoneEvents as jest.MockedFunction<
+      typeof useMilestoneEvents
     >;
     mockedUseGoals.mockReturnValue({
       goals: [],
       uiState: 'error',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
-      markGoalCompleted: async () => undefined,
-      createStep: async () => undefined,
-      deleteStep: async () => undefined,
-      updateStep: async () => undefined,
-      reorderSteps: async () => undefined,
+      setGoalManuallyCompleted: async () => undefined,
+      setMilestoneManuallyCompleted: async () => undefined,
+      createMilestone: async () => undefined,
+      deleteMilestone: async () => undefined,
+      updateMilestone: async () => undefined,
+      reorderMilestones: async () => undefined,
       retry,
     });
-    mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
+    mockedUseMilestoneEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
     const navigate = jest.fn();
     render(<GoalsScreen navigation={{ navigate }} />);
@@ -254,8 +301,8 @@ describe('GoalsScreen', () => {
 
   it('renders the empty state', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
-      typeof useGoalStepEvents
+    const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
+      typeof useMilestoneEvents
     >;
 
     mockedUseGoals.mockReturnValue({
@@ -263,11 +310,12 @@ describe('GoalsScreen', () => {
       uiState: 'empty',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
-      markGoalCompleted: async () => undefined,
-      createStep: async () => undefined,
-      deleteStep: async () => undefined,
-      updateStep: async () => undefined,
-      reorderSteps: async () => undefined,
+      setGoalManuallyCompleted: async () => undefined,
+      setMilestoneManuallyCompleted: async () => undefined,
+      createMilestone: async () => undefined,
+      deleteMilestone: async () => undefined,
+      updateMilestone: async () => undefined,
+      reorderMilestones: async () => undefined,
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
@@ -280,8 +328,8 @@ describe('GoalsScreen', () => {
 
   it('filters goals with counts, selected state, and filter-specific empty copy', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
-      typeof useGoalStepEvents
+    const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
+      typeof useMilestoneEvents
     >;
 
     const activeGoal = makeGoal();
@@ -289,8 +337,8 @@ describe('GoalsScreen', () => {
       id: 'goal-2',
       title: 'Read twelve books',
       status: 'completed',
-      completedStepCount: 1,
-      progressText: '1 of 1 steps completed',
+      completedMilestoneCount: 1,
+      progressText: '1 of 1 milestones complete',
     });
 
     mockedUseGoals.mockReturnValue({
@@ -298,11 +346,12 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
-      markGoalCompleted: async () => undefined,
-      createStep: async () => undefined,
-      deleteStep: async () => undefined,
-      updateStep: async () => undefined,
-      reorderSteps: async () => undefined,
+      setGoalManuallyCompleted: async () => undefined,
+      setMilestoneManuallyCompleted: async () => undefined,
+      createMilestone: async () => undefined,
+      deleteMilestone: async () => undefined,
+      updateMilestone: async () => undefined,
+      reorderMilestones: async () => undefined,
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
@@ -313,13 +362,13 @@ describe('GoalsScreen', () => {
     expect(screen.getByRole('button', { name: 'Current, 1', selected: true })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Completed, 1', selected: false })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Archived, 0', selected: false })).toBeTruthy();
-    expect(screen.getByText('Next: Buy running shoes')).toBeTruthy();
-    expect(screen.getByText('0 of 1 steps completed')).toBeTruthy();
+    expect(screen.getByText('Next milestone: Buy running shoes')).toBeTruthy();
+    expect(screen.getByText('0 of 1 milestones complete')).toBeTruthy();
     expect(screen.getByLabelText('Goal progress Run a 10k').props.accessibilityValue).toEqual({
       min: 0,
       max: 100,
       now: 0,
-      text: '0 of 1 steps completed',
+      text: '0 of 1 milestones complete',
     });
 
     fireEvent.press(screen.getByRole('button', { name: 'Completed, 1' }));
@@ -336,8 +385,8 @@ describe('GoalsScreen', () => {
 
   it('shows completed-filter empty copy', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
-      typeof useGoalStepEvents
+    const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
+      typeof useMilestoneEvents
     >;
 
     mockedUseGoals.mockReturnValue({
@@ -345,11 +394,12 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
-      markGoalCompleted: async () => undefined,
-      createStep: async () => undefined,
-      deleteStep: async () => undefined,
-      updateStep: async () => undefined,
-      reorderSteps: async () => undefined,
+      setGoalManuallyCompleted: async () => undefined,
+      setMilestoneManuallyCompleted: async () => undefined,
+      createMilestone: async () => undefined,
+      deleteMilestone: async () => undefined,
+      updateMilestone: async () => undefined,
+      reorderMilestones: async () => undefined,
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
@@ -371,8 +421,8 @@ describe('GoalsScreen', () => {
       savedGoalInput = input;
     });
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
-      typeof useGoalStepEvents
+    const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
+      typeof useMilestoneEvents
     >;
 
     mockedUseGoals.mockReturnValue({
@@ -380,11 +430,12 @@ describe('GoalsScreen', () => {
       uiState: 'empty',
       createGoal: createGoalMock,
       updateGoal: async () => undefined,
-      markGoalCompleted: async () => undefined,
-      createStep: async () => undefined,
-      deleteStep: async () => undefined,
-      updateStep: async () => undefined,
-      reorderSteps: async () => undefined,
+      setGoalManuallyCompleted: async () => undefined,
+      setMilestoneManuallyCompleted: async () => undefined,
+      createMilestone: async () => undefined,
+      deleteMilestone: async () => undefined,
+      updateMilestone: async () => undefined,
+      reorderMilestones: async () => undefined,
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
@@ -397,7 +448,7 @@ describe('GoalsScreen', () => {
 
     fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.press(screen.getByLabelText('Continue'));
-    expect(screen.getByText('Planning context is required for milestones and steps.')).toBeTruthy();
+    expect(screen.getByText('Planning context is required for milestones and tasks.')).toBeTruthy();
     fireEvent.changeText(
       screen.getByLabelText('Planning context'),
       'Train consistently for eight weeks.',
@@ -414,33 +465,33 @@ describe('GoalsScreen', () => {
     expect(screen.queryByText('What the AI plans from')).toBeNull();
     expect(screen.queryByLabelText('SMART Specific')).toBeNull();
     fireEvent.press(screen.getByLabelText('Continue'));
-    fireEvent.press(screen.getByLabelText('Open goal target month dropdown'));
-    fireEvent.press(screen.getByLabelText('Select goal target month 10 - Oct'));
-    fireEvent.press(screen.getByLabelText('Open goal target day dropdown'));
-    fireEvent.press(screen.getByLabelText('Select goal target day 01'));
-    fireEvent.press(screen.getByLabelText('Open goal target year dropdown'));
+    fireEvent.press(screen.getByLabelText('Select goal target month'));
+    fireEvent.press(screen.getByLabelText('Select goal target October'));
+    fireEvent.press(screen.getByLabelText('Select goal target year'));
     fireEvent.press(screen.getByLabelText('Select goal target year 2026'));
     expect(screen.queryByText('Unlock AI goal builder with Bearing 360.')).toBeNull();
     fireEvent.press(screen.getByLabelText('Continue'));
     expect(screen.getByText('Unlock AI goal builder with Bearing 360.')).toBeTruthy();
     expect(screen.getByText('View Bearing 360 Plans')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Continue'));
-    fireEvent.changeText(screen.getByLabelText('Draft step 1 name'), 'Buy running shoes');
+    fireEvent.changeText(screen.getByLabelText('Draft milestone 1 name'), 'Buy running shoes');
     fireEvent.changeText(
-      screen.getByLabelText('Draft step 1 description'),
+      screen.getByLabelText('Draft milestone 1 description'),
       'Choose a supportive pair.',
     );
-    fireEvent.changeText(screen.getByLabelText('Draft step 1 starter'), 'Visit two stores');
-    expect(screen.queryByLabelText('Draft step 1 estimated finish date')).toBeNull();
-    fireEvent.press(screen.getByLabelText('Open draft step 1 month dropdown'));
-    fireEvent.press(screen.getByLabelText('Select draft step 1 month 11 - Nov'));
-    fireEvent.press(screen.getByLabelText('Open draft step 1 day dropdown'));
-    fireEvent.press(screen.getByLabelText('Select draft step 1 day 05'));
+    fireEvent.changeText(screen.getByLabelText('Milestone 1 task 1 title'), 'Visit running stores');
+    fireEvent.changeText(screen.getByLabelText('Milestone 1 task 1 starter'), 'Visit two stores');
+    fireEvent.press(screen.getByLabelText('Select draft milestone 1 month'));
+    fireEvent.press(screen.getByLabelText('Select draft milestone 1 November'));
+    fireEvent.press(screen.getByLabelText('November 5, 2026'));
     fireEvent.press(screen.getByLabelText('Save goal'));
-    expect(screen.getByText('Step 1 must finish on or before the goal target date.')).toBeTruthy();
+    expect(
+      screen.getByText('Milestone 1 must finish on or before the goal target date.'),
+    ).toBeTruthy();
     expect(createGoalMock).not.toHaveBeenCalled();
-    fireEvent.press(screen.getByLabelText('Open draft step 1 month dropdown'));
-    fireEvent.press(screen.getByLabelText('Select draft step 1 month 08 - Aug'));
+    fireEvent.press(screen.getByLabelText('Select draft milestone 1 month'));
+    fireEvent.press(screen.getByLabelText('Select draft milestone 1 August'));
+    fireEvent.press(screen.getByLabelText('August 5, 2026'));
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Save goal'));
@@ -451,24 +502,30 @@ describe('GoalsScreen', () => {
         expect.objectContaining({
           title: 'Run a 10k',
           isAiAssisted: false,
-          steps: [
+          milestones: [
             expect.objectContaining({
               title: 'Buy running shoes',
-              starter: 'Visit two stores',
+              tasks: [
+                expect.objectContaining({
+                  title: 'Visit running stores',
+                  starter: 'Visit two stores',
+                }),
+              ],
             }),
           ],
         }),
       );
 
       expect(createGoalMock).toHaveBeenCalledTimes(1);
-      expect(savedGoalInput?.steps[0].estimatedFinishDate).toEqual(new Date(2026, 7, 5));
+      expect(savedGoalInput?.milestones[0].estimatedFinishDate).toEqual(new Date(2026, 7, 5));
+      expect(savedGoalInput?.milestones[0].tasks[0].dueDate).toEqual(new Date(2026, 6, 21));
     });
   });
 
   it('opens the premium paywall from the AI planning step for free users', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
-      typeof useGoalStepEvents
+    const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
+      typeof useMilestoneEvents
     >;
 
     mockedUseGoals.mockReturnValue({
@@ -476,11 +533,12 @@ describe('GoalsScreen', () => {
       uiState: 'empty',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
-      markGoalCompleted: async () => undefined,
-      createStep: async () => undefined,
-      deleteStep: async () => undefined,
-      updateStep: async () => undefined,
-      reorderSteps: async () => undefined,
+      setGoalManuallyCompleted: async () => undefined,
+      setMilestoneManuallyCompleted: async () => undefined,
+      createMilestone: async () => undefined,
+      deleteMilestone: async () => undefined,
+      updateMilestone: async () => undefined,
+      reorderMilestones: async () => undefined,
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
@@ -495,7 +553,7 @@ describe('GoalsScreen', () => {
       'Train consistently for eight weeks.',
     );
     fireEvent.press(screen.getByLabelText('Continue'));
-    fireEvent.press(screen.getByLabelText('Open goal target year dropdown'));
+    fireEvent.press(screen.getByLabelText('Select goal target year'));
     fireEvent.press(screen.getByLabelText('Select goal target year 2027'));
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.press(screen.getByLabelText('View Bearing 360 plans for AI goal builder'));
@@ -519,7 +577,7 @@ describe('GoalsScreen', () => {
       'Train consistently for eight weeks.',
     );
     fireEvent.press(screen.getByLabelText('Continue'));
-    fireEvent.press(screen.getByLabelText('Open goal target year dropdown'));
+    fireEvent.press(screen.getByLabelText('Select goal target year'));
     fireEvent.press(screen.getByLabelText('Select goal target year 2027'));
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.press(screen.getByLabelText('View Bearing 360 plans for AI goal builder'));
@@ -550,7 +608,7 @@ describe('GoalsScreen', () => {
     expect(screen.getByRole('progressbar', { name: 'Generating AI goal plan' })).toBeTruthy();
     expect(screen.getByText('Creating your draft...')).toBeTruthy();
     expect(
-      screen.getByText('Building milestones and steps usually takes a few seconds.'),
+      screen.getByText('Building milestones and tasks usually takes a few seconds.'),
     ).toBeTruthy();
     expect(
       screen.getByRole('button', { name: 'Generate AI goal plan' }).props.accessibilityState,
@@ -562,8 +620,8 @@ describe('GoalsScreen', () => {
     jest.setSystemTime(new Date(2026, 7, 23, 9, 0, 0));
 
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
-      typeof useGoalStepEvents
+    const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
+      typeof useMilestoneEvents
     >;
     const createGoalMock = jest.fn(async () => undefined);
     const mockedGenerateAiGoalPlanDraft = generateAiGoalPlanDraft as jest.MockedFunction<
@@ -581,11 +639,12 @@ describe('GoalsScreen', () => {
       uiState: 'empty',
       createGoal: createGoalMock,
       updateGoal: async () => undefined,
-      markGoalCompleted: async () => undefined,
-      createStep: async () => undefined,
-      deleteStep: async () => undefined,
-      updateStep: async () => undefined,
-      reorderSteps: async () => undefined,
+      setGoalManuallyCompleted: async () => undefined,
+      setMilestoneManuallyCompleted: async () => undefined,
+      createMilestone: async () => undefined,
+      deleteMilestone: async () => undefined,
+      updateMilestone: async () => undefined,
+      reorderMilestones: async () => undefined,
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
@@ -602,14 +661,15 @@ describe('GoalsScreen', () => {
         {
           title: 'Build a running base',
           description: 'Establish a consistent weekly rhythm.',
-        },
-      ],
-      steps: [
-        {
-          title: 'Choose weekly run times',
-          description: 'Reserve three repeatable windows.',
-          starter: 'Open the calendar.',
           targetDate: '2026-08-20',
+          tasks: [
+            {
+              title: 'Choose weekly run times',
+              description: 'Reserve three repeatable windows.',
+              starter: 'Open the calendar.',
+              targetDate: '2026-08-20',
+            },
+          ],
         },
       ],
       timelineSummary: 'Build consistency before increasing distance.',
@@ -626,7 +686,7 @@ describe('GoalsScreen', () => {
       'Train consistently for eight weeks.',
     );
     fireEvent.press(screen.getByLabelText('Continue'));
-    fireEvent.press(screen.getByLabelText('Open goal target year dropdown'));
+    fireEvent.press(screen.getByLabelText('Select goal target year'));
     fireEvent.press(screen.getByLabelText('Select goal target year 2027'));
     fireEvent.press(screen.getByLabelText('Continue'));
 
@@ -655,7 +715,7 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Regenerate AI goal plan'));
     expect(screen.getByText('Regenerate AI Draft?')).toBeTruthy();
     expect(
-      screen.getByText(/uses 1 AI credit and replaces the current milestones and steps/i),
+      screen.getByText(/uses 1 AI credit and replaces the current milestones and tasks/i),
     ).toBeTruthy();
     expect(mockedGenerateAiGoalPlanDraft).toHaveBeenCalledTimes(1);
     fireEvent.press(screen.getByLabelText('Cancel AI goal plan regeneration'));
@@ -668,11 +728,11 @@ describe('GoalsScreen', () => {
     });
     await waitFor(() => expect(mockedGenerateAiGoalPlanDraft).toHaveBeenCalledTimes(2));
 
-    fireEvent.changeText(screen.getByLabelText('AI milestone 1 name'), 'Build consistency');
     fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.changeText(screen.getByLabelText('Draft milestone 1 name'), 'Build consistency');
     expect(screen.getByDisplayValue('Choose weekly run times')).toBeTruthy();
-    expect(screen.getByText('Selected date: 08-24-2026')).toBeTruthy();
-    fireEvent.changeText(screen.getByLabelText('Draft step 1 name'), 'Schedule weekly runs');
+    expect(screen.getAllByLabelText('August 24, 2026')).toHaveLength(2);
+    fireEvent.changeText(screen.getByLabelText('Milestone 1 task 1 title'), 'Schedule weekly runs');
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Save goal'));
@@ -683,15 +743,11 @@ describe('GoalsScreen', () => {
         expect.objectContaining({
           isAiAssisted: true,
           aiPlanVersion: 1,
-          aiMilestones: [
+          milestones: [
             expect.objectContaining({
               title: 'Build consistency',
-            }),
-          ],
-          steps: [
-            expect.objectContaining({
-              title: 'Schedule weekly runs',
               estimatedFinishDate: new Date(2026, 7, 24),
+              tasks: [expect.objectContaining({ title: 'Schedule weekly runs' })],
             }),
           ],
         }),
@@ -701,8 +757,8 @@ describe('GoalsScreen', () => {
 
   it('keeps manual planning available when AI generation fails', async () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
-      typeof useGoalStepEvents
+    const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
+      typeof useMilestoneEvents
     >;
 
     (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
@@ -718,11 +774,12 @@ describe('GoalsScreen', () => {
       uiState: 'empty',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
-      markGoalCompleted: async () => undefined,
-      createStep: async () => undefined,
-      deleteStep: async () => undefined,
-      updateStep: async () => undefined,
-      reorderSteps: async () => undefined,
+      setGoalManuallyCompleted: async () => undefined,
+      setMilestoneManuallyCompleted: async () => undefined,
+      createMilestone: async () => undefined,
+      deleteMilestone: async () => undefined,
+      updateMilestone: async () => undefined,
+      reorderMilestones: async () => undefined,
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
@@ -756,7 +813,7 @@ describe('GoalsScreen', () => {
     ).mock.calls;
     expect(generationCalls[0][0].requestId).toBe(generationCalls[1][0].requestId);
     fireEvent.press(screen.getByLabelText('Continue'));
-    expect(screen.getByLabelText('Draft step 1 name')).toBeTruthy();
+    expect(screen.getByLabelText('Draft milestone 1 name')).toBeTruthy();
   });
 
   it('disables AI generation at zero credits without blocking manual planning', async () => {
@@ -779,7 +836,7 @@ describe('GoalsScreen', () => {
       true,
     );
     fireEvent.press(screen.getByLabelText('Continue'));
-    expect(screen.getByLabelText('Draft step 1 name')).toBeTruthy();
+    expect(screen.getByLabelText('Draft milestone 1 name')).toBeTruthy();
   });
 
   it('refreshes the balance and explains backend credit exhaustion', async () => {
@@ -834,13 +891,13 @@ describe('GoalsScreen', () => {
     );
   });
 
-  it('limits year choices to the present or future and rejects a non-future target date', () => {
+  it('limits year choices to the present or future and allows a target date of today', () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date(2026, 6, 20, 9, 0, 0));
 
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
-      typeof useGoalStepEvents
+    const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
+      typeof useMilestoneEvents
     >;
 
     mockedUseGoals.mockReturnValue({
@@ -848,11 +905,12 @@ describe('GoalsScreen', () => {
       uiState: 'empty',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
-      markGoalCompleted: async () => undefined,
-      createStep: async () => undefined,
-      deleteStep: async () => undefined,
-      updateStep: async () => undefined,
-      reorderSteps: async () => undefined,
+      setGoalManuallyCompleted: async () => undefined,
+      setMilestoneManuallyCompleted: async () => undefined,
+      createMilestone: async () => undefined,
+      deleteMilestone: async () => undefined,
+      updateMilestone: async () => undefined,
+      reorderMilestones: async () => undefined,
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
@@ -867,34 +925,31 @@ describe('GoalsScreen', () => {
     );
     fireEvent.press(screen.getByLabelText('Continue'));
 
-    expect(screen.getByText('Selected date: 07-21-2026')).toBeTruthy();
+    expect(screen.getByLabelText('July 21, 2026').props.accessibilityState.selected).toBe(true);
 
-    fireEvent.press(screen.getByLabelText('Open goal target year dropdown'));
+    fireEvent.press(screen.getByLabelText('Select goal target year'));
     expect(screen.queryByText('2025')).toBeNull();
     expect(screen.getByLabelText('Select goal target year 2026')).toBeTruthy();
-    expect(screen.getByLabelText('Select goal target year 2076')).toBeTruthy();
+    expect(screen.getByLabelText('Select goal target year 2037')).toBeTruthy();
+    expect(screen.queryByLabelText('Select goal target year 2038')).toBeNull();
 
     fireEvent.press(screen.getByLabelText('Select goal target year 2026'));
-    fireEvent.press(screen.getByLabelText('Open goal target month dropdown'));
-    fireEvent.press(screen.getByLabelText('Select goal target month 07 - Jul'));
-    fireEvent.press(screen.getByLabelText('Open goal target day dropdown'));
-    fireEvent.press(screen.getByLabelText('Select goal target day 20'));
+    fireEvent.press(screen.getByLabelText('Select goal target month'));
+    fireEvent.press(screen.getByLabelText('Select goal target July'));
+    fireEvent.press(screen.getByLabelText('July 20, 2026'));
     fireEvent.press(screen.getByLabelText('Continue'));
 
-    expect(screen.getByText('Estimated completion date must be in the future.')).toBeTruthy();
+    expect(screen.queryByText('Estimated completion date must be today or later.')).toBeNull();
+    expect(screen.getByText('Step 4 of 5: AI Planning')).toBeTruthy();
 
     jest.useRealTimers();
   });
 
-  it('creates a step from goal details, closes the modal stack, and uses the dropdown date picker', async () => {
-    jest.useFakeTimers();
-    jest.setSystemTime(new Date(2026, 6, 21, 9, 0, 0));
-
-    const deleteStepMock = jest.fn(async () => undefined);
-    const createStepMock = jest.fn(async () => undefined);
+  it('creates a milestone from goal details and closes the modal stack', async () => {
+    const createMilestoneMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
-      typeof useGoalStepEvents
+    const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
+      typeof useMilestoneEvents
     >;
 
     mockedUseGoals.mockReturnValue({
@@ -902,11 +957,12 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
-      markGoalCompleted: async () => undefined,
-      createStep: createStepMock,
-      deleteStep: deleteStepMock,
-      updateStep: async () => undefined,
-      reorderSteps: async () => undefined,
+      setGoalManuallyCompleted: async () => undefined,
+      setMilestoneManuallyCompleted: async () => undefined,
+      createMilestone: createMilestoneMock,
+      deleteMilestone: async () => undefined,
+      updateMilestone: async () => undefined,
+      reorderMilestones: async () => undefined,
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
@@ -914,67 +970,105 @@ describe('GoalsScreen', () => {
     render(<GoalsScreen />);
 
     fireEvent.press(screen.getByText('Run a 10k'));
-    fireEvent.press(screen.getByLabelText('Add step'));
+    fireEvent.press(screen.getByLabelText('Add milestone'));
 
     expect(screen.queryByText('Goal Details')).toBeNull();
-    expect(screen.queryByLabelText('Step estimated finish date')).toBeNull();
-    expect(screen.getByText('Selected date: 07-22-2026')).toBeTruthy();
-
-    fireEvent.changeText(screen.getByLabelText('Step name'), 'Book a training block');
+    fireEvent.changeText(screen.getByLabelText('Milestone name'), 'Book a training block');
     fireEvent.changeText(
-      screen.getByLabelText('Step description'),
+      screen.getByLabelText('Milestone description'),
       'Pick sessions for the next eight weeks.',
     );
-    fireEvent.changeText(screen.getByLabelText('Step starter'), 'Open the calendar');
-    fireEvent.press(screen.getByLabelText('Open step target month dropdown'));
-    fireEvent.press(screen.getByLabelText('Select step target month 08 - Aug'));
-    fireEvent.press(screen.getByLabelText('Open step target day dropdown'));
-    fireEvent.press(screen.getByLabelText('Select step target day 12'));
 
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('Save step'));
+      fireEvent.press(screen.getByLabelText('Save milestone'));
     });
 
     await waitFor(() => {
-      expect(createStepMock).toHaveBeenCalledWith('goal-1', {
+      expect(createMilestoneMock).toHaveBeenCalledWith('goal-1', {
         title: 'Book a training block',
         description: 'Pick sessions for the next eight weeks.',
-        starter: 'Open the calendar',
-        estimatedFinishDate: new Date(2026, 7, 12),
       });
       expect(screen.getByText('Goal Details')).toBeTruthy();
-      expect(screen.queryByLabelText('Save step')).toBeNull();
+      expect(screen.queryByLabelText('Save milestone')).toBeNull();
+    });
+  });
+
+  it('allows manually completing a milestone independently of its task progress', async () => {
+    const setMilestoneManuallyCompleted = jest.fn(async () => undefined);
+    const milestone = makeMilestone();
+    mockGoals({
+      goals: [makeGoal({ milestones: [milestone] })],
+      uiState: 'ready',
+      setMilestoneManuallyCompleted,
     });
 
-    jest.useRealTimers();
+    render(<GoalsScreen />);
+
+    fireEvent.press(screen.getByLabelText('Open goal Run a 10k'));
+    expect(screen.getByText('Not started · 0 of 0 tasks')).toBeTruthy();
+    await act(async () => {
+      fireEvent.press(
+        screen.getByRole('button', { name: 'Mark Done milestone Buy running shoes' }),
+      );
+    });
+
+    expect(setMilestoneManuallyCompleted).toHaveBeenCalledWith('milestone-1', true);
+  });
+
+  it('requires a new task before reopening a manually completed milestone with all tasks done', () => {
+    const completedMilestone = makeMilestone({
+      status: 'completed',
+      manuallyCompletedAt: new Date(2026, 6, 20),
+      tasks: [makeTask({ status: 'completed' })],
+      completedTaskCount: 1,
+      totalTaskCount: 1,
+      progressPercent: 100,
+      progressText: '1 of 1 tasks',
+    });
+    mockGoals({
+      goals: [makeGoal({ milestones: [completedMilestone] })],
+      uiState: 'ready',
+    });
+
+    render(<GoalsScreen />);
+    fireEvent.press(screen.getByLabelText('Open goal Run a 10k'));
+    fireEvent.press(screen.getByLabelText('Open milestone Buy running shoes'));
+
+    expect(
+      screen.getByText(
+        'All linked tasks are complete. Add a new task before reopening this milestone.',
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByLabelText('Reopen milestone')).toBeNull();
   });
 
   it('opens goal details and marks a goal complete from edit mode', async () => {
     const markGoalCompletedMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
-      typeof useGoalStepEvents
+    const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
+      typeof useMilestoneEvents
     >;
 
     mockedUseGoals.mockReturnValue({
       goals: [
         makeGoal({
-          aiMilestones: [
-            {
+          milestones: [
+            makeMilestone({
               title: 'Build a running base',
               description: 'Establish a consistent weekly rhythm.',
-            },
+            }),
           ],
         }),
       ],
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
-      markGoalCompleted: markGoalCompletedMock,
-      createStep: async () => undefined,
-      deleteStep: async () => undefined,
-      updateStep: async () => undefined,
-      reorderSteps: async () => undefined,
+      setGoalManuallyCompleted: markGoalCompletedMock,
+      setMilestoneManuallyCompleted: async () => undefined,
+      createMilestone: async () => undefined,
+      deleteMilestone: async () => undefined,
+      updateMilestone: async () => undefined,
+      reorderMilestones: async () => undefined,
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
@@ -993,15 +1087,15 @@ describe('GoalsScreen', () => {
     });
 
     await waitFor(() => {
-      expect(markGoalCompletedMock).toHaveBeenCalledWith('goal-1');
+      expect(markGoalCompletedMock).toHaveBeenCalledWith('goal-1', true);
     });
   });
 
   it('edits a goal with the wizard-style date picker', async () => {
     const updateGoalMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
-      typeof useGoalStepEvents
+    const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
+      typeof useMilestoneEvents
     >;
 
     mockedUseGoals.mockReturnValue({
@@ -1009,11 +1103,12 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: updateGoalMock,
-      markGoalCompleted: async () => undefined,
-      createStep: async () => undefined,
-      deleteStep: async () => undefined,
-      updateStep: async () => undefined,
-      reorderSteps: async () => undefined,
+      setGoalManuallyCompleted: async () => undefined,
+      setMilestoneManuallyCompleted: async () => undefined,
+      createMilestone: async () => undefined,
+      deleteMilestone: async () => undefined,
+      updateMilestone: async () => undefined,
+      reorderMilestones: async () => undefined,
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
@@ -1024,10 +1119,9 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Edit goal'));
     expect(screen.queryByLabelText('Edit goal estimated completion date')).toBeNull();
 
-    fireEvent.press(screen.getByLabelText('Open edit goal target month dropdown'));
-    fireEvent.press(screen.getByLabelText('Select edit goal target month 10 - Oct'));
-    fireEvent.press(screen.getByLabelText('Open edit goal target day dropdown'));
-    fireEvent.press(screen.getByLabelText('Select edit goal target day 15'));
+    fireEvent.press(screen.getByLabelText('Select edit goal target month'));
+    fireEvent.press(screen.getByLabelText('Select edit goal target October'));
+    fireEvent.press(screen.getByLabelText('October 15, 2026'));
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Save goal changes'));
@@ -1042,10 +1136,10 @@ describe('GoalsScreen', () => {
     });
   });
 
-  it('opens step scheduling with a prefilled event title and linked ids', async () => {
+  it('opens milestone scheduling with a prefilled event title and linked ids', async () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
-      typeof useGoalStepEvents
+    const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
+      typeof useMilestoneEvents
     >;
     const createEvent = jest.fn(async () => 'event-new');
     (useCalendarPublication as jest.MockedFunction<typeof useCalendarPublication>).mockReturnValue({
@@ -1059,11 +1153,12 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
-      markGoalCompleted: async () => undefined,
-      createStep: async () => undefined,
-      deleteStep: async () => undefined,
-      updateStep: async () => undefined,
-      reorderSteps: async () => undefined,
+      setGoalManuallyCompleted: async () => undefined,
+      setMilestoneManuallyCompleted: async () => undefined,
+      createMilestone: async () => undefined,
+      deleteMilestone: async () => undefined,
+      updateMilestone: async () => undefined,
+      reorderMilestones: async () => undefined,
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({
@@ -1085,7 +1180,7 @@ describe('GoalsScreen', () => {
           url: null,
           sourceTaskId: null,
           goalId: 'goal-1',
-          stepId: 'step-1',
+          milestoneId: 'milestone-1',
           status: 'scheduled',
           publication: {
             status: 'unpublished',
@@ -1108,7 +1203,7 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByText('Buy running shoes'));
     expect(screen.getByText('Treadmill session')).toBeTruthy();
 
-    fireEvent.press(screen.getByLabelText('Schedule event'));
+    fireEvent.press(screen.getByLabelText('Schedule milestone event'));
 
     expect(screen.getByDisplayValue('Buy running shoes')).toBeTruthy();
 
@@ -1121,18 +1216,18 @@ describe('GoalsScreen', () => {
         expect.objectContaining({
           title: 'Buy running shoes',
           goalId: 'goal-1',
-          stepId: 'step-1',
+          milestoneId: 'milestone-1',
         }),
         { publishToDevice: false },
       );
     });
   });
 
-  it('moves a step down with the arrow controls', async () => {
-    const reorderStepsMock = jest.fn(async () => undefined);
+  it('moves a milestone down with the arrow controls', async () => {
+    const reorderMilestonesMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
-      typeof useGoalStepEvents
+    const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
+      typeof useMilestoneEvents
     >;
 
     mockedUseGoals.mockReturnValue({
@@ -1140,11 +1235,12 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
-      markGoalCompleted: async () => undefined,
-      createStep: async () => undefined,
-      deleteStep: async () => undefined,
-      updateStep: async () => undefined,
-      reorderSteps: reorderStepsMock,
+      setGoalManuallyCompleted: async () => undefined,
+      setMilestoneManuallyCompleted: async () => undefined,
+      createMilestone: async () => undefined,
+      deleteMilestone: async () => undefined,
+      updateMilestone: async () => undefined,
+      reorderMilestones: reorderMilestonesMock,
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
@@ -1154,19 +1250,19 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByText('Run a 10k'));
 
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('Move Buy running shoes down'));
+      fireEvent.press(screen.getByLabelText('Move milestone Buy running shoes down'));
     });
 
     await waitFor(() => {
-      expect(reorderStepsMock).toHaveBeenCalledWith('goal-1', ['step-2', 'step-1']);
+      expect(reorderMilestonesMock).toHaveBeenCalledWith('goal-1', ['milestone-2', 'milestone-1']);
     });
   });
 
-  it('deletes a step from the step edit screen', async () => {
-    const deleteStepMock = jest.fn(async () => undefined);
+  it('deletes a milestone from its details', async () => {
+    const deleteMilestoneMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
-      typeof useGoalStepEvents
+    const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
+      typeof useMilestoneEvents
     >;
 
     mockedUseGoals.mockReturnValue({
@@ -1174,11 +1270,12 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
-      markGoalCompleted: async () => undefined,
-      createStep: async () => undefined,
-      deleteStep: deleteStepMock,
-      updateStep: async () => undefined,
-      reorderSteps: async () => undefined,
+      setGoalManuallyCompleted: async () => undefined,
+      setMilestoneManuallyCompleted: async () => undefined,
+      createMilestone: async () => undefined,
+      deleteMilestone: deleteMilestoneMock,
+      updateMilestone: async () => undefined,
+      reorderMilestones: async () => undefined,
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
@@ -1187,22 +1284,20 @@ describe('GoalsScreen', () => {
 
     fireEvent.press(screen.getByText('Run a 10k'));
     fireEvent.press(screen.getByText('Buy running shoes'));
-    fireEvent.press(screen.getByLabelText('Edit step'));
-
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('Delete step'));
+      fireEvent.press(screen.getByLabelText('Delete milestone'));
     });
 
     await waitFor(() => {
-      expect(deleteStepMock).toHaveBeenCalledWith('step-1');
-      expect(screen.queryByText('Step Details')).toBeNull();
+      expect(deleteMilestoneMock).toHaveBeenCalledWith('milestone-1');
+      expect(screen.queryByText('Milestone Details')).toBeNull();
     });
   });
 
-  it('shows no events scheduled when a step has no linked events', () => {
+  it('shows no events scheduled when a milestone has no linked events', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
-      typeof useGoalStepEvents
+    const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
+      typeof useMilestoneEvents
     >;
 
     mockedUseGoals.mockReturnValue({
@@ -1210,11 +1305,12 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
-      markGoalCompleted: async () => undefined,
-      createStep: async () => undefined,
-      deleteStep: async () => undefined,
-      updateStep: async () => undefined,
-      reorderSteps: async () => undefined,
+      setGoalManuallyCompleted: async () => undefined,
+      setMilestoneManuallyCompleted: async () => undefined,
+      createMilestone: async () => undefined,
+      deleteMilestone: async () => undefined,
+      updateMilestone: async () => undefined,
+      reorderMilestones: async () => undefined,
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'error' });
@@ -1224,18 +1320,15 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByText('Run a 10k'));
     fireEvent.press(screen.getByText('Buy running shoes'));
 
-    expect(screen.getByText('No Events Scheduled')).toBeTruthy();
+    expect(screen.getByText('No events scheduled.')).toBeTruthy();
     expect(screen.queryByText('Unable to load linked events.')).toBeNull();
   });
 
-  it('edits a step with the wizard-style date picker', async () => {
-    jest.useFakeTimers();
-    jest.setSystemTime(new Date(2026, 6, 20, 9, 0, 0));
-
-    const updateStepMock = jest.fn(async () => undefined);
+  it('edits a milestone title and description', async () => {
+    const updateMilestoneMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
-    const mockedUseGoalStepEvents = useGoalStepEvents as jest.MockedFunction<
-      typeof useGoalStepEvents
+    const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
+      typeof useMilestoneEvents
     >;
 
     mockedUseGoals.mockReturnValue({
@@ -1243,11 +1336,12 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
-      markGoalCompleted: async () => undefined,
-      createStep: async () => undefined,
-      deleteStep: async () => undefined,
-      updateStep: updateStepMock,
-      reorderSteps: async () => undefined,
+      setGoalManuallyCompleted: async () => undefined,
+      setMilestoneManuallyCompleted: async () => undefined,
+      createMilestone: async () => undefined,
+      deleteMilestone: async () => undefined,
+      updateMilestone: updateMilestoneMock,
+      reorderMilestones: async () => undefined,
       retry: jest.fn(),
     });
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
@@ -1256,27 +1350,19 @@ describe('GoalsScreen', () => {
 
     fireEvent.press(screen.getByText('Run a 10k'));
     fireEvent.press(screen.getByText('Buy running shoes'));
-    fireEvent.press(screen.getByLabelText('Edit step'));
-    expect(screen.queryByLabelText('Edit step estimated finish date')).toBeNull();
-
-    fireEvent.press(screen.getByLabelText('Open edit step target month dropdown'));
-    fireEvent.press(screen.getByLabelText('Select edit step target month 09 - Sep'));
-    fireEvent.press(screen.getByLabelText('Open edit step target day dropdown'));
-    fireEvent.press(screen.getByLabelText('Select edit step target day 09'));
+    fireEvent.press(screen.getByLabelText('Edit Milestone'));
+    fireEvent.changeText(screen.getByLabelText('Edit milestone name'), 'Choose a local race');
+    fireEvent.changeText(screen.getByLabelText('Edit milestone description'), 'Compare dates.');
 
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('Save step changes'));
+      fireEvent.press(screen.getByRole('button', { name: 'Save Changes' }));
     });
 
     await waitFor(() => {
-      expect(updateStepMock).toHaveBeenCalledWith('step-1', {
-        title: 'Buy running shoes',
-        description: 'Pick a pair that can handle weekly mileage.',
-        starter: 'Check two stores',
-        estimatedFinishDate: new Date(2026, 8, 9),
+      expect(updateMilestoneMock).toHaveBeenCalledWith('milestone-1', {
+        title: 'Choose a local race',
+        description: 'Compare dates.',
       });
     });
-
-    jest.useRealTimers();
   });
 });

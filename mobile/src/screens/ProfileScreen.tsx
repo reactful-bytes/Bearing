@@ -1546,7 +1546,7 @@ export function ProfileScreen({
                   <ListItem
                     variant="row"
                     title="Account contents"
-                    description="Server-held profile, events, goals, steps, notes, tasks, and subscription data."
+                    description="Server-held profile, events, goals, milestones, notes, tasks, and subscription data."
                   />
                   <ListItem
                     variant="row"
@@ -1591,7 +1591,7 @@ export function ProfileScreen({
                 <SectionHeading title="Delete Account" variant="uppercase-accent" />
                 <View style={styles.sectionContent}>
                   <Text style={styles.stateDescription}>
-                    This permanently deletes your Bearing profile, events, goals, steps, notes,
+                    This permanently deletes your Bearing profile, events, goals, milestones, notes,
                     tasks, and subscription record. This action cannot be undone.
                   </Text>
                   {hasPasswordProvider ? (

@@ -45,7 +45,7 @@ Recommended regions:
 The authoritative policy is the committed `firestore.rules` file at the repository root. Do not
 duplicate or edit a separate console-only copy. The policy:
 
-- requires authentication and matching `userId` ownership for events, notes, goals, goal steps, and
+- requires authentication and matching `userId` ownership for events, notes, goals, milestones, and
   tasks;
 - requires both existing and incoming ownership on updates, preventing ownership transfer;
 - allows users to update only client-owned profile preference fields;
@@ -122,15 +122,15 @@ Create this index:
 - Field: `userId` ascending
 - Field: `updatedAt` descending
 
-### Goal Step Events Index Required For M4.5+
+### Milestone Events Index
 
-The linked-step event subscription uses `userId`, `stepId`, and `startAt`.
+The linked-milestone event subscription uses `userId`, `milestoneId`, and `startAt`.
 
 Create this index:
 
 - Collection ID: `events`
 - Field: `userId` ascending
-- Field: `stepId` ascending
+- Field: `milestoneId` ascending
 - Field: `startAt` ascending
 
 ## 4. Verify Authentication Before Testing Firestore
@@ -186,7 +186,7 @@ You do not need to manually create collections in advance. Firestore will create
 - `events`
 - `notes`
 - `goals`
-- `goalSteps`
+- `milestones`
 - `tasks`
 - `users`
 - `subscriptions`

@@ -72,7 +72,7 @@ function makeTestEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
     url: null,
     sourceTaskId: null,
     goalId: null,
-    stepId: null,
+    milestoneId: null,
     status: 'scheduled',
     createdAt: new Date(),
     updatedAt: new Date(),

@@ -74,6 +74,7 @@ export function TaskDetailModal({
   const [editMode, setEditMode] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [starter, setStarter] = useState('');
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,6 +87,7 @@ export function TaskDetailModal({
     setEditMode(false);
     setTitle(task.title);
     setDescription(task.description);
+    setStarter(task.starter);
     setSaving(false);
     setConfirmingDelete(false);
     setError(null);
@@ -117,6 +119,7 @@ export function TaskDetailModal({
       await onSave(task.id, {
         title: trimmedTitle,
         description: description.trim(),
+        starter: starter.trim(),
       });
       setEditMode(false);
       setConfirmingDelete(false);
@@ -219,12 +222,25 @@ export function TaskDetailModal({
                 multiline
                 placeholder="Optional details"
               />
+
+              <FormField
+                label="Starter cue"
+                accessibilityLabel="Edit task starter cue"
+                value={starter}
+                onChangeText={setStarter}
+                multiline
+                placeholder="A small first action to get started"
+              />
             </View>
           ) : (
             <AppCard style={styles.readOnlyCard}>
               <Text style={styles.taskTitle}>{task.title}</Text>
               <Text style={styles.taskDescription}>
                 {task.description.trim() ? task.description : 'No description added.'}
+              </Text>
+              <Text style={styles.statusLabel}>Starter cue</Text>
+              <Text style={styles.taskDescription}>
+                {task.starter.trim() ? task.starter : 'No starter cue added.'}
               </Text>
             </AppCard>
           )}

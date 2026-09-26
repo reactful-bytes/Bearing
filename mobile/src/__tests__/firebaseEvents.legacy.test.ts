@@ -21,7 +21,7 @@ describe('firebaseEvents legacy decoding', () => {
       externalEventId: 'old-ics-uid',
       calendarConnectionId: 'old-connection',
       goalId: null,
-      stepId: null,
+      milestoneId: null,
       status: 'scheduled',
       createdAt: timestamp(startAt),
       updatedAt: timestamp(startAt),

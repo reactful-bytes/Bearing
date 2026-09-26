@@ -404,7 +404,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 | Task ID | Status    | Description                         | Notes                                                                              |
 | ------- | --------- | ----------------------------------- | ---------------------------------------------------------------------------------- |
-| M24.1   | completed | Build goal presentation components  | Fixture-driven `GoalWithSteps` components and extracted progress helper are tested |
+| M24.1   | completed | Build goal presentation components  | Fixture-driven `GoalWithMilestones` components and extracted progress helper are tested |
 | M24.2   | completed | Build TaskRow                       | Row press and completion toggle are independent; optional context is tested        |
 | M24.3   | completed | Build event presentation components | Caller supplies date/time and timezone strings                                     |
 | M24.4   | completed | Build BottomNavigation              | Four content destinations plus raised Create action, safe areas, and rail pass     |
@@ -441,10 +441,10 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 
 | Task ID | Status    | Description                             | Notes                                                                                 |
 | ------- | --------- | --------------------------------------- | ------------------------------------------------------------------------------------- |
-| M27.1   | completed | Extend task contracts                   | Add nullable goal/step/due/schedule fields with safe legacy decoding                  |
+| M27.1   | completed | Extend task contracts                   | Add nullable goal/milestone/due/schedule fields with safe decoding                    |
 | M27.2   | completed | Expose event sourceTaskId               | Serialize and decode nullable task provenance; Calendar must not infer IDs            |
 | M27.3   | completed | Add note pinned field                   | Missing legacy documents decode as `false`; update mutations and sorting              |
-| M27.4   | completed | Confirm operational goal-step timeline  | GoalStepRecord is the only editable timeline source                                   |
+| M27.4   | completed | Confirm operational goal-step timeline  | Historical GoalStepRecord model was the sole editable timeline source                 |
 | M27.5   | completed | Decide Focus persistence                | Either define the minimum persistent session model or document process-local behavior |
 | M27.6   | completed | Deploy-compatible backend updates       | Update services, export/delete, rules, indexes, docs, and emulator tests              |
 | M27.7   | completed | Validate compatibility and deploy order | Deploy rules and indexes before releasing field-writing clients                       |
@@ -481,10 +481,28 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M30.1   | completed | Restyle Goals List               | Map Current to existing persisted `active` status                             |
 | M30.2   | completed | Add goal list actions and states | Use GoalCard plus Create Goal and explicit loading/empty/error states         |
 | M30.3   | completed | Route Goal Detail                | Replace modal only after task/timeline and mutation parity exists             |
-| M30.4   | completed | Link tasks to goals and steps    | Support toggle, edit, delete, due/schedule, and optional step context         |
-| M30.5   | completed | Render operational timeline      | Use ordered operational steps with linked tasks; no duplicate milestone model |
+| M30.4   | completed | Link tasks to goals and steps    | Historical task links supported toggle, edit, delete, due/schedule, and step context |
+| M30.5   | completed | Render operational timeline      | Historical ordered operational steps; superseded by M39                         |
 | M30.6   | completed | Preserve standalone task access  | Keep unlinked task access from Plan and Create                                |
 | M30.7   | completed | Validate goals and tasks         | Cover filters, mutations, ordering, and navigation                            |
+
+### M39 - Goal → Milestone → Task Hierarchy
+
+**Status:** completed
+
+The prior GoalStep-based plan is superseded. The operational hierarchy now uses first-class
+milestone documents with nested task relationships. There is no production data to migrate, so the
+schema and client contract are renamed directly without compatibility aliases. Calendar recurrence,
+exceptions, publication, and reconciliation behavior remain unchanged.
+
+| Task ID | Status    | Description                               | Acceptance                                                                                 |
+| ------- | --------- | ----------------------------------------- | ------------------------------------------------------------------------------------------ |
+| M39.1   | completed | Replace goal-step records with milestones | `milestones`, `nextMilestoneId`, `milestoneId`, and `sourceMilestoneId` are canonical      |
+| M39.2   | completed | Derive progress and completion            | Live task rollups, manual latches, goal completion source, and guarded reopen are tested   |
+| M39.3   | completed | Nest AI tasks under milestones            | Functions schema/validator and client review/save share one nested contract                |
+| M39.4   | completed | Complete milestone and task UI            | Add/edit/delete/reorder/detail flows and task-from-milestone preserve existing affordances |
+| M39.5   | completed | Update security and lifecycle surfaces    | Rules, indexes, privacy export/deletion, backup, and canonical docs use the new schema     |
+| M39.6   | completed | Validate conversion and regressions       | Mobile/Functions/rules tests pass; calendar recurrence and ICS behavior remain unchanged   |
 
 ### M31 - Calendar
 
@@ -604,6 +622,7 @@ superseded by completed M19; they are not the active balance or grant contract.
 
 | Date       | Task ID          | Validation                                                                                 | Result         | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ---------- | ---------------- | ------------------------------------------------------------------------------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-26 | M39.1-M39.6      | Mobile Jest (69 suites/501 tests); mobile typecheck, lint, Prettier; Functions quality (68 tests); Firestore rules emulator (17 tests) | completed | Goal → Milestone → Task is canonical across client, Functions, rules, indexes, privacy, and docs; manual milestone latch/reopen UI and derived task progress are covered; recurrence and ICS suites pass; Functions test script now explicitly discovers compiled test files |
 | 2026-09-17 | M38.6            | `npm run typecheck`; `npm run lint`; `GoalsScreen` Jest (1 suite, 22 tests)                | completed | Goals lives inside the Plan tab's own stack, so navigating the parent tab navigator to `'Plan'` was a no-op; the back arrow now calls the local stack's `goBack()` with a `getParent`/`navigate` fallback |
 
 | 2026-09-17 | M38.5            | `npm run typecheck`; `npm run lint`; `GoalsScreen`/`NotesScreen`/`ProfileScreen` Jest (3 suites, 63 tests) | completed | Goals, Notes, and Profile now wrap their root `View` in a top/left/right-edge `SafeAreaView` (bottom already reserved via existing `paddingBottom: 120`), matching Calendar; typecheck and lint pass with 0 errors |

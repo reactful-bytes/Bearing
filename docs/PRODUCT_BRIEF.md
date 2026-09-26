@@ -96,7 +96,7 @@ Bottom tab navigation with five screens:
   - Step name
   - Description
   - Starter (small text field; behavior to be finalized later)
-- Schedule button creates calendar event linked to the goal step.
+- Schedule button creates a calendar event linked to a goal milestone.
 - Scrollable list of linked events.
 - Past events shown grayed out with strike-through text.
 
@@ -137,13 +137,13 @@ Bottom tab navigation with five screens:
 ## AI Helper Concept
 
 - Input: user goal.
-- Output: suggested milestones, ordered steps, and target timeline.
+- Output: suggested milestones, each containing actionable tasks and a target timeline.
 - User remains in control with ability to edit generated plans.
 
 ## Data and Integration Requirements
 
 - Firebase Auth for user accounts.
-- Cloud data storage for goals, steps, notes, and settings.
+- Cloud data storage for goals, milestones, tasks, notes, and settings.
 - Native iOS/Android calendar access through Expo SDK 57 `expo-calendar`.
 - Per-device calendar IDs and preferences stored locally, never treated as portable cloud IDs.
 - `.ics` export for standards-based portability.
@@ -158,13 +158,13 @@ Bottom tab navigation with five screens:
 ## Success Metrics (v1)
 
 - Goal creation completion rate.
-- Weekly active users who complete at least one planned step.
+- Weekly active users who complete at least one planned task.
 - Focus Mode usage frequency and average session duration.
 - Notes captured from Idea Dump and later processed.
 - Bearing 360 conversion rate from goal wizard AI step.
 
 ## Open Product Questions
 
-- Final behavioral definition for the Step "Starter" field.
+- The task `starter` field is a short cue for getting started on a task.
 - Degree of visual mimicry versus legal-safe differentiation from Apple Calendar aesthetics.
 - Final launch pricing, trial terms, and remotely configured grant choices for Bearing 360.

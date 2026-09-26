@@ -9,7 +9,7 @@ export type UserDataExport = {
   subscription: unknown;
   events: unknown[];
   goals: unknown[];
-  goalSteps: unknown[];
+  milestones: unknown[];
   notes: unknown[];
   tasks: unknown[];
 };

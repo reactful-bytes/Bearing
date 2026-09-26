@@ -4,7 +4,7 @@ export type TimestampFactory = (value: Date) => unknown;
 
 type TaskSchedulingFields = Pick<
   CreateTaskInput,
-  'goalId' | 'stepId' | 'dueDate' | 'scheduledStart' | 'scheduledEnd' | 'allDay'
+  'starter' | 'goalId' | 'milestoneId' | 'dueDate' | 'scheduledStart' | 'scheduledEnd' | 'allDay'
 >;
 
 function toTimestamp(value: Date | null | undefined, timestampFactory: TimestampFactory): unknown {
@@ -17,7 +17,8 @@ export function buildTaskCreateFields(
 ): Record<string, unknown> {
   return {
     goalId: input.goalId ?? null,
-    stepId: input.stepId ?? null,
+    milestoneId: input.milestoneId ?? null,
+    starter: input.starter?.trim() ?? '',
     dueDate: toTimestamp(input.dueDate, timestampFactory),
     scheduledStart: toTimestamp(input.scheduledStart, timestampFactory),
     scheduledEnd: toTimestamp(input.scheduledEnd, timestampFactory),
@@ -31,8 +32,9 @@ export function buildTaskUpdateFields(
 ): Record<string, unknown> {
   const updates: Record<string, unknown> = {};
 
+  if (fields.starter !== undefined) updates.starter = fields.starter.trim();
   if (fields.goalId !== undefined) updates.goalId = fields.goalId;
-  if (fields.stepId !== undefined) updates.stepId = fields.stepId;
+  if (fields.milestoneId !== undefined) updates.milestoneId = fields.milestoneId;
   if (fields.dueDate !== undefined) {
     updates.dueDate = toTimestamp(fields.dueDate, timestampFactory);
   }

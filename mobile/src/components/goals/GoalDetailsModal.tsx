@@ -18,22 +18,25 @@ import {
 } from './GoalDatePicker';
 import { radii, spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
-import { GoalStepRecord, GoalWithSteps } from '../../features/goals/goalTypes';
-import { DraggableStepList } from './DraggableStepList';
+import { GoalMilestoneWithTasks, GoalWithMilestones } from '../../features/goals/goalTypes';
+import { MilestoneList } from './MilestoneList';
 
 type GoalDetailsModalProps = {
-  goal: GoalWithSteps | null;
+  goal: GoalWithMilestones | null;
   visible: boolean;
   onClose: () => void;
   onSaveGoal: (
     goalId: string,
     fields: { title: string; description: string; estimatedCompletionDate: Date },
   ) => Promise<void>;
-  onMarkGoalCompleted: (goalId: string) => Promise<void>;
-  onAddStep: () => void;
-  onOpenStep: (step: GoalStepRecord) => void;
-  onToggleStepStatus: (step: GoalStepRecord) => Promise<void>;
-  onReorderSteps: (goalId: string, orderedStepIds: string[]) => Promise<void>;
+  onToggleGoalManualCompletion: (goalId: string, completed: boolean) => Promise<void>;
+  onAddMilestone: () => void;
+  onOpenMilestone: (milestone: GoalMilestoneWithTasks) => void;
+  onToggleMilestoneCompletion: (
+    milestone: GoalMilestoneWithTasks,
+    completed: boolean,
+  ) => Promise<void>;
+  onReorderMilestones: (goalId: string, orderedMilestoneIds: string[]) => Promise<void>;
 };
 
 function formatDateString(date: Date): string {
@@ -49,11 +52,11 @@ export function GoalDetailsModal({
   visible,
   onClose,
   onSaveGoal,
-  onMarkGoalCompleted,
-  onAddStep,
-  onOpenStep,
-  onToggleStepStatus,
-  onReorderSteps,
+  onToggleGoalManualCompletion,
+  onAddMilestone,
+  onOpenMilestone,
+  onToggleMilestoneCompletion,
+  onReorderMilestones,
 }: GoalDetailsModalProps) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
@@ -124,7 +127,7 @@ export function GoalDetailsModal({
     }
   }
 
-  async function handleMarkComplete(): Promise<void> {
+  async function handleToggleGoalCompletion(completed: boolean): Promise<void> {
     if (!goal) {
       return;
     }
@@ -133,10 +136,14 @@ export function GoalDetailsModal({
     setError(null);
 
     try {
-      await onMarkGoalCompleted(goal.id);
+      await onToggleGoalManualCompletion(goal.id, completed);
       setEditMode(false);
-    } catch {
-      setError('Failed to mark goal complete.');
+    } catch (completionError) {
+      setError(
+        completionError instanceof Error
+          ? completionError.message
+          : 'Failed to update goal completion.',
+      );
     } finally {
       setSaving(false);
     }
@@ -157,13 +164,7 @@ export function GoalDetailsModal({
   ) : null;
 
   return (
-    <AppModal
-      visible={visible}
-      title="Goal Details"
-      onClose={handleClose}
-      fullScreen
-      hideHeader
-    >
+    <AppModal visible={visible} title="Goal Details" onClose={handleClose} fullScreen hideHeader>
       {goal ? (
         <ScrollView
           contentContainerStyle={[
@@ -216,12 +217,22 @@ export function GoalDetailsModal({
                   loadingLabel="Saving..."
                 />
 
-                {goal.status !== 'completed' ? (
+                {goal.status !== 'completed' && goal.status !== 'archived' ? (
                   <AppButton
                     label="Mark Goal Complete"
                     variant="secondary"
                     accessibilityLabel="Mark goal complete"
-                    onPress={handleMarkComplete}
+                    onPress={() => void handleToggleGoalCompletion(true)}
+                    loading={saving}
+                    loadingLabel="Working..."
+                  />
+                ) : null}
+                {goal.status === 'completed' && goal.manuallyCompletedAt ? (
+                  <AppButton
+                    label="Reopen Goal"
+                    variant="secondary"
+                    accessibilityLabel="Reopen goal"
+                    onPress={() => void handleToggleGoalCompletion(false)}
                     loading={saving}
                     loadingLabel="Working..."
                   />
@@ -239,50 +250,42 @@ export function GoalDetailsModal({
                   Target date: {formatDateString(goal.estimatedCompletionDate)}
                 </Text>
                 <Text style={styles.metaText}>
-                  Status: {goal.status === 'completed' ? 'Completed' : 'Active'}
+                  Status: {goal.status[0].toUpperCase() + goal.status.slice(1)}
                 </Text>
                 <Text style={styles.metaText}>{goal.progressText}</Text>
               </AppCard>
             </View>
           )}
 
-          {goal.aiMilestones && goal.aiMilestones.length > 0 ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Milestones</Text>
-              {goal.aiMilestones.map((milestone, index) => (
-                <AppCard key={`goal-milestone-${index + 1}`} style={styles.summaryCard}>
-                  <Text style={styles.milestoneTitle}>{milestone.title}</Text>
-                  <Text style={styles.goalDescription}>{milestone.description}</Text>
-                </AppCard>
-              ))}
-            </View>
-          ) : null}
-
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Steps</Text>
+              <Text style={styles.sectionTitle}>Milestones</Text>
               <AppButton
-                label="Add Step"
+                label="Add Milestone"
                 variant="secondary"
-                accessibilityLabel="Add step"
-                onPress={onAddStep}
+                accessibilityLabel="Add milestone"
+                onPress={onAddMilestone}
                 style={styles.headerButton}
                 textStyle={styles.headerButtonText}
               />
             </View>
 
-            {goal.steps.length === 0 ? (
+            {goal.milestones.length === 0 ? (
               <AppCard style={styles.summaryCard}>
                 <Text style={styles.goalDescription}>
-                  No steps yet. Add the first action for this goal.
+                  No milestones yet. Add one to organize this goal’s tasks.
                 </Text>
               </AppCard>
             ) : (
-              <DraggableStepList
-                steps={goal.steps}
-                onOpenStep={onOpenStep}
-                onToggleStepStatus={(step) => void onToggleStepStatus(step)}
-                onReorder={(orderedStepIds) => onReorderSteps(goal.id, orderedStepIds)}
+              <MilestoneList
+                milestones={goal.milestones}
+                onOpenMilestone={onOpenMilestone}
+                onToggleMilestoneCompletion={(milestone, completed) =>
+                  void onToggleMilestoneCompletion(milestone, completed)
+                }
+                onReorder={(orderedMilestoneIds) =>
+                  onReorderMilestones(goal.id, orderedMilestoneIds)
+                }
               />
             )}
           </View>
@@ -319,10 +322,6 @@ const createStyles = (theme: Theme) =>
     goalTitle: {
       ...typography.button,
       fontSize: 18,
-      color: theme.colors.text,
-    },
-    milestoneTitle: {
-      ...typography.button,
       color: theme.colors.text,
     },
     goalDescription: {

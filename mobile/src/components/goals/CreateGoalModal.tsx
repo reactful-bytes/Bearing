@@ -24,12 +24,11 @@ import {
 import { radii, spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
 import {
-  AiGoalMilestone,
   AiCreditStatus,
   AiGoalPlanDraft,
   AiGoalPlanInput,
 } from '../../features/goals/aiGoalPlanTypes';
-import { CreateGoalInput, CreateGoalStepInput } from '../../features/goals/goalTypes';
+import { CreateGoalInput, GoalTaskInput } from '../../features/goals/goalTypes';
 import { getAiPlanningErrorCode } from '../../services/firebase/firebaseAiGoalPlans';
 
 type CreateGoalModalProps = {
@@ -46,9 +45,18 @@ type CreateGoalModalProps = {
   initialDescription?: string;
 };
 
-type DraftGoalStep = CreateGoalStepInput & {
+type DraftGoalTask = GoalTaskInput & {
   id: string;
   dateParts: GoalDateParts;
+};
+
+type DraftGoalMilestone = {
+  id: string;
+  title: string;
+  description: string;
+  estimatedFinishDate: Date | null;
+  dateParts: GoalDateParts;
+  tasks: DraftGoalTask[];
 };
 
 const WIZARD_TITLES = [
@@ -56,7 +64,7 @@ const WIZARD_TITLES = [
   'Goal Details',
   'Target Date',
   'AI Planning',
-  'Steps',
+  'Milestones & Tasks',
 ] as const;
 
 const SMART_ITEMS = [
@@ -67,16 +75,27 @@ const SMART_ITEMS = [
   { letter: 'T', label: 'Time-bound', description: 'Has a clear deadline', tone: 'importedCyan' },
 ] as const;
 
-function makeEmptyDraftStep(index: number, baseDate: Date): DraftGoalStep {
-  const defaultDateParts = buildDefaultGoalDateParts(baseDate);
-
+function makeEmptyDraftTask(index: number, baseDate: Date): DraftGoalTask {
+  const dateParts = buildDefaultGoalDateParts(baseDate);
   return {
-    id: `draft-step-${index}`,
+    id: `draft-task-${index}`,
     title: '',
     description: '',
     starter: '',
-    estimatedFinishDate: getGoalDateFromParts(defaultDateParts),
-    dateParts: defaultDateParts,
+    dueDate: getGoalDateFromParts(dateParts),
+    dateParts,
+  };
+}
+
+function makeEmptyDraftMilestone(index: number, baseDate: Date): DraftGoalMilestone {
+  const dateParts = buildDefaultGoalDateParts(baseDate);
+  return {
+    id: `draft-milestone-${index}`,
+    title: '',
+    description: '',
+    estimatedFinishDate: getGoalDateFromParts(dateParts),
+    dateParts,
+    tasks: [makeEmptyDraftTask(index, baseDate)],
   };
 }
 
@@ -141,11 +160,12 @@ export function CreateGoalModal({
   const [goalDateParts, setGoalDateParts] = useState<GoalDateParts>(() =>
     buildDefaultGoalDateParts(today),
   );
-  const [draftSteps, setDraftSteps] = useState<DraftGoalStep[]>([makeEmptyDraftStep(1, today)]);
+  const [draftMilestones, setDraftMilestones] = useState<DraftGoalMilestone[]>([
+    makeEmptyDraftMilestone(1, today),
+  ]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [aiDraft, setAiDraft] = useState<AiGoalPlanDraft | null>(null);
-  const [aiMilestones, setAiMilestones] = useState<AiGoalMilestone[]>([]);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [regenerationConfirmationVisible, setRegenerationConfirmationVisible] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -197,11 +217,10 @@ export function CreateGoalModal({
     setTitle('');
     setDescription('');
     setGoalDateParts(buildDefaultGoalDateParts(today));
-    setDraftSteps([makeEmptyDraftStep(1, today)]);
+    setDraftMilestones([makeEmptyDraftMilestone(1, today)]);
     setSaving(false);
     setError(null);
     setAiDraft(null);
-    setAiMilestones([]);
     setAiGenerating(false);
     setRegenerationConfirmationVisible(false);
     setAiError(null);
@@ -216,22 +235,34 @@ export function CreateGoalModal({
     onClose();
   }
 
-  function updateDraftStep(id: string, field: keyof DraftGoalStep, value: string): void {
-    setDraftSteps((current) =>
-      current.map((step) => {
-        if (step.id !== id) {
-          return step;
-        }
-
-        return { ...step, [field]: value };
-      }),
+  function updateMilestoneField(
+    milestoneId: string,
+    field: 'title' | 'description',
+    value: string,
+  ): void {
+    setDraftMilestones((current) =>
+      current.map((milestone) =>
+        milestone.id === milestoneId ? { ...milestone, [field]: value } : milestone,
+      ),
     );
   }
 
-  function updateAiMilestone(index: number, field: keyof AiGoalMilestone, value: string): void {
-    setAiMilestones((current) =>
-      current.map((milestone, milestoneIndex) =>
-        milestoneIndex === index ? { ...milestone, [field]: value } : milestone,
+  function updateTaskField(
+    milestoneId: string,
+    taskId: string,
+    field: 'title' | 'description' | 'starter',
+    value: string,
+  ): void {
+    setDraftMilestones((current) =>
+      current.map((milestone) =>
+        milestone.id === milestoneId
+          ? {
+              ...milestone,
+              tasks: milestone.tasks.map((task) =>
+                task.id === taskId ? { ...task, [field]: value } : task,
+              ),
+            }
+          : milestone,
       ),
     );
   }
@@ -258,18 +289,31 @@ export function CreateGoalModal({
       }
 
       setAiDraft(draft);
-      setAiMilestones(draft.milestones);
       const responseDate = new Date();
-      setDraftSteps(
-        draft.steps.map((step, index) => {
-          const dateParts = parseAiDateParts(step.targetDate, goalDateParts, responseDate);
+      setDraftMilestones(
+        draft.milestones.map((milestone, milestoneIndex) => {
+          const milestoneDateParts = parseAiDateParts(
+            milestone.targetDate ?? formatAiTargetDate(goalDateParts),
+            goalDateParts,
+            responseDate,
+          );
           return {
-            id: `ai-draft-step-${index + 1}`,
-            title: step.title,
-            description: step.description,
-            starter: step.starter,
-            estimatedFinishDate: getGoalDateFromParts(dateParts),
-            dateParts,
+            id: `ai-draft-milestone-${milestoneIndex + 1}`,
+            title: milestone.title,
+            description: milestone.description,
+            estimatedFinishDate: getGoalDateFromParts(milestoneDateParts),
+            dateParts: milestoneDateParts,
+            tasks: milestone.tasks.map((task, taskIndex) => {
+              const dateParts = parseAiDateParts(task.targetDate, goalDateParts, responseDate);
+              return {
+                id: `ai-draft-task-${milestoneIndex + 1}-${taskIndex + 1}`,
+                title: task.title,
+                description: task.description,
+                starter: task.starter,
+                dueDate: getGoalDateFromParts(dateParts),
+                dateParts,
+              };
+            }),
           };
         }),
       );
@@ -298,21 +342,33 @@ export function CreateGoalModal({
     }
   }
 
-  function updateDraftStepDate(id: string, date: Date): void {
-    setDraftSteps((current) =>
-      current.map((step) => {
-        if (step.id !== id) {
-          return step;
-        }
+  function updateMilestoneDate(milestoneId: string, date: Date): void {
+    const dateParts = buildGoalDateParts(date);
+    setDraftMilestones((current) =>
+      current.map((milestone) =>
+        milestone.id === milestoneId
+          ? { ...milestone, dateParts, estimatedFinishDate: getGoalDateFromParts(dateParts) }
+          : milestone,
+      ),
+    );
+    setError(null);
+  }
 
-        const nextDateParts = buildGoalDateParts(date);
-
-        return {
-          ...step,
-          dateParts: nextDateParts,
-          estimatedFinishDate: getGoalDateFromParts(nextDateParts),
-        };
-      }),
+  function updateTaskDate(milestoneId: string, taskId: string, date: Date): void {
+    const dateParts = buildGoalDateParts(date);
+    setDraftMilestones((current) =>
+      current.map((milestone) =>
+        milestone.id === milestoneId
+          ? {
+              ...milestone,
+              tasks: milestone.tasks.map((task) =>
+                task.id === taskId
+                  ? { ...task, dateParts, dueDate: getGoalDateFromParts(dateParts) }
+                  : task,
+              ),
+            }
+          : milestone,
+      ),
     );
     setError(null);
   }
@@ -332,7 +388,7 @@ export function CreateGoalModal({
         return false;
       }
       if (!description.trim()) {
-        setError('Planning context is required for milestones and steps.');
+        setError('Planning context is required for milestones and tasks.');
         return false;
       }
     }
@@ -346,31 +402,41 @@ export function CreateGoalModal({
     }
 
     if (wizardIndex === 4) {
-      const filledSteps = draftSteps.filter((step) => step.title.trim());
-      if (filledSteps.length === 0) {
-        setError('Add at least one step with a name.');
+      const filledMilestones = draftMilestones.filter((milestone) => milestone.title.trim());
+      if (filledMilestones.length === 0) {
+        setError('Add at least one milestone with a name.');
         return false;
       }
-
-      const invalidStepIndex = filledSteps.findIndex(
-        (step) =>
-          !step.estimatedFinishDate || !isTodayOrFutureDate(step.estimatedFinishDate, currentDate),
-      );
-
-      if (invalidStepIndex !== -1) {
-        setError(`Step ${invalidStepIndex + 1} estimated finish date must be today or later.`);
-        return false;
-      }
-
       const goalTargetDate = getGoalDateFromParts(goalDateParts);
-      const afterGoalIndex = filledSteps.findIndex(
-        (step) =>
-          step.estimatedFinishDate !== null &&
-          step.estimatedFinishDate.getTime() > goalTargetDate.getTime(),
-      );
-      if (afterGoalIndex !== -1) {
-        setError(`Step ${afterGoalIndex + 1} must finish on or before the goal target date.`);
-        return false;
+      for (const [milestoneIndex, milestone] of filledMilestones.entries()) {
+        if (
+          !milestone.estimatedFinishDate ||
+          !isTodayOrFutureDate(milestone.estimatedFinishDate, currentDate)
+        ) {
+          setError(`Milestone ${milestoneIndex + 1} target date must be today or later.`);
+          return false;
+        }
+        if (milestone.estimatedFinishDate.getTime() > goalTargetDate.getTime()) {
+          setError(
+            `Milestone ${milestoneIndex + 1} must finish on or before the goal target date.`,
+          );
+          return false;
+        }
+        const tasks = milestone.tasks.filter((task) => task.title.trim());
+        for (const [taskIndex, task] of tasks.entries()) {
+          if (!task.dueDate || !isTodayOrFutureDate(task.dueDate, currentDate)) {
+            setError(
+              `Milestone ${milestoneIndex + 1}, task ${taskIndex + 1} due date must be today or later.`,
+            );
+            return false;
+          }
+          if (task.dueDate.getTime() > goalTargetDate.getTime()) {
+            setError(
+              `Milestone ${milestoneIndex + 1}, task ${taskIndex + 1} must be due on or before the goal target date.`,
+            );
+            return false;
+          }
+        }
       }
     }
 
@@ -413,19 +479,20 @@ export function CreateGoalModal({
         estimatedCompletionDate: parsedDate,
         isAiAssisted: aiDraft !== null,
         aiPlanVersion: aiDraft?.promptVersion ?? null,
-        aiMilestones: aiMilestones
+        milestones: draftMilestones
           .filter((milestone) => milestone.title.trim())
-          .map((milestone) => ({
-            title: milestone.title.trim(),
-            description: milestone.description.trim(),
-          })),
-        steps: draftSteps
-          .filter((step) => step.title.trim())
           .map((step) => ({
             title: step.title.trim(),
             description: step.description.trim(),
-            starter: step.starter.trim(),
             estimatedFinishDate: step.estimatedFinishDate,
+            tasks: step.tasks
+              .filter((task) => task.title.trim())
+              .map((task) => ({
+                title: task.title.trim(),
+                description: task.description.trim(),
+                starter: task.starter.trim(),
+                dueDate: task.dueDate,
+              })),
           })),
       });
       handleClose();
@@ -579,26 +646,9 @@ export function CreateGoalModal({
                 {aiDraft ? (
                   <>
                     <Text style={styles.cardBody}>{aiDraft.timelineSummary}</Text>
-                    {aiMilestones.map((milestone, index) => (
-                      <View key={`ai-milestone-${index + 1}`} style={styles.milestoneFields}>
-                        <Text style={styles.exampleLabel}>Milestone {index + 1}</Text>
-                        <FormField
-                          label="Milestone name"
-                          accessibilityLabel={`AI milestone ${index + 1} name`}
-                          value={milestone.title}
-                          onChangeText={(value) => updateAiMilestone(index, 'title', value)}
-                        />
-                        <FormField
-                          label="Description"
-                          accessibilityLabel={`AI milestone ${index + 1} description`}
-                          value={milestone.description}
-                          onChangeText={(value) => updateAiMilestone(index, 'description', value)}
-                          multiline
-                        />
-                      </View>
-                    ))}
                     <Text style={styles.cardBody}>
-                      Continue to review and edit every generated step before saving.
+                      Continue to review and edit each generated milestone and its tasks before
+                      saving.
                     </Text>
                     <Text style={styles.regenerationGuidance}>
                       Need a different plan? Go back and clarify the goal outcome, objectives,
@@ -616,7 +666,7 @@ export function CreateGoalModal({
                     <Text style={styles.exampleLabel}>What the AI plans from</Text>
                     <Text style={styles.cardBody}>
                       Your goal outcome, objectives, success measures, starting point, resources,
-                      constraints, and timing guide the generated milestones and ordered steps.
+                      constraints, and timing guide the generated milestones and their tasks.
                       Nothing is saved until you review the draft and save the goal.
                     </Text>
                   </>
@@ -649,7 +699,7 @@ export function CreateGoalModal({
                     <View style={styles.generationStatusCopy}>
                       <Text style={styles.generationStatusTitle}>Creating your draft...</Text>
                       <Text style={styles.generationStatusText}>
-                        Building milestones and steps usually takes a few seconds.
+                        Building milestones and tasks usually takes a few seconds.
                       </Text>
                     </View>
                   </View>
@@ -685,7 +735,7 @@ export function CreateGoalModal({
               <AppCard style={styles.card}>
                 <Text style={styles.cardTitle}>Unlock AI goal builder with Bearing 360.</Text>
                 <Text style={styles.cardBody}>
-                  Bearing 360 opens AI-generated milestones and steps here. You can keep building
+                  Bearing 360 opens AI-generated milestones and tasks here. You can keep building
                   the goal manually right now.
                 </Text>
                 <View style={styles.disabledBadge}>
@@ -711,55 +761,105 @@ export function CreateGoalModal({
 
           {wizardIndex === 4 ? (
             <View style={styles.section}>
-              {draftSteps.map((step, index) => (
-                <AppCard key={step.id} style={styles.card}>
-                  <Text style={styles.cardTitle}>Step {index + 1}</Text>
-
+              {draftMilestones.map((milestone, index) => (
+                <AppCard key={milestone.id} style={styles.card}>
+                  <Text style={styles.cardTitle}>Milestone {index + 1}</Text>
                   <FormField
-                    label="Step name"
-                    accessibilityLabel={`Draft step ${index + 1} name`}
-                    value={step.title}
-                    onChangeText={(value) => updateDraftStep(step.id, 'title', value)}
-                    placeholder="Add the next action"
+                    label="Milestone name"
+                    accessibilityLabel={`Draft milestone ${index + 1} name`}
+                    value={milestone.title}
+                    onChangeText={(value) => updateMilestoneField(milestone.id, 'title', value)}
+                    placeholder="Name an important outcome"
                     placeholderTextColor={theme.colors.textSecondary}
                   />
-
                   <FormField
                     label="Description"
-                    accessibilityLabel={`Draft step ${index + 1} description`}
-                    value={step.description}
-                    onChangeText={(value) => updateDraftStep(step.id, 'description', value)}
+                    accessibilityLabel={`Draft milestone ${index + 1} description`}
+                    value={milestone.description}
+                    onChangeText={(value) =>
+                      updateMilestoneField(milestone.id, 'description', value)
+                    }
                     multiline
-                    placeholder="Optional details"
+                    placeholder="What reaching this milestone means"
                     placeholderTextColor={theme.colors.textSecondary}
                   />
-
-                  <FormField
-                    label="Starter"
-                    accessibilityLabel={`Draft step ${index + 1} starter`}
-                    value={step.starter}
-                    onChangeText={(value) => updateDraftStep(step.id, 'starter', value)}
-                    placeholder="Optional starter cue"
-                    placeholderTextColor={theme.colors.textSecondary}
-                  />
-
                   <GoalDatePicker
-                    title="Estimated finish date"
-                    accessibilityPrefix={`draft step ${index + 1}`}
-                    dateParts={step.dateParts}
-                    onSelectDate={(date) => updateDraftStepDate(step.id, date)}
+                    title="Milestone target date"
+                    accessibilityPrefix={`draft milestone ${index + 1}`}
+                    dateParts={milestone.dateParts}
+                    onSelectDate={(date) => updateMilestoneDate(milestone.id, date)}
+                  />
+                  <Text style={styles.exampleLabel}>Tasks</Text>
+                  {milestone.tasks.map((task, taskIndex) => (
+                    <View key={task.id} style={styles.milestoneFields}>
+                      <Text style={styles.exampleLabel}>Task {taskIndex + 1}</Text>
+                      <FormField
+                        label="Task title"
+                        accessibilityLabel={`Milestone ${index + 1} task ${taskIndex + 1} title`}
+                        value={task.title}
+                        onChangeText={(value) =>
+                          updateTaskField(milestone.id, task.id, 'title', value)
+                        }
+                        placeholder="Add a doable action"
+                      />
+                      <FormField
+                        label="Description"
+                        accessibilityLabel={`Milestone ${index + 1} task ${taskIndex + 1} description`}
+                        value={task.description}
+                        onChangeText={(value) =>
+                          updateTaskField(milestone.id, task.id, 'description', value)
+                        }
+                        multiline
+                        placeholder="Optional details"
+                      />
+                      <FormField
+                        label="Starter cue"
+                        accessibilityLabel={`Milestone ${index + 1} task ${taskIndex + 1} starter`}
+                        value={task.starter}
+                        onChangeText={(value) =>
+                          updateTaskField(milestone.id, task.id, 'starter', value)
+                        }
+                        placeholder="Optional first action"
+                      />
+                      <GoalDatePicker
+                        title="Task due date"
+                        accessibilityPrefix={`draft milestone ${index + 1} task ${taskIndex + 1}`}
+                        dateParts={task.dateParts}
+                        onSelectDate={(date) => updateTaskDate(milestone.id, task.id, date)}
+                      />
+                    </View>
+                  ))}
+                  <AppButton
+                    label="Add Task"
+                    variant="secondary"
+                    accessibilityLabel={`Add task to draft milestone ${index + 1}`}
+                    onPress={() =>
+                      setDraftMilestones((current) =>
+                        current.map((candidate) =>
+                          candidate.id === milestone.id
+                            ? {
+                                ...candidate,
+                                tasks: [
+                                  ...candidate.tasks,
+                                  makeEmptyDraftTask(candidate.tasks.length + 1, today),
+                                ],
+                              }
+                            : candidate,
+                        ),
+                      )
+                    }
                   />
                 </AppCard>
               ))}
 
               <AppButton
-                label="Add Another Step"
+                label="Add Another Milestone"
                 variant="secondary"
-                accessibilityLabel="Add another draft step"
+                accessibilityLabel="Add another draft milestone"
                 onPress={() =>
-                  setDraftSteps((current) => [
+                  setDraftMilestones((current) => [
                     ...current,
-                    makeEmptyDraftStep(current.length + 1, today),
+                    makeEmptyDraftMilestone(current.length + 1, today),
                   ])
                 }
               />
@@ -807,7 +907,7 @@ export function CreateGoalModal({
       >
         <View style={styles.confirmationContent}>
           <Text style={styles.cardBody}>
-            Regenerating uses 1 AI credit and replaces the current milestones and steps. Review or
+            Regenerating uses 1 AI credit and replaces the current milestones and tasks. Review or
             edit your goal details first if the current draft needs clearer direction.
           </Text>
           <AppButton

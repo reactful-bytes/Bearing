@@ -99,7 +99,7 @@ export async function createNote(userId: string, input: CreateNoteInput): Promis
     body: input.body.trim(),
     source: input.source,
     sourceEventId: input.sourceEventId ?? null,
-    sourceStepId: input.sourceStepId ?? null,
+    sourceMilestoneId: input.sourceMilestoneId ?? null,
     pinned: input.pinned === true,
     processed: false,
     archived: false,

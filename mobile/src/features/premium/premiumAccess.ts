@@ -12,7 +12,7 @@ type PremiumPaywallCopy = {
 const PREMIUM_PAYWALL_COPY: PremiumPaywallCopy = {
   badge: 'Bearing 360',
   headline: 'Unlock AI goal planning.',
-  body: 'Turn one goal into editable milestones and ordered next steps, while core device calendar access remains free.',
+  body: 'Turn one goal into editable milestones and actionable tasks, while core device calendar access remains free.',
   highlights: [
     'Generate editable milestone and step drafts before saving a goal.',
     'Keep device calendar access available on the free plan.',

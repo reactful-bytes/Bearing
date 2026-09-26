@@ -55,21 +55,20 @@ The calendar event query requires a composite index on `userId` + `startAt`:
 
 > The index will take 5–10 minutes to build. You can track progress in the Indexes tab.
 
-### Optional: Additional Indexes for Future Queries
+### Composite Indexes
 
-For M4+ milestones, consider creating these indexes preemptively:
+The root `firestore.indexes.json` is canonical. These composite indexes support linked event,
+milestone, note, and task queries used by the app:
 
-| Collection  | Fields                                    | Purpose                                   |
-| ----------- | ----------------------------------------- | ----------------------------------------- |
-| `events`    | userId + stepId + startAt                 | Filter events by goal step                |
-| `events`    | userId + publicationStatus + updatedAt    | Recover pending linked-event operations   |
-| `goals`     | userId + status + estimatedCompletionDate | List active goals by target date          |
-| `goals`     | userId + updatedAt                        | Sort goals by recent update               |
-| `goalSteps` | goalId + order                            | List steps within a goal                  |
-| `goalSteps` | userId + goalId + status                  | Filter goal steps by status               |
-| `notes`     | userId + updatedAt                        | Sort notes by recent update               |
-| `notes`     | userId + source + createdAt               | Filter notes by source (manual/idea_dump) |
-| `tasks`     | userId + updatedAt                        | Sort tasks by recent update               |
+| Collection   | Fields                         | Purpose                             |
+| ------------ | ------------------------------ | ----------------------------------- |
+| `events`     | userId + milestoneId + startAt | Filter events linked to a milestone |
+| `milestones` | userId + goalId                | List milestones within a goal       |
+| `notes`      | userId + sourceMilestoneId     | Find notes linked to a milestone    |
+| `notes`      | userId + source + createdAt    | Filter notes by source              |
+| `notes`      | userId + updatedAt             | Sort notes by recent update         |
+| `tasks`      | userId + milestoneId           | Find tasks linked to a milestone    |
+| `tasks`      | userId + updatedAt             | Sort tasks by recent update         |
 
 ## 4) Test Firestore Connectivity
 

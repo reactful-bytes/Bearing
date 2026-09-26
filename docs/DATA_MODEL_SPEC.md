@@ -57,24 +57,26 @@ Fields:
   - relevant: string
   - timeBound: string
 - estimatedCompletionDate: timestamp
-- nextStepId: string | null
+- nextMilestoneId: string | null
+- manuallyCompletedAt: timestamp | null (explicit user completion latch)
 - status: enum (active, completed, archived)
 - isAiAssisted: boolean
 - aiPlanVersion: number | null
-- aiMilestones: array of accepted AI-plan milestone metadata; not an operational timeline
-  - title: string
-  - description: string
 - createdAt: timestamp
 - updatedAt: timestamp
+
+Goal status is active, completed, or archived. Archived is an explicit override. A goal with
+`manuallyCompletedAt` remains completed until explicitly reopened; otherwise completion is derived
+when it has at least one milestone and every milestone is effectively complete.
 
 Indexes (planned):
 
 - userId + status + estimatedCompletionDate
 - userId + updatedAt
 
-### goalSteps
+### milestones
 
-Document ID: stepId
+Document ID: milestoneId
 
 Fields:
 
@@ -82,18 +84,21 @@ Fields:
 - goalId: string
 - title: string
 - description: string
-- starter: string
 - estimatedFinishDate: timestamp | null
 - order: number
-- status: enum (pending, in_progress, completed)
-- completedAt: timestamp | null
+- manuallyCompletedAt: timestamp | null
 - createdAt: timestamp
 - updatedAt: timestamp
 
+Milestone status and progress are read-model values, not persisted fields. When not manually
+completed, status is derived from its linked tasks: no tasks or no completed tasks is pending; a
+mix is in progress; one or more tasks with all completed is completed. Counts and percentage remain
+task-derived even when the manual completion latch is set. Reopening is blocked while all linked
+tasks are complete; add a task first.
+
 Indexes (planned):
 
-- goalId + order
-- userId + goalId + status
+- userId + goalId + order
 
 ### events
 
@@ -124,7 +129,7 @@ Fields:
 - publicationBaselineHash: string | null
 - sourceTaskId: string | null
 - goalId: string | null
-- stepId: string | null
+- milestoneId: string | null
 - status: enum (scheduled, completed, canceled)
 - createdAt: timestamp
 - updatedAt: timestamp
@@ -132,7 +137,7 @@ Fields:
 Indexes (planned):
 
 - userId + startAt
-- userId + stepId + startAt
+- userId + milestoneId + startAt
 - userId + publicationStatus + updatedAt
 
 ### tasks
@@ -144,8 +149,9 @@ Fields:
 - userId: string
 - title: string
 - description: string
+- starter: string (optional cue for beginning this task)
 - goalId: string | null
-- stepId: string | null
+- milestoneId: string | null
 - dueDate: timestamp | null
 - scheduledStart: timestamp | null
 - scheduledEnd: timestamp | null
@@ -157,8 +163,8 @@ Fields:
 - createdAt: timestamp
 - updatedAt: timestamp
 
-`goalId` and `stepId` are optional links to the existing goal and operational
-step records. `dueDate` is the task's date-level target; `scheduledStart` and
+`goalId` and `milestoneId` are optional links to the existing goal and milestone
+records. A milestone-linked task must also carry its owning `goalId`. `dueDate` is the task's date-level target; `scheduledStart` and
 `scheduledEnd` are optional timestamp bounds for planned work. `allDay` is
 false for legacy documents and indicates that the scheduled bounds represent
 an all-day task when true. Clients must preserve explicit nulls when clearing
@@ -180,7 +186,7 @@ Fields:
 - body: string
 - source: enum (manual, idea_dump)
 - sourceEventId: string | null
-- sourceStepId: string | null
+- sourceMilestoneId: string | null
 - pinned: boolean (false for legacy documents)
 - processed: boolean
 - archived: boolean
@@ -313,10 +319,13 @@ Notes:
 - Preserve causal context in Cloud Function failures.
 - Never log auth credentials, payment payload secrets, calendar content, native calendar IDs, or publication link keys.
 
-## Migration and Versioning Strategy (Initial)
+## Migration and Versioning Strategy
 
 - Add schemaVersion field to mutable entities if structure changes become frequent.
-- Use additive migrations first; avoid destructive field replacement.
+- The Goal → Milestone → Task hierarchy is the fresh schema. There is no production data to migrate;
+  clients, rules, indexes, privacy handling, and docs use `milestones`, `nextMilestoneId`,
+  `milestoneId`, and `sourceMilestoneId` directly, with no old-field aliases or migration script.
+- For future unrelated schema changes, prefer additive migrations where practical.
 - Keep one migration note section in docs for each release.
 
 ## AI Draft Retention
@@ -324,9 +333,9 @@ Notes:
 - Goal-plan request metadata and successful validated drafts may remain in server-only
   `aiCreditOperations` for up to 24 hours to support coordination and idempotent retries. Failed
   records contain no draft.
-- Approved generated fields are stored only as editable goal, milestone, and step records.
+- Approved generated fields are stored only as editable goal, milestone, and task records.
 - Provider request handling and retention must be verified in the release processor review.
 
 ## Open Questions
 
-- Final definition and downstream behavior of starter field on goal steps.
+- The task `starter` field is an optional short cue for beginning the task.

@@ -45,14 +45,15 @@ const validDraft: Omit<GoalPlanDraft, "promptVersion"> = {
     {
       title: "Build a running base",
       description: "Develop a consistent weekly routine.",
-    },
-  ],
-  steps: [
-    {
-      title: "Choose three weekly run windows",
-      description: "Reserve repeatable times that fit the week.",
-      starter: "Open the calendar and choose the first run.",
-      targetDate: "2027-01-15",
+      targetDate: "2027-04-15",
+      tasks: [
+        {
+          title: "Choose three weekly run windows",
+          description: "Reserve repeatable times that fit the week.",
+          starter: "Open the calendar and choose the first run.",
+          targetDate: "2027-01-15",
+        },
+      ],
     },
   ],
   timelineSummary: "Build consistency first, then increase distance gradually.",
@@ -76,18 +77,40 @@ describe("AI goal plan", () => {
   });
 
   it("rejects malformed provider output", () => {
-    assert.throws(() => validateGoalPlanDraft({ ...validDraft, steps: [] }));
+    assert.throws(() =>
+      validateGoalPlanDraft({ ...validDraft, milestones: [] }),
+    );
     assert.throws(() =>
       validateGoalPlanDraft({
         ...validDraft,
-        steps: [{ ...validDraft.steps[0], targetDate: "2027-02-31" }],
+        milestones: [
+          {
+            ...validDraft.milestones[0],
+            tasks: [
+              {
+                ...validDraft.milestones[0].tasks[0],
+                targetDate: "2027-02-31",
+              },
+            ],
+          },
+        ],
       }),
     );
     assert.throws(() =>
       validateGoalPlanDraft(
         {
           ...validDraft,
-          steps: [{ ...validDraft.steps[0], targetDate: "2028-01-01" }],
+          milestones: [
+            {
+              ...validDraft.milestones[0],
+              tasks: [
+                {
+                  ...validDraft.milestones[0].tasks[0],
+                  targetDate: "2028-01-01",
+                },
+              ],
+            },
+          ],
         },
         "2027-06-01",
       ),
@@ -240,7 +263,10 @@ describe("AI goal plan", () => {
             requestId: "123e4567-e89b-42d3-a456-426614174000",
           },
         },
-        async () => ({ ...validDraft, steps: [] }),
+        async () => ({
+          ...validDraft,
+          milestones: [{ ...validDraft.milestones[0], tasks: [] }],
+        }),
         async () => "active",
         creditService({
           run: async (_userId, _requestId, _fingerprint, generate) => {

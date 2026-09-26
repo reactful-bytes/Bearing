@@ -273,8 +273,8 @@ function PlanEventRow({
 type PlanScreenGoal = {
   title: string;
   status: 'active' | 'completed' | 'archived';
-  completedStepCount: number;
-  totalStepCount: number;
+  completedMilestoneCount: number;
+  totalMilestoneCount: number;
 };
 
 function PlanGoalRow({ goal, onPress }: { goal: PlanScreenGoal; onPress: () => void }) {
@@ -382,12 +382,8 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
       ? (activeTasks.find((task) => task.id === focusTaskId) ?? null)
       : null;
     const nextGoalTasks = recentGoals
-      .map((goal) =>
-        goal.nextStep
-          ? (activeTasks.find((task) => task.stepId === goal.nextStep?.id) ?? null)
-          : null,
-      )
-      .filter((task): task is TaskRecord => task !== null);
+      .map((goal) => goal.nextTask)
+      .filter((task): task is TaskRecord => task !== null && task.status === 'active');
     const recentTasks = [...activeTasks].sort(
       (left, right) => right.updatedAt.getTime() - left.updatedAt.getTime(),
     );

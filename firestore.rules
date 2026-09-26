@@ -17,6 +17,16 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == request.resource.data.userId;
     }
 
+    function hasValidMilestoneTaskLink(data) {
+      return !data.keys().hasAny(['milestoneId'])
+        || data.milestoneId == null
+        || (data.milestoneId is string
+          && data.goalId is string
+          && exists(/databases/$(database)/documents/milestones/$(data.milestoneId))
+          && get(/databases/$(database)/documents/milestones/$(data.milestoneId)).data.userId == request.auth.uid
+          && get(/databases/$(database)/documents/milestones/$(data.milestoneId)).data.goalId == data.goalId);
+    }
+
     match /users/{userId} {
       allow read, delete: if isCurrentUser(userId);
       allow create: if isCurrentUser(userId)
@@ -57,16 +67,18 @@ service cloud.firestore {
       allow update: if ownsExistingDocument() && ownsIncomingDocument();
     }
 
-    match /goalSteps/{stepId} {
+    match /milestones/{milestoneId} {
       allow create: if ownsIncomingDocument();
       allow read, delete: if ownsExistingDocument();
       allow update: if ownsExistingDocument() && ownsIncomingDocument();
     }
 
     match /tasks/{taskId} {
-      allow create: if ownsIncomingDocument();
+      allow create: if ownsIncomingDocument() && hasValidMilestoneTaskLink(request.resource.data);
       allow read, delete: if ownsExistingDocument();
-      allow update: if ownsExistingDocument() && ownsIncomingDocument();
+      allow update: if ownsExistingDocument()
+        && ownsIncomingDocument()
+        && hasValidMilestoneTaskLink(request.resource.data);
     }
 
     match /subscriptions/{userId} {

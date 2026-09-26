@@ -6,39 +6,31 @@ import {
   Unsubscribe,
   collection,
   doc,
-  getDoc,
   getDocs,
   getFirestore,
   onSnapshot,
   query,
-  updateDoc,
+  runTransaction,
   where,
   writeBatch,
 } from 'firebase/firestore';
 
 import {
   CreateGoalInput,
-  CreateGoalStepInput,
+  CreateGoalMilestoneInput,
+  GoalMilestoneRecord,
   GoalRecord,
+  GoalTaskInput,
   GoalStatus,
-  GoalStepRecord,
   UpdateGoalInput,
-  UpdateGoalStepInput,
+  UpdateGoalMilestoneInput,
 } from '../../features/goals/goalTypes';
-import {
-  deriveGoalStatus,
-  getFirstIncompleteStep,
-  normalizeGoalSteps,
-} from '../../features/goals/goalHelpers';
 import { getFirebaseApp } from './firebaseApp';
 
 let cachedDb: Firestore | null = null;
 
 function getFirebaseFirestore(): Firestore {
-  if (cachedDb) {
-    return cachedDb;
-  }
-
+  if (cachedDb) return cachedDb;
   try {
     cachedDb = getFirestore(getFirebaseApp());
     return cachedDb;
@@ -47,9 +39,14 @@ function getFirebaseFirestore(): Firestore {
   }
 }
 
+function timestampToDate(value: unknown): Date | null {
+  return value && typeof value === 'object' && 'toDate' in value
+    ? (value as Timestamp).toDate()
+    : null;
+}
+
 function docToGoal(snapshot: QueryDocumentSnapshot<DocumentData>): GoalRecord {
   const data = snapshot.data();
-
   return {
     id: snapshot.id,
     userId: data.userId as string,
@@ -63,81 +60,30 @@ function docToGoal(snapshot: QueryDocumentSnapshot<DocumentData>): GoalRecord {
       timeBound: (data.smartMeta?.timeBound as string) ?? '',
     },
     estimatedCompletionDate: (data.estimatedCompletionDate as Timestamp).toDate(),
-    nextStepId: (data.nextStepId as string | null) ?? null,
+    nextMilestoneId: (data.nextMilestoneId as string | null) ?? null,
+    manuallyCompletedAt: timestampToDate(data.manuallyCompletedAt),
     status: data.status as GoalStatus,
     isAiAssisted: Boolean(data.isAiAssisted),
     aiPlanVersion: (data.aiPlanVersion as number | null) ?? null,
-    aiMilestones: Array.isArray(data.aiMilestones)
-      ? data.aiMilestones.map((milestone: Record<string, unknown>) => ({
-          title: typeof milestone.title === 'string' ? milestone.title : '',
-          description: typeof milestone.description === 'string' ? milestone.description : '',
-        }))
-      : [],
     createdAt: (data.createdAt as Timestamp).toDate(),
     updatedAt: (data.updatedAt as Timestamp).toDate(),
   };
 }
 
-function docToGoalStep(snapshot: QueryDocumentSnapshot<DocumentData>): GoalStepRecord {
+function docToMilestone(snapshot: QueryDocumentSnapshot<DocumentData>): GoalMilestoneRecord {
   const data = snapshot.data();
-
   return {
     id: snapshot.id,
     userId: data.userId as string,
     goalId: data.goalId as string,
     title: data.title as string,
     description: data.description as string,
-    starter: data.starter as string,
-    estimatedFinishDate: data.estimatedFinishDate
-      ? (data.estimatedFinishDate as Timestamp).toDate()
-      : null,
     order: Number(data.order ?? 0),
-    status: data.status as GoalStepRecord['status'],
-    completedAt: data.completedAt ? (data.completedAt as Timestamp).toDate() : null,
+    estimatedFinishDate: timestampToDate(data.estimatedFinishDate),
+    manuallyCompletedAt: timestampToDate(data.manuallyCompletedAt),
     createdAt: (data.createdAt as Timestamp).toDate(),
     updatedAt: (data.updatedAt as Timestamp).toDate(),
   };
-}
-
-async function syncGoalRollup(userId: string, goalId: string): Promise<void> {
-  const db = getFirebaseFirestore();
-  const goalRef = doc(db, 'goals', goalId);
-  const goalSnapshot = await getDoc(goalRef);
-
-  if (!goalSnapshot.exists()) {
-    throw new Error('Goal not found.');
-  }
-
-  const goalData = goalSnapshot.data();
-  const stepsSnapshot = await getDocs(
-    query(
-      collection(db, 'goalSteps'),
-      where('userId', '==', userId),
-      where('goalId', '==', goalId),
-    ),
-  );
-  const normalizedSteps = normalizeGoalSteps(stepsSnapshot.docs.map(docToGoalStep));
-  const nextStep = getFirstIncompleteStep(normalizedSteps);
-  const rolledStatus = deriveGoalStatus(goalData.status as GoalStatus, normalizedSteps);
-
-  const batch = writeBatch(db);
-
-  normalizedSteps.forEach((step, index) => {
-    if (step.order !== index) {
-      batch.update(doc(db, 'goalSteps', step.id), {
-        order: index,
-        updatedAt: Timestamp.now(),
-      });
-    }
-  });
-
-  batch.update(goalRef, {
-    nextStepId: rolledStatus === 'completed' ? null : (nextStep?.id ?? null),
-    status: rolledStatus,
-    updatedAt: Timestamp.now(),
-  });
-
-  await batch.commit();
 }
 
 export function subscribeToGoals(
@@ -145,37 +91,58 @@ export function subscribeToGoals(
   onNext: (goals: GoalRecord[]) => void,
   onError: (error: Error) => void,
 ): Unsubscribe {
-  const db = getFirebaseFirestore();
-  const goalsQuery = query(collection(db, 'goals'), where('userId', '==', userId));
-
+  const goalsQuery = query(
+    collection(getFirebaseFirestore(), 'goals'),
+    where('userId', '==', userId),
+  );
   return onSnapshot(
     goalsQuery,
-    (snapshot) => {
-      onNext(snapshot.docs.map(docToGoal));
-    },
-    (firestoreError) => {
-      onError(new Error('Failed to load goals.', { cause: firestoreError }));
-    },
+    (snapshot) => onNext(snapshot.docs.map(docToGoal)),
+    (error) => onError(new Error('Failed to load goals.', { cause: error })),
   );
 }
 
-export function subscribeToGoalSteps(
+export function subscribeToMilestones(
   userId: string,
-  onNext: (steps: GoalStepRecord[]) => void,
+  onNext: (milestones: GoalMilestoneRecord[]) => void,
   onError: (error: Error) => void,
 ): Unsubscribe {
-  const db = getFirebaseFirestore();
-  const stepsQuery = query(collection(db, 'goalSteps'), where('userId', '==', userId));
-
-  return onSnapshot(
-    stepsQuery,
-    (snapshot) => {
-      onNext(snapshot.docs.map(docToGoalStep));
-    },
-    (firestoreError) => {
-      onError(new Error('Failed to load goal steps.', { cause: firestoreError }));
-    },
+  const milestonesQuery = query(
+    collection(getFirebaseFirestore(), 'milestones'),
+    where('userId', '==', userId),
   );
+  return onSnapshot(
+    milestonesQuery,
+    (snapshot) => onNext(snapshot.docs.map(docToMilestone)),
+    (error) => onError(new Error('Failed to load milestones.', { cause: error })),
+  );
+}
+
+function taskFields(
+  userId: string,
+  goalId: string,
+  milestoneId: string | null,
+  task: GoalTaskInput,
+  now: Timestamp,
+): Record<string, unknown> {
+  return {
+    userId,
+    title: task.title.trim(),
+    description: task.description.trim(),
+    starter: task.starter.trim(),
+    goalId,
+    milestoneId,
+    dueDate: task.dueDate ? Timestamp.fromDate(task.dueDate) : null,
+    scheduledStart: null,
+    scheduledEnd: null,
+    allDay: false,
+    status: 'active',
+    completionSource: null,
+    completedAt: null,
+    completedEventId: null,
+    createdAt: now,
+    updatedAt: now,
+  };
 }
 
 export async function createGoal(userId: string, input: CreateGoalInput): Promise<string> {
@@ -183,7 +150,7 @@ export async function createGoal(userId: string, input: CreateGoalInput): Promis
   const now = Timestamp.now();
   const batch = writeBatch(db);
   const goalRef = doc(collection(db, 'goals'));
-  const stepRefs = input.steps.map(() => doc(collection(db, 'goalSteps')));
+  const milestoneRefs = input.milestones.map(() => doc(collection(db, 'milestones')));
 
   batch.set(goalRef, {
     userId,
@@ -197,48 +164,63 @@ export async function createGoal(userId: string, input: CreateGoalInput): Promis
       timeBound: input.smartMeta.timeBound.trim(),
     },
     estimatedCompletionDate: Timestamp.fromDate(input.estimatedCompletionDate),
-    nextStepId: stepRefs[0]?.id ?? null,
+    nextMilestoneId: milestoneRefs[0]?.id ?? null,
+    manuallyCompletedAt: null,
     status: 'active',
     isAiAssisted: input.isAiAssisted,
     aiPlanVersion: input.aiPlanVersion ?? null,
-    aiMilestones: (input.aiMilestones ?? []).map((milestone) => ({
-      title: milestone.title.trim(),
-      description: milestone.description.trim(),
-    })),
     createdAt: now,
     updatedAt: now,
   });
 
-  input.steps.forEach((step, index) => {
-    batch.set(stepRefs[index], {
-      userId,
-      goalId: goalRef.id,
-      title: step.title.trim(),
-      description: step.description.trim(),
-      starter: step.starter.trim(),
-      estimatedFinishDate: step.estimatedFinishDate
-        ? Timestamp.fromDate(step.estimatedFinishDate)
-        : null,
-      order: index,
-      status: 'pending',
-      completedAt: null,
-      createdAt: now,
-      updatedAt: now,
+  input.milestones.forEach((milestone, index) => {
+    const milestoneRef = milestoneRefs[index];
+    batch.set(milestoneRef, buildMilestoneFields(userId, goalRef.id, milestone, index, now));
+    milestone.tasks.forEach((task) => {
+      batch.set(
+        doc(collection(db, 'tasks')),
+        taskFields(userId, goalRef.id, milestoneRef.id, task, now),
+      );
     });
+  });
+  (input.tasks ?? []).forEach((task) => {
+    batch.set(doc(collection(db, 'tasks')), taskFields(userId, goalRef.id, null, task, now));
   });
 
   await batch.commit();
   return goalRef.id;
 }
 
+function buildMilestoneFields(
+  userId: string,
+  goalId: string,
+  input: CreateGoalMilestoneInput,
+  order: number,
+  now: Timestamp,
+): Record<string, unknown> {
+  return {
+    userId,
+    goalId,
+    title: input.title.trim(),
+    description: input.description.trim(),
+    order,
+    estimatedFinishDate: input.estimatedFinishDate
+      ? Timestamp.fromDate(input.estimatedFinishDate)
+      : null,
+    manuallyCompletedAt: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
 export async function updateGoal(
-  _userId: string,
+  userId: string,
   goalId: string,
   fields: UpdateGoalInput,
 ): Promise<void> {
   const db = getFirebaseFirestore();
+  const goalRef = doc(db, 'goals', goalId);
   const updates: Record<string, unknown> = { updatedAt: Timestamp.now() };
-
   if (fields.title !== undefined) updates.title = fields.title.trim();
   if (fields.description !== undefined) updates.description = fields.description.trim();
   if (fields.smartMeta !== undefined) {
@@ -253,134 +235,254 @@ export async function updateGoal(
   if (fields.estimatedCompletionDate !== undefined) {
     updates.estimatedCompletionDate = Timestamp.fromDate(fields.estimatedCompletionDate);
   }
-  if (fields.status !== undefined) updates.status = fields.status;
-
-  await updateDoc(doc(db, 'goals', goalId), updates);
-}
-
-export async function markGoalCompleted(_userId: string, goalId: string): Promise<void> {
-  const db = getFirebaseFirestore();
-  await updateDoc(doc(db, 'goals', goalId), {
-    status: 'completed',
-    nextStepId: null,
-    updatedAt: Timestamp.now(),
+  if (fields.status === 'archived') updates.status = 'archived';
+  if (fields.status === 'active') {
+    updates.status = 'active';
+    updates.manuallyCompletedAt = null;
+  }
+  await runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(goalRef);
+    if (!snapshot.exists() || snapshot.data().userId !== userId) throw new Error('Goal not found.');
+    transaction.update(goalRef, updates);
   });
 }
 
-export async function createGoalStep(
+export async function setGoalManuallyCompleted(
   userId: string,
   goalId: string,
-  input: CreateGoalStepInput,
+  completed: boolean,
+): Promise<void> {
+  const db = getFirebaseFirestore();
+  const goalRef = doc(db, 'goals', goalId);
+  await runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(goalRef);
+    if (!snapshot.exists() || snapshot.data().userId !== userId) throw new Error('Goal not found.');
+    const now = Timestamp.now();
+    transaction.update(goalRef, {
+      status: completed ? 'completed' : 'active',
+      manuallyCompletedAt: completed ? now : null,
+      updatedAt: now,
+    });
+  });
+}
+
+export async function createMilestone(
+  userId: string,
+  goalId: string,
+  input: Omit<CreateGoalMilestoneInput, 'tasks' | 'estimatedFinishDate'>,
   order: number,
-  currentGoalStatus: GoalStatus,
-  currentNextStepId: string | null,
 ): Promise<string> {
   const db = getFirebaseFirestore();
   const now = Timestamp.now();
-  const batch = writeBatch(db);
-  const stepRef = doc(collection(db, 'goalSteps'));
-
-  batch.set(stepRef, {
-    userId,
-    goalId,
-    title: input.title.trim(),
-    description: input.description.trim(),
-    starter: input.starter.trim(),
-    estimatedFinishDate: input.estimatedFinishDate
-      ? Timestamp.fromDate(input.estimatedFinishDate)
-      : null,
-    order,
-    status: 'pending',
-    completedAt: null,
-    createdAt: now,
-    updatedAt: now,
-  });
-
-  batch.update(doc(db, 'goals', goalId), {
-    nextStepId: currentNextStepId ?? stepRef.id,
-    status: currentGoalStatus === 'archived' ? 'archived' : 'active',
-    updatedAt: now,
-  });
-
-  await batch.commit();
-  return stepRef.id;
-}
-
-export async function deleteGoalStep(
-  _userId: string,
-  goalId: string,
-  stepId: string,
-  orderedRemainingSteps: GoalStepRecord[],
-  nextGoalStatus: GoalStatus,
-  nextStepId: string | null,
-): Promise<void> {
-  const db = getFirebaseFirestore();
-  const batch = writeBatch(db);
-  const now = Timestamp.now();
-
-  batch.delete(doc(db, 'goalSteps', stepId));
-
-  orderedRemainingSteps.forEach((step, index) => {
-    if (step.order !== index) {
-      batch.update(doc(db, 'goalSteps', step.id), {
-        order: index,
-        updatedAt: now,
-      });
+  const milestoneRef = doc(collection(db, 'milestones'));
+  const goalRef = doc(db, 'goals', goalId);
+  await runTransaction(db, async (transaction) => {
+    const goalSnapshot = await transaction.get(goalRef);
+    if (!goalSnapshot.exists() || goalSnapshot.data().userId !== userId) {
+      throw new Error('Goal not found.');
+    }
+    transaction.set(milestoneRef, {
+      userId,
+      goalId,
+      title: input.title.trim(),
+      description: input.description.trim(),
+      order,
+      estimatedFinishDate: null,
+      manuallyCompletedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    });
+    if (!goalSnapshot.data().nextMilestoneId) {
+      transaction.update(goalRef, { nextMilestoneId: milestoneRef.id, updatedAt: now });
     }
   });
-
-  batch.update(doc(db, 'goals', goalId), {
-    nextStepId,
-    status: nextGoalStatus,
-    updatedAt: now,
-  });
-
-  await batch.commit();
+  return milestoneRef.id;
 }
 
-export async function updateGoalStep(
-  _userId: string,
-  goalId: string,
-  stepId: string,
-  fields: UpdateGoalStepInput,
+export async function updateMilestone(
+  userId: string,
+  milestoneId: string,
+  fields: UpdateGoalMilestoneInput,
 ): Promise<void> {
   const db = getFirebaseFirestore();
+  const milestoneRef = doc(db, 'milestones', milestoneId);
   const updates: Record<string, unknown> = { updatedAt: Timestamp.now() };
-
   if (fields.title !== undefined) updates.title = fields.title.trim();
   if (fields.description !== undefined) updates.description = fields.description.trim();
-  if (fields.starter !== undefined) updates.starter = fields.starter.trim();
+  if (fields.order !== undefined) updates.order = fields.order;
   if (fields.estimatedFinishDate !== undefined) {
     updates.estimatedFinishDate = fields.estimatedFinishDate
       ? Timestamp.fromDate(fields.estimatedFinishDate)
       : null;
   }
-  if (fields.order !== undefined) updates.order = fields.order;
-  if (fields.status !== undefined) {
-    updates.status = fields.status;
-    updates.completedAt = fields.status === 'completed' ? Timestamp.now() : null;
-  }
-
-  await updateDoc(doc(db, 'goalSteps', stepId), updates);
-  await syncGoalRollup(_userId, goalId);
+  await runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(milestoneRef);
+    if (!snapshot.exists() || snapshot.data().userId !== userId) {
+      throw new Error('Milestone not found.');
+    }
+    transaction.update(milestoneRef, updates);
+  });
 }
 
-export async function reorderGoalSteps(
-  _userId: string,
-  goalId: string,
-  orderedStepIds: string[],
+export async function deleteMilestone(userId: string, milestoneId: string): Promise<void> {
+  const db = getFirebaseFirestore();
+  const milestoneRef = doc(db, 'milestones', milestoneId);
+  const milestoneSnapshot = await runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(milestoneRef);
+    if (!snapshot.exists() || snapshot.data().userId !== userId)
+      throw new Error('Milestone not found.');
+    return snapshot.data();
+  });
+  const [taskSnapshots, eventSnapshots, noteSnapshots, siblingSnapshots] = await Promise.all([
+    getDocs(
+      query(
+        collection(db, 'tasks'),
+        where('userId', '==', userId),
+        where('milestoneId', '==', milestoneId),
+      ),
+    ),
+    getDocs(
+      query(
+        collection(db, 'events'),
+        where('userId', '==', userId),
+        where('milestoneId', '==', milestoneId),
+      ),
+    ),
+    getDocs(
+      query(
+        collection(db, 'notes'),
+        where('userId', '==', userId),
+        where('sourceMilestoneId', '==', milestoneId),
+      ),
+    ),
+    getDocs(
+      query(
+        collection(db, 'milestones'),
+        where('userId', '==', userId),
+        where('goalId', '==', milestoneSnapshot.goalId),
+      ),
+    ),
+  ]);
+  const siblings = siblingSnapshots.docs
+    .filter((snapshot) => snapshot.id !== milestoneId)
+    .map(docToMilestone)
+    .sort(
+      (left, right) =>
+        left.order - right.order || left.createdAt.getTime() - right.createdAt.getTime(),
+    );
+  const writes: ((batch: ReturnType<typeof writeBatch>) => void)[] = [];
+  taskSnapshots.docs.forEach((snapshot) =>
+    writes.push((batch) =>
+      batch.update(snapshot.ref, { milestoneId: null, updatedAt: Timestamp.now() }),
+    ),
+  );
+  eventSnapshots.docs.forEach((snapshot) =>
+    writes.push((batch) =>
+      batch.update(snapshot.ref, { milestoneId: null, updatedAt: Timestamp.now() }),
+    ),
+  );
+  noteSnapshots.docs.forEach((snapshot) =>
+    writes.push((batch) =>
+      batch.update(snapshot.ref, { sourceMilestoneId: null, updatedAt: Timestamp.now() }),
+    ),
+  );
+  siblings.forEach((sibling, index) => {
+    if (sibling.order !== index)
+      writes.push((batch) =>
+        batch.update(doc(db, 'milestones', sibling.id), {
+          order: index,
+          updatedAt: Timestamp.now(),
+        }),
+      );
+  });
+  writes.push((batch) => batch.delete(milestoneRef));
+  writes.push((batch) =>
+    batch.update(doc(db, 'goals', milestoneSnapshot.goalId as string), {
+      nextMilestoneId: siblings[0]?.id ?? null,
+      updatedAt: Timestamp.now(),
+    }),
+  );
+
+  for (let index = 0; index < writes.length; index += 450) {
+    const batch = writeBatch(db);
+    writes.slice(index, index + 450).forEach((write) => write(batch));
+    await batch.commit();
+  }
+}
+
+export async function setMilestoneManuallyCompleted(
+  userId: string,
+  milestoneId: string,
+  completed: boolean,
 ): Promise<void> {
   const db = getFirebaseFirestore();
-  const batch = writeBatch(db);
-  const now = Timestamp.now();
-
-  orderedStepIds.forEach((stepId, index) => {
-    batch.update(doc(db, 'goalSteps', stepId), {
-      order: index,
-      updatedAt: now,
+  const milestoneRef = doc(db, 'milestones', milestoneId);
+  const linkedTasks = await getDocs(
+    query(
+      collection(db, 'tasks'),
+      where('userId', '==', userId),
+      where('milestoneId', '==', milestoneId),
+    ),
+  );
+  await runTransaction(db, async (transaction) => {
+    const [milestoneSnapshot, ...taskSnapshots] = await Promise.all([
+      transaction.get(milestoneRef),
+      ...linkedTasks.docs.map((snapshot) => transaction.get(snapshot.ref)),
+    ]);
+    if (!milestoneSnapshot.exists() || milestoneSnapshot.data().userId !== userId) {
+      throw new Error('Milestone not found.');
+    }
+    if (!completed) {
+      if (!timestampToDate(milestoneSnapshot.data().manuallyCompletedAt)) {
+        throw new Error('This milestone is not manually completed.');
+      }
+      const currentTasks = taskSnapshots.filter(
+        (snapshot) => snapshot.exists() && snapshot.data().milestoneId === milestoneId,
+      );
+      if (
+        currentTasks.length > 0 &&
+        currentTasks.every(
+          (snapshot) => snapshot.exists() && snapshot.data().status === 'completed',
+        )
+      ) {
+        throw new Error('Add a new task before reopening this milestone.');
+      }
+    }
+    transaction.update(milestoneRef, {
+      manuallyCompletedAt: completed ? Timestamp.now() : null,
+      updatedAt: Timestamp.now(),
     });
   });
+}
 
+export async function reorderMilestones(
+  userId: string,
+  goalId: string,
+  orderedMilestoneIds: string[],
+): Promise<void> {
+  const db = getFirebaseFirestore();
+  const snapshots = await getDocs(
+    query(
+      collection(db, 'milestones'),
+      where('userId', '==', userId),
+      where('goalId', '==', goalId),
+    ),
+  );
+  const currentIds = new Set(snapshots.docs.map((snapshot) => snapshot.id));
+  if (
+    orderedMilestoneIds.length !== currentIds.size ||
+    orderedMilestoneIds.some((id) => !currentIds.has(id))
+  ) {
+    throw new Error('Milestone order does not match this goal.');
+  }
+  const batch = writeBatch(db);
+  const now = Timestamp.now();
+  orderedMilestoneIds.forEach((milestoneId, index) => {
+    batch.update(doc(db, 'milestones', milestoneId), { order: index, updatedAt: now });
+  });
+  batch.update(doc(db, 'goals', goalId), {
+    nextMilestoneId: orderedMilestoneIds[0] ?? null,
+    updatedAt: now,
+  });
   await batch.commit();
-  await syncGoalRollup(_userId, goalId);
 }

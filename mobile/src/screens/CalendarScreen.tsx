@@ -126,7 +126,7 @@ export type CalendarScreenProps = {
       params?:
         | AppTabParamList['Plan']
         | { eventId: string; dateIso?: string }
-        | { goalId?: string; stepId?: string; returnTo?: string }
+        | { goalId?: string; milestoneId?: string; returnTo?: string }
         | undefined,
     ) => void;
     getParent?: () =>
@@ -316,7 +316,7 @@ export function CalendarScreen({
       url: null,
       sourceTaskId: null,
       goalId: null,
-      stepId: null,
+      milestoneId: null,
       status: 'scheduled',
       publication: createUnpublishedMetadata(),
       createdAt: launchStartAt,

@@ -7,6 +7,13 @@ calendar, premium, privacy, telemetry, and Focus behavior. The supplied design
 references are visual input only; production screens must use live hook data and
 existing persistence services.
 
+## Historical Model Note
+
+The M27/M30 records below document the earlier GoalStep implementation at that time. They are
+preserved as delivery history, not as the current data-model authority. The in-progress M39 work
+replaces that model with Goal → Milestone → Task using a direct fresh-schema rename; see
+`DATA_MODEL_SPEC.md` for the canonical fields and completion rules.
+
 ## Phase 1-9 Plan Reconciliation
 
 The completed phase records map to the architecture plan as follows:

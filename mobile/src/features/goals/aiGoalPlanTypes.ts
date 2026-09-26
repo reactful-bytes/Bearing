@@ -12,21 +12,24 @@ export type AiCreditStatus = {
   availableCredits: number;
 };
 
+export type AiGoalTask = {
+  title: string;
+  description: string;
+  starter: string;
+  targetDate: string;
+};
+
 export type AiGoalMilestone = {
   title: string;
   description: string;
+  targetDate: string;
+  tasks: AiGoalTask[];
 };
 
 export type AiGoalPlanDraft = {
   promptVersion: number;
   smartMeta: GoalSmartMeta;
   milestones: AiGoalMilestone[];
-  steps: {
-    title: string;
-    description: string;
-    starter: string;
-    targetDate: string;
-  }[];
   timelineSummary: string;
   requestId?: string;
   availableCredits?: number;

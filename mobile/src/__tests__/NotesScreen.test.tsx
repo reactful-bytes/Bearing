@@ -21,7 +21,7 @@ function makeNote(overrides: Partial<NoteRecord> = {}): NoteRecord {
     body: 'Keep this idea around for later.',
     source: 'idea_dump',
     sourceEventId: 'event-1',
-    sourceStepId: null,
+    sourceMilestoneId: null,
     processed: false,
     archived: false,
     createdAt: new Date(2026, 6, 20, 10, 0, 0),
@@ -147,7 +147,7 @@ describe('NotesScreen', () => {
         body: 'Capture this before it disappears.',
         source: 'manual',
         sourceEventId: null,
-        sourceStepId: null,
+        sourceMilestoneId: null,
       });
     });
   });
