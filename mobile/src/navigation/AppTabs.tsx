@@ -327,7 +327,8 @@ function AppNavigationChrome({
   theme: ReturnType<typeof useTheme>['theme'];
 }) {
   const createFab = useRequiredCreateFab();
-  const isProfileTabActive = activeRouteName === 'Profile';
+  const shouldShowCreateFab =
+    activeRouteName === 'Plan' || activeRouteName === 'Calendar' || activeRouteName === 'Notes';
   return (
     <>
       {isDesktopNavigation ? (
@@ -366,7 +367,7 @@ function AppNavigationChrome({
           ))}
         </View>
       ) : null}
-      {!isProfileTabActive ? (
+      {shouldShowCreateFab ? (
         <CreateFabGroup
           visible={createFab.visible}
           bottomOffset={insets.bottom + theme.spacing.md}

@@ -472,8 +472,9 @@ function getSafeErrorLogContext(
     if (error instanceof Error) {
       let diagnosticMessage = error.message;
       for (const value of sensitiveValues) {
-        if (value)
+        if (value) {
           diagnosticMessage = diagnosticMessage.split(value).join("[redacted]");
+        }
       }
       diagnosticMessage = diagnosticMessage
         .replace(/\bAIza[0-9A-Za-z_-]{20,}\b/g, "[redacted-api-key]")

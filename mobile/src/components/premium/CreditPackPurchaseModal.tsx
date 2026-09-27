@@ -251,7 +251,13 @@ export function CreditPackPurchaseModal({
           <View>{selectionContent}</View>
         ) : null
       ) : (
-        <AppModal visible={selectionVisible} fullScreen closeLabel="Back" onClose={onClose}>
+        <AppModal
+          visible={selectionVisible}
+          fullScreen
+          safeAreaEdges={['top', 'right', 'bottom', 'left']}
+          closeLabel="Back"
+          onClose={onClose}
+        >
           {selectionContent}
         </AppModal>
       )}
@@ -266,6 +272,7 @@ export function CreditPackPurchaseModal({
         }
         closeLabel={transactionPack ? 'Close' : 'Back'}
         fullScreen
+        safeAreaEdges={['top', 'right', 'bottom', 'left']}
         onClose={() => {
           if (transactionPack) {
             if (!isPurchaseInProgress) setTransactionPack(null);

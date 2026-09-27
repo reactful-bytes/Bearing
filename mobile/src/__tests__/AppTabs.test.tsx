@@ -310,6 +310,18 @@ describe('AppTabs', () => {
     mockActiveTabName.value = 'Plan';
   });
 
+  it.each(['PremiumPaywall', 'LegalDocument'])(
+    'hides the Create FAB on the %s overlay route', (routeName) => {
+      mockActiveTabName.value = routeName;
+      const { queryByTestId } = render(
+        <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
+      );
+
+      expect(queryByTestId('create-fab-button')).toBeNull();
+      mockActiveTabName.value = 'Plan';
+    },
+  );
+
   it('expands the global Create FAB group without selecting a destination', () => {
     const { getByTestId } = render(
       <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,

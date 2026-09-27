@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CreditPackPurchaseModal } from '../components/premium/CreditPackPurchaseModal';
 import { getAiCreditStatus } from '../services/firebase/firebaseAiGoalPlans';
@@ -54,6 +55,34 @@ describe('CreditPackPurchaseModal', () => {
     jest.mocked(loadCreditPacks).mockResolvedValue([creditPack]);
     jest.mocked(purchaseCreditPack).mockResolvedValue('success');
     jest.mocked(getAiCreditStatus).mockResolvedValue({ eligible: true, availableCredits: 15 });
+  });
+
+  it('applies safe-area insets to the wizard credit-pack flow', async () => {
+    const { UNSAFE_getAllByType, findByRole } = render(
+      <CreditPackPurchaseModal
+        visible
+        userId="user-1"
+        enabled
+        source="ai_planning"
+        currentBalance={3}
+        onBalanceUpdated={jest.fn()}
+        onClose={jest.fn()}
+      />,
+    );
+
+    expect(UNSAFE_getAllByType(SafeAreaView)[0].props.edges).toEqual([
+      'top',
+      'right',
+      'bottom',
+      'left',
+    ]);
+    fireEvent.press(await findByRole('button', { name: 'Continue with 12 AI credits' }));
+    expect(UNSAFE_getAllByType(SafeAreaView)[0].props.edges).toEqual([
+      'top',
+      'right',
+      'bottom',
+      'left',
+    ]);
   });
 
   it('shows accurate unsupported guidance without loading packs', () => {

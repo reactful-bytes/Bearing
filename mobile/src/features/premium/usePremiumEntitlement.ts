@@ -28,29 +28,46 @@ export function usePremiumEntitlement(userId: string | null): UsePremiumEntitlem
       return;
     }
 
-    if (isPremiumDebugEnabled()) {
-      setEntitlement(getPremiumDebugEntitlement(userId));
-      setUiState('ready');
-      return subscribeToPremiumDebugAccess(() => {
-        setEntitlement(getPremiumDebugEntitlement(userId));
-      });
+    const currentUserId = userId;
+    setUiState('loading');
+    let active = true;
+    let storeEntitlement: PremiumEntitlementRecord | null = null;
+
+    function updateEntitlement(): void {
+      if (!active) return;
+      setEntitlement(
+        (isPremiumDebugEnabled() ? getPremiumDebugEntitlement(currentUserId) : null) ??
+          storeEntitlement,
+      );
     }
 
-    setUiState('loading');
+    const unsubscribeDebug = isPremiumDebugEnabled()
+      ? subscribeToPremiumDebugAccess(updateEntitlement)
+      : undefined;
 
-    return subscribeToPremiumEntitlement(
-      userId,
+    const unsubscribeEntitlement = subscribeToPremiumEntitlement(
+      currentUserId,
       (nextEntitlement) => {
-        setEntitlement(nextEntitlement);
+        storeEntitlement = nextEntitlement;
+        updateEntitlement();
         setUiState('ready');
         setError(null);
       },
       (subscriptionError) => {
-        setEntitlement(null);
-        setUiState('error');
-        setError(subscriptionError);
+        const debugEntitlement = isPremiumDebugEnabled()
+          ? getPremiumDebugEntitlement(currentUserId)
+          : null;
+        setEntitlement(debugEntitlement);
+        setUiState(debugEntitlement ? 'ready' : 'error');
+        setError(debugEntitlement ? null : subscriptionError);
       },
     );
+
+    return () => {
+      active = false;
+      unsubscribeEntitlement();
+      unsubscribeDebug?.();
+    };
   }, [userId]);
 
   return { entitlement, uiState, error };
