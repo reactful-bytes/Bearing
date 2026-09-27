@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 
 import { HttpsError } from "firebase-functions/v2/https";
+import { logger } from "firebase-functions/logger";
 
 import {
   AiCreditOperationResult,
@@ -317,7 +318,17 @@ export async function generateGoalPlanDraft(
   creditService?: GoalPlanCreditService,
   now = new Date(),
 ): Promise<GoalPlanDraft | MeteredGoalPlanDraft> {
-  const caller = await requirePremiumCaller(request, entitlementLookup);
+  const caller = await requirePremiumCaller(request, entitlementLookup).catch(
+    (error: unknown) => {
+      if (error instanceof HttpsError) {
+        logger.warn("ai_goal_plan_rejected", {
+          code: error.code,
+          stage: "entitlement",
+        });
+      }
+      throw error;
+    },
+  );
   const input = parseGoalPlanInput(request.data);
   const planningStartDate = formatUtcDate(now);
   if (input.targetDate <= planningStartDate) {
@@ -327,13 +338,17 @@ export async function generateGoalPlanDraft(
     );
   }
   if (!creditService) {
+    let failureStage = "provider_generation";
     try {
+      const generatedDraft = await generator({ ...input, planningStartDate });
+      failureStage = "draft_validation";
       return validateGoalPlanDraft(
-        await generator({ ...input, planningStartDate }),
+        generatedDraft,
         input.targetDate,
         planningStartDate,
       );
-    } catch {
+    } catch (error) {
+      logGoalPlanFailure(failureStage, error, [input.title, input.description]);
       throw new HttpsError(
         "internal",
         "A goal plan could not be generated. Try again or continue manually.",
@@ -343,34 +358,163 @@ export async function generateGoalPlanDraft(
 
   const requestId = getRequestId(request.data);
   const fingerprint = fingerprintGoalPlanInput(input);
+  let failureStage = "credit_operation";
   try {
     const result = await creditService.run(
       caller.uid,
       requestId,
       fingerprint,
-      async () =>
-        validateGoalPlanDraft(
-          await generator({ ...input, planningStartDate }),
+      async () => {
+        failureStage = "provider_generation";
+        const generatedDraft = await generator({ ...input, planningStartDate });
+        failureStage = "draft_validation";
+        return validateGoalPlanDraft(
+          generatedDraft,
           input.targetDate,
           planningStartDate,
-        ),
+        );
+      },
       now,
     );
+    failureStage = "draft_validation";
     const draft = validateGoalPlanDraft(
       result.draft,
       input.targetDate,
       planningStartDate,
     );
+    failureStage = "balance_lookup";
+    const availableCredits = await creditService.getBalance(caller.uid);
     return {
       ...draft,
       requestId,
-      availableCredits: await creditService.getBalance(caller.uid),
+      availableCredits,
     };
   } catch (error) {
-    if (error instanceof HttpsError) throw error;
+    if (error instanceof HttpsError) {
+      const diagnostic = {
+        ...getSafeErrorLogContext(error),
+        code: error.code,
+        stage: failureStage,
+      };
+      if (error.code === "internal" || error.code === "unavailable") {
+        logger.error("ai_goal_plan_failed", diagnostic);
+      } else {
+        logger.warn("ai_goal_plan_rejected", diagnostic);
+      }
+      throw error;
+    }
+    logGoalPlanFailure(failureStage, error, [input.title, input.description]);
     throw new HttpsError(
       "internal",
       "A goal plan could not be generated. Try again or continue manually.",
     );
   }
+}
+
+function logGoalPlanFailure(
+  stage: string,
+  error: unknown,
+  sensitiveValues: string[] = [],
+): void {
+  logger.error("ai_goal_plan_failed", {
+    stage,
+    ...getSafeErrorLogContext(error, sensitiveValues),
+  });
+}
+
+function getSafeErrorLogContext(
+  error: unknown,
+  sensitiveValues: string[] = [],
+): Record<string, string | number> {
+  const context: Record<string, string | number> = {
+    errorType: error instanceof Error ? error.name : "unknown",
+  };
+  if (!error || typeof error !== "object") return context;
+
+  const details = error as {
+    code?: unknown;
+    status?: unknown;
+    cause?: unknown;
+    finishReason?: unknown;
+    responseCharacters?: unknown;
+  };
+  if (
+    typeof details.code === "string" &&
+    /^[a-zA-Z0-9_-]{1,64}$/.test(details.code)
+  ) {
+    context.errorCode = details.code;
+  } else if (
+    typeof details.code === "number" &&
+    Number.isInteger(details.code)
+  ) {
+    context.errorCode = details.code;
+  }
+  if (
+    typeof details.finishReason === "string" &&
+    /^[A-Z_]{1,32}$/.test(details.finishReason)
+  ) {
+    context.providerFinishReason = details.finishReason;
+  }
+  if (
+    typeof details.responseCharacters === "number" &&
+    Number.isInteger(details.responseCharacters) &&
+    details.responseCharacters >= 0
+  ) {
+    context.providerResponseCharacters = details.responseCharacters;
+  }
+  if (
+    typeof details.status === "number" &&
+    Number.isInteger(details.status) &&
+    details.status >= 100 &&
+    details.status <= 599
+  ) {
+    context.httpStatus = details.status;
+    if (error instanceof Error) {
+      let diagnosticMessage = error.message;
+      for (const value of sensitiveValues) {
+        if (value)
+          diagnosticMessage = diagnosticMessage.split(value).join("[redacted]");
+      }
+      diagnosticMessage = diagnosticMessage
+        .replace(/\bAIza[0-9A-Za-z_-]{20,}\b/g, "[redacted-api-key]")
+        .replace(/\bBearer\s+\S+/gi, "Bearer [redacted]")
+        .replace(
+          /([?&](?:key|api[_-]?key|token|access_token)=)[^&\s]+/gi,
+          "$1[redacted]",
+        );
+      context.providerMessage = diagnosticMessage.slice(0, 500);
+    }
+  }
+
+  if (details.cause && typeof details.cause === "object") {
+    const cause = details.cause as {
+      name?: unknown;
+      code?: unknown;
+      status?: unknown;
+    };
+    if (
+      typeof cause.name === "string" &&
+      /^[a-zA-Z0-9_.-]{1,64}$/.test(cause.name)
+    ) {
+      context.causeType = cause.name;
+    }
+    if (
+      typeof cause.code === "string" &&
+      /^[a-zA-Z0-9_-]{1,64}$/.test(cause.code)
+    ) {
+      context.causeCode = cause.code;
+    } else if (typeof cause.code === "number" && Number.isInteger(cause.code)) {
+      context.causeCode = cause.code;
+    }
+    if (
+      typeof cause.status === "number" &&
+      Number.isInteger(cause.status) &&
+      cause.status >= 100 &&
+      cause.status <= 599
+    ) {
+      context.causeHttpStatus = cause.status;
+    }
+  }
+
+  return context;
 }

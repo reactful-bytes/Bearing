@@ -76,6 +76,33 @@ describe("AI goal plan", () => {
     });
   });
 
+  it("enforces milestone and task upper bounds server-side", () => {
+    const milestone = validDraft.milestones[0];
+    assert.throws(() =>
+      validateGoalPlanDraft({
+        ...validDraft,
+        milestones: Array.from({ length: 7 }, (_, index) => ({
+          ...milestone,
+          title: `Milestone ${index + 1}`,
+        })),
+      }),
+    );
+    assert.throws(() =>
+      validateGoalPlanDraft({
+        ...validDraft,
+        milestones: [
+          {
+            ...milestone,
+            tasks: Array.from({ length: 9 }, (_, index) => ({
+              ...milestone.tasks[0],
+              title: `Task ${index + 1}`,
+            })),
+          },
+        ],
+      }),
+    );
+  });
+
   it("rejects malformed provider output", () => {
     assert.throws(() =>
       validateGoalPlanDraft({ ...validDraft, milestones: [] }),

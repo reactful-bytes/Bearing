@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { Timestamp, getFirestore } from "firebase-admin/firestore";
+import { logger } from "firebase-functions/logger";
 import { HttpsError } from "firebase-functions/v2/https";
 
 import {
@@ -258,7 +259,35 @@ async function setOperationState(
   });
 }
 
-function throwTransactionFailure(error: unknown): never {
+function throwTransactionFailure(error: unknown, action: string): never {
+  const context: Record<string, string | number> = {
+    action,
+    errorType: error instanceof Error ? error.name : "unknown",
+  };
+  if (error instanceof RevenueCatV2RetryableError && error.status !== null) {
+    context.httpStatus = error.status;
+  } else if (error instanceof Error) {
+    const responseStatus =
+      /^RevenueCat virtual currency transaction failed: ([1-5]\d\d)$/.exec(
+        error.message,
+      )?.[1];
+    if (responseStatus) context.httpStatus = Number(responseStatus);
+  }
+  const cause = error instanceof Error ? error.cause : undefined;
+  if (cause instanceof Error) {
+    context.causeType = cause.name;
+    if (
+      "code" in cause &&
+      (typeof cause.code === "string" || typeof cause.code === "number")
+    ) {
+      const code = cause.code;
+      if (typeof code === "number" || /^[a-zA-Z0-9_-]{1,64}$/.test(code)) {
+        context.causeCode = code;
+      }
+    }
+  }
+  logger.error("ai_credit_transaction_failed", context);
+
   if (error instanceof RevenueCatVirtualCurrencyExhaustedError) {
     throw new HttpsError("resource-exhausted", error.message);
   }
@@ -299,7 +328,7 @@ export async function runAiCreditOperation<TDraft>(
         true,
       );
     } catch (error) {
-      throwTransactionFailure(error);
+      throwTransactionFailure(error, "recovery_refund");
     }
     throw new HttpsError(
       "internal",
@@ -320,7 +349,7 @@ export async function runAiCreditOperation<TDraft>(
         true,
       );
     }
-    throwTransactionFailure(error);
+    throwTransactionFailure(error, "debit");
   }
   operation = await setOperationState(repository, operation, "debited", now);
 
@@ -345,7 +374,7 @@ export async function runAiCreditOperation<TDraft>(
         true,
       );
     } catch (refundError) {
-      throwTransactionFailure(refundError);
+      throwTransactionFailure(refundError, "generation_refund");
     }
     throw generationError;
   }

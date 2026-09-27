@@ -1,6 +1,61 @@
 import { GoalPlanDraft, GoalPlanGenerator } from "./aiGoalPlan";
 
-export const GEMINI_GOAL_PLAN_MODEL = "gemini-3.6-flash";
+export const GEMINI_GOAL_PLAN_MODEL = "gemini-3.8-flash";
+
+type GeminiGoalPlanResponse = {
+  text?: string;
+  candidates?: Array<{ finishReason?: unknown }>;
+};
+
+export class GeminiGoalPlanOutputError extends Error {
+  readonly code = "gemini_output_invalid";
+  readonly finishReason: string;
+  readonly responseCharacters: number;
+
+  constructor(
+    message: string,
+    finishReason: string,
+    responseCharacters: number,
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
+    this.name = "GeminiGoalPlanOutputError";
+    this.finishReason = finishReason;
+    this.responseCharacters = responseCharacters;
+  }
+}
+
+export function parseGeminiGoalPlanResponse(
+  response: GeminiGoalPlanResponse,
+): Omit<GoalPlanDraft, "promptVersion"> {
+  const text = response.text ?? "";
+  const finishReason = String(
+    response.candidates?.[0]?.finishReason ?? "UNKNOWN",
+  );
+
+  if (!text.trim()) {
+    throw new GeminiGoalPlanOutputError(
+      finishReason === "MAX_TOKENS"
+        ? "Gemini reached its output token limit without returning goal-plan text."
+        : "Gemini returned no goal-plan text.",
+      finishReason,
+      text.length,
+    );
+  }
+
+  try {
+    return JSON.parse(text) as Omit<GoalPlanDraft, "promptVersion">;
+  } catch (error) {
+    throw new GeminiGoalPlanOutputError(
+      finishReason === "MAX_TOKENS"
+        ? "Gemini reached its output token limit before returning complete valid JSON."
+        : "Gemini returned goal-plan text that is not complete valid JSON.",
+      finishReason,
+      text.length,
+      { cause: error },
+    );
+  }
+}
 
 const GOAL_PLAN_SCHEMA = {
   type: "object",
@@ -28,7 +83,6 @@ const GOAL_PLAN_SCHEMA = {
     milestones: {
       type: "array",
       minItems: 1,
-      maxItems: 6,
       items: {
         type: "object",
         additionalProperties: false,
@@ -40,7 +94,6 @@ const GOAL_PLAN_SCHEMA = {
           tasks: {
             type: "array",
             minItems: 1,
-            maxItems: 8,
             items: {
               type: "object",
               additionalProperties: false,
@@ -80,14 +133,10 @@ export function createGeminiGoalPlanGenerator(
         responseMimeType: "application/json",
         responseJsonSchema: GOAL_PLAN_SCHEMA,
         temperature: 0.4,
-        maxOutputTokens: 2_048,
+        maxOutputTokens: 50_000,
       },
     });
 
-    if (!response.text) {
-      throw new Error("Gemini returned an empty goal plan.");
-    }
-
-    return JSON.parse(response.text) as Omit<GoalPlanDraft, "promptVersion">;
+    return parseGeminiGoalPlanResponse(response);
   };
 }
