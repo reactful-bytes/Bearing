@@ -29,6 +29,7 @@ type AppModalProps = {
   safeAreaEdges?: Edge[];
   hideHeader?: boolean;
   embedded?: boolean;
+  fullScreenEdgeToEdge?: boolean;
   children: ReactNode;
 };
 
@@ -42,6 +43,7 @@ export function AppModal({
   safeAreaEdges,
   hideHeader = false,
   embedded = false,
+  fullScreenEdgeToEdge = false,
   children,
 }: AppModalProps) {
   const styles = useThemedStyles(createStyles);
@@ -124,7 +126,15 @@ export function AppModal({
               </View>
             </View>
           ) : null}
-          <View style={[styles.body, fullScreen && styles.fullScreenBody]}>{children}</View>
+          <View
+            style={[
+              styles.body,
+              fullScreen && styles.fullScreenBody,
+              fullScreen && fullScreenEdgeToEdge ? styles.fullScreenBodyEdgeToEdge : null,
+            ]}
+          >
+            {children}
+          </View>
         </SafeAreaView>
         {!fullScreen && createFab ? (
           <CreateFabGroup
@@ -222,5 +232,8 @@ const createStyles = (theme: Theme) =>
     },
     fullScreenBody: {
       flex: 1,
+    },
+    fullScreenBodyEdgeToEdge: {
+      marginHorizontal: -spacing.lg,
     },
   });

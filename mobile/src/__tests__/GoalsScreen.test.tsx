@@ -474,24 +474,45 @@ describe('GoalsScreen', () => {
     expect(screen.getByText('Unlock AI goal builder with Bearing 360.')).toBeTruthy();
     expect(screen.getByText('View Bearing 360 Plans')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Continue'));
-    fireEvent.changeText(screen.getByLabelText('Draft milestone 1 name'), 'Buy running shoes');
+    fireEvent.press(screen.getByLabelText('Expand milestone 1: Milestone 1'));
+    fireEvent.press(screen.getByLabelText('Edit milestone 1'));
+    fireEvent.changeText(screen.getByLabelText('Edit milestone name'), 'Buy running shoes');
     fireEvent.changeText(
-      screen.getByLabelText('Draft milestone 1 description'),
+      screen.getByLabelText('Edit milestone description'),
       'Choose a supportive pair.',
     );
-    fireEvent.changeText(screen.getByLabelText('Milestone 1 task 1 title'), 'Visit running stores');
-    fireEvent.changeText(screen.getByLabelText('Milestone 1 task 1 starter'), 'Visit two stores');
-    fireEvent.press(screen.getByLabelText('Select draft milestone 1 month'));
-    fireEvent.press(screen.getByLabelText('Select draft milestone 1 November'));
+    fireEvent.press(screen.getByLabelText('Select edit milestone month'));
+    fireEvent.press(screen.getByLabelText('Select edit milestone November'));
     fireEvent.press(screen.getByLabelText('November 5, 2026'));
+    fireEvent.press(screen.getByLabelText('Save plan item changes'));
+    fireEvent.press(screen.getByLabelText('Edit task 1 in milestone 1: Task 1'));
+    fireEvent.changeText(screen.getByLabelText('Edit task name'), 'Visit running stores');
+    fireEvent.changeText(screen.getByLabelText('Edit task starter cue'), 'Visit two stores');
+    fireEvent.press(screen.getByLabelText('Save plan item changes'));
     fireEvent.press(screen.getByLabelText('Save goal'));
     expect(
       screen.getByText('Milestone 1 must finish on or before the goal target date.'),
     ).toBeTruthy();
     expect(createGoalMock).not.toHaveBeenCalled();
-    fireEvent.press(screen.getByLabelText('Select draft milestone 1 month'));
-    fireEvent.press(screen.getByLabelText('Select draft milestone 1 August'));
+    fireEvent.press(screen.getByLabelText('Edit milestone Buy running shoes'));
+    fireEvent.press(screen.getByLabelText('Select edit milestone month'));
+    fireEvent.press(screen.getByLabelText('Select edit milestone August'));
     fireEvent.press(screen.getByLabelText('August 5, 2026'));
+    fireEvent.press(screen.getByLabelText('Save plan item changes'));
+
+    fireEvent.press(screen.getByLabelText('Add task to draft milestone 1'));
+    fireEvent.press(screen.getByLabelText('Remove task'));
+    expect(screen.getByText('This task will be removed from the goal draft.')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Confirm removal of plan item'));
+    expect(screen.queryByText('Untitled task')).toBeNull();
+
+    fireEvent.press(screen.getByLabelText('Add another draft milestone'));
+    fireEvent.press(screen.getByLabelText('Remove milestone'));
+    expect(
+      screen.getByText('This milestone and all of its tasks will be removed from the goal draft.'),
+    ).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Confirm removal of plan item'));
+    expect(screen.queryByLabelText('Edit milestone 2')).toBeNull();
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Save goal'));
@@ -729,10 +750,18 @@ describe('GoalsScreen', () => {
     await waitFor(() => expect(mockedGenerateAiGoalPlanDraft).toHaveBeenCalledTimes(2));
 
     fireEvent.press(screen.getByLabelText('Continue'));
-    fireEvent.changeText(screen.getByLabelText('Draft milestone 1 name'), 'Build consistency');
+    expect(screen.getByText('Build a running base')).toBeTruthy();
+    expect(screen.queryByText('Choose weekly run times')).toBeNull();
+    fireEvent.press(screen.getByLabelText('Expand milestone 1: Build a running base'));
+    expect(screen.getByText('Choose weekly run times')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Edit milestone Build a running base'));
+    fireEvent.changeText(screen.getByLabelText('Edit milestone name'), 'Build consistency');
+    fireEvent.press(screen.getByLabelText('Save plan item changes'));
+    fireEvent.press(screen.getByLabelText('Edit task 1 in milestone 1: Choose weekly run times'));
     expect(screen.getByDisplayValue('Choose weekly run times')).toBeTruthy();
-    expect(screen.getAllByLabelText('August 24, 2026')).toHaveLength(2);
-    fireEvent.changeText(screen.getByLabelText('Milestone 1 task 1 title'), 'Schedule weekly runs');
+    expect(screen.getAllByLabelText('August 24, 2026')).toHaveLength(1);
+    fireEvent.changeText(screen.getByLabelText('Edit task name'), 'Schedule weekly runs');
+    fireEvent.press(screen.getByLabelText('Save plan item changes'));
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Save goal'));
@@ -813,7 +842,7 @@ describe('GoalsScreen', () => {
     ).mock.calls;
     expect(generationCalls[0][0].requestId).toBe(generationCalls[1][0].requestId);
     fireEvent.press(screen.getByLabelText('Continue'));
-    expect(screen.getByLabelText('Draft milestone 1 name')).toBeTruthy();
+    expect(screen.getByLabelText('Expand milestone 1: Milestone 1')).toBeTruthy();
   });
 
   it('explains when the server has not confirmed premium access for AI planning', async () => {
@@ -862,7 +891,7 @@ describe('GoalsScreen', () => {
       true,
     );
     fireEvent.press(screen.getByLabelText('Continue'));
-    expect(screen.getByLabelText('Draft milestone 1 name')).toBeTruthy();
+    expect(screen.getByLabelText('Expand milestone 1: Milestone 1')).toBeTruthy();
   });
 
   it('refreshes the balance and explains backend credit exhaustion', async () => {

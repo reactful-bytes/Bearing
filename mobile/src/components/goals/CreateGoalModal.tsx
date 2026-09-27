@@ -9,8 +9,10 @@ import { randomUUID } from 'expo-crypto';
 import { AppCard } from '../ui/AppCard';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
+import { AppIcon } from '../ui/AppIcon';
 import { CreditPackPurchaseModal } from '../premium/CreditPackPurchaseModal';
 import { FormField } from '../ui/FormField';
+import { IconButton } from '../ui/IconButton';
 import { ScreenHeader } from '../ui/ScreenHeader';
 import {
   GoalDateParts,
@@ -59,6 +61,26 @@ type DraftGoalMilestone = {
   tasks: DraftGoalTask[];
 };
 
+type GoalPlanEditorDraft =
+  | {
+      kind: 'milestone';
+      milestoneId: string;
+      title: string;
+      description: string;
+      dateParts: GoalDateParts;
+      isNew?: boolean;
+    }
+  | {
+      kind: 'task';
+      milestoneId: string;
+      taskId: string;
+      title: string;
+      description: string;
+      starter: string;
+      dateParts: GoalDateParts;
+      isNew?: boolean;
+    };
+
 const WIZARD_TITLES = [
   'SMART Setup',
   'Goal Details',
@@ -75,10 +97,24 @@ const SMART_ITEMS = [
   { letter: 'T', label: 'Time-bound', description: 'Has a clear deadline', tone: 'importedCyan' },
 ] as const;
 
-function makeEmptyDraftTask(index: number, baseDate: Date): DraftGoalTask {
+function makeDraftId(prefix: string, index: number, existingIds: string[] = []): string {
+  let candidateIndex = index;
+  let id = `${prefix}-${candidateIndex}`;
+  while (existingIds.includes(id)) {
+    candidateIndex += 1;
+    id = `${prefix}-${candidateIndex}`;
+  }
+  return id;
+}
+
+function makeEmptyDraftTask(
+  index: number,
+  baseDate: Date,
+  existingIds: string[] = [],
+): DraftGoalTask {
   const dateParts = buildDefaultGoalDateParts(baseDate);
   return {
-    id: `draft-task-${index}`,
+    id: makeDraftId('draft-task', index, existingIds),
     title: '',
     description: '',
     starter: '',
@@ -87,10 +123,14 @@ function makeEmptyDraftTask(index: number, baseDate: Date): DraftGoalTask {
   };
 }
 
-function makeEmptyDraftMilestone(index: number, baseDate: Date): DraftGoalMilestone {
+function makeEmptyDraftMilestone(
+  index: number,
+  baseDate: Date,
+  existingIds: string[] = [],
+): DraftGoalMilestone {
   const dateParts = buildDefaultGoalDateParts(baseDate);
   return {
-    id: `draft-milestone-${index}`,
+    id: makeDraftId('draft-milestone', index, existingIds),
     title: '',
     description: '',
     estimatedFinishDate: getGoalDateFromParts(dateParts),
@@ -137,6 +177,14 @@ function formatAiTargetDate(dateParts: GoalDateParts): string {
   return `${dateParts.year}-${formatTwoDigits(dateParts.month)}-${formatTwoDigits(dateParts.day)}`;
 }
 
+function formatReviewDate(dateParts: GoalDateParts): string {
+  return getGoalDateFromParts(dateParts).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
 export function CreateGoalModal({
   visible,
   onClose,
@@ -164,6 +212,8 @@ export function CreateGoalModal({
     makeEmptyDraftMilestone(1, today),
   ]);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
+  const [editorDraft, setEditorDraft] = useState<GoalPlanEditorDraft | null>(null);
+  const [removeConfirmationVisible, setRemoveConfirmationVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [aiDraft, setAiDraft] = useState<AiGoalPlanDraft | null>(null);
@@ -220,6 +270,8 @@ export function CreateGoalModal({
     setGoalDateParts(buildDefaultGoalDateParts(today));
     setDraftMilestones([makeEmptyDraftMilestone(1, today)]);
     setExpandedRows(new Set());
+    setEditorDraft(null);
+    setRemoveConfirmationVisible(false);
     setSaving(false);
     setError(null);
     setAiDraft(null);
@@ -237,38 +289,6 @@ export function CreateGoalModal({
     onClose();
   }
 
-  function updateMilestoneField(
-    milestoneId: string,
-    field: 'title' | 'description',
-    value: string,
-  ): void {
-    setDraftMilestones((current) =>
-      current.map((milestone) =>
-        milestone.id === milestoneId ? { ...milestone, [field]: value } : milestone,
-      ),
-    );
-  }
-
-  function updateTaskField(
-    milestoneId: string,
-    taskId: string,
-    field: 'title' | 'description' | 'starter',
-    value: string,
-  ): void {
-    setDraftMilestones((current) =>
-      current.map((milestone) =>
-        milestone.id === milestoneId
-          ? {
-              ...milestone,
-              tasks: milestone.tasks.map((task) =>
-                task.id === taskId ? { ...task, [field]: value } : task,
-              ),
-            }
-          : milestone,
-      ),
-    );
-  }
-
   function toggleExpandedRow(rowId: string): void {
     setExpandedRows((current) => {
       const next = new Set(current);
@@ -276,6 +296,121 @@ export function CreateGoalModal({
       else next.add(rowId);
       return next;
     });
+  }
+
+  function openMilestoneEditor(milestone: DraftGoalMilestone, isNew = false): void {
+    setEditorDraft({
+      kind: 'milestone',
+      milestoneId: milestone.id,
+      title: milestone.title,
+      description: milestone.description,
+      dateParts: milestone.dateParts,
+      isNew,
+    });
+  }
+
+  function openTaskEditor(milestone: DraftGoalMilestone, task: DraftGoalTask, isNew = false): void {
+    setEditorDraft({
+      kind: 'task',
+      milestoneId: milestone.id,
+      taskId: task.id,
+      title: task.title,
+      description: task.description,
+      starter: task.starter,
+      dateParts: task.dateParts,
+      isNew,
+    });
+  }
+
+  function cancelEditorDraft(): void {
+    if (editorDraft?.isNew) {
+      if (editorDraft.kind === 'milestone') {
+        setDraftMilestones((current) =>
+          current.filter((milestone) => milestone.id !== editorDraft.milestoneId),
+        );
+        setExpandedRows((current) => {
+          const next = new Set(current);
+          next.delete(`milestone:${editorDraft.milestoneId}`);
+          return next;
+        });
+      } else {
+        setDraftMilestones((current) =>
+          current.map((milestone) =>
+            milestone.id === editorDraft.milestoneId
+              ? {
+                  ...milestone,
+                  tasks: milestone.tasks.filter((task) => task.id !== editorDraft.taskId),
+                }
+              : milestone,
+          ),
+        );
+      }
+    }
+    setEditorDraft(null);
+  }
+
+  function saveEditorDraft(): void {
+    if (!editorDraft) return;
+    const date = getGoalDateFromParts(editorDraft.dateParts);
+    setDraftMilestones((current) =>
+      current.map((milestone) => {
+        if (milestone.id !== editorDraft.milestoneId) return milestone;
+        if (editorDraft.kind === 'milestone') {
+          return {
+            ...milestone,
+            title: editorDraft.title,
+            description: editorDraft.description,
+            dateParts: editorDraft.dateParts,
+            estimatedFinishDate: date,
+          };
+        }
+        return {
+          ...milestone,
+          tasks: milestone.tasks.map((task) =>
+            task.id === editorDraft.taskId
+              ? {
+                  ...task,
+                  title: editorDraft.title,
+                  description: editorDraft.description,
+                  starter: editorDraft.starter,
+                  dateParts: editorDraft.dateParts,
+                  dueDate: date,
+                }
+              : task,
+          ),
+        };
+      }),
+    );
+    setEditorDraft(null);
+    setError(null);
+  }
+
+  function removeEditorDraft(): void {
+    if (!editorDraft) return;
+    if (editorDraft.kind === 'milestone') {
+      setDraftMilestones((current) =>
+        current.filter((milestone) => milestone.id !== editorDraft.milestoneId),
+      );
+      setExpandedRows((current) => {
+        const next = new Set(current);
+        next.delete(`milestone:${editorDraft.milestoneId}`);
+        return next;
+      });
+    } else {
+      setDraftMilestones((current) =>
+        current.map((milestone) =>
+          milestone.id === editorDraft.milestoneId
+            ? {
+                ...milestone,
+                tasks: milestone.tasks.filter((task) => task.id !== editorDraft.taskId),
+              }
+            : milestone,
+        ),
+      );
+    }
+    setEditorDraft(null);
+    setRemoveConfirmationVisible(false);
+    setError(null);
   }
 
   async function handleGenerateAiPlan(): Promise<void> {
@@ -360,37 +495,6 @@ export function CreateGoalModal({
     } finally {
       setAiGenerating(false);
     }
-  }
-
-  function updateMilestoneDate(milestoneId: string, date: Date): void {
-    const dateParts = buildGoalDateParts(date);
-    setDraftMilestones((current) =>
-      current.map((milestone) =>
-        milestone.id === milestoneId
-          ? { ...milestone, dateParts, estimatedFinishDate: getGoalDateFromParts(dateParts) }
-          : milestone,
-      ),
-    );
-    setError(null);
-  }
-
-  function updateTaskDate(milestoneId: string, taskId: string, date: Date): void {
-    const dateParts = buildGoalDateParts(date);
-    setDraftMilestones((current) =>
-      current.map((milestone) =>
-        milestone.id === milestoneId
-          ? {
-              ...milestone,
-              tasks: milestone.tasks.map((task) =>
-                task.id === taskId
-                  ? { ...task, dateParts, dueDate: getGoalDateFromParts(dateParts) }
-                  : task,
-              ),
-            }
-          : milestone,
-      ),
-    );
-    setError(null);
   }
 
   function updateGoalDate(date: Date): void {
@@ -781,154 +885,158 @@ export function CreateGoalModal({
 
           {wizardIndex === 4 ? (
             <View style={styles.section}>
+              <View style={styles.reviewIntro}>
+                <Text style={styles.reviewTitle}>Review your plan</Text>
+                <Text style={styles.reviewHint}>
+                  Open a milestone to review its tasks. Use the edit button to change details or
+                  remove an item.
+                </Text>
+              </View>
               {draftMilestones.map((milestone, index) => (
-                <AppCard key={milestone.id} style={styles.milestoneCard}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${expandedRows.has(`milestone:${milestone.id}`) ? 'Collapse' : 'Expand'} milestone ${index + 1}: ${milestone.title || `Milestone ${index + 1}`}`}
-                    accessibilityState={{ expanded: expandedRows.has(`milestone:${milestone.id}`) }}
-                    onPress={() => toggleExpandedRow(`milestone:${milestone.id}`)}
-                    style={({ pressed }) => [styles.expandableRow, pressed && styles.rowPressed]}
-                  >
-                    <View style={styles.rowCopy}>
-                      <Text style={styles.rowEyebrow}>Milestone {index + 1}</Text>
-                      <Text style={styles.rowTitle} numberOfLines={2}>
-                        {milestone.title || 'Untitled milestone'}
-                      </Text>
-                    </View>
-                    <Text style={styles.expandIcon}>
-                      {expandedRows.has(`milestone:${milestone.id}`) ? '⌃' : '⌄'}
-                    </Text>
-                  </Pressable>
+                <View key={milestone.id} style={styles.milestoneGroup}>
+                  <View style={styles.milestoneHeader}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`${expandedRows.has(`milestone:${milestone.id}`) ? 'Collapse' : 'Expand'} milestone ${index + 1}: ${milestone.title || `Milestone ${index + 1}`}`}
+                      accessibilityHint="Shows or hides the tasks in this milestone"
+                      accessibilityState={{
+                        expanded: expandedRows.has(`milestone:${milestone.id}`),
+                      }}
+                      onPress={() => toggleExpandedRow(`milestone:${milestone.id}`)}
+                      style={({ pressed }) => [styles.milestoneRow, pressed && styles.rowPressed]}
+                    >
+                      <View style={styles.milestoneNumber}>
+                        <Text style={styles.milestoneNumberText}>{index + 1}</Text>
+                      </View>
+                      <View style={styles.rowCopy}>
+                        <Text style={styles.rowEyebrow}>MILESTONE {index + 1}</Text>
+                        <Text style={styles.rowTitle} numberOfLines={2}>
+                          {milestone.title || 'Untitled milestone'}
+                        </Text>
+                        <View style={styles.rowMeta}>
+                          <AppIcon name="date" size={14} color={theme.colors.textSecondary} />
+                          <Text style={styles.rowMetaText}>
+                            {formatReviewDate(milestone.dateParts)}
+                          </Text>
+                          <View style={styles.metaSeparator} />
+                          <View style={styles.taskCounter}>
+                            <AppIcon
+                              name="tasks"
+                              size={14}
+                              color={theme.colors.textSecondary}
+                              decorative
+                            />
+                            <Text style={styles.taskCounterText}>
+                              {milestone.tasks.length}{' '}
+                              {milestone.tasks.length === 1 ? 'task' : 'tasks'}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                      <AppIcon
+                        name={expandedRows.has(`milestone:${milestone.id}`) ? 'collapse' : 'expand'}
+                        size={20}
+                        color={theme.colors.textSecondary}
+                        decorative
+                      />
+                    </Pressable>
+                    <IconButton
+                      name="edit"
+                      size={18}
+                      accessibilityLabel={`Edit milestone ${milestone.title || index + 1}`}
+                      onPress={() => openMilestoneEditor(milestone)}
+                    />
+                  </View>
+                  <View style={styles.divider} />
                   {expandedRows.has(`milestone:${milestone.id}`) ? (
-                    <View style={styles.expandedFields}>
-                      <FormField
-                        label="Milestone name"
-                        accessibilityLabel={`Draft milestone ${index + 1} name`}
-                        value={milestone.title}
-                        onChangeText={(value) => updateMilestoneField(milestone.id, 'title', value)}
-                        placeholder="Name an important outcome"
-                        placeholderTextColor={theme.colors.textSecondary}
-                      />
-                      <FormField
-                        label="Description"
-                        accessibilityLabel={`Draft milestone ${index + 1} description`}
-                        value={milestone.description}
-                        onChangeText={(value) =>
-                          updateMilestoneField(milestone.id, 'description', value)
-                        }
-                        multiline
-                        placeholder="What reaching this milestone means"
-                        placeholderTextColor={theme.colors.textSecondary}
-                      />
-                      <GoalDatePicker
-                        title="Milestone target date"
-                        accessibilityPrefix={`draft milestone ${index + 1}`}
-                        dateParts={milestone.dateParts}
-                        onSelectDate={(date) => updateMilestoneDate(milestone.id, date)}
-                      />
+                    <View style={styles.expandedTasks}>
+                      <View style={styles.taskSection}>
+                        {milestone.tasks.length === 0 ? (
+                          <Text style={styles.emptyTasksText}>
+                            No tasks yet. Add one to get started.
+                          </Text>
+                        ) : null}
+                        {milestone.tasks.map((task, taskIndex) => (
+                          <View key={task.id}>
+                            <Pressable
+                              accessibilityRole="button"
+                              accessibilityLabel={`Edit task ${taskIndex + 1} in milestone ${index + 1}: ${task.title || `Task ${taskIndex + 1}`}`}
+                              accessibilityHint="Opens task details, target date, and remove action"
+                              onPress={() => openTaskEditor(milestone, task)}
+                              style={({ pressed }) => [
+                                styles.taskRow,
+                                pressed && styles.rowPressed,
+                              ]}
+                            >
+                              <View style={styles.taskNumber}>
+                                <Text style={styles.taskNumberText}>{taskIndex + 1}</Text>
+                              </View>
+                              <View style={styles.rowCopy}>
+                                <Text style={styles.taskTitle} numberOfLines={2}>
+                                  {task.title || 'Untitled task'}
+                                </Text>
+                                <Text style={styles.taskDate}>
+                                  Due {formatReviewDate(task.dateParts)}
+                                </Text>
+                              </View>
+                              <AppIcon
+                                name="edit"
+                                size={16}
+                                color={theme.colors.textSecondary}
+                                decorative
+                              />
+                            </Pressable>
+                            {taskIndex < milestone.tasks.length - 1 ? (
+                              <View style={styles.taskDivider} />
+                            ) : null}
+                          </View>
+                        ))}
+                      </View>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Add task to draft milestone ${index + 1}`}
+                        onPress={() => {
+                          const task = makeEmptyDraftTask(
+                            milestone.tasks.length + 1,
+                            today,
+                            milestone.tasks.map((existingTask) => existingTask.id),
+                          );
+                          setDraftMilestones((current) =>
+                            current.map((candidate) =>
+                              candidate.id === milestone.id
+                                ? { ...candidate, tasks: [...candidate.tasks, task] }
+                                : candidate,
+                            ),
+                          );
+                          openTaskEditor(milestone, task, true);
+                        }}
+                        style={({ pressed }) => [
+                          styles.addTaskButton,
+                          pressed && styles.rowPressed,
+                        ]}
+                      >
+                        <AppIcon name="add" size={18} color={theme.colors.brand} decorative />
+                        <Text style={styles.addTaskText}>Add task</Text>
+                      </Pressable>
                     </View>
                   ) : null}
-                  <View style={styles.taskSection}>
-                    {milestone.tasks.map((task, taskIndex) => {
-                      const rowId = `task:${milestone.id}:${task.id}`;
-                      const expanded = expandedRows.has(rowId);
-                      return (
-                        <View key={task.id} style={styles.taskGroup}>
-                          <Pressable
-                            accessibilityRole="button"
-                            accessibilityLabel={`${expanded ? 'Collapse' : 'Expand'} task ${taskIndex + 1} in milestone ${index + 1}: ${task.title || `Task ${taskIndex + 1}`}`}
-                            accessibilityState={{ expanded }}
-                            onPress={() => toggleExpandedRow(rowId)}
-                            style={({ pressed }) => [
-                              styles.expandableRow,
-                              styles.taskRow,
-                              pressed && styles.rowPressed,
-                            ]}
-                          >
-                            <View style={styles.rowCopy}>
-                              <Text style={styles.rowEyebrow}>Task {taskIndex + 1}</Text>
-                              <Text style={styles.rowTitle} numberOfLines={2}>
-                                {task.title || 'Untitled task'}
-                              </Text>
-                            </View>
-                            <Text style={styles.expandIcon}>{expanded ? '⌃' : '⌄'}</Text>
-                          </Pressable>
-                          {expanded ? (
-                            <View style={[styles.expandedFields, styles.taskFields]}>
-                              <FormField
-                                label="Task title"
-                                accessibilityLabel={`Milestone ${index + 1} task ${taskIndex + 1} title`}
-                                value={task.title}
-                                onChangeText={(value) =>
-                                  updateTaskField(milestone.id, task.id, 'title', value)
-                                }
-                                placeholder="Add a doable action"
-                              />
-                              <FormField
-                                label="Description"
-                                accessibilityLabel={`Milestone ${index + 1} task ${taskIndex + 1} description`}
-                                value={task.description}
-                                onChangeText={(value) =>
-                                  updateTaskField(milestone.id, task.id, 'description', value)
-                                }
-                                multiline
-                                placeholder="Optional details"
-                              />
-                              <FormField
-                                label="Starter cue"
-                                accessibilityLabel={`Milestone ${index + 1} task ${taskIndex + 1} starter`}
-                                value={task.starter}
-                                onChangeText={(value) =>
-                                  updateTaskField(milestone.id, task.id, 'starter', value)
-                                }
-                                placeholder="Optional first action"
-                              />
-                              <GoalDatePicker
-                                title="Task due date"
-                                accessibilityPrefix={`draft milestone ${index + 1} task ${taskIndex + 1}`}
-                                dateParts={task.dateParts}
-                                onSelectDate={(date) => updateTaskDate(milestone.id, task.id, date)}
-                              />
-                            </View>
-                          ) : null}
-                        </View>
-                      );
-                    })}
-                  </View>
-                  <AppButton
-                    label="Add Task"
-                    variant="secondary"
-                    accessibilityLabel={`Add task to draft milestone ${index + 1}`}
-                    onPress={() =>
-                      setDraftMilestones((current) =>
-                        current.map((candidate) =>
-                          candidate.id === milestone.id
-                            ? {
-                                ...candidate,
-                                tasks: [
-                                  ...candidate.tasks,
-                                  makeEmptyDraftTask(candidate.tasks.length + 1, today),
-                                ],
-                              }
-                            : candidate,
-                        ),
-                      )
-                    }
-                  />
-                </AppCard>
+                </View>
               ))}
 
               <AppButton
                 label="Add Another Milestone"
                 variant="secondary"
                 accessibilityLabel="Add another draft milestone"
-                onPress={() =>
-                  setDraftMilestones((current) => [
-                    ...current,
-                    makeEmptyDraftMilestone(current.length + 1, today),
-                  ])
-                }
+                onPress={() => {
+                  const milestone = makeEmptyDraftMilestone(
+                    draftMilestones.length + 1,
+                    today,
+                    draftMilestones.map((existingMilestone) => existingMilestone.id),
+                  );
+                  setDraftMilestones((current) => [...current, milestone]);
+                  setExpandedRows((current) => new Set(current).add(`milestone:${milestone.id}`));
+                  openMilestoneEditor(milestone, true);
+                }}
               />
             </View>
           ) : null}
@@ -965,6 +1073,125 @@ export function CreateGoalModal({
             )}
           </View>
         </ScrollView>
+      </AppModal>
+      <AppModal
+        visible={editorDraft !== null && !removeConfirmationVisible}
+        onClose={cancelEditorDraft}
+        fullScreen
+        fullScreenEdgeToEdge
+        hideHeader
+      >
+        {editorDraft ? (
+          <ScrollView
+            style={styles.editorScrollView}
+            contentContainerStyle={[
+              styles.editorContent,
+              {
+                paddingTop: insets.top,
+                paddingHorizontal: spacing.lg,
+                paddingBottom: spacing['2xl'] + insets.bottom,
+              },
+            ]}
+          >
+            <ScreenHeader
+              title={editorDraft.kind === 'task' ? 'Edit Task' : 'Edit Milestone'}
+              onPressBack={cancelEditorDraft}
+              backAccessibilityLabel="Cancel plan item editing"
+            />
+            <FormField
+              label={editorDraft.kind === 'task' ? 'Task name' : 'Milestone name'}
+              accessibilityLabel={
+                editorDraft.kind === 'task' ? 'Edit task name' : 'Edit milestone name'
+              }
+              value={editorDraft.title}
+              onChangeText={(value) =>
+                setEditorDraft((current) => (current ? { ...current, title: value } : current))
+              }
+              placeholder={editorDraft.kind === 'task' ? 'Name this action' : 'Name this milestone'}
+              placeholderTextColor={theme.colors.textSecondary}
+            />
+            <FormField
+              label="Description"
+              accessibilityLabel={
+                editorDraft.kind === 'task' ? 'Edit task description' : 'Edit milestone description'
+              }
+              value={editorDraft.description}
+              onChangeText={(value) =>
+                setEditorDraft((current) =>
+                  current ? { ...current, description: value } : current,
+                )
+              }
+              multiline
+              placeholder="Optional details"
+              placeholderTextColor={theme.colors.textSecondary}
+            />
+            {editorDraft.kind === 'task' ? (
+              <FormField
+                label="Starter cue"
+                accessibilityLabel="Edit task starter cue"
+                value={editorDraft.starter}
+                onChangeText={(value) =>
+                  setEditorDraft((current) =>
+                    current?.kind === 'task' ? { ...current, starter: value } : current,
+                  )
+                }
+                placeholder="A useful first action"
+                placeholderTextColor={theme.colors.textSecondary}
+              />
+            ) : null}
+            <GoalDatePicker
+              title={editorDraft.kind === 'task' ? 'Task due date' : 'Milestone target date'}
+              accessibilityPrefix={editorDraft.kind === 'task' ? 'edit task' : 'edit milestone'}
+              dateParts={editorDraft.dateParts}
+              onSelectDate={(date) =>
+                setEditorDraft((current) =>
+                  current ? { ...current, dateParts: buildGoalDateParts(date) } : current,
+                )
+              }
+            />
+            <View style={styles.editorActions}>
+              <AppButton
+                label="Save Changes"
+                accessibilityLabel="Save plan item changes"
+                onPress={saveEditorDraft}
+              />
+              <AppButton
+                label={editorDraft.kind === 'task' ? 'Remove Task' : 'Remove Milestone'}
+                variant="danger"
+                accessibilityLabel={
+                  editorDraft.kind === 'task' ? 'Remove task' : 'Remove milestone'
+                }
+                onPress={() => setRemoveConfirmationVisible(true)}
+              />
+            </View>
+          </ScrollView>
+        ) : null}
+      </AppModal>
+      <AppModal
+        visible={removeConfirmationVisible && editorDraft !== null}
+        title={editorDraft?.kind === 'task' ? 'Remove task?' : 'Remove milestone?'}
+        closeLabel="Keep item"
+        onClose={() => setRemoveConfirmationVisible(false)}
+      >
+        <View style={styles.confirmationContent}>
+          <Text style={styles.cardBody}>
+            {editorDraft?.kind === 'task'
+              ? 'This task will be removed from the goal draft.'
+              : 'This milestone and all of its tasks will be removed from the goal draft.'}
+          </Text>
+          <AppButton
+            label={editorDraft?.kind === 'task' ? 'Remove Task' : 'Remove Milestone'}
+            variant="danger"
+            accessibilityLabel="Confirm removal of plan item"
+            onPress={removeEditorDraft}
+          />
+          <AppButton
+            label="Keep Item"
+            variant="secondary"
+            accessibilityLabel="Cancel plan item removal"
+            onPress={() => setRemoveConfirmationVisible(false)}
+          />
+        </View>
       </AppModal>
       <AppModal
         visible={regenerationConfirmationVisible}
@@ -1186,20 +1413,21 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.textSecondary,
       fontWeight: '600',
     },
-    milestoneFields: {
-      gap: spacing.sm,
-      paddingTop: spacing.sm,
+    milestoneGroup: {
+      gap: spacing.xs,
     },
-    milestoneCard: {
-      gap: spacing.sm,
-      padding: spacing.md,
-    },
-    expandableRow: {
+    milestoneHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.md,
-      minHeight: 56,
-      paddingHorizontal: spacing.sm,
+      gap: spacing.xs,
+    },
+    milestoneRow: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      minHeight: 68,
+      paddingHorizontal: spacing.xs,
       paddingVertical: spacing.sm,
       borderRadius: radii.md,
     },
@@ -1208,42 +1436,146 @@ const createStyles = (theme: Theme) =>
     },
     rowCopy: {
       flex: 1,
-      gap: 2,
+      gap: spacing.xs,
     },
     rowEyebrow: {
+      ...typography.caption,
+      color: theme.colors.textSecondary,
+      fontWeight: '700',
+      letterSpacing: 0.6,
+    },
+    rowMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    rowMetaText: {
       ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    rowTitle: {
+      ...typography.body,
+      color: theme.colors.text,
+      fontWeight: '700',
+    },
+    taskCounter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    taskCounterText: {
+      ...typography.caption,
+      color: theme.colors.textSecondary,
+    },
+    metaSeparator: {
+      width: 3,
+      height: 3,
+      borderRadius: 2,
+      backgroundColor: theme.colors.border,
+      marginHorizontal: spacing.xs,
+    },
+    milestoneNumber: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.surfaceBrand,
+    },
+    milestoneNumberText: {
+      ...typography.label,
+      color: theme.colors.brand,
+      fontWeight: '700',
+    },
+    divider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.colors.border,
+      marginHorizontal: spacing.sm,
+    },
+    taskSection: {
+      paddingLeft: 0,
+    },
+    expandedTasks: {
+      gap: spacing.xs,
+      paddingTop: spacing.xs,
+    },
+    taskRow: {
+      minHeight: 56,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      borderRadius: radii.md,
+    },
+    taskTitle: {
+      ...typography.label,
+      color: theme.colors.textPrimary,
+      fontWeight: '600',
+    },
+    taskDate: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+    },
+    taskDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.colors.border,
+      marginHorizontal: spacing.sm,
+    },
+    taskNumber: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.surfaceMuted,
+    },
+    taskNumberText: {
+      ...typography.caption,
       color: theme.colors.textSecondary,
       fontWeight: '600',
     },
-    rowTitle: {
-      ...typography.button,
+    emptyTasksText: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.md,
+    },
+    addTaskButton: {
+      minHeight: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      gap: spacing.xs,
+      marginLeft: spacing.md + spacing.sm,
+      paddingHorizontal: spacing.sm,
+      borderRadius: radii.md,
+    },
+    addTaskText: {
+      ...typography.label,
+      color: theme.colors.brand,
+      fontWeight: '700',
+    },
+    reviewIntro: {
+      gap: spacing.xs,
+    },
+    reviewTitle: {
+      ...typography.sectionTitle,
       color: theme.colors.text,
     },
-    expandIcon: {
-      ...typography.sectionTitle,
+    reviewHint: {
+      ...typography.helper,
       color: theme.colors.textSecondary,
-      width: 24,
-      textAlign: 'center',
     },
-    expandedFields: {
-      gap: spacing.md,
-      paddingHorizontal: spacing.sm,
-      paddingBottom: spacing.sm,
+    editorContent: {
+      gap: spacing.lg,
+      paddingBottom: spacing.md,
     },
-    taskSection: {
-      gap: spacing.xs,
-      paddingLeft: spacing.md,
-      borderLeftWidth: 2,
-      borderLeftColor: theme.colors.border,
+    editorScrollView: {
+      flex: 1,
     },
-    taskGroup: {
-      gap: spacing.xs,
-    },
-    taskRow: {
-      minHeight: 48,
-    },
-    taskFields: {
-      paddingLeft: spacing.sm,
+    editorActions: {
+      gap: spacing.sm,
     },
     fieldGroup: {
       gap: spacing.xs,
