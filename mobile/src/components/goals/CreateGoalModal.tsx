@@ -1023,10 +1023,10 @@ export function CreateGoalModal({
                 </View>
               ))}
 
-              <AppButton
-                label="Add Another Milestone"
-                variant="secondary"
+              <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Add another draft milestone"
+                style={({ pressed }) => [styles.addTaskButton, pressed && styles.rowPressed]}
                 onPress={() => {
                   const milestone = makeEmptyDraftMilestone(
                     draftMilestones.length + 1,
@@ -1037,7 +1037,10 @@ export function CreateGoalModal({
                   setExpandedRows((current) => new Set(current).add(`milestone:${milestone.id}`));
                   openMilestoneEditor(milestone, true);
                 }}
-              />
+              >
+                <AppIcon name="add" size={18} color={theme.colors.brand} decorative />
+                <Text style={styles.addTaskText}>Add milestone</Text>
+              </Pressable>
             </View>
           ) : null}
 
