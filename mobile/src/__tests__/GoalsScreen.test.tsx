@@ -474,11 +474,13 @@ describe('GoalsScreen', () => {
     expect(screen.getByText('Unlock AI goal builder with Bearing 360.')).toBeTruthy();
     expect(screen.getByText('View Bearing 360 Plans')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Expand milestone 1: Milestone 1'));
     fireEvent.changeText(screen.getByLabelText('Draft milestone 1 name'), 'Buy running shoes');
     fireEvent.changeText(
       screen.getByLabelText('Draft milestone 1 description'),
       'Choose a supportive pair.',
     );
+    fireEvent.press(screen.getByLabelText('Expand task 1 in milestone 1: Task 1'));
     fireEvent.changeText(screen.getByLabelText('Milestone 1 task 1 title'), 'Visit running stores');
     fireEvent.changeText(screen.getByLabelText('Milestone 1 task 1 starter'), 'Visit two stores');
     fireEvent.press(screen.getByLabelText('Select draft milestone 1 month'));
@@ -729,9 +731,18 @@ describe('GoalsScreen', () => {
     await waitFor(() => expect(mockedGenerateAiGoalPlanDraft).toHaveBeenCalledTimes(2));
 
     fireEvent.press(screen.getByLabelText('Continue'));
-    fireEvent.changeText(screen.getByLabelText('Draft milestone 1 name'), 'Build consistency');
+    expect(screen.getByText('Build a running base')).toBeTruthy();
+    expect(screen.getByText('Choose weekly run times')).toBeTruthy();
+    expect(screen.queryByLabelText('Draft milestone 1 description')).toBeNull();
+    expect(screen.queryByLabelText('Milestone 1 task 1 title')).toBeNull();
+    fireEvent.press(screen.getByLabelText('Expand milestone 1: Build a running base'));
+    expect(screen.getByLabelText('Draft milestone 1 description')).toBeTruthy();
+    fireEvent.press(
+      screen.getByLabelText('Expand task 1 in milestone 1: Choose weekly run times'),
+    );
     expect(screen.getByDisplayValue('Choose weekly run times')).toBeTruthy();
     expect(screen.getAllByLabelText('August 24, 2026')).toHaveLength(2);
+    fireEvent.changeText(screen.getByLabelText('Draft milestone 1 name'), 'Build consistency');
     fireEvent.changeText(screen.getByLabelText('Milestone 1 task 1 title'), 'Schedule weekly runs');
 
     await act(async () => {
@@ -813,7 +824,33 @@ describe('GoalsScreen', () => {
     ).mock.calls;
     expect(generationCalls[0][0].requestId).toBe(generationCalls[1][0].requestId);
     fireEvent.press(screen.getByLabelText('Continue'));
-    expect(screen.getByLabelText('Draft milestone 1 name')).toBeTruthy();
+    expect(screen.getByLabelText('Expand milestone 1: Milestone 1')).toBeTruthy();
+  });
+
+  it('explains when the server has not confirmed premium access for AI planning', async () => {
+    (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
+      entitlement: { status: 'active' } as never,
+      uiState: 'ready',
+      error: null,
+    });
+    (
+      generateAiGoalPlanDraft as jest.MockedFunction<typeof generateAiGoalPlanDraft>
+    ).mockRejectedValue({ code: 'functions/permission-denied' });
+    mockEmptyGoals();
+
+    render(<GoalsScreen route={{ params: { createGoal: true } }} />);
+    openAiPlanningStep();
+    await waitFor(() => expect(screen.getByText(/AI credits available: 10/)).toBeTruthy());
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
+    });
+
+    expect(
+      screen.getByText(
+        'Bearing 360 access is not confirmed by the server yet. Restore purchases or try again after it syncs.',
+      ),
+    ).toBeTruthy();
   });
 
   it('disables AI generation at zero credits without blocking manual planning', async () => {
@@ -836,7 +873,7 @@ describe('GoalsScreen', () => {
       true,
     );
     fireEvent.press(screen.getByLabelText('Continue'));
-    expect(screen.getByLabelText('Draft milestone 1 name')).toBeTruthy();
+    expect(screen.getByLabelText('Expand milestone 1: Milestone 1')).toBeTruthy();
   });
 
   it('refreshes the balance and explains backend credit exhaustion', async () => {

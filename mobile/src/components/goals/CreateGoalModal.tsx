@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../../design/ThemeProvider';
@@ -163,6 +163,7 @@ export function CreateGoalModal({
   const [draftMilestones, setDraftMilestones] = useState<DraftGoalMilestone[]>([
     makeEmptyDraftMilestone(1, today),
   ]);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [aiDraft, setAiDraft] = useState<AiGoalPlanDraft | null>(null);
@@ -218,6 +219,7 @@ export function CreateGoalModal({
     setDescription('');
     setGoalDateParts(buildDefaultGoalDateParts(today));
     setDraftMilestones([makeEmptyDraftMilestone(1, today)]);
+    setExpandedRows(new Set());
     setSaving(false);
     setError(null);
     setAiDraft(null);
@@ -267,6 +269,15 @@ export function CreateGoalModal({
     );
   }
 
+  function toggleExpandedRow(rowId: string): void {
+    setExpandedRows((current) => {
+      const next = new Set(current);
+      if (next.has(rowId)) next.delete(rowId);
+      else next.add(rowId);
+      return next;
+    });
+  }
+
   async function handleGenerateAiPlan(): Promise<void> {
     setRegenerationConfirmationVisible(false);
     setAiGenerating(true);
@@ -289,6 +300,7 @@ export function CreateGoalModal({
       }
 
       setAiDraft(draft);
+      setExpandedRows(new Set());
       const responseDate = new Date();
       setDraftMilestones(
         draft.milestones.map((milestone, milestoneIndex) => {
@@ -322,8 +334,16 @@ export function CreateGoalModal({
       if (code === 'resource-exhausted') {
         aiRequestId.current = null;
         setAiError('No AI planning credits remain. Continue manually or get more AI credits.');
+      } else if (code === 'permission-denied') {
+        aiRequestId.current = null;
+        setAiError(
+          'Bearing 360 access is not confirmed by the server yet. Restore purchases or try again after it syncs.',
+        );
       } else if (code === 'aborted') {
         setAiError('AI planning is already in progress. Try again shortly.');
+      } else if (code === 'failed-precondition') {
+        aiRequestId.current = null;
+        setAiError('This AI planning request has expired. Try again.');
       } else if (code === 'invalid-argument') {
         aiRequestId.current = null;
         setAiError('AI planning could not reuse this request. Try again.');
@@ -762,73 +782,120 @@ export function CreateGoalModal({
           {wizardIndex === 4 ? (
             <View style={styles.section}>
               {draftMilestones.map((milestone, index) => (
-                <AppCard key={milestone.id} style={styles.card}>
-                  <Text style={styles.cardTitle}>Milestone {index + 1}</Text>
-                  <FormField
-                    label="Milestone name"
-                    accessibilityLabel={`Draft milestone ${index + 1} name`}
-                    value={milestone.title}
-                    onChangeText={(value) => updateMilestoneField(milestone.id, 'title', value)}
-                    placeholder="Name an important outcome"
-                    placeholderTextColor={theme.colors.textSecondary}
-                  />
-                  <FormField
-                    label="Description"
-                    accessibilityLabel={`Draft milestone ${index + 1} description`}
-                    value={milestone.description}
-                    onChangeText={(value) =>
-                      updateMilestoneField(milestone.id, 'description', value)
-                    }
-                    multiline
-                    placeholder="What reaching this milestone means"
-                    placeholderTextColor={theme.colors.textSecondary}
-                  />
-                  <GoalDatePicker
-                    title="Milestone target date"
-                    accessibilityPrefix={`draft milestone ${index + 1}`}
-                    dateParts={milestone.dateParts}
-                    onSelectDate={(date) => updateMilestoneDate(milestone.id, date)}
-                  />
-                  <Text style={styles.exampleLabel}>Tasks</Text>
-                  {milestone.tasks.map((task, taskIndex) => (
-                    <View key={task.id} style={styles.milestoneFields}>
-                      <Text style={styles.exampleLabel}>Task {taskIndex + 1}</Text>
+                <AppCard key={milestone.id} style={styles.milestoneCard}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${expandedRows.has(`milestone:${milestone.id}`) ? 'Collapse' : 'Expand'} milestone ${index + 1}: ${milestone.title || `Milestone ${index + 1}`}`}
+                    accessibilityState={{ expanded: expandedRows.has(`milestone:${milestone.id}`) }}
+                    onPress={() => toggleExpandedRow(`milestone:${milestone.id}`)}
+                    style={({ pressed }) => [styles.expandableRow, pressed && styles.rowPressed]}
+                  >
+                    <View style={styles.rowCopy}>
+                      <Text style={styles.rowEyebrow}>Milestone {index + 1}</Text>
+                      <Text style={styles.rowTitle} numberOfLines={2}>
+                        {milestone.title || 'Untitled milestone'}
+                      </Text>
+                    </View>
+                    <Text style={styles.expandIcon}>
+                      {expandedRows.has(`milestone:${milestone.id}`) ? '⌃' : '⌄'}
+                    </Text>
+                  </Pressable>
+                  {expandedRows.has(`milestone:${milestone.id}`) ? (
+                    <View style={styles.expandedFields}>
                       <FormField
-                        label="Task title"
-                        accessibilityLabel={`Milestone ${index + 1} task ${taskIndex + 1} title`}
-                        value={task.title}
-                        onChangeText={(value) =>
-                          updateTaskField(milestone.id, task.id, 'title', value)
-                        }
-                        placeholder="Add a doable action"
+                        label="Milestone name"
+                        accessibilityLabel={`Draft milestone ${index + 1} name`}
+                        value={milestone.title}
+                        onChangeText={(value) => updateMilestoneField(milestone.id, 'title', value)}
+                        placeholder="Name an important outcome"
+                        placeholderTextColor={theme.colors.textSecondary}
                       />
                       <FormField
                         label="Description"
-                        accessibilityLabel={`Milestone ${index + 1} task ${taskIndex + 1} description`}
-                        value={task.description}
+                        accessibilityLabel={`Draft milestone ${index + 1} description`}
+                        value={milestone.description}
                         onChangeText={(value) =>
-                          updateTaskField(milestone.id, task.id, 'description', value)
+                          updateMilestoneField(milestone.id, 'description', value)
                         }
                         multiline
-                        placeholder="Optional details"
-                      />
-                      <FormField
-                        label="Starter cue"
-                        accessibilityLabel={`Milestone ${index + 1} task ${taskIndex + 1} starter`}
-                        value={task.starter}
-                        onChangeText={(value) =>
-                          updateTaskField(milestone.id, task.id, 'starter', value)
-                        }
-                        placeholder="Optional first action"
+                        placeholder="What reaching this milestone means"
+                        placeholderTextColor={theme.colors.textSecondary}
                       />
                       <GoalDatePicker
-                        title="Task due date"
-                        accessibilityPrefix={`draft milestone ${index + 1} task ${taskIndex + 1}`}
-                        dateParts={task.dateParts}
-                        onSelectDate={(date) => updateTaskDate(milestone.id, task.id, date)}
+                        title="Milestone target date"
+                        accessibilityPrefix={`draft milestone ${index + 1}`}
+                        dateParts={milestone.dateParts}
+                        onSelectDate={(date) => updateMilestoneDate(milestone.id, date)}
                       />
                     </View>
-                  ))}
+                  ) : null}
+                  <View style={styles.taskSection}>
+                    {milestone.tasks.map((task, taskIndex) => {
+                      const rowId = `task:${milestone.id}:${task.id}`;
+                      const expanded = expandedRows.has(rowId);
+                      return (
+                        <View key={task.id} style={styles.taskGroup}>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`${expanded ? 'Collapse' : 'Expand'} task ${taskIndex + 1} in milestone ${index + 1}: ${task.title || `Task ${taskIndex + 1}`}`}
+                            accessibilityState={{ expanded }}
+                            onPress={() => toggleExpandedRow(rowId)}
+                            style={({ pressed }) => [
+                              styles.expandableRow,
+                              styles.taskRow,
+                              pressed && styles.rowPressed,
+                            ]}
+                          >
+                            <View style={styles.rowCopy}>
+                              <Text style={styles.rowEyebrow}>Task {taskIndex + 1}</Text>
+                              <Text style={styles.rowTitle} numberOfLines={2}>
+                                {task.title || 'Untitled task'}
+                              </Text>
+                            </View>
+                            <Text style={styles.expandIcon}>{expanded ? '⌃' : '⌄'}</Text>
+                          </Pressable>
+                          {expanded ? (
+                            <View style={[styles.expandedFields, styles.taskFields]}>
+                              <FormField
+                                label="Task title"
+                                accessibilityLabel={`Milestone ${index + 1} task ${taskIndex + 1} title`}
+                                value={task.title}
+                                onChangeText={(value) =>
+                                  updateTaskField(milestone.id, task.id, 'title', value)
+                                }
+                                placeholder="Add a doable action"
+                              />
+                              <FormField
+                                label="Description"
+                                accessibilityLabel={`Milestone ${index + 1} task ${taskIndex + 1} description`}
+                                value={task.description}
+                                onChangeText={(value) =>
+                                  updateTaskField(milestone.id, task.id, 'description', value)
+                                }
+                                multiline
+                                placeholder="Optional details"
+                              />
+                              <FormField
+                                label="Starter cue"
+                                accessibilityLabel={`Milestone ${index + 1} task ${taskIndex + 1} starter`}
+                                value={task.starter}
+                                onChangeText={(value) =>
+                                  updateTaskField(milestone.id, task.id, 'starter', value)
+                                }
+                                placeholder="Optional first action"
+                              />
+                              <GoalDatePicker
+                                title="Task due date"
+                                accessibilityPrefix={`draft milestone ${index + 1} task ${taskIndex + 1}`}
+                                dateParts={task.dateParts}
+                                onSelectDate={(date) => updateTaskDate(milestone.id, task.id, date)}
+                              />
+                            </View>
+                          ) : null}
+                        </View>
+                      );
+                    })}
+                  </View>
                   <AppButton
                     label="Add Task"
                     variant="secondary"
@@ -1122,6 +1189,61 @@ const createStyles = (theme: Theme) =>
     milestoneFields: {
       gap: spacing.sm,
       paddingTop: spacing.sm,
+    },
+    milestoneCard: {
+      gap: spacing.sm,
+      padding: spacing.md,
+    },
+    expandableRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      minHeight: 56,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.sm,
+      borderRadius: radii.md,
+    },
+    rowPressed: {
+      backgroundColor: theme.colors.surfaceMuted,
+    },
+    rowCopy: {
+      flex: 1,
+      gap: 2,
+    },
+    rowEyebrow: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      fontWeight: '600',
+    },
+    rowTitle: {
+      ...typography.button,
+      color: theme.colors.text,
+    },
+    expandIcon: {
+      ...typography.sectionTitle,
+      color: theme.colors.textSecondary,
+      width: 24,
+      textAlign: 'center',
+    },
+    expandedFields: {
+      gap: spacing.md,
+      paddingHorizontal: spacing.sm,
+      paddingBottom: spacing.sm,
+    },
+    taskSection: {
+      gap: spacing.xs,
+      paddingLeft: spacing.md,
+      borderLeftWidth: 2,
+      borderLeftColor: theme.colors.border,
+    },
+    taskGroup: {
+      gap: spacing.xs,
+    },
+    taskRow: {
+      minHeight: 48,
+    },
+    taskFields: {
+      paddingLeft: spacing.sm,
     },
     fieldGroup: {
       gap: spacing.xs,
