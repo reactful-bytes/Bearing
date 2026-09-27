@@ -76,7 +76,7 @@ describe("AI goal plan", () => {
     });
   });
 
-  it("enforces milestone and task upper bounds server-side", () => {
+  it("supports granular plans and enforces milestone and task upper bounds", () => {
     const milestone = validDraft.milestones[0];
     assert.throws(() =>
       validateGoalPlanDraft({
@@ -87,13 +87,29 @@ describe("AI goal plan", () => {
         })),
       }),
     );
+
+    const repeatedTasks = Array.from({ length: 12 }, (_, index) => ({
+      ...milestone.tasks[0],
+      title: "Complete the recurring practice block",
+      targetDate: `2027-01-${String(index + 1).padStart(2, "0")}`,
+    }));
+    const granularDraft = validateGoalPlanDraft(
+      {
+        ...validDraft,
+        milestones: [{ ...milestone, tasks: repeatedTasks }],
+      },
+      "2027-06-01",
+      "2026-12-31",
+    );
+    assert.equal(granularDraft.milestones[0].tasks.length, 12);
+
     assert.throws(() =>
       validateGoalPlanDraft({
         ...validDraft,
         milestones: [
           {
             ...milestone,
-            tasks: Array.from({ length: 9 }, (_, index) => ({
+            tasks: Array.from({ length: 37 }, (_, index) => ({
               ...milestone.tasks[0],
               title: `Task ${index + 1}`,
             })),
@@ -258,9 +274,13 @@ describe("AI goal plan", () => {
   it("returns request and remaining-credit metadata after a metered success", async () => {
     const requestId = "123e4567-e89b-42d3-a456-426614174000";
     let finalized = false;
+    let generatorRequestId = "";
     const result = await generateGoalPlanDraft(
       { ...request, data: { ...request.data, requestId } },
-      async () => validDraft,
+      async (_input, context) => {
+        generatorRequestId = context?.requestId ?? "";
+        return validDraft;
+      },
       async () => "active",
       creditService({
         run: async (_userId, _requestId, _fingerprint, generate) => {
@@ -271,6 +291,7 @@ describe("AI goal plan", () => {
     );
 
     assert.equal(finalized, true);
+    assert.equal(generatorRequestId, requestId);
     assert.deepEqual(result, {
       promptVersion: 1,
       ...validDraft,

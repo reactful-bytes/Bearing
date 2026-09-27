@@ -17,8 +17,8 @@ import { CallableIdentityRequest } from "./security";
 
 const MAX_TITLE_LENGTH = 120;
 const MAX_DESCRIPTION_LENGTH = 1_000;
-const MAX_MILESTONES = 6;
-const MAX_TASKS = 8;
+export const GOAL_PLAN_MAX_MILESTONES = 6;
+export const GOAL_PLAN_MAX_TASKS = 36;
 
 export type GoalPlanInput = {
   title: string;
@@ -59,7 +59,12 @@ export type GoalPlanRequest = CallableIdentityRequest & {
 
 export type GoalPlanGenerator = (
   input: GoalPlanPromptInput,
+  context?: GoalPlanGenerationContext,
 ) => Promise<unknown>;
+
+export type GoalPlanGenerationContext = {
+  requestId: string;
+};
 
 export type MeteredGoalPlanDraft = GoalPlanDraft & {
   requestId: string;
@@ -210,7 +215,7 @@ export function validateGoalPlanDraft(
     throw new Error("AI goal plan is incomplete.");
   }
 
-  if (milestones.length === 0 || milestones.length > MAX_MILESTONES) {
+  if (milestones.length === 0 || milestones.length > GOAL_PLAN_MAX_MILESTONES) {
     throw new Error("AI goal plan exceeds item limits.");
   }
 
@@ -248,7 +253,7 @@ export function validateGoalPlanDraft(
         throw new Error(`milestone ${index + 1} has no actionable tasks.`);
       }
       taskCount += milestone.tasks.length;
-      if (taskCount > MAX_TASKS) {
+      if (taskCount > GOAL_PLAN_MAX_TASKS) {
         throw new Error("AI goal plan exceeds item limits.");
       }
       return {
@@ -337,18 +342,29 @@ export async function generateGoalPlanDraft(
       "Goal target date must be in the future.",
     );
   }
+  const requestId = creditService ? getRequestId(request.data) : randomUUID();
+  const generationContext = { requestId };
+  logger.info("ai_goal_plan_started", { requestId });
   if (!creditService) {
     let failureStage = "provider_generation";
     try {
-      const generatedDraft = await generator({ ...input, planningStartDate });
+      const generatedDraft = await generator(
+        { ...input, planningStartDate },
+        generationContext,
+      );
       failureStage = "draft_validation";
-      return validateGoalPlanDraft(
+      const draft = validateGoalPlanDraft(
         generatedDraft,
         input.targetDate,
         planningStartDate,
       );
+      logger.info("ai_goal_plan_succeeded", { requestId });
+      return draft;
     } catch (error) {
-      logGoalPlanFailure(failureStage, error, [input.title, input.description]);
+      logGoalPlanFailure(failureStage, error, requestId, [
+        input.title,
+        input.description,
+      ]);
       throw new HttpsError(
         "internal",
         "A goal plan could not be generated. Try again or continue manually.",
@@ -356,7 +372,6 @@ export async function generateGoalPlanDraft(
     }
   }
 
-  const requestId = getRequestId(request.data);
   const fingerprint = fingerprintGoalPlanInput(input);
   let failureStage = "credit_operation";
   try {
@@ -366,7 +381,10 @@ export async function generateGoalPlanDraft(
       fingerprint,
       async () => {
         failureStage = "provider_generation";
-        const generatedDraft = await generator({ ...input, planningStartDate });
+        const generatedDraft = await generator(
+          { ...input, planningStartDate },
+          generationContext,
+        );
         failureStage = "draft_validation";
         return validateGoalPlanDraft(
           generatedDraft,
@@ -384,6 +402,7 @@ export async function generateGoalPlanDraft(
     );
     failureStage = "balance_lookup";
     const availableCredits = await creditService.getBalance(caller.uid);
+    logger.info("ai_goal_plan_succeeded", { requestId });
     return {
       ...draft,
       requestId,
@@ -394,6 +413,7 @@ export async function generateGoalPlanDraft(
       const diagnostic = {
         ...getSafeErrorLogContext(error),
         code: error.code,
+        requestId,
         stage: failureStage,
       };
       if (error.code === "internal" || error.code === "unavailable") {
@@ -403,7 +423,10 @@ export async function generateGoalPlanDraft(
       }
       throw error;
     }
-    logGoalPlanFailure(failureStage, error, [input.title, input.description]);
+    logGoalPlanFailure(failureStage, error, requestId, [
+      input.title,
+      input.description,
+    ]);
     throw new HttpsError(
       "internal",
       "A goal plan could not be generated. Try again or continue manually.",
@@ -414,10 +437,12 @@ export async function generateGoalPlanDraft(
 function logGoalPlanFailure(
   stage: string,
   error: unknown,
+  requestId: string,
   sensitiveValues: string[] = [],
 ): void {
   logger.error("ai_goal_plan_failed", {
     stage,
+    requestId,
     ...getSafeErrorLogContext(error, sensitiveValues),
   });
 }
