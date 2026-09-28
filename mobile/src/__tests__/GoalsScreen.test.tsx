@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { GoalsScreen } from '../screens/GoalsScreen';
@@ -475,6 +475,24 @@ describe('GoalsScreen', () => {
     expect(screen.getByText('View Bearing 360 Plans')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.press(screen.getByLabelText('Expand milestone 1: Milestone 1'));
+    fireEvent.press(screen.getByLabelText('Open actions for milestone 1'));
+    expect(screen.getByLabelText('Edit milestone 1')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Collapse milestone 1: Milestone 1'));
+    expect(screen.queryByLabelText('Open actions for task 1 in milestone 1')).toBeNull();
+    fireEvent.press(screen.getByLabelText('Expand milestone 1: Milestone 1'));
+    fireEvent.press(screen.getByLabelText('Open actions for milestone 1'));
+    fireEvent.press(screen.getByLabelText('Open actions for task 1 in milestone 1'));
+    expect(screen.queryByLabelText('Edit milestone 1')).toBeNull();
+    expect(screen.getByLabelText('Edit task 1 in milestone 1')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Dismiss item action menus'));
+    expect(screen.queryByLabelText('Edit milestone 1')).toBeNull();
+    expect(screen.queryByLabelText('Edit task 1 in milestone 1')).toBeNull();
+    fireEvent.press(screen.getByLabelText('Open actions for task 1 in milestone 1'));
+    fireEvent.press(screen.getByLabelText(/^Open task 1 in milestone 1:/));
+    expect(screen.getByLabelText('Edit task name')).toBeTruthy();
+    expect(screen.queryByLabelText('Edit task 1 in milestone 1')).toBeNull();
+    fireEvent.press(screen.getByLabelText('Save plan item changes'));
+    fireEvent.press(screen.getByLabelText('Open actions for milestone 1'));
     fireEvent.press(screen.getByLabelText('Edit milestone 1'));
     fireEvent.changeText(screen.getByLabelText('Edit milestone name'), 'Buy running shoes');
     fireEvent.changeText(
@@ -485,7 +503,8 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Select edit milestone November'));
     fireEvent.press(screen.getByLabelText('November 5, 2026'));
     fireEvent.press(screen.getByLabelText('Save plan item changes'));
-    fireEvent.press(screen.getByLabelText('Edit task 1 in milestone 1: Task 1'));
+    fireEvent.press(screen.getByLabelText('Open actions for task 1 in milestone 1'));
+    fireEvent.press(screen.getByLabelText('Edit task 1 in milestone 1'));
     fireEvent.changeText(screen.getByLabelText('Edit task name'), 'Visit running stores');
     fireEvent.changeText(screen.getByLabelText('Edit task starter cue'), 'Visit two stores');
     fireEvent.press(screen.getByLabelText('Save plan item changes'));
@@ -494,6 +513,7 @@ describe('GoalsScreen', () => {
       screen.getByText('Milestone 1 must finish on or before the goal target date.'),
     ).toBeTruthy();
     expect(createGoalMock).not.toHaveBeenCalled();
+    fireEvent.press(screen.getByLabelText('Open actions for milestone 1'));
     fireEvent.press(screen.getByLabelText('Edit milestone Buy running shoes'));
     fireEvent.press(screen.getByLabelText('Select edit milestone month'));
     fireEvent.press(screen.getByLabelText('Select edit milestone August'));
@@ -501,18 +521,30 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Save plan item changes'));
 
     fireEvent.press(screen.getByLabelText('Add task to draft milestone 1'));
-    fireEvent.press(screen.getByLabelText('Remove task'));
-    expect(screen.getByText('This task will be removed from the goal draft.')).toBeTruthy();
-    fireEvent.press(screen.getByLabelText('Confirm removal of plan item'));
+    fireEvent.press(screen.getByLabelText('Save plan item changes'));
+    fireEvent.press(screen.getByLabelText('Open actions for task 2 in milestone 1'));
+    fireEvent.press(screen.getByLabelText('Delete task 2 in milestone 1'));
+    expect(screen.getByText('This task will be deleted from the goal draft.')).toBeTruthy();
+    expect(screen.getByText('Cancel')).toBeTruthy();
+    expect(screen.getByText('Delete Task')).toBeTruthy();
+    expect(screen.queryByLabelText('Keep item Delete task?')).toBeNull();
+    fireEvent.press(screen.getByLabelText('Confirm deletion of plan item'));
     expect(screen.queryByText('Untitled task')).toBeNull();
 
     fireEvent.press(screen.getByLabelText('Add another draft milestone'));
-    fireEvent.press(screen.getByLabelText('Remove milestone'));
+    fireEvent.press(screen.getByLabelText('Save plan item changes'));
+    fireEvent.press(screen.getByLabelText('Open actions for milestone 2'));
+    fireEvent.press(screen.getByLabelText('Delete milestone 2'));
     expect(
-      screen.getByText('This milestone and all of its tasks will be removed from the goal draft.'),
+      screen.getByText('This milestone and all of its tasks will be deleted from the goal draft.'),
     ).toBeTruthy();
-    fireEvent.press(screen.getByLabelText('Confirm removal of plan item'));
-    expect(screen.queryByLabelText('Edit milestone 2')).toBeNull();
+    fireEvent.press(screen.getByLabelText('Cancel plan item removal'));
+    expect(screen.queryByLabelText('Edit milestone name')).toBeNull();
+    expect(screen.getByLabelText('Open actions for milestone 2')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Open actions for milestone 2'));
+    fireEvent.press(screen.getByLabelText('Delete milestone 2'));
+    fireEvent.press(screen.getByLabelText('Confirm deletion of plan item'));
+    expect(screen.queryByLabelText('Open actions for milestone 2')).toBeNull();
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Save goal'));
@@ -754,10 +786,16 @@ describe('GoalsScreen', () => {
     expect(screen.queryByText('Choose weekly run times')).toBeNull();
     fireEvent.press(screen.getByLabelText('Expand milestone 1: Build a running base'));
     expect(screen.getByText('Choose weekly run times')).toBeTruthy();
+    const firstTaskRow = screen.getByLabelText(/^Open task 1 in milestone 1:/);
+    expect(within(firstTaskRow).getByTestId('draft-task-number-1')).toHaveTextContent('1');
+    expect(screen.getByText('TASKS')).toBeTruthy();
+    expect(screen.queryByText('TASK 1')).toBeNull();
+    fireEvent.press(screen.getByLabelText('Open actions for milestone 1'));
     fireEvent.press(screen.getByLabelText('Edit milestone Build a running base'));
     fireEvent.changeText(screen.getByLabelText('Edit milestone name'), 'Build consistency');
     fireEvent.press(screen.getByLabelText('Save plan item changes'));
-    fireEvent.press(screen.getByLabelText('Edit task 1 in milestone 1: Choose weekly run times'));
+    fireEvent.press(screen.getByLabelText('Open actions for task 1 in milestone 1'));
+    fireEvent.press(screen.getByLabelText('Edit task 1 in milestone 1'));
     expect(screen.getByDisplayValue('Choose weekly run times')).toBeTruthy();
     expect(screen.getAllByLabelText('August 24, 2026')).toHaveLength(1);
     fireEvent.changeText(screen.getByLabelText('Edit task name'), 'Schedule weekly runs');
@@ -789,7 +827,6 @@ describe('GoalsScreen', () => {
     const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
       typeof useMilestoneEvents
     >;
-
     (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
       entitlement: { status: 'in_grace_period' } as never,
       uiState: 'ready',
@@ -831,7 +868,9 @@ describe('GoalsScreen', () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText('AI planning is unavailable right now. Try again or continue manually.'),
+        screen.getByText(
+          'AI planning is unavailable right now. Try again or continue manually.',
+        ),
       ).toBeTruthy(),
     );
     await act(async () => {

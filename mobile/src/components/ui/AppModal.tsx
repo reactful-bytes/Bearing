@@ -26,6 +26,8 @@ type AppModalProps = {
   closeLabel?: string;
   headerAccessory?: ReactNode;
   fullScreen?: boolean;
+  hideCloseButton?: boolean;
+  hideCreateFab?: boolean;
   safeAreaEdges?: Edge[];
   hideHeader?: boolean;
   embedded?: boolean;
@@ -40,6 +42,8 @@ export function AppModal({
   closeLabel = 'Close',
   headerAccessory,
   fullScreen = false,
+  hideCloseButton = false,
+  hideCreateFab = false,
   safeAreaEdges,
   hideHeader = false,
   embedded = false,
@@ -111,7 +115,7 @@ export function AppModal({
               ) : null}
               <View style={styles.headerActions}>
                 {headerAccessory}
-                {!fullScreen ? (
+                {!fullScreen && !hideCloseButton ? (
                   <AppButton
                     label={closeLabel}
                     variant="secondary"
@@ -136,7 +140,7 @@ export function AppModal({
             {children}
           </View>
         </SafeAreaView>
-        {!fullScreen && createFab ? (
+        {!fullScreen && !hideCreateFab && createFab ? (
           <CreateFabGroup
             visible={createFab.visible}
             bottomOffset={insets.bottom + spacing.md}
