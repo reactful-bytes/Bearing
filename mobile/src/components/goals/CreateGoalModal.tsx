@@ -633,6 +633,7 @@ export function CreateGoalModal({
         title="Create Goal"
         onClose={handleClose}
         fullScreen
+        fullScreenEdgeToEdge
         hideHeader
       >
         <ScrollView
@@ -641,7 +642,7 @@ export function CreateGoalModal({
             {
               paddingTop: insets.top,
               paddingBottom: spacing['3xl'] + insets.bottom,
-              paddingHorizontal: 0,
+              paddingHorizontal: spacing.lg,
             },
           ]}
         >
@@ -972,18 +973,26 @@ export function CreateGoalModal({
                                 <Text style={styles.taskNumberText}>{taskIndex + 1}</Text>
                               </View>
                               <View style={styles.rowCopy}>
-                                <Text style={styles.taskTitle} numberOfLines={2}>
+                                <Text style={styles.rowTitle} numberOfLines={2}>
                                   {task.title || 'Untitled task'}
                                 </Text>
-                                <Text style={styles.taskDate}>
-                                  Due {formatReviewDate(task.dateParts)}
-                                </Text>
+                                <View style={styles.rowMeta}>
+                                  <AppIcon
+                                    name="date"
+                                    size={14}
+                                    color={theme.colors.textSecondary}
+                                    decorative
+                                  />
+                                  <Text style={styles.taskDate}>
+                                    {formatReviewDate(task.dateParts)}
+                                  </Text>
+                                </View>
                               </View>
-                              <AppIcon
+                              <IconButton
                                 name="edit"
-                                size={16}
-                                color={theme.colors.textSecondary}
-                                decorative
+                                size={18}
+                                accessibilityLabel={`Edit task ${taskIndex + 1} in milestone ${index + 1}`}
+                                onPress={() => openTaskEditor(milestone, task)}
                               />
                             </Pressable>
                             {taskIndex < milestone.tasks.length - 1 ? (
@@ -1018,6 +1027,7 @@ export function CreateGoalModal({
                         <AppIcon name="add" size={18} color={theme.colors.brand} decorative />
                         <Text style={styles.addTaskText}>Add task</Text>
                       </Pressable>
+                      <View style={styles.milestoneEndDivider} />
                     </View>
                   ) : null}
                 </View>
@@ -1026,7 +1036,11 @@ export function CreateGoalModal({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Add another draft milestone"
-                style={({ pressed }) => [styles.addTaskButton, pressed && styles.rowPressed]}
+                style={({ pressed }) => [
+                  styles.addTaskButton,
+                  styles.addMilestoneButton,
+                  pressed && styles.rowPressed,
+                ]}
                 onPress={() => {
                   const milestone = makeEmptyDraftMilestone(
                     draftMilestones.length + 1,
@@ -1496,7 +1510,8 @@ const createStyles = (theme: Theme) =>
       marginHorizontal: spacing.sm,
     },
     taskSection: {
-      paddingLeft: 0,
+      paddingLeft: spacing.xs,
+      paddingRight: 0,
     },
     expandedTasks: {
       gap: spacing.xs,
@@ -1508,13 +1523,9 @@ const createStyles = (theme: Theme) =>
       alignItems: 'center',
       gap: spacing.sm,
       paddingHorizontal: spacing.sm,
+      paddingRight: 0,
       paddingVertical: spacing.xs,
       borderRadius: radii.md,
-    },
-    taskTitle: {
-      ...typography.label,
-      color: theme.colors.textPrimary,
-      fontWeight: '600',
     },
     taskDate: {
       ...typography.helper,
@@ -1523,7 +1534,14 @@ const createStyles = (theme: Theme) =>
     taskDivider: {
       height: StyleSheet.hairlineWidth,
       backgroundColor: theme.colors.border,
+      marginLeft: spacing.md,
+      marginRight: spacing.sm,
+    },
+    milestoneEndDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.colors.border,
       marginHorizontal: spacing.sm,
+      marginTop: spacing.xs,
     },
     taskNumber: {
       width: 24,
@@ -1553,6 +1571,9 @@ const createStyles = (theme: Theme) =>
       marginLeft: spacing.md + spacing.sm,
       paddingHorizontal: spacing.sm,
       borderRadius: radii.md,
+    },
+    addMilestoneButton: {
+      marginTop: spacing.md,
     },
     addTaskText: {
       ...typography.label,
