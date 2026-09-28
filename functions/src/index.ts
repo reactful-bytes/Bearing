@@ -157,7 +157,7 @@ export const getRevenueCatProductGrantCatalog = onCall(
 
 export const generateGoalPlanDraft = onCall(
   {
-    timeoutSeconds: 45,
+    timeoutSeconds: 120,
   },
   (request) =>
     generateGoalPlanDraftHandler(

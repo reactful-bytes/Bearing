@@ -64,8 +64,48 @@ describe("AI goal plan", () => {
     assert.deepEqual(parseGoalPlanInput(request.data), request.data);
     assert.throws(
       () => parseGoalPlanInput({ ...request.data, title: "x".repeat(121) }),
-      (error: unknown) =>
-        error instanceof HttpsError && error.code === "invalid-argument",
+      (error: unknown) => {
+        if (
+          !(error instanceof HttpsError) ||
+          error.code !== "invalid-argument"
+        ) {
+          return false;
+        }
+        const details = Reflect.get(error, "details") as {
+          invalidFields?: unknown;
+        };
+        return (
+          Array.isArray(details.invalidFields) &&
+          details.invalidFields.includes("title")
+        );
+      },
+    );
+  });
+
+  it("allows omitted description but identifies missing title or invalid date", () => {
+    assert.equal(
+      parseGoalPlanInput({ title: "A valid goal", targetDate: "2027-06-01" })
+        .description,
+      "",
+    );
+    assert.throws(
+      () => parseGoalPlanInput({ description: "context", targetDate: "bad" }),
+      (error: unknown) => {
+        if (
+          !(error instanceof HttpsError) ||
+          error.code !== "invalid-argument"
+        ) {
+          return false;
+        }
+        const details = Reflect.get(error, "details") as {
+          invalidFields?: unknown;
+        };
+        return (
+          Array.isArray(details.invalidFields) &&
+          details.invalidFields.includes("title") &&
+          details.invalidFields.includes("targetDate")
+        );
+      },
     );
   });
 
@@ -256,18 +296,41 @@ describe("AI goal plan", () => {
   });
 
   it("returns a generic recoverable error for provider failures", async () => {
+    const requestId = "123e4567-e89b-42d3-a456-426614174000";
     await assert.rejects(
       generateGoalPlanDraft(
-        request,
+        {
+          ...request,
+          data: { ...request.data, requestId },
+        },
         async () => {
-          throw new Error("provider detail");
+          const error = new Error(
+            "This model is currently experiencing high demand.",
+          ) as Error & { status: number };
+          error.status = 503;
+          throw error;
         },
         async () => "in_grace_period",
+        creditService(),
       ),
-      (error: unknown) =>
-        error instanceof HttpsError &&
-        error.code === "internal" &&
-        !error.message.includes("provider detail"),
+      (error: unknown) => {
+        if (!(error instanceof HttpsError) || error.code !== "internal") {
+          return false;
+        }
+        const details = Reflect.get(error, "details") as Record<
+          string,
+          unknown
+        >;
+        return (
+          !error.message.includes("high demand") &&
+          details.requestId === requestId &&
+          details.stage === "provider_generation" &&
+          details.provider === "gemini" &&
+          details.httpStatus === 503 &&
+          details.providerMessage ===
+            "This model is currently experiencing high demand."
+        );
+      },
     );
   });
 

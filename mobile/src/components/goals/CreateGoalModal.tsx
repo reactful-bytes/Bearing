@@ -21,6 +21,7 @@ import {
   buildGoalDateParts,
   formatTwoDigits,
   getGoalDateFromParts,
+  isFutureDate,
   isTodayOrFutureDate,
 } from './GoalDatePicker';
 import { radii, spacing, typography } from '../../design/tokens';
@@ -31,7 +32,10 @@ import {
   AiGoalPlanInput,
 } from '../../features/goals/aiGoalPlanTypes';
 import { CreateGoalInput, GoalTaskInput } from '../../features/goals/goalTypes';
-import { getAiPlanningErrorCode } from '../../services/firebase/firebaseAiGoalPlans';
+import {
+  getAiPlanningErrorCode,
+  getAiPlanningErrorDetails,
+} from '../../services/firebase/firebaseAiGoalPlans';
 
 type CreateGoalModalProps = {
   visible: boolean;
@@ -501,6 +505,18 @@ export function CreateGoalModal({
 
   async function handleGenerateAiPlan(): Promise<void> {
     setRegenerationConfirmationVisible(false);
+    if (!title.trim() || title.trim().length > 120) {
+      setAiError('Enter a goal name up to 120 characters before generating a plan.');
+      return;
+    }
+    if (!description.trim()) {
+      setAiError('Add planning context before generating a plan.');
+      return;
+    }
+    if (!isFutureDate(getGoalDateFromParts(goalDateParts), today)) {
+      setAiError('Choose a valid future target date before generating a plan.');
+      return;
+    }
     setAiGenerating(true);
     setAiError(null);
 
@@ -552,25 +568,30 @@ export function CreateGoalModal({
       );
     } catch (generationError) {
       const code = getAiPlanningErrorCode(generationError);
+      const providerDetails = getAiPlanningErrorDetails(generationError);
       if (code === 'resource-exhausted') {
         aiRequestId.current = null;
         setAiError('No AI planning credits remain. Continue manually or get more AI credits.');
       } else if (code === 'permission-denied') {
         aiRequestId.current = null;
         setAiError(
-          'Bearing 360 access is not confirmed by the server yet. Restore purchases or try again after it syncs.',
+          'Bearing 360 access is not available for this account yet. Restore purchases or try again shortly.',
         );
       } else if (code === 'aborted') {
-        setAiError('AI planning is already in progress. Try again shortly.');
+        setAiError('An AI plan is already being created. Please wait a moment and try again.');
       } else if (code === 'failed-precondition') {
         aiRequestId.current = null;
-        setAiError('This AI planning request has expired. Try again.');
+        setAiError('That AI planning attempt is no longer available. Please try again.');
       } else if (code === 'invalid-argument') {
         aiRequestId.current = null;
-        setAiError('AI planning could not reuse this request. Try again.');
+        setAiError(providerDetails ?? 'Check the goal name and target date, then try again.');
       } else {
         if (code === 'internal') aiRequestId.current = null;
-        setAiError('AI planning is unavailable right now. Try again or continue manually.');
+        setAiError(
+          providerDetails
+            ? providerDetails
+            : 'AI planning is unavailable right now. Try again or continue manually.',
+        );
       }
 
       try {
@@ -666,6 +687,13 @@ export function CreateGoalModal({
       return;
     }
 
+    const goalTitle = title.trim();
+    if (!goalTitle) {
+      setWizardIndex(1);
+      setError('Goal outcome is required.');
+      return;
+    }
+
     const parsedDate = getGoalDateFromParts(goalDateParts);
     if (!isTodayOrFutureDate(parsedDate, today)) {
       setError('Estimated completion date must be today or later.');
@@ -677,7 +705,7 @@ export function CreateGoalModal({
 
     try {
       await onSave({
-        title: title.trim(),
+        title: goalTitle,
         description: description.trim(),
         smartMeta: aiDraft?.smartMeta ?? {
           specific: '',
@@ -925,9 +953,8 @@ export function CreateGoalModal({
                     }
                     void handleGenerateAiPlan();
                   }}
-                  loading={aiGenerating}
-                  loadingLabel="Generating..."
                   disabled={
+                    aiGenerating ||
                     aiCreditsLoading ||
                     aiCreditStatus?.availableCredits === 0 ||
                     aiCreditStatus?.eligible === false

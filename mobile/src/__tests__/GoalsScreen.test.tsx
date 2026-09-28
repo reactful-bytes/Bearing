@@ -17,6 +17,7 @@ import { TaskRecord } from '../features/tasks/taskTypes';
 import {
   generateAiGoalPlanDraft,
   getAiCreditStatus,
+  getAiPlanningErrorDetails,
 } from '../services/firebase/firebaseAiGoalPlans';
 
 jest.mock('expo-crypto', () => ({
@@ -53,6 +54,7 @@ jest.mock('../services/firebase/firebaseAiGoalPlans', () => ({
   getAiPlanningErrorCode: jest.fn(
     (error: { code?: string }) => error?.code?.replace('functions/', '') ?? null,
   ),
+  getAiPlanningErrorDetails: jest.fn(() => null),
 }));
 
 jest.mock('../services/firebase/firebaseEvents', () => ({
@@ -663,9 +665,10 @@ describe('GoalsScreen', () => {
     expect(
       screen.getByText('Building milestones and tasks usually takes a few seconds.'),
     ).toBeTruthy();
+    expect(screen.queryByTestId('app-button-loading')).toBeNull();
     expect(
       screen.getByRole('button', { name: 'Generate AI goal plan' }).props.accessibilityState,
-    ).toEqual({ busy: true, disabled: true });
+    ).toEqual({ disabled: true, busy: false });
   });
 
   it('generates an editable AI draft before saving for premium users', async () => {
@@ -676,6 +679,11 @@ describe('GoalsScreen', () => {
     const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
       typeof useMilestoneEvents
     >;
+    (
+      getAiPlanningErrorDetails as jest.MockedFunction<typeof getAiPlanningErrorDetails>
+    ).mockReturnValue(
+      'AI planning is temporarily unavailable. Please try again shortly.',
+    );
     const createGoalMock = jest.fn(async () => undefined);
     const mockedGenerateAiGoalPlanDraft = generateAiGoalPlanDraft as jest.MockedFunction<
       typeof generateAiGoalPlanDraft
@@ -869,7 +877,7 @@ describe('GoalsScreen', () => {
     await waitFor(() =>
       expect(
         screen.getByText(
-          'AI planning is unavailable right now. Try again or continue manually.',
+          'AI planning is temporarily unavailable. Please try again shortly.',
         ),
       ).toBeTruthy(),
     );
@@ -905,7 +913,7 @@ describe('GoalsScreen', () => {
 
     expect(
       screen.getByText(
-        'Bearing 360 access is not confirmed by the server yet. Restore purchases or try again after it syncs.',
+        'Bearing 360 access is not available for this account yet. Restore purchases or try again shortly.',
       ),
     ).toBeTruthy();
   });
@@ -980,7 +988,7 @@ describe('GoalsScreen', () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText('AI planning is already in progress. Try again shortly.'),
+        screen.getByText('An AI plan is already being created. Please wait a moment and try again.'),
       ).toBeTruthy(),
     );
   });

@@ -11,6 +11,11 @@ import {
 import { GOAL_PLAN_MAX_TASKS } from "./aiGoalPlan";
 
 describe("Gemini goal-plan response parsing", () => {
+  it("uses the requested primary and fallback models", () => {
+    assert.equal(GEMINI_GOAL_PLAN_MODEL, "gemini-3.6-flash");
+    assert.equal(GEMINI_GOAL_PLAN_FALLBACK_MODEL, "gemini-3.5-flash");
+  });
+
   it("parses complete structured JSON", () => {
     const draft = {
       smartMeta: {
@@ -133,8 +138,9 @@ describe("Gemini goal-plan response parsing", () => {
     );
   });
 
-  it("retries transient primary failures before using the fallback model", async () => {
+  it("tries the primary once, then the fallback once after a transient failure", async () => {
     const models: string[] = [];
+    const delays: number[] = [];
     const events: Array<{
       event: string;
       fields: Record<string, string | number>;
@@ -158,7 +164,9 @@ describe("Gemini goal-plan response parsing", () => {
         };
       },
       (event, fields) => events.push({ event, fields }),
-      async () => {},
+      async (milliseconds) => {
+        delays.push(milliseconds);
+      },
     );
 
     const result = await generator(
@@ -173,9 +181,9 @@ describe("Gemini goal-plan response parsing", () => {
 
     assert.deepEqual(models, [
       GEMINI_GOAL_PLAN_MODEL,
-      GEMINI_GOAL_PLAN_MODEL,
       GEMINI_GOAL_PLAN_FALLBACK_MODEL,
     ]);
+    assert.deepEqual(delays, [1_000]);
     assert.deepEqual(
       events
         .filter(
@@ -187,9 +195,8 @@ describe("Gemini goal-plan response parsing", () => {
           fields.maxAttempts,
         ]),
       [
-        [GEMINI_GOAL_PLAN_MODEL, 1, 2],
-        [GEMINI_GOAL_PLAN_MODEL, 2, 2],
-        [GEMINI_GOAL_PLAN_FALLBACK_MODEL, 1, 2],
+        [GEMINI_GOAL_PLAN_MODEL, 1, 1],
+        [GEMINI_GOAL_PLAN_FALLBACK_MODEL, 1, 1],
       ],
     );
     assert.ok(
@@ -249,64 +256,102 @@ describe("Gemini goal-plan response parsing", () => {
     );
   });
 
-  it("retries a transient fallback failure within the shared provider budget", async () => {
+  it("does not retry either model when the fallback also fails", async () => {
     const models: string[] = [];
     const timeouts: number[] = [];
-    const events: string[] = [];
-    let fallbackCalls = 0;
+    const delays: number[] = [];
+    const events: Array<{
+      event: string;
+      fields: Record<string, string | number>;
+    }> = [];
     const generator = createGeminiGoalPlanGeneratorWithRequest(
       async (model, _contents, timeoutMs) => {
         models.push(model);
         timeouts.push(timeoutMs);
-        if (model === GEMINI_GOAL_PLAN_MODEL) {
-          const error = new Error("temporary overload") as Error & {
-            status: number;
-          };
-          error.status = 503;
-          throw error;
-        }
-        fallbackCalls += 1;
-        if (fallbackCalls === 1) {
-          const error = new Error("fallback still overloaded") as Error & {
-            status: number;
-          };
-          error.status = 503;
-          throw error;
-        }
-        return {
-          text: JSON.stringify({
-            smartMeta: {},
-            milestones: [],
-            timelineSummary: "",
-          }),
+        const error = new Error(`${model} unavailable`) as Error & {
+          status: number;
         };
+        error.status = model === GEMINI_GOAL_PLAN_MODEL ? 503 : 504;
+        throw error;
+      },
+      (event, fields) => events.push({ event, fields }),
+      async (milliseconds) => {
+        delays.push(milliseconds);
+      },
+    );
+
+    await assert.rejects(
+      generator({
+        title: "Test goal",
+        description: "",
+        targetDate: "2027-01-01",
+        planningStartDate: "2026-09-27",
+      }),
+      /gemini-3\.5-flash unavailable/,
+    );
+
+    assert.deepEqual(models, [
+      GEMINI_GOAL_PLAN_MODEL,
+      GEMINI_GOAL_PLAN_FALLBACK_MODEL,
+    ]);
+    assert.deepEqual(timeouts, [45_000, 45_000]);
+    assert.deepEqual(delays, [1_000]);
+    assert.deepEqual(
+      events
+        .filter(
+          ({ event }) => event === "ai_goal_plan_provider_attempt_started",
+        )
+        .map(({ fields }) => [
+          fields.model,
+          fields.attempt,
+          fields.maxAttempts,
+        ]),
+      [
+        [GEMINI_GOAL_PLAN_MODEL, 1, 1],
+        [GEMINI_GOAL_PLAN_FALLBACK_MODEL, 1, 1],
+      ],
+    );
+  });
+
+  it("skips fallback if the primary consumed the remaining provider budget", async () => {
+    const originalNow = Date.now;
+    let now = 0;
+    Date.now = () => now;
+    const models: string[] = [];
+    const timeoutValues: number[] = [];
+    const events: string[] = [];
+    const generator = createGeminiGoalPlanGeneratorWithRequest(
+      async (model, _contents, timeoutMs) => {
+        models.push(model);
+        timeoutValues.push(timeoutMs);
+        now += 60_000;
+        const error = new Error("temporary overload") as Error & {
+          status: number;
+        };
+        error.status = 503;
+        throw error;
       },
       (event) => events.push(event),
       async () => {},
     );
 
-    await generator({
-      title: "Test goal",
-      description: "",
-      targetDate: "2027-01-01",
-      planningStartDate: "2026-09-27",
-    });
+    try {
+      await assert.rejects(
+        generator({
+          title: "Test goal",
+          description: "",
+          targetDate: "2027-01-01",
+          planningStartDate: "2026-09-27",
+        }),
+        (error: unknown) =>
+          error instanceof Error && "status" in error && error.status === 503,
+      );
+    } finally {
+      Date.now = originalNow;
+    }
 
-    assert.deepEqual(models, [
-      GEMINI_GOAL_PLAN_MODEL,
-      GEMINI_GOAL_PLAN_MODEL,
-      GEMINI_GOAL_PLAN_FALLBACK_MODEL,
-      GEMINI_GOAL_PLAN_FALLBACK_MODEL,
-    ]);
-    assert.ok(
-      timeouts.every((timeoutMs) => timeoutMs > 0 && timeoutMs <= 10_000),
-    );
-    assert.equal(
-      events.filter(
-        (event) => event === "ai_goal_plan_provider_retry_scheduled",
-      ).length,
-      2,
-    );
-    assert.ok(events.includes("ai_goal_plan_provider_response_parsed"));
+    assert.deepEqual(models, [GEMINI_GOAL_PLAN_MODEL]);
+    assert.deepEqual(timeoutValues, [45_000]);
+    assert.ok(events.includes("ai_goal_plan_provider_budget_exhausted"));
   });
 });

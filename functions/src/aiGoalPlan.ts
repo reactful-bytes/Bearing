@@ -157,26 +157,42 @@ function formatUtcDate(value: Date): string {
 
 export function parseGoalPlanInput(data: unknown): GoalPlanInput {
   if (!data || typeof data !== "object") {
-    throw new HttpsError("invalid-argument", "Goal details are required.");
+    throw new HttpsError("invalid-argument", "Goal details are required.", {
+      reason: "goal_plan_input",
+      invalidFields: ["input"],
+    });
   }
 
   const input = data as Record<string, unknown>;
-
+  const invalidFields: string[] = [];
+  let title = "";
+  let targetDate = "";
   try {
-    return {
-      title: requireTrimmedString(input.title, "title", MAX_TITLE_LENGTH),
-      description:
-        typeof input.description === "string"
-          ? input.description.trim().slice(0, MAX_DESCRIPTION_LENGTH)
-          : "",
-      targetDate: requireIsoDate(input.targetDate, "targetDate"),
-    };
+    title = requireTrimmedString(input.title, "title", MAX_TITLE_LENGTH);
   } catch {
+    invalidFields.push("title");
+  }
+  try {
+    targetDate = requireIsoDate(input.targetDate, "targetDate");
+  } catch {
+    invalidFields.push("targetDate");
+  }
+  if (invalidFields.length > 0) {
     throw new HttpsError(
       "invalid-argument",
       "Provide a goal name up to 120 characters and a valid target date.",
+      { reason: "goal_plan_input", invalidFields },
     );
   }
+
+  return {
+    title,
+    description:
+      typeof input.description === "string"
+        ? input.description.trim().slice(0, MAX_DESCRIPTION_LENGTH)
+        : "",
+    targetDate,
+  };
 }
 
 function getRequestId(data: unknown): string {
@@ -368,6 +384,10 @@ export async function generateGoalPlanDraft(
       throw new HttpsError(
         "internal",
         "A goal plan could not be generated. Try again or continue manually.",
+        getGoalPlanFailureDetails(failureStage, error, requestId, [
+          input.title,
+          input.description,
+        ]),
       );
     }
   }
@@ -430,6 +450,10 @@ export async function generateGoalPlanDraft(
     throw new HttpsError(
       "internal",
       "A goal plan could not be generated. Try again or continue manually.",
+      getGoalPlanFailureDetails(failureStage, error, requestId, [
+        input.title,
+        input.description,
+      ]),
     );
   }
 }
@@ -445,6 +469,20 @@ function logGoalPlanFailure(
     requestId,
     ...getSafeErrorLogContext(error, sensitiveValues),
   });
+}
+
+function getGoalPlanFailureDetails(
+  stage: string,
+  error: unknown,
+  requestId: string,
+  sensitiveValues: string[] = [],
+): Record<string, string | number> {
+  return {
+    requestId,
+    stage,
+    ...(stage === "provider_generation" ? { provider: "gemini" } : {}),
+    ...getSafeErrorLogContext(error, sensitiveValues),
+  };
 }
 
 function getSafeErrorLogContext(

@@ -12,7 +12,7 @@ export async function generateAiGoalPlanDraft(input: AiGoalPlanInput): Promise<A
   const generateDraft = httpsCallable<AiGoalPlanInput, AiGoalPlanDraft>(
     getFirebaseFunctions(),
     'generateGoalPlanDraft',
-    { timeout: 50_000 },
+    { timeout: 130_000 },
   );
   try {
     const result = await generateDraft(input);
@@ -34,13 +34,4 @@ export async function getAiCreditStatus(): Promise<AiCreditStatus> {
   return result.data;
 }
 
-export function getAiPlanningErrorCode(error: unknown): string | null {
-  if (!error || typeof error !== 'object' || !('code' in error)) {
-    return null;
-  }
-  const code = (error as { code?: unknown }).code;
-  if (typeof code !== 'string') {
-    return null;
-  }
-  return code.startsWith('functions/') ? code.slice('functions/'.length) : code;
-}
+export { getAiPlanningErrorCode, getAiPlanningErrorDetails } from './aiPlanningErrors';
