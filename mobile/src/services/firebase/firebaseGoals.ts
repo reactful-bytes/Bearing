@@ -146,6 +146,11 @@ function taskFields(
 }
 
 export async function createGoal(userId: string, input: CreateGoalInput): Promise<string> {
+  const title = input.title.trim();
+  if (!title) {
+    throw new Error('Goal title is required.');
+  }
+
   const db = getFirebaseFirestore();
   const now = Timestamp.now();
   const batch = writeBatch(db);
@@ -154,7 +159,7 @@ export async function createGoal(userId: string, input: CreateGoalInput): Promis
 
   batch.set(goalRef, {
     userId,
-    title: input.title.trim(),
+    title,
     description: input.description.trim(),
     smartMeta: {
       specific: input.smartMeta.specific.trim(),
