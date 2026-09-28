@@ -11,6 +11,7 @@ const {
   setLogLevel,
   setDoc,
   updateDoc,
+  writeBatch,
 } = require('firebase/firestore');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -127,6 +128,28 @@ describe('Firestore ownership rules', () => {
         milestoneId: 'milestone-1',
       }),
     );
+  });
+
+  it('allows tasks to link to a milestone created in the same atomic batch', async () => {
+    const ownerDb = firestoreFor(OWNER_ID);
+    const milestoneRef = doc(ownerDb, 'milestones', 'new-milestone');
+    const taskRef = doc(ownerDb, 'tasks', 'new-task');
+    const batch = writeBatch(ownerDb);
+
+    batch.set(milestoneRef, {
+      userId: OWNER_ID,
+      goalId: 'new-goal',
+      title: 'Build a base',
+    });
+    batch.set(taskRef, {
+      userId: OWNER_ID,
+      goalId: 'new-goal',
+      milestoneId: milestoneRef.id,
+      title: 'Plan the first run',
+    });
+
+    await assertSucceeds(batch.commit());
+    await assertSucceeds(getDoc(taskRef));
   });
 
   it('allows profile preferences but prevents client entitlement escalation', async () => {

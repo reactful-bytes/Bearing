@@ -22,9 +22,9 @@ service cloud.firestore {
         || data.milestoneId == null
         || (data.milestoneId is string
           && data.goalId is string
-          && exists(/databases/$(database)/documents/milestones/$(data.milestoneId))
-          && get(/databases/$(database)/documents/milestones/$(data.milestoneId)).data.userId == request.auth.uid
-          && get(/databases/$(database)/documents/milestones/$(data.milestoneId)).data.goalId == data.goalId);
+          && existsAfter(/databases/$(database)/documents/milestones/$(data.milestoneId))
+          && getAfter(/databases/$(database)/documents/milestones/$(data.milestoneId)).data.userId == request.auth.uid
+          && getAfter(/databases/$(database)/documents/milestones/$(data.milestoneId)).data.goalId == data.goalId);
     }
 
     match /users/{userId} {
