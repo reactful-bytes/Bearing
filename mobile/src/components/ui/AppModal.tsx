@@ -43,7 +43,7 @@ export function AppModal({
   headerAccessory,
   fullScreen = false,
   hideCloseButton = false,
-  hideCreateFab = false,
+  hideCreateFab = true,
   safeAreaEdges,
   hideHeader = false,
   embedded = false,

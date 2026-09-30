@@ -67,6 +67,7 @@ import {
   IconUser,
   IconUserCircle,
   IconX,
+  IconPinned,
 } from '@tabler/icons-react-native';
 
 type TablerIcon = typeof IconCalendarTime;
@@ -144,7 +145,8 @@ export const icons = {
   monthView: tabler(IconCalendar),
   addEvent: tabler(IconCalendarPlus),
   location: tabler(IconMapPin),
-  pinned: tabler(IconPin),
+  pin: tabler(IconPin),
+  pinned: tabler(IconPinned),
   tags: tabler(IconTags),
   favorite: tabler(IconStar),
   share: tabler(IconShare),

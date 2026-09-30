@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
+import { ScrollView, StyleSheet } from 'react-native';
 
+import { AppIcon } from '../components/ui/AppIcon';
 import { CreateNoteInput, NoteRecord, UpdateNoteInput } from '../features/notes/noteTypes';
 import { useNotes } from '../features/notes/useNotes';
 import { NotesScreen } from '../screens/NotesScreen';
@@ -87,6 +89,79 @@ describe('NotesScreen', () => {
     expect(screen.getByText('Manual note')).toBeTruthy();
     expect(screen.getByText('Idea Dump')).toBeTruthy();
     expect(screen.getByText('Manual Note')).toBeTruthy();
+  });
+
+  it('clears search text and restores the unfiltered notes', () => {
+    const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
+    mockedUseNotes.mockReturnValue(
+      makeUseNotesReturn({ notes: [makeNote({ title: 'Captured thought' })], uiState: 'ready' }),
+    );
+
+    render(<NotesScreen />);
+    expect(screen.UNSAFE_getByType(ScrollView).props.keyboardShouldPersistTaps).toBe('handled');
+    expect(screen.queryByLabelText('Clear note search')).toBeNull();
+    expect(
+      StyleSheet.flatten(screen.getByTestId('note-search-field').props.style).paddingRight,
+    ).toBeUndefined();
+
+    fireEvent.changeText(screen.getByLabelText('Search notes'), 'missing');
+    expect(screen.getByText('No matching notes.')).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.getByTestId('note-search-field').props.style).paddingRight,
+    ).toBe(0);
+    fireEvent.press(screen.getByLabelText('Clear note search'));
+
+    expect(screen.getByLabelText('Search notes').props.value).toBe('');
+    expect(screen.getByText('Captured thought')).toBeTruthy();
+    expect(screen.queryByLabelText('Clear note search')).toBeNull();
+    expect(
+      StyleSheet.flatten(screen.getByTestId('note-search-field').props.style).paddingRight,
+    ).toBeUndefined();
+  });
+
+  it('shows filter choices before applying pinned only and can return to all notes', () => {
+    const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
+    mockedUseNotes.mockReturnValue(
+      makeUseNotesReturn({ notes: [makeNote({ title: 'Unpinned note' })], uiState: 'ready' }),
+    );
+
+    render(<NotesScreen />);
+    expect(screen.getByLabelText('Show note filters').findByType(AppIcon).props.name).toBe(
+      'pinned',
+    );
+    const offStyle = StyleSheet.flatten(screen.getByLabelText('Show note filters').props.style);
+    expect(offStyle.backgroundColor).toBeTruthy();
+    expect(offStyle.borderWidth).toBeUndefined();
+    fireEvent.press(screen.getByLabelText('Show note filters'));
+    const openButton = screen.getByLabelText('Hide note filters');
+    const openColor = StyleSheet.flatten(openButton.props.style).backgroundColor;
+    expect(openColor).not.toBe(offStyle.backgroundColor);
+    expect(screen.getByText('Unpinned note')).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'All notes' }).props.accessibilityState.selected,
+    ).toBe(true);
+
+    fireEvent.press(screen.getByRole('button', { name: 'Pinned only' }));
+    expect(screen.queryByText('Unpinned note')).toBeNull();
+    expect(screen.getByText('No matching pinned notes.')).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.getByLabelText('Hide note filters').props.style).backgroundColor,
+    ).toBe(openColor);
+
+    fireEvent.press(screen.getByLabelText('Hide note filters'));
+    expect(
+      StyleSheet.flatten(screen.getByLabelText('Show note filters').props.style).backgroundColor,
+    ).toBe(offStyle.backgroundColor);
+    fireEvent.press(screen.getByLabelText('Show note filters'));
+    expect(
+      screen.getByRole('button', { name: 'Pinned only' }).props.accessibilityState.selected,
+    ).toBe(true);
+
+    fireEvent.press(screen.getByRole('button', { name: 'All notes' }));
+    expect(screen.getByText('Unpinned note')).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.getByLabelText('Hide note filters').props.style).backgroundColor,
+    ).toBe(openColor);
   });
 
   it('keeps archived notes hidden and separates pinned, recent, and all notes', () => {

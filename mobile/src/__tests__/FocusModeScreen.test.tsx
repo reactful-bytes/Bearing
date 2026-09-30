@@ -1,5 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
+import { StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CalendarDisplayEvent } from '../features/calendar/calendarTypes';
 import { useCalendarEvents } from '../features/calendar/useCalendarEvents';
@@ -90,6 +92,7 @@ function makeEvent(): CalendarDisplayEvent {
 
 describe('FocusModeScreen', () => {
   it('shows contextual start state and transitions to a summary after completion', () => {
+    jest.mocked(useSafeAreaInsets).mockReturnValue({ top: 24, bottom: 0, left: 0, right: 0 });
     const event = makeEvent();
     mockUseCalendarEvents.mockReturnValue({
       events: [event],
@@ -107,13 +110,33 @@ describe('FocusModeScreen', () => {
     expect(screen.getByText('Focus on')).toBeTruthy();
     expect(screen.getByText('Write proposal')).toBeTruthy();
     expect(screen.getByText(/Ends at/)).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Focus Mode' })).toBeTruthy();
+    expect(
+      StyleSheet.flatten(
+        screen.getByTestId('focus-start-screen-scroll').props.contentContainerStyle,
+      ).paddingTop,
+    ).toBe(24);
+    expect(screen.getAllByText('Focus Mode')).toHaveLength(1);
+    fireEvent.press(screen.getByRole('button', { name: 'Back from Focus Mode' }));
+    expect(goBack).toHaveBeenCalledTimes(1);
 
     fireEvent.press(screen.getByRole('button', { name: 'Start Focus Session' }));
     expect(screen.getByText('Active Focus')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Back from Focus Mode' })).toBeNull();
+    expect(screen.queryByRole('header', { name: 'Focus Mode' })).toBeNull();
 
     fireEvent.press(screen.getByRole('button', { name: 'Complete focus' }));
     expect(screen.getByTestId('focus-summary-screen')).toBeTruthy();
     expect(screen.getByText('Focus Session Complete')).toBeTruthy();
     expect(screen.getByText('Ideas captured: 0')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Focus Mode' })).toBeTruthy();
+    expect(
+      StyleSheet.flatten(
+        screen.getByTestId('focus-summary-screen-scroll').props.contentContainerStyle,
+      ).paddingTop,
+    ).toBe(24);
+    expect(screen.getAllByText('Focus Mode')).toHaveLength(1);
+    fireEvent.press(screen.getByRole('button', { name: 'Back from Focus Mode' }));
+    expect(goBack).toHaveBeenCalledTimes(2);
   });
 });

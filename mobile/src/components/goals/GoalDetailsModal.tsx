@@ -167,6 +167,7 @@ export function GoalDetailsModal({
     <AppModal visible={visible} title="Goal Details" onClose={handleClose} fullScreen hideHeader>
       {goal ? (
         <ScrollView
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={[
             styles.content,
             {

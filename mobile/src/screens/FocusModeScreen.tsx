@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import { usePreventRemove } from '@react-navigation/native';
 import { StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FocusDndStatus, FocusModeOverlay } from '../components/calendar/FocusModeOverlay';
 import { AppButton } from '../components/ui/AppButton';
 import { AppCard } from '../components/ui/AppCard';
 import { AppIcon } from '../components/ui/AppIcon';
 import { AppScreen } from '../components/ui/AppScreen';
+import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { useThemedStyles } from '../design/useThemedStyles';
 import type { Theme } from '../design/tokens';
 import { useCalendarEvents } from '../features/calendar/useCalendarEvents';
@@ -130,6 +132,7 @@ function formatDuration(durationMs: number): string {
 
 export function FocusModeScreen({ route, navigation }: FocusModeScreenProps) {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const { profile } = useUserProfile();
   const createNote = useCreateNote();
   const { tasks } = useTasks();
@@ -200,12 +203,20 @@ export function FocusModeScreen({ route, navigation }: FocusModeScreenProps) {
 
   if (sessionCompletedAt && !active) {
     return (
-      <AppScreen mode="scroll" testID="focus-summary-screen">
+      <AppScreen
+        mode="scroll"
+        testID="focus-summary-screen"
+        contentContainerStyle={{ paddingTop: insets.top }}
+      >
+        <ScreenHeader
+          title="Focus Mode"
+          backAccessibilityLabel="Back from Focus Mode"
+          onPressBack={navigation.goBack}
+        />
         <View style={styles.summaryScreen}>
           <View style={styles.summaryIcon}>
             <AppIcon name="complete" size={32} decorative />
           </View>
-          <Text style={styles.eyebrow}>Focus Mode</Text>
           <Text accessibilityRole="header" style={styles.summaryTitle}>
             Focus Session Complete
           </Text>
@@ -239,12 +250,22 @@ export function FocusModeScreen({ route, navigation }: FocusModeScreenProps) {
   }
 
   return (
-    <AppScreen mode="scroll" testID="focus-start-screen">
+    <AppScreen
+      mode="scroll"
+      testID="focus-start-screen"
+      contentContainerStyle={{ paddingTop: insets.top }}
+    >
+      {!active ? (
+        <ScreenHeader
+          title="Focus Mode"
+          backAccessibilityLabel="Back from Focus Mode"
+          onPressBack={navigation.goBack}
+        />
+      ) : null}
       <View style={styles.startScreen}>
         <View style={styles.startIcon}>
           <AppIcon name="focus" size={44} decorative />
         </View>
-        <Text style={styles.eyebrow}>Focus Mode</Text>
         <Text accessibilityRole="header" style={styles.startTitle}>
           Focus on what matters next.
         </Text>
@@ -297,11 +318,6 @@ const createStyles = (theme: Theme) =>
       borderWidth: 2,
       borderColor: theme.colors.focusGreen,
       backgroundColor: theme.colors.surfaceBrand,
-    },
-    eyebrow: {
-      ...theme.typography.label,
-      color: theme.colors.focusGreen,
-      textAlign: 'center',
     },
     startTitle: {
       ...theme.typography.sectionTitle,

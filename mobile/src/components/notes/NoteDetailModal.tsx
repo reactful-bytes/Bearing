@@ -147,7 +147,7 @@ export function NoteDetailModal({
       headerAccessory={headerAccessory}
     >
       {note ? (
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
           <AppCard style={styles.summaryCard}>
             <Text style={styles.noteSource}>{noteSourceLabel(note)}</Text>
             <Text style={styles.noteDate}>

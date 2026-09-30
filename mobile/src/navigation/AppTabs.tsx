@@ -1,6 +1,7 @@
 import {
   NavigationContainer,
   NavigationContainerRef,
+  getFocusedRouteNameFromRoute,
   useNavigationContainerRef,
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -73,6 +74,7 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
 const DESKTOP_NAVIGATION_BREAKPOINT = 1024;
 const EXIT_WARNING_WINDOW_MS = 2000;
 export const DESKTOP_NAVIGATION_WIDTH = 152;
+const CREATE_FAB_SCREENS = new Set(['PlanHome', 'Goals', 'Tasks', 'CalendarHome', 'NotesHome']);
 
 export function usesDesktopNavigation(platform: string, width: number): boolean {
   return platform === 'web' && width >= DESKTOP_NAVIGATION_BREAKPOINT;
@@ -227,6 +229,7 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
   const isDesktopNavigation = usesDesktopNavigation(Platform.OS, width);
   const navigationRef = useNavigationContainerRef<RootStackParamList>();
   const [activeRouteName, setActiveRouteName] = useState<keyof RootStackParamList>('Plan');
+  const [activeScreenName, setActiveScreenName] = useState('PlanHome');
   const lastBackPressAt = useRef(0);
 
   useEffect(() => {
@@ -257,8 +260,12 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
     <NavigationContainer
       ref={navigationRef}
       onStateChange={(state) => {
-        const routeName = state?.routes?.[state.index ?? 0]?.name;
+        const route = state?.routes?.[state.index ?? 0];
+        const routeName = route?.name;
         setActiveRouteName((routeName as keyof RootStackParamList | undefined) ?? 'Plan');
+        setActiveScreenName(
+          route ? (getFocusedRouteNameFromRoute(route) ?? route.name) : 'PlanHome',
+        );
       }}
     >
       <CreateFabProvider onCreate={(action) => navigateToCreate(navigationRef, action)}>
@@ -285,6 +292,7 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
           insets={insets}
           isDesktopNavigation={isDesktopNavigation}
           activeRouteName={activeRouteName}
+          activeScreenName={activeScreenName}
           navigation={navigationRef}
           styles={styles}
           theme={theme}
@@ -315,6 +323,7 @@ function AppNavigationChrome({
   insets,
   isDesktopNavigation,
   activeRouteName,
+  activeScreenName,
   navigation,
   styles,
   theme,
@@ -322,13 +331,15 @@ function AppNavigationChrome({
   insets: ReturnType<typeof useSafeAreaInsets>;
   isDesktopNavigation: boolean;
   activeRouteName: keyof RootStackParamList;
+  activeScreenName: string;
   navigation: NavigationContainerRef<RootStackParamList>;
   styles: ReturnType<typeof createStyles>;
   theme: ReturnType<typeof useTheme>['theme'];
 }) {
   const createFab = useRequiredCreateFab();
   const shouldShowCreateFab =
-    activeRouteName === 'Plan' || activeRouteName === 'Calendar' || activeRouteName === 'Notes';
+    (activeRouteName === 'Plan' || activeRouteName === 'Calendar' || activeRouteName === 'Notes') &&
+    CREATE_FAB_SCREENS.has(activeScreenName);
   return (
     <>
       {isDesktopNavigation ? (

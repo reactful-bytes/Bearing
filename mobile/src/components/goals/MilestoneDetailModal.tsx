@@ -140,7 +140,7 @@ export function MilestoneDetailModal({
   return (
     <AppModal visible={visible} title="Milestone Details" onClose={onClose} closeLabel="Back">
       {milestone ? (
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
           <AppCard style={styles.summaryCard}>
             <Text style={styles.goalLabel}>{goalTitle}</Text>
             <Text style={styles.milestoneTitle}>{milestone.title}</Text>

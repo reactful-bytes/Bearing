@@ -6,6 +6,7 @@ import { AppTabs, DESKTOP_NAVIGATION_WIDTH, usesDesktopNavigation } from '../nav
 
 const mockNavigate = jest.fn();
 const mockActiveTabName = { value: 'Plan' };
+const mockActiveScreenName = { value: 'PlanHome' };
 const mockNavigationRef = {
   canGoBack: jest.fn(() => false),
   goBack: jest.fn(),
@@ -141,16 +142,30 @@ jest.mock('../components/presentation/CreateFabGroup', () => {
 });
 
 jest.mock('@react-navigation/native', () => ({
+  getFocusedRouteNameFromRoute: (route: {
+    state?: { index: number; routes: { name: string }[] };
+  }) => route.state?.routes[route.state.index]?.name,
   NavigationContainer: ({
     children,
     onStateChange,
   }: {
     children: React.ReactNode;
-    onStateChange?: (state: { index: number; routes: { name: string }[] }) => void;
+    onStateChange?: (state: {
+      index: number;
+      routes: { name: string; state: { index: number; routes: { name: string }[] } }[];
+    }) => void;
   }) => {
     const ReactModule = jest.requireActual<typeof import('react')>('react');
     ReactModule.useEffect(() => {
-      onStateChange?.({ index: 0, routes: [{ name: mockActiveTabName.value }] });
+      onStateChange?.({
+        index: 0,
+        routes: [
+          {
+            name: mockActiveTabName.value,
+            state: { index: 0, routes: [{ name: mockActiveScreenName.value }] },
+          },
+        ],
+      });
     }, []);
     return <>{children}</>;
   },
@@ -310,8 +325,45 @@ describe('AppTabs', () => {
     mockActiveTabName.value = 'Plan';
   });
 
+  it.each([
+    ['Notes', 'NoteEditor'],
+    ['Notes', 'CreateNote'],
+    ['Plan', 'FocusMode'],
+    ['Plan', 'CreateGoal'],
+    ['Plan', 'GoalDetail'],
+    ['Calendar', 'EventEdit'],
+  ])('hides the Create FAB on %s/%s', (tab, screenName) => {
+    mockActiveTabName.value = tab;
+    mockActiveScreenName.value = screenName;
+    const { queryByTestId } = render(
+      <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
+    );
+
+    expect(queryByTestId('create-fab-button')).toBeNull();
+    mockActiveTabName.value = 'Plan';
+    mockActiveScreenName.value = 'PlanHome';
+  });
+
+  it.each([
+    ['Plan', 'Goals'],
+    ['Plan', 'Tasks'],
+    ['Calendar', 'CalendarHome'],
+    ['Notes', 'NotesHome'],
+  ])('keeps the Create FAB on %s/%s', (tab, screenName) => {
+    mockActiveTabName.value = tab;
+    mockActiveScreenName.value = screenName;
+    const { getByTestId } = render(
+      <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
+    );
+
+    expect(getByTestId('create-fab-button')).toBeTruthy();
+    mockActiveTabName.value = 'Plan';
+    mockActiveScreenName.value = 'PlanHome';
+  });
+
   it.each(['PremiumPaywall', 'LegalDocument'])(
-    'hides the Create FAB on the %s overlay route', (routeName) => {
+    'hides the Create FAB on the %s overlay route',
+    (routeName) => {
       mockActiveTabName.value = routeName;
       const { queryByTestId } = render(
         <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,

@@ -10,6 +10,7 @@ import { AppCard } from '../components/ui/AppCard';
 import { IconButton } from '../components/ui/IconButton';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
+import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { layout, radii, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import { useNotes } from '../features/notes/useNotes';
@@ -57,6 +58,7 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showPinnedOnly, setShowPinnedOnly] = useState(false);
+  const [filtersVisible, setFiltersVisible] = useState(false);
 
   useEffect(() => {
     if (!route?.params?.createNote) {
@@ -114,6 +116,7 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
   return (
     <SafeAreaView style={styles.screen} edges={['left', 'right']}>
       <ScrollView
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.contentContainer,
           { paddingTop: insets.top },
@@ -132,7 +135,10 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
           }}
         />
         <View style={styles.searchRow}>
-          <View style={styles.searchField}>
+          <View
+            testID="note-search-field"
+            style={[styles.searchField, searchQuery ? styles.searchFieldWithClear : null]}
+          >
             <AppIcon name="search" size={18} color={styles.searchIcon.color} decorative />
             <TextInput
               accessibilityLabel="Search notes"
@@ -142,14 +148,35 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
               style={styles.searchInput}
               value={searchQuery}
             />
+            {searchQuery.length > 0 ? (
+              <IconButton
+                name="close"
+                size={18}
+                color={styles.searchIcon.color}
+                accessibilityLabel="Clear note search"
+                onPress={() => setSearchQuery('')}
+              />
+            ) : null}
           </View>
           <IconButton
-            name="filter"
-            accessibilityLabel={showPinnedOnly ? 'Show all notes' : 'Show pinned notes'}
-            onPress={() => setShowPinnedOnly((current) => !current)}
-            style={showPinnedOnly ? styles.filterActive : null}
+            name="pinned"
+            // color={filtersVisible ? styles.filterIconOpen.color : undefined}
+            accessibilityLabel={filtersVisible ? 'Hide note filters' : 'Show note filters'}
+            onPress={() => setFiltersVisible((current) => !current)}
+            style={[styles.filterButton, filtersVisible ? styles.filterOpen : null]}
           />
         </View>
+        {filtersVisible ? (
+          <SegmentedControl
+            accessibilityLabel="Note filter"
+            options={[
+              { value: 'all', label: 'All notes' },
+              { value: 'pinned', label: 'Pinned only' },
+            ]}
+            value={showPinnedOnly ? 'pinned' : 'all'}
+            onChange={(value) => setShowPinnedOnly(value === 'pinned')}
+          />
+        ) : null}
 
         {uiState === 'loading' ? (
           <AppCard>
@@ -254,8 +281,14 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
             ))}
             {visibleNotes.length === 0 ? (
               <AppCard>
-                <Text style={styles.stateTitle}>No matching notes.</Text>
-                <Text style={styles.stateDescription}>Try a different search or filter.</Text>
+                <Text style={styles.stateTitle}>
+                  {showPinnedOnly ? 'No matching pinned notes.' : 'No matching notes.'}
+                </Text>
+                <Text style={styles.stateDescription}>
+                  {showPinnedOnly
+                    ? 'Select All notes to see your other notes.'
+                    : 'Try a different search.'}
+                </Text>
               </AppCard>
             ) : null}
           </>
@@ -337,6 +370,7 @@ const createStyles = (theme: Theme) =>
       borderRadius: radii.md,
       backgroundColor: theme.colors.surfaceRaised,
     },
+    searchFieldWithClear: { paddingRight: 0 },
     searchIcon: { color: theme.colors.textSecondary },
     searchPlaceholder: { color: theme.colors.textMuted },
     searchInput: {
@@ -346,7 +380,12 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.text,
       paddingVertical: 0,
     },
-    filterActive: { backgroundColor: theme.colors.surfaceBrand },
+    filterButton: {
+      borderRadius: radii.md,
+      backgroundColor: theme.colors.surfaceRaised,
+    },
+    filterOpen: { backgroundColor: theme.colors.surfaceMuted },
+    filterIconOpen: { color: theme.colors.brand },
     sectionLabel: {
       ...typography.label,
       color: theme.colors.brand,

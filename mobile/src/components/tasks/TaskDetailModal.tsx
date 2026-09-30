@@ -189,7 +189,7 @@ export function TaskDetailModal({
       headerAccessory={headerAccessory}
     >
       {task ? (
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
           <AppCard style={styles.summaryCard}>
             <Text style={styles.statusLabel}>{getCompletionLabel(task)}</Text>
             <Text style={styles.summaryTitle}>{task.title}</Text>

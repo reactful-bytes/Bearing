@@ -751,6 +751,7 @@ export function CreateGoalModal({
         hideHeader
       >
         <ScrollView
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={[
             styles.content,
             {
@@ -1279,6 +1280,7 @@ export function CreateGoalModal({
       >
         {editorDraft ? (
           <ScrollView
+            keyboardShouldPersistTaps="handled"
             style={styles.editorScrollView}
             contentContainerStyle={[
               styles.editorContent,

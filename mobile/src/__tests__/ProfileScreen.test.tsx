@@ -7,7 +7,7 @@ import {
   waitFor,
 } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { Alert, Linking, Platform } from 'react-native';
+import { Alert, Linking, Platform, ScrollView } from 'react-native';
 
 import {
   UseDeviceCalendarsReturn,
@@ -369,6 +369,7 @@ describe('ProfileScreen', () => {
     );
 
     expect(screen.getByRole('header', { name: 'Personal Information' })).toBeTruthy();
+    expect(screen.UNSAFE_getByType(ScrollView).props.keyboardShouldPersistTaps).toBe('handled');
     expect(screen.queryByRole('header', { name: 'Security' })).toBeNull();
 
     fireEvent.press(screen.getByLabelText('Back to Profile'));

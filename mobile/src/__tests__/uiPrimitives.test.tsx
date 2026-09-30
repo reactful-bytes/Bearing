@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
 
+import { CreateFabProvider } from '../components/presentation/CreateFabContext';
 import { AppCard } from '../components/ui/AppCard';
 import { AppButton } from '../components/ui/AppButton';
 import { AppModal } from '../components/ui/AppModal';
@@ -185,13 +186,16 @@ describe('UI primitives', () => {
     const handleClose = jest.fn();
 
     render(
-      <AppModal visible title="Goal Details" onClose={handleClose}>
-        <AppCard>
-          <ScreenHeader title="Edit goal" description="Update the current goal details." />
-        </AppCard>
-      </AppModal>,
+      <CreateFabProvider onCreate={jest.fn()}>
+        <AppModal visible title="Goal Details" onClose={handleClose}>
+          <AppCard>
+            <ScreenHeader title="Edit goal" description="Update the current goal details." />
+          </AppCard>
+        </AppModal>
+      </CreateFabProvider>,
     );
 
+    expect(screen.queryByTestId('create-fab-group')).toBeNull();
     expect(screen.getByLabelText('Goal Details modal').props.statusBarTranslucent).toBe(true);
     expect(screen.getByLabelText('Goal Details modal').props.navigationBarTranslucent).toBe(true);
     expect(screen.getByRole('header', { name: 'Goal Details' })).toBeTruthy();

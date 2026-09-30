@@ -809,6 +809,7 @@ export function ProfileScreen({
     <SafeAreaView style={styles.screen} edges={['left', 'right']}>
       <ScrollView
         ref={profileScrollRef}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.contentContainer,
           { paddingTop: insets.top },
