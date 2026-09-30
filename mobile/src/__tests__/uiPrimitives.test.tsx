@@ -5,6 +5,7 @@ import { CreateFabProvider } from '../components/presentation/CreateFabContext';
 import { AppCard } from '../components/ui/AppCard';
 import { AppButton } from '../components/ui/AppButton';
 import { AppModal } from '../components/ui/AppModal';
+import { ConfirmationModal } from '../components/ui/ConfirmationModal';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { FormField } from '../components/ui/FormField';
 import { ListItem } from '../components/ui/ListItem';
@@ -206,5 +207,31 @@ describe('UI primitives', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Close Goal Details' }));
 
     expect(handleClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('supports generic yes/no confirmation choices', () => {
+    const handleCancel = jest.fn();
+    const handleConfirm = jest.fn();
+
+    render(
+      <ConfirmationModal
+        visible
+        title="Continue?"
+        message="Move to the next step?"
+        cancelLabel="No"
+        confirmLabel="Yes"
+        onCancel={handleCancel}
+        onConfirm={handleConfirm}
+      />,
+    );
+
+    expect(screen.getByLabelText('Continue? confirmation dialog')).toBeTruthy();
+    expect(screen.getByText('Move to the next step?')).toBeTruthy();
+
+    fireEvent.press(screen.getByRole('button', { name: 'No' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Yes' }));
+
+    expect(handleCancel).toHaveBeenCalledTimes(1);
+    expect(handleConfirm).toHaveBeenCalledTimes(1);
   });
 });

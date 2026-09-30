@@ -35,7 +35,7 @@ export function getAiPlanningErrorDetails(error: unknown): string | null {
     }
   }
 
-  if (diagnostic.provider !== 'gemini') return null;
+  if (diagnostic.provider !== 'gemini' && diagnostic.provider !== 'openai') return null;
 
   const status =
     typeof diagnostic.httpStatus === 'number' &&

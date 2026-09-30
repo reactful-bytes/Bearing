@@ -525,10 +525,14 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Add task to draft milestone 1'));
     fireEvent.press(screen.getByLabelText('Save plan item changes'));
     fireEvent.press(screen.getByLabelText('Open actions for task 2 in milestone 1'));
+    const menuTop = screen.getByLabelText('task actions menu').props.style.top;
+    expect(Number.parseFloat(menuTop)).toBeGreaterThanOrEqual(0);
+    expect(Number.parseFloat(menuTop)).toBeLessThan(100);
     fireEvent.press(screen.getByLabelText('Delete task 2 in milestone 1'));
+    expect(screen.getByLabelText('Delete task? confirmation dialog')).toBeTruthy();
     expect(screen.getByText('This task will be deleted from the goal draft.')).toBeTruthy();
     expect(screen.getByText('Cancel')).toBeTruthy();
-    expect(screen.getByText('Delete Task')).toBeTruthy();
+    expect(screen.getByText('Delete')).toBeTruthy();
     expect(screen.queryByLabelText('Keep item Delete task?')).toBeNull();
     fireEvent.press(screen.getByLabelText('Confirm deletion of plan item'));
     expect(screen.queryByText('Untitled task')).toBeNull();
@@ -537,6 +541,7 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Save plan item changes'));
     fireEvent.press(screen.getByLabelText('Open actions for milestone 2'));
     fireEvent.press(screen.getByLabelText('Delete milestone 2'));
+    expect(screen.getByLabelText('Delete milestone? confirmation dialog')).toBeTruthy();
     expect(
       screen.getByText('This milestone and all of its tasks will be deleted from the goal draft.'),
     ).toBeTruthy();
@@ -767,6 +772,7 @@ describe('GoalsScreen', () => {
       expect.objectContaining({
         title: 'Run a 10k',
         description: 'Train consistently for eight weeks.',
+        provider: 'openai',
       }),
     );
     expect(

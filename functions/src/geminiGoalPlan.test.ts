@@ -8,7 +8,7 @@ import {
   GEMINI_GOAL_PLAN_MODEL,
   parseGeminiGoalPlanResponse,
 } from "./geminiGoalPlan";
-import { GOAL_PLAN_MAX_TASKS } from "./aiGoalPlan";
+import { createGoalPlanPrompt, GOAL_PLAN_MAX_TASKS } from "./aiGoalPlan";
 
 describe("Gemini goal-plan response parsing", () => {
   it("uses the requested primary and fallback models", () => {
@@ -104,10 +104,12 @@ describe("Gemini goal-plan response parsing", () => {
   });
 
   it("asks for granular, scope-scaled tasks and meaningful dated repeats", async () => {
-    let prompt = "";
+    let instructions = "";
+    let input = "";
     const generator = createGeminiGoalPlanGeneratorWithRequest(
-      async (_model, contents) => {
-        prompt = contents;
+      async (_model, prompt) => {
+        instructions = prompt.instructions;
+        input = prompt.input;
         return {
           text: JSON.stringify({
             smartMeta: {},
@@ -119,23 +121,31 @@ describe("Gemini goal-plan response parsing", () => {
       () => {},
     );
 
-    await generator({
+    await generator(
+      createGoalPlanPrompt({
+        title: "Test goal",
+        description: "",
+        targetDate: "2027-01-01",
+        planningStartDate: "2026-09-27",
+      }),
+    );
+
+    assert.match(
+      instructions,
+      new RegExp(`up to ${GOAL_PLAN_MAX_TASKS} tasks total`),
+    );
+    assert.match(instructions, /one focused work block/);
+    assert.match(instructions, /separate dated tasks/);
+    assert.match(
+      instructions,
+      /scale task count to the goal's scope and duration/,
+    );
+    assert.deepEqual(JSON.parse(input), {
       title: "Test goal",
       description: "",
       targetDate: "2027-01-01",
       planningStartDate: "2026-09-27",
     });
-
-    assert.match(
-      prompt,
-      new RegExp(`up to ${GOAL_PLAN_MAX_TASKS} tasks total`),
-    );
-    assert.match(prompt, /one focused work block/);
-    assert.match(prompt, /separate dated tasks/);
-    assert.match(
-      prompt,
-      /scale the number of tasks to the goal's scope and duration/,
-    );
   });
 
   it("tries the primary once, then the fallback once after a transient failure", async () => {
@@ -170,13 +180,16 @@ describe("Gemini goal-plan response parsing", () => {
     );
 
     const result = await generator(
-      {
+      createGoalPlanPrompt({
         title: "Test goal",
         description: "",
         targetDate: "2027-01-01",
         planningStartDate: "2026-09-27",
+      }),
+      {
+        requestId: "123e4567-e89b-42d3-a456-426614174000",
+        provider: "gemini",
       },
-      { requestId: "123e4567-e89b-42d3-a456-426614174000" },
     );
 
     assert.deepEqual(models, [
@@ -241,12 +254,14 @@ describe("Gemini goal-plan response parsing", () => {
     );
 
     await assert.rejects(
-      generator({
-        title: "Test goal",
-        description: "",
-        targetDate: "2027-01-01",
-        planningStartDate: "2026-09-27",
-      }),
+      generator(
+        createGoalPlanPrompt({
+          title: "Test goal",
+          description: "",
+          targetDate: "2027-01-01",
+          planningStartDate: "2026-09-27",
+        }),
+      ),
       /invalid request/,
     );
     assert.deepEqual(models, [GEMINI_GOAL_PLAN_MODEL]);
@@ -281,12 +296,14 @@ describe("Gemini goal-plan response parsing", () => {
     );
 
     await assert.rejects(
-      generator({
-        title: "Test goal",
-        description: "",
-        targetDate: "2027-01-01",
-        planningStartDate: "2026-09-27",
-      }),
+      generator(
+        createGoalPlanPrompt({
+          title: "Test goal",
+          description: "",
+          targetDate: "2027-01-01",
+          planningStartDate: "2026-09-27",
+        }),
+      ),
       /gemini-3\.5-flash unavailable/,
     );
 
@@ -337,12 +354,14 @@ describe("Gemini goal-plan response parsing", () => {
 
     try {
       await assert.rejects(
-        generator({
-          title: "Test goal",
-          description: "",
-          targetDate: "2027-01-01",
-          planningStartDate: "2026-09-27",
-        }),
+        generator(
+          createGoalPlanPrompt({
+            title: "Test goal",
+            description: "",
+            targetDate: "2027-01-01",
+            planningStartDate: "2026-09-27",
+          }),
+        ),
         (error: unknown) =>
           error instanceof Error && "status" in error && error.status === 503,
       );

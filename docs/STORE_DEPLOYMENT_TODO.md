@@ -177,8 +177,8 @@ manifest review, commit SHA, and lockfile hashes.
       controls, authorized domains, support email, password policy, and account-email templates.
 - [ ] **Manual - Both:** Register signed Apple and Android apps with Firebase App Check using the
       approved platform providers; validate tokens before enabling enforcement.
-- [ ] **Manual - Both:** Set production Functions environment values for `GEMINI_API_KEY`,
-      `REVENUECAT_SECRET_API_KEY`, `REVENUECAT_WEBHOOK_AUTHORIZATION`, and
+- [ ] **Manual - Both:** Set production Functions environment values for `OPENAI_API_KEY`,
+      `GEMINI_API_KEY`, `REVENUECAT_SECRET_API_KEY`, `REVENUECAT_WEBHOOK_AUTHORIZATION`, and
       `REVENUECAT_WEBHOOK_SIGNING_SECRET`, plus separate V2 key/project/currency parameters, in the
       ignored deployment environment. Use separate
       staging and production values and migrate to managed secrets only as a separately reviewed
@@ -187,8 +187,9 @@ manifest review, commit SHA, and lockfile hashes.
       candidate source. Wait for every required index to become enabled.
 - [ ] **Manual - Both:** Keep App Check enforcement disabled until M17's native/web token and metric
       gates pass, and restrict Firebase/Google Cloud IAM to named operators.
-- [ ] **Manual - Both:** Set Functions quotas/max-instance expectations, Gemini quota and safety
-      settings, cloud budgets, billing alerts, and emergency spend thresholds.
+- [ ] **Manual - Both:** Set Functions quotas/max-instance expectations, OpenAI production quota and
+      safety settings, development-only Gemini quota and safety settings, cloud budgets, billing
+      alerts, and emergency spend thresholds.
 - [ ] **Manual - Both:** Create product and reliability dashboards, log-based metrics, two
       notification channels, and alerts from `OBSERVABILITY.md`; deliver a synthetic alert.
 - [ ] **Manual - Both:** Configure product-event retention to 30 days and approve retention for

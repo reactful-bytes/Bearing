@@ -68,13 +68,15 @@ copy that is no longer reachable on the device or in an external calendar accoun
 ## AI Goal Planning
 
 For an eligible user who requests AI assistance, Bearing sends the goal title, description, and
-target date through an authenticated Firebase Function to Google Gemini. Bearing validates the
-response and presents an editable draft. RevenueCat V2 supplies the live balance and processes the
-one-credit debit or refund. Server-only operation and lock records coordinate retries but are not
-balance or grant state. A successful draft may be cached in an operation record for up to 24 hours
-so a repeated request can return without another charge. Failed requests do not retain a generated
-draft. No generated fields become goal content until the user approves and saves the plan. Users
-should avoid including sensitive information that is unnecessary for planning.
+target date through an authenticated Firebase Function to OpenAI, using GPT-6 Luna by default.
+Bearing validates the response and presents an editable draft. Local development builds may use
+Google Gemini only when the development Functions environment explicitly enables it. OpenAI
+response storage is disabled for these generation requests. RevenueCat V2 supplies the live balance
+and processes the one-credit debit or refund. Server-only operation and lock records coordinate
+retries but are not balance or grant state. A successful draft may be cached in an operation record
+for up to 24 hours so a repeated request can return without another charge. Failed requests do not
+retain a generated draft. No generated fields become goal content until the user approves and saves
+the plan. Users should avoid including sensitive information that is unnecessary for planning.
 
 AI output can be inaccurate and is not medical, legal, financial, emergency, or other professional
 advice.
@@ -92,7 +94,8 @@ events to advertising or data-broker systems.
 ## Sharing and Processors
 
 Bearing uses Google Firebase for authentication, Firestore, Functions, backups, and operational
-logging; Google Gemini for requested AI generation; RevenueCat for purchase/entitlement
+logging; OpenAI for production AI generation and Google Gemini only for local-development testing;
+RevenueCat for purchase/entitlement
 reconciliation and AI-credit authority; Apple and Google for distribution, checkout, cancellation,
 and refund handling; and GitHub for source and release automation. The authoritative purpose, data,
 configuration, retention, and approval inventory is in `docs/DATA_PROCESSORS.md`.

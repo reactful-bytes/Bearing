@@ -27,9 +27,10 @@ CI runs the same 17-case suite whenever mobile or Firestore configuration change
 - Service-account keys, billing secrets, AI provider keys, webhook secrets, and private API tokens
   must remain in ignored server environment files or approved server/CI secret storage and must
   never use an `EXPO_PUBLIC_*` name.
-- Functions currently bind `GEMINI_API_KEY` and RevenueCat values with `defineString`; Firebase CLI
-  loads them from ignored `functions/.env` files during deployment. Do not add these values to
-  mobile configuration, tracked files, or CI logs.
+- Functions bind `OPENAI_API_KEY`, `GEMINI_API_KEY`, and RevenueCat values with `defineString`;
+  Firebase CLI loads them from ignored `functions/.env` files during deployment. OpenAI is the
+  production goal-plan provider. Gemini is selectable only in local-development builds. Do not add
+  provider keys to mobile configuration, tracked files, or CI logs.
 - The 2026-07-31 tracked-file scan found no private-key, client-secret, refresh-token, Stripe-key, or
   Firebase-key patterns.
 
@@ -49,8 +50,10 @@ Firebase Functions require Firebase Auth and derive every target user from `requ
 Bearing 360 authorization comes from `subscriptions/{uid}`. RevenueCat V2 is the sole AI-credit
 balance, grant, debit, and refund authority. AI generation uses one-unit deterministic adjustments,
 temporary server-only operation/lock state, idempotent request IDs, bounded structured output, and
-sanitized provider failures. RevenueCat V1 remains limited to canonical subscriber reconciliation
-and customer deletion. Export returns the live V2 balance plus caller-owned temporary state;
+sanitized provider failures. OpenAI using GPT-6 Luna is the default production provider; the Gemini
+selector is exposed only in local-development builds, and selected provider requests are routed by
+the server. RevenueCat V1 remains limited to canonical subscriber reconciliation and customer
+deletion. Export returns the live V2 balance plus caller-owned temporary state;
 deletion removes the RevenueCat customer before local data and Auth.
 
 App Check is not currently enforced. It is deferred to M17 as defense in depth and must not be

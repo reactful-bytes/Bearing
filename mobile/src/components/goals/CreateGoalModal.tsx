@@ -13,7 +13,9 @@ import { AppIcon } from '../ui/AppIcon';
 import { CreditPackPurchaseModal } from '../premium/CreditPackPurchaseModal';
 import { FormField } from '../ui/FormField';
 import { IconButton } from '../ui/IconButton';
+import { ConfirmationModal } from '../ui/ConfirmationModal';
 import { ScreenHeader } from '../ui/ScreenHeader';
+import { SegmentedControl } from '../ui/SegmentedControl';
 import {
   GoalDateParts,
   GoalDatePicker,
@@ -27,9 +29,13 @@ import {
 import { radii, spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
 import {
+  AI_GOAL_PLAN_PROVIDERS,
   AiCreditStatus,
+  AiGoalPlanProvider,
   AiGoalPlanDraft,
   AiGoalPlanInput,
+  DEFAULT_AI_GOAL_PLAN_PROVIDER,
+  shouldShowAiGoalPlanProviderSelector,
 } from '../../features/goals/aiGoalPlanTypes';
 import { CreateGoalInput, GoalTaskInput } from '../../features/goals/goalTypes';
 import {
@@ -104,6 +110,10 @@ const TASK_HEADER_INSET = spacing['3xl'] + spacing.xs + spacing.sm;
 const TASK_BADGE_SIZE = 20;
 const TASK_SECTION_INSET = TASK_HEADER_INSET;
 const MILESTONE_BADGE_CENTER = spacing.xs + 16;
+const AI_GOAL_PLAN_PROVIDER_OPTIONS = [
+  { value: AI_GOAL_PLAN_PROVIDERS.OPENAI, label: 'OpenAI: GPT-6 Luna' },
+  { value: AI_GOAL_PLAN_PROVIDERS.GEMINI, label: 'Gemini: 3.6 Flash' },
+] as const;
 
 function makeDraftId(prefix: string, index: number, existingIds: string[] = []): string {
   let candidateIndex = index;
@@ -210,6 +220,13 @@ export function CreateGoalModal({
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const today = useMemo(() => new Date(), []);
+  const [aiGoalPlanProvider, setAiGoalPlanProvider] = useState<AiGoalPlanProvider>(
+    DEFAULT_AI_GOAL_PLAN_PROVIDER,
+  );
+  const canSelectAiGoalPlanProvider = shouldShowAiGoalPlanProviderSelector(
+    __DEV__,
+    process.env.EXPO_PUBLIC_APP_ENV,
+  );
   const [wizardIndex, setWizardIndex] = useState(0);
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
@@ -273,6 +290,7 @@ export function CreateGoalModal({
   }, [hasPremiumAccess, isPremiumStatusResolved, onLoadAiCreditStatus, visible, wizardIndex]);
 
   function resetForm(): void {
+    setAiGoalPlanProvider(DEFAULT_AI_GOAL_PLAN_PROVIDER);
     setWizardIndex(0);
     setTitle('');
     setDescription('');
@@ -526,6 +544,7 @@ export function CreateGoalModal({
         title: title.trim(),
         description: description.trim(),
         targetDate: formatAiTargetDate(goalDateParts),
+        provider: aiGoalPlanProvider,
         requestId: aiRequestId.current,
       });
 
@@ -911,6 +930,22 @@ export function CreateGoalModal({
                     </Text>
                   </>
                 )}
+                {canSelectAiGoalPlanProvider && !aiGenerating ? (
+                  <View style={styles.section}>
+                    <Text style={styles.exampleLabel}>AI provider</Text>
+                    <SegmentedControl
+                      accessibilityLabel="Goal plan AI provider"
+                      options={AI_GOAL_PLAN_PROVIDER_OPTIONS}
+                      value={aiGoalPlanProvider}
+                      onChange={(provider) => {
+                        if (provider === aiGoalPlanProvider) return;
+                        aiRequestId.current = null;
+                        setAiGoalPlanProvider(provider);
+                        setAiError(null);
+                      }}
+                    />
+                  </View>
+                ) : null}
                 {aiCreditsLoading ? (
                   <Text style={styles.cardBody}>Checking AI credits...</Text>
                 ) : null}
@@ -1357,37 +1392,23 @@ export function CreateGoalModal({
           </ScrollView>
         ) : null}
       </AppModal>
-      <AppModal
+      <ConfirmationModal
         visible={removeConfirmationVisible && editorDraft !== null}
         title={editorDraft?.kind === 'task' ? 'Delete task?' : 'Delete milestone?'}
-        onClose={cancelItemRemoval}
-        hideCloseButton
-        hideCreateFab
-      >
-        <View style={styles.confirmationContent}>
-          <Text style={styles.confirmationDescription}>
-            {editorDraft?.kind === 'task'
-              ? 'This task will be deleted from the goal draft.'
-              : 'This milestone and all of its tasks will be deleted from the goal draft.'}
-          </Text>
-          <View style={styles.confirmationActions}>
-            <AppButton
-              label="Cancel"
-              variant="secondary"
-              accessibilityLabel="Cancel plan item removal"
-              onPress={cancelItemRemoval}
-              style={styles.confirmationButton}
-            />
-            <AppButton
-              label={editorDraft?.kind === 'task' ? 'Delete Task' : 'Delete Milestone'}
-              variant="danger"
-              accessibilityLabel="Confirm deletion of plan item"
-              onPress={removeEditorDraft}
-              style={styles.confirmationButton}
-            />
-          </View>
-        </View>
-      </AppModal>
+        message={
+          editorDraft?.kind === 'task'
+            ? 'This task will be deleted from the goal draft.'
+            : 'This milestone and all of its tasks will be deleted from the goal draft.'
+        }
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        icon="delete"
+        iconTone="danger"
+        confirmAccessibilityLabel="Confirm deletion of plan item"
+        cancelAccessibilityLabel="Cancel plan item removal"
+        onCancel={cancelItemRemoval}
+        onConfirm={removeEditorDraft}
+      />
       <AppModal
         visible={regenerationConfirmationVisible}
         title="Regenerate AI Draft?"
@@ -1771,7 +1792,7 @@ const createStyles = (theme: Theme) =>
     },
     actionMenu: {
       position: 'absolute',
-      top: '100%',
+      top: '70%',
       right: 0,
       minWidth: 176,
       padding: spacing.xs,

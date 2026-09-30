@@ -7,6 +7,8 @@ import { setGlobalOptions } from "firebase-functions/v2/options";
 import { getBackendStatus } from "./status";
 import {
   createRevenueCatGoalPlanCreditService,
+  createGoalPlanGeneratorRegistry,
+  GOAL_PLAN_PROVIDERS,
   generateGoalPlanDraft as generateGoalPlanDraftHandler,
 } from "./aiGoalPlan";
 import {
@@ -14,6 +16,7 @@ import {
   getAiCreditStatus as getAiCreditStatusHandler,
 } from "./aiCreditStatus";
 import { createGeminiGoalPlanGenerator } from "./geminiGoalPlan";
+import { createOpenAiGoalPlanGenerator } from "./openAiGoalPlan";
 import {
   deleteUserAccount as deleteUserAccountHandler,
   exportUserData as exportUserDataHandler,
@@ -41,6 +44,7 @@ setGlobalOptions({
 });
 
 const geminiApiKey = defineString("GEMINI_API_KEY");
+const openAiApiKey = defineString("OPENAI_API_KEY");
 const revenueCatApiKey = defineString("REVENUECAT_SECRET_API_KEY");
 const revenueCatV2ApiKey = defineString("REVENUECAT_SECRET_API_KEY_V2");
 const revenueCatProjectId = defineString("REVENUECAT_PROJECT_ID");
@@ -159,13 +163,23 @@ export const generateGoalPlanDraft = onCall(
   {
     timeoutSeconds: 120,
   },
-  (request) =>
-    generateGoalPlanDraftHandler(
+  (request) => {
+    const generator = createGoalPlanGeneratorRegistry({
+      [GOAL_PLAN_PROVIDERS.OPENAI]: createOpenAiGoalPlanGenerator(
+        openAiApiKey.value(),
+      ),
+      [GOAL_PLAN_PROVIDERS.GEMINI]: createGeminiGoalPlanGenerator(
+        geminiApiKey.value(),
+      ),
+    });
+    return generateGoalPlanDraftHandler(
       request,
-      createGeminiGoalPlanGenerator(geminiApiKey.value()),
+      generator,
       undefined,
       createRevenueCatGoalPlanCreditService(revenueCatV2Config()),
-    ),
+      new Date(),
+    );
+  },
 );
 
 export const exportUserData = onCall(

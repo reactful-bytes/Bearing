@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
+import { shouldShowAiGoalPlanProviderSelector } from '../features/goals/aiGoalPlanTypes';
 import {
   getAiPlanningErrorCode,
   getAiPlanningErrorDetails,
@@ -23,6 +24,18 @@ describe('AI goal-plan callable errors', () => {
         },
       }),
     ).toBe('AI planning is temporarily unavailable. Please try again shortly.');
+    expect(
+      getAiPlanningErrorDetails({
+        details: { provider: 'openai', httpStatus: 503 },
+      }),
+    ).toBe('AI planning is temporarily unavailable. Please try again shortly.');
+  });
+
+  it('only enables provider selection in local development builds', () => {
+    expect(shouldShowAiGoalPlanProviderSelector(true, 'development')).toBe(true);
+    expect(shouldShowAiGoalPlanProviderSelector(false, 'development')).toBe(false);
+    expect(shouldShowAiGoalPlanProviderSelector(true, 'preview')).toBe(false);
+    expect(shouldShowAiGoalPlanProviderSelector(true, 'production')).toBe(false);
   });
 
   it('explains which goal input field failed server validation', () => {
