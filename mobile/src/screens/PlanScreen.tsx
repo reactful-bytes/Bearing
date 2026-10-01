@@ -506,7 +506,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
             {eventsState === 'ready'
               ? upcomingEvents.map((event, index) => (
                   <PlanEventRow
-                    key={`${event.ownership}-${event.id}`}
+                    key={`${event.ownership}-${event.id}-${event.recurrenceInstanceDate ?? event.startAt.toISOString()}`}
                     event={event}
                     dateTime={formatEventTime(event, locale, timeFormat)}
                     dateLabel={

@@ -223,6 +223,32 @@ describe('PlanScreen', () => {
     expect(screen.getAllByRole('link', { name: 'See all' })).toHaveLength(2);
   });
 
+  it('uses distinct keys for recurring occurrences of the same event', () => {
+    const firstOccurrence = {
+      ...makeEvent(1),
+      id: 'task-Vz7B6910zb59VxaAfYAE',
+      recurrenceInstanceDate: '2026-09-07',
+      title: 'Recurring task, first occurrence',
+    };
+    const secondOccurrence = {
+      ...firstOccurrence,
+      recurrenceInstanceDate: '2026-09-08',
+      title: 'Recurring task, second occurrence',
+      startAt: new Date(firstOccurrence.startAt.getTime() + 24 * 60 * 60_000),
+      endAt: new Date(firstOccurrence.endAt.getTime() + 24 * 60 * 60_000),
+    };
+    mockReadyState([firstOccurrence, secondOccurrence]);
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    render(<PlanScreen navigation={{ navigate: jest.fn() } as never} />);
+
+    const errorCalls = consoleError.mock.calls;
+    consoleError.mockRestore();
+    expect(screen.getByText('Recurring task, first occurrence')).toBeTruthy();
+    expect(screen.getByText('Recurring task, second occurrence')).toBeTruthy();
+    expect(errorCalls.flat().join(' ')).not.toContain('Encountered two children with the same key');
+  });
+
   it('includes an event that is currently in progress', () => {
     const activeEvent = makeEvent(1);
     activeEvent.startAt = new Date(Date.now() - 10 * 60_000);
