@@ -37,6 +37,7 @@ type MilestoneDetailModalProps = {
     milestone: GoalMilestoneWithTasks,
     completed: boolean,
   ) => Promise<void>;
+  milestoneActionsEnabled?: boolean;
 };
 
 function formatLinkedEvent(event: CalendarEvent, timeFormat: TimeFormat, locale?: string): string {
@@ -63,6 +64,7 @@ export function MilestoneDetailModal({
   onSchedule,
   onAddTask,
   onToggleManualCompletion,
+  milestoneActionsEnabled = true,
 }: MilestoneDetailModalProps) {
   const styles = useThemedStyles(createStyles);
   const [editMode, setEditMode] = useState(false);
@@ -211,13 +213,15 @@ export function MilestoneDetailModal({
                   accessibilityLabel={`Add task to milestone ${milestone.title}`}
                   onPress={() => onAddTask(milestone)}
                 />
-                <AppButton
-                  label="Schedule Event"
-                  accessibilityLabel="Schedule milestone event"
-                  variant="secondary"
-                  onPress={() => onSchedule(milestone)}
-                />
-                {manuallyComplete ? (
+                {milestoneActionsEnabled ? (
+                  <AppButton
+                    label="Schedule Event"
+                    accessibilityLabel="Schedule milestone event"
+                    variant="secondary"
+                    onPress={() => onSchedule(milestone)}
+                  />
+                ) : null}
+                {milestoneActionsEnabled && manuallyComplete ? (
                   canReopen ? (
                     <AppButton
                       label="Reopen Milestone"
@@ -227,7 +231,7 @@ export function MilestoneDetailModal({
                       loading={saving}
                     />
                   ) : null
-                ) : milestone.status !== 'completed' ? (
+                ) : milestoneActionsEnabled && milestone.status !== 'completed' ? (
                   <AppButton
                     label="Mark Milestone Complete"
                     accessibilityLabel="Manually complete milestone"

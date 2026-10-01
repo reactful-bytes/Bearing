@@ -115,6 +115,20 @@
           "order": "ASCENDING"
         },
         {
+          "fieldPath": "goalId",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "tasks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
           "fieldPath": "milestoneId",
           "order": "ASCENDING"
         }

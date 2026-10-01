@@ -34,6 +34,8 @@ export type GoalPlanInput = {
   title: string;
   description: string;
   targetDate: string;
+  goalId?: string;
+  timezone?: string;
 };
 
 export type GoalPlanPromptInput = GoalPlanInput & {
@@ -87,6 +89,7 @@ export function createGoalPlanPrompt(
 
 export type GoalPlanDraft = {
   promptVersion: 1;
+  goalId?: string;
   smartMeta: {
     specific: string;
     measurable: string;
@@ -95,10 +98,12 @@ export type GoalPlanDraft = {
     timeBound: string;
   };
   milestones: Array<{
+    id?: string;
     title: string;
     description: string;
     targetDate: string;
     tasks: Array<{
+      id?: string;
       title: string;
       description: string;
       starter: string;
@@ -148,10 +153,17 @@ export type GoalPlanCreditService = {
     now: Date,
   ) => Promise<AiCreditOperationResult<GoalPlanDraft>>;
   getBalance: (userId: string) => Promise<number>;
+  persistDraft: (
+    userId: string,
+    input: GoalPlanInput,
+    draft: GoalPlanDraft,
+    requestId: string,
+  ) => Promise<GoalPlanDraft>;
 };
 
 export function createRevenueCatGoalPlanCreditService(
   config: RevenueCatV2Config,
+  persistDraft: GoalPlanCreditService["persistDraft"],
 ): GoalPlanCreditService {
   return {
     run: (userId, requestId, inputFingerprint, generate, now) =>
@@ -181,6 +193,7 @@ export function createRevenueCatGoalPlanCreditService(
       ),
     getBalance: async (userId) =>
       (await getRevenueCatVirtualCurrencyBalance(userId, config)).balance,
+    persistDraft,
   };
 }
 
@@ -235,6 +248,8 @@ export function parseGoalPlanInput(data: unknown): GoalPlanInput {
   const invalidFields: string[] = [];
   let title = "";
   let targetDate = "";
+  const rawGoalId = input.goalId;
+  const rawTimezone = input.timezone;
   try {
     title = requireTrimmedString(
       sanitizeGoalPlanText(input.title),
@@ -257,6 +272,23 @@ export function parseGoalPlanInput(data: unknown): GoalPlanInput {
     );
   }
 
+  if (
+    rawGoalId !== undefined &&
+    (typeof rawGoalId !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(rawGoalId))
+  ) {
+    throw new HttpsError("invalid-argument", "Goal ID is invalid.");
+  }
+  if (rawTimezone !== undefined) {
+    if (typeof rawTimezone !== "string" || rawTimezone.length > 100) {
+      throw new HttpsError("invalid-argument", "Goal timezone is invalid.");
+    }
+    try {
+      new Intl.DateTimeFormat("en-US", { timeZone: rawTimezone });
+    } catch {
+      throw new HttpsError("invalid-argument", "Goal timezone is invalid.");
+    }
+  }
+
   return {
     title,
     description:
@@ -267,7 +299,20 @@ export function parseGoalPlanInput(data: unknown): GoalPlanInput {
           )
         : "",
     targetDate,
+    ...(typeof rawGoalId === "string" ? { goalId: rawGoalId } : {}),
+    ...(typeof rawTimezone === "string" ? { timezone: rawTimezone } : {}),
   };
+}
+
+function persistedDocumentId(
+  value: unknown,
+  field: string,
+): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(value)) {
+    throw new Error(`${field} is invalid.`);
+  }
+  return value;
 }
 
 export function parseGoalPlanProvider(data: unknown): GoalPlanProvider {
@@ -334,6 +379,9 @@ export function validateGoalPlanDraft(
 
   return {
     promptVersion: 1,
+    ...(draft.goalId === undefined
+      ? {}
+      : { goalId: persistedDocumentId(draft.goalId, "goal ID") }),
     smartMeta: {
       specific: requireTrimmedString(smartMeta.specific, "specific", 240),
       measurable: requireTrimmedString(smartMeta.measurable, "measurable", 240),
@@ -368,6 +416,14 @@ export function validateGoalPlanDraft(
         throw new Error("AI goal plan exceeds item limits.");
       }
       return {
+        ...(milestone.id === undefined
+          ? {}
+          : {
+              id: persistedDocumentId(
+                milestone.id,
+                `milestone ${index + 1} ID`,
+              ),
+            }),
         title: requireTrimmedString(
           milestone.title,
           `milestone ${index + 1} title`,
@@ -399,6 +455,14 @@ export function validateGoalPlanDraft(
             );
           }
           return {
+            ...(task.id === undefined
+              ? {}
+              : {
+                  id: persistedDocumentId(
+                    task.id,
+                    `milestone ${index + 1} task ${taskIndex + 1} ID`,
+                  ),
+                }),
             title: requireTrimmedString(
               task.title,
               `milestone ${index + 1} task ${taskIndex + 1} title`,
@@ -503,10 +567,17 @@ export async function generateGoalPlanDraft(
         failureStage = "provider_generation";
         const generatedDraft = await generator(prompt, generationContext);
         failureStage = "draft_validation";
-        return validateGoalPlanDraft(
+        const validatedDraft = validateGoalPlanDraft(
           generatedDraft,
           input.targetDate,
           planningStartDate,
+        );
+        failureStage = "draft_persistence";
+        return creditService.persistDraft(
+          caller.uid,
+          input,
+          validatedDraft,
+          requestId,
         );
       },
       now,

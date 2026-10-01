@@ -130,4 +130,9 @@ describe('goalHelpers', () => {
       'active',
     );
   });
+
+  it('preserves draft status even when every milestone is complete', () => {
+    const milestone = makeMilestone({ manuallyCompletedAt: new Date() });
+    expect(deriveGoalStatus(makeGoal({ status: 'draft' }), [milestone], new Map())).toBe('draft');
+  });
 });

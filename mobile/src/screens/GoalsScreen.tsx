@@ -9,7 +9,7 @@ import { CreateGoalModal } from '../components/goals/CreateGoalModal';
 import { GoalDetailsModal } from '../components/goals/GoalDetailsModal';
 import { MilestoneDetailModal } from '../components/goals/MilestoneDetailModal';
 import { AddTaskModal } from '../components/tasks/AddTaskModal';
-import { GoalCard, GoalStatusTabs } from '../components/presentation/GoalPresentation';
+import { GoalCard, GoalListFilter } from '../components/presentation/GoalPresentation';
 import type { GoalFilter } from '../components/presentation/GoalPresentation';
 import { AppCard } from '../components/ui/AppCard';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
@@ -70,6 +70,9 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
     goals,
     uiState,
     createGoal,
+    createGoalDraft,
+    saveGoalDraft,
+    activateGoalDraft,
     updateGoal,
     setGoalManuallyCompleted,
     createMilestone,
@@ -103,15 +106,17 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
     () => goals.filter((goal) => goal.status === 'active').length,
     [goals],
   );
+  const draftGoalCount = goals.filter((goal) => goal.status === 'draft').length;
   const completedGoalCount = goals.filter((goal) => goal.status === 'completed').length;
   const archivedGoalCount = goals.filter((goal) => goal.status === 'archived').length;
   const goalFilterOptions = useMemo(
     () => [
+      { value: 'draft' as const, label: 'Draft', count: draftGoalCount },
       { value: 'active' as const, label: 'Current', count: activeGoalCount },
       { value: 'completed' as const, label: 'Completed', count: completedGoalCount },
       { value: 'archived' as const, label: 'Archived', count: archivedGoalCount },
     ],
-    [activeGoalCount, archivedGoalCount, completedGoalCount],
+    [activeGoalCount, archivedGoalCount, completedGoalCount, draftGoalCount],
   );
   const visibleGoals = useMemo(() => {
     if (goalFilter === 'all') {
@@ -141,7 +146,21 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
 
   async function handleCreateGoal(input: CreateGoalInput): Promise<void> {
     await createGoal(input);
+    setGoalFilter('active');
     setCreateGoalVisible(false);
+  }
+
+  async function handleCreateGoalDraft(input: CreateGoalInput): Promise<string> {
+    if (!createGoalDraft) throw new Error('Goal draft creation is unavailable.');
+    const goalId = await createGoalDraft(input);
+    setGoalFilter('draft');
+    return goalId;
+  }
+
+  async function handleActivateGoalDraft(goalId: string): Promise<void> {
+    if (!activateGoalDraft) throw new Error('Goal draft activation is unavailable.');
+    await activateGoalDraft(goalId);
+    setGoalFilter('active');
   }
 
   async function handleCreateMilestone(input: {
@@ -178,6 +197,9 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
     input: CreateEventInput,
     options: CreateEventOptions,
   ): Promise<void> {
+    if (scheduleGoal?.status === 'draft') {
+      throw new Error('Activate the goal before scheduling milestones.');
+    }
     await createEvent(input, options);
     setScheduleMilestoneId(null);
   }
@@ -217,8 +239,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
             }
           }}
         />
-        <GoalStatusTabs
-          accessibilityLabel="Goal filter"
+        <GoalListFilter
           options={goalFilterOptions}
           value={goalFilter}
           onChange={setGoalFilter}
@@ -244,22 +265,26 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
         {(uiState === 'empty' || uiState === 'ready') && visibleGoals.length === 0 ? (
           <AppCard>
             <Text style={styles.stateTitle}>
-              {goalFilter === 'active'
-                ? 'No active goals.'
-                : goalFilter === 'completed'
-                  ? 'No completed goals.'
-                  : goalFilter === 'archived'
-                    ? 'No archived goals.'
-                    : 'No goals yet.'}
+              {goalFilter === 'draft'
+                ? 'No goal drafts.'
+                : goalFilter === 'active'
+                  ? 'No active goals.'
+                  : goalFilter === 'completed'
+                    ? 'No completed goals.'
+                    : goalFilter === 'archived'
+                      ? 'No archived goals.'
+                      : 'No goals yet.'}
             </Text>
             <Text style={styles.stateDescription}>
-              {goalFilter === 'active'
-                ? 'Create a goal to start building a step-by-step plan.'
-                : goalFilter === 'completed'
-                  ? 'Goals you finish will stay available here.'
-                  : goalFilter === 'archived'
-                    ? 'Archived goals will stay available here for reference.'
-                    : 'Create your first goal to start building a step-by-step plan.'}
+              {goalFilter === 'draft'
+                ? 'Goals saved for later will appear here.'
+                : goalFilter === 'active'
+                  ? 'Create a goal to start building a step-by-step plan.'
+                  : goalFilter === 'completed'
+                    ? 'Goals you finish will stay available here.'
+                    : goalFilter === 'archived'
+                      ? 'Archived goals will stay available here for reference.'
+                      : 'Create your first goal to start building a step-by-step plan.'}
             </Text>
           </AppCard>
         ) : null}
@@ -280,6 +305,9 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
         visible={createGoalVisible}
         onClose={() => setCreateGoalVisible(false)}
         onSave={handleCreateGoal}
+        onCreateDraft={createGoalDraft ? handleCreateGoalDraft : undefined}
+        onSaveDraft={saveGoalDraft}
+        onActivateDraft={activateGoalDraft ? handleActivateGoalDraft : undefined}
         hasPremiumAccess={hasPremiumAccess}
         isPremiumStatusResolved={entitlementUiState === 'ready'}
         onOpenPremiumPaywall={() =>
@@ -298,6 +326,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
         visible={selectedGoal !== null && !addMilestoneVisible && !addTaskVisible}
         onClose={closeGoalDetails}
         onSaveGoal={handleSaveGoal}
+        onActivateDraft={activateGoalDraft ? handleActivateGoalDraft : undefined}
         onToggleGoalManualCompletion={setGoalManuallyCompleted}
         onAddMilestone={() => setAddMilestoneVisible(true)}
         onOpenMilestone={(milestone) => setSelectedMilestoneId(milestone.id)}
@@ -333,6 +362,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
         onToggleManualCompletion={(milestone, completed) =>
           setMilestoneManuallyCompleted(milestone.id, completed)
         }
+        milestoneActionsEnabled={selectedGoal?.status !== 'draft'}
       />
 
       <AddTaskModal

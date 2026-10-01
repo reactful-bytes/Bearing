@@ -17,6 +17,7 @@ import type { Theme } from '../design/tokens';
 import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { useTasks } from '../features/tasks/useTasks';
+import { useGoals } from '../features/goals/useGoals';
 import { CreateTaskInput, TaskRecord, UpdateTaskInput } from '../features/tasks/taskTypes';
 import { AppTabParamList, PlanStackParamList } from '../navigation/navigationTypes';
 import { useUserProfile } from '../features/profile/useUserProfile';
@@ -60,6 +61,7 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp<AppTabParamList>>();
   const { profile } = useUserProfile();
+  const { goals } = useGoals();
   const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
   const { publicationCalendarTitle, publishEvent } = useCalendarPublication();
   const {
@@ -87,38 +89,46 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
     stackNavigation?.setParams({ createTask: undefined });
   }, [route?.params?.createTask, stackNavigation]);
 
+  const draftGoalIds = useMemo(
+    () => new Set(goals.filter((goal) => goal.status === 'draft').map((goal) => goal.id)),
+    [goals],
+  );
+  const operationalTasks = useMemo(
+    () => tasks.filter((task) => !task.goalId || !draftGoalIds.has(task.goalId)),
+    [draftGoalIds, tasks],
+  );
   const selectedTask = useMemo(
-    () => tasks.find((task) => task.id === selectedTaskId) ?? null,
-    [selectedTaskId, tasks],
+    () => operationalTasks.find((task) => task.id === selectedTaskId) ?? null,
+    [operationalTasks, selectedTaskId],
   );
   const scheduleTask = useMemo(
-    () => tasks.find((task) => task.id === scheduleTaskId) ?? null,
-    [scheduleTaskId, tasks],
+    () => operationalTasks.find((task) => task.id === scheduleTaskId) ?? null,
+    [operationalTasks, scheduleTaskId],
   );
   const startNowTask = useMemo(
-    () => tasks.find((task) => task.id === startNowTaskId) ?? null,
-    [startNowTaskId, tasks],
+    () => operationalTasks.find((task) => task.id === startNowTaskId) ?? null,
+    [operationalTasks, startNowTaskId],
   );
   const activeTaskCount = useMemo(
-    () => tasks.filter((task) => task.status === 'active').length,
-    [tasks],
+    () => operationalTasks.filter((task) => task.status === 'active').length,
+    [operationalTasks],
   );
-  const completedTaskCount = tasks.length - activeTaskCount;
+  const completedTaskCount = operationalTasks.length - activeTaskCount;
   const taskFilterOptions = useMemo(
     () => [
       { value: 'active' as const, label: 'Active', count: activeTaskCount },
       { value: 'completed' as const, label: 'Completed', count: completedTaskCount },
-      { value: 'all' as const, label: 'All', count: tasks.length },
+      { value: 'all' as const, label: 'All', count: operationalTasks.length },
     ],
-    [activeTaskCount, completedTaskCount, tasks.length],
+    [activeTaskCount, completedTaskCount, operationalTasks.length],
   );
   const visibleTasks = useMemo(() => {
     if (taskFilter === 'all') {
-      return tasks;
+      return operationalTasks;
     }
 
-    return tasks.filter((task) => task.status === taskFilter);
-  }, [taskFilter, tasks]);
+    return operationalTasks.filter((task) => task.status === taskFilter);
+  }, [operationalTasks, taskFilter]);
 
   async function handleCreateTask(input: CreateTaskInput): Promise<void> {
     await createTask(input);

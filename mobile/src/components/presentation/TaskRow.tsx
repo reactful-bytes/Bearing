@@ -8,7 +8,7 @@ import { AppIcon } from '../ui/AppIcon';
 type TaskRowProps = {
   task: TaskRecord;
   onPress: () => void;
-  onToggleComplete: () => void;
+  onToggleComplete?: () => void;
   context?: string;
 };
 
@@ -18,17 +18,19 @@ export function TaskRow({ task, onPress, onToggleComplete, context }: TaskRowPro
 
   return (
     <View style={[styles.row, completed ? styles.rowCompleted : null]}>
-      <Pressable
-        accessibilityRole="checkbox"
-        accessibilityLabel={`Mark ${task.title} ${completed ? 'incomplete' : 'complete'}`}
-        accessibilityState={{ checked: completed }}
-        onPress={onToggleComplete}
-        style={styles.toggle}
-      >
-        {completed ? (
-          <AppIcon name="complete" size={12} color={styles.toggleComplete.color} decorative />
-        ) : null}
-      </Pressable>
+      {onToggleComplete ? (
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityLabel={`Mark ${task.title} ${completed ? 'incomplete' : 'complete'}`}
+          accessibilityState={{ checked: completed }}
+          onPress={onToggleComplete}
+          style={styles.toggle}
+        >
+          {completed ? (
+            <AppIcon name="complete" size={12} color={styles.toggleComplete.color} decorative />
+          ) : null}
+        </Pressable>
+      ) : null}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Open task ${task.title}`}

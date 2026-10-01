@@ -86,7 +86,7 @@ function dismissCreationScreen(
 export function CreateGoalScreen({ navigation }: CreateGoalScreenProps) {
   const { authUser, isAnonymous } = useUserProfile();
   const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
-  const { createGoal } = useGoals();
+  const { createGoal, createGoalDraft, saveGoalDraft, activateGoalDraft } = useGoals();
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
 
   return (
@@ -95,6 +95,12 @@ export function CreateGoalScreen({ navigation }: CreateGoalScreenProps) {
         visible
         onClose={() => dismissCreationScreen(navigation, 'PlanHome')}
         onSave={createGoal}
+        onCreateDraft={async (input) => {
+          if (!createGoalDraft) throw new Error('Goal draft creation is unavailable.');
+          return createGoalDraft(input);
+        }}
+        onSaveDraft={saveGoalDraft}
+        onActivateDraft={activateGoalDraft}
         hasPremiumAccess={hasPremiumAccess}
         isPremiumStatusResolved={entitlementUiState === 'ready'}
         onOpenPremiumPaywall={() =>
@@ -179,7 +185,7 @@ export function CreateGoalFromNoteScreen({ route, navigation }: NoteConversionPr
   const note = notes.find((item) => item.id === route?.params?.noteId);
   const { authUser, isAnonymous } = useUserProfile();
   const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
-  const { createGoal } = useGoals();
+  const { createGoal, createGoalDraft, saveGoalDraft, activateGoalDraft } = useGoals();
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
 
   if (!note) {
@@ -198,6 +204,12 @@ export function CreateGoalFromNoteScreen({ route, navigation }: NoteConversionPr
         initialDescription={note.body}
         onClose={() => dismissCreationScreen(navigation, 'NotesHome')}
         onSave={createGoal}
+        onCreateDraft={async (input) => {
+          if (!createGoalDraft) throw new Error('Goal draft creation is unavailable.');
+          return createGoalDraft(input);
+        }}
+        onSaveDraft={saveGoalDraft}
+        onActivateDraft={activateGoalDraft}
         hasPremiumAccess={hasPremiumAccess}
         isPremiumStatusResolved={entitlementUiState === 'ready'}
         onOpenPremiumPaywall={() =>

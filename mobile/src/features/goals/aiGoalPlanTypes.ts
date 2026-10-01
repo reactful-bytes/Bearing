@@ -8,8 +8,7 @@ export const AI_GOAL_PLAN_PROVIDERS = {
 export type AiGoalPlanProvider =
   (typeof AI_GOAL_PLAN_PROVIDERS)[keyof typeof AI_GOAL_PLAN_PROVIDERS];
 
-export const DEFAULT_AI_GOAL_PLAN_PROVIDER: AiGoalPlanProvider =
-  AI_GOAL_PLAN_PROVIDERS.OPENAI;
+export const DEFAULT_AI_GOAL_PLAN_PROVIDER: AiGoalPlanProvider = AI_GOAL_PLAN_PROVIDERS.OPENAI;
 
 export function shouldShowAiGoalPlanProviderSelector(
   isDevelopmentBuild: boolean,
@@ -22,6 +21,8 @@ export type AiGoalPlanInput = {
   title: string;
   description: string;
   targetDate: string;
+  goalId?: string;
+  timezone?: string;
   provider?: AiGoalPlanProvider;
   requestId?: string;
 };
@@ -32,6 +33,7 @@ export type AiCreditStatus = {
 };
 
 export type AiGoalTask = {
+  id?: string;
   title: string;
   description: string;
   starter: string;
@@ -39,6 +41,7 @@ export type AiGoalTask = {
 };
 
 export type AiGoalMilestone = {
+  id?: string;
   title: string;
   description: string;
   targetDate: string;
@@ -47,6 +50,7 @@ export type AiGoalMilestone = {
 
 export type AiGoalPlanDraft = {
   promptVersion: number;
+  goalId?: string;
   smartMeta: GoalSmartMeta;
   milestones: AiGoalMilestone[];
   timelineSummary: string;

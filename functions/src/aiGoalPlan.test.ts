@@ -24,6 +24,18 @@ function creditService(
       draft: await generate(),
     }),
     getBalance: async () => 9,
+    persistDraft: async (_userId, _input, draft) => ({
+      ...draft,
+      goalId: "persisted-goal",
+      milestones: draft.milestones.map((milestone, milestoneIndex) => ({
+        ...milestone,
+        id: `persisted-milestone-${milestoneIndex + 1}`,
+        tasks: milestone.tasks.map((task, taskIndex) => ({
+          ...task,
+          id: `persisted-task-${milestoneIndex + 1}-${taskIndex + 1}`,
+        })),
+      })),
+    }),
     ...overrides,
   };
 }
@@ -492,9 +504,57 @@ describe("AI goal plan", () => {
     assert.deepEqual(result, {
       promptVersion: 1,
       ...validDraft,
+      goalId: "persisted-goal",
+      milestones: [
+        {
+          ...validDraft.milestones[0],
+          id: "persisted-milestone-1",
+          tasks: [
+            {
+              ...validDraft.milestones[0].tasks[0],
+              id: "persisted-task-1-1",
+            },
+          ],
+        },
+      ],
       requestId,
       availableCredits: 9,
     });
+  });
+
+  it("waits for draft persistence before completing the credit operation", async () => {
+    const persistenceOrder: string[] = [];
+    await generateGoalPlanDraft(
+      {
+        ...request,
+        data: {
+          ...request.data,
+          requestId: "123e4567-e89b-42d3-a456-426614174000",
+        },
+      },
+      async () => {
+        persistenceOrder.push("generated");
+        return validDraft;
+      },
+      async () => "active",
+      creditService({
+        persistDraft: async (_userId, _input, draft) => {
+          persistenceOrder.push("persisted");
+          return draft;
+        },
+        run: async (_userId, _requestId, _fingerprint, generate) => {
+          const draft = await generate();
+          persistenceOrder.push("operation_completed");
+          return { kind: "completed", draft };
+        },
+      }),
+    );
+
+    assert.deepEqual(persistenceOrder, [
+      "generated",
+      "persisted",
+      "operation_completed",
+    ]);
   });
 
   it("refunds a reservation when provider output fails validation", async () => {

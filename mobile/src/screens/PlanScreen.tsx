@@ -272,7 +272,7 @@ function PlanEventRow({
 
 type PlanScreenGoal = {
   title: string;
-  status: 'active' | 'completed' | 'archived';
+  status: 'draft' | 'active' | 'completed' | 'archived';
   completedMilestoneCount: number;
   totalMilestoneCount: number;
 };
@@ -373,7 +373,12 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
     [goals],
   );
   const taskSummary = useMemo(() => {
-    const activeTasks = tasks.filter((task) => task.status === 'active');
+    const draftGoalIds = new Set(
+      goals.filter((goal) => goal.status === 'draft').map((goal) => goal.id),
+    );
+    const activeTasks = tasks.filter(
+      (task) => task.status === 'active' && (!task.goalId || !draftGoalIds.has(task.goalId)),
+    );
     const focusEvent = focusSession
       ? events.find((event) => event.id === focusSession.eventId)
       : undefined;
@@ -395,7 +400,7 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
           allTasks.findIndex((candidate) => candidate.id === task.id) === index,
       )
       .slice(0, 3);
-  }, [events, focusSession, recentGoals, tasks]);
+  }, [events, focusSession, goals, recentGoals, tasks]);
   const currentEvent = useMemo(() => {
     return (
       upcomingEvents.find((event) => today >= event.startAt && today < event.endAt) ??

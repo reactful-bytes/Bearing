@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals
 
 import { GoalsScreen } from '../screens/GoalsScreen';
 import {
+  GoalDraftSaveInput,
+  GoalDraftSaveResult,
   CreateGoalInput,
   GoalMilestoneWithTasks,
   GoalWithMilestones,
@@ -325,7 +327,9 @@ describe('GoalsScreen', () => {
 
     expect(screen.getByText('No active goals.')).toBeTruthy();
     expect(screen.queryByText('New Goal')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Current, 0', selected: true })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Current goals' })).toBeTruthy();
+    expect(screen.getByText('0 goals')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Browse other goal lists' })).toBeTruthy();
   });
 
   it('filters goals with counts, selected state, and filter-specific empty copy', () => {
@@ -342,9 +346,14 @@ describe('GoalsScreen', () => {
       completedMilestoneCount: 1,
       progressText: '1 of 1 milestones complete',
     });
+    const draftGoal = makeGoal({
+      id: 'goal-draft',
+      title: 'Write a mystery novel',
+      status: 'draft',
+    });
 
     mockedUseGoals.mockReturnValue({
-      goals: [activeGoal, completedGoal],
+      goals: [draftGoal, activeGoal, completedGoal],
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
@@ -360,10 +369,10 @@ describe('GoalsScreen', () => {
     render(<GoalsScreen />);
 
     expect(screen.getByText('Run a 10k')).toBeTruthy();
+    expect(screen.queryByText('Write a mystery novel')).toBeNull();
     expect(screen.queryByText('Read twelve books')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Current, 1', selected: true })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Completed, 1', selected: false })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Archived, 0', selected: false })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Current goals' })).toBeTruthy();
+    expect(screen.getByText('1 goal')).toBeTruthy();
     expect(screen.getByText('Next milestone: Buy running shoes')).toBeTruthy();
     expect(screen.getByText('0 of 1 milestones complete')).toBeTruthy();
     expect(screen.getByLabelText('Goal progress Run a 10k').props.accessibilityValue).toEqual({
@@ -373,16 +382,34 @@ describe('GoalsScreen', () => {
       text: '0 of 1 milestones complete',
     });
 
-    fireEvent.press(screen.getByRole('button', { name: 'Completed, 1' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Browse other goal lists' }));
+    expect(
+      screen.getByRole('button', { name: 'Browse other goal lists' }).props.accessibilityState
+        .expanded,
+    ).toBe(true);
+    expect(screen.getByRole('button', { name: 'Select completed goals, 1' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Select draft goals, 1' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Select archived goals, 0' })).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Select completed goals, 1' }));
 
     expect(screen.getByText('Read twelve books')).toBeTruthy();
     expect(screen.queryByText('Run a 10k')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Completed, 1', selected: true })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Completed goals' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Show current goals' })).toBeTruthy();
 
-    fireEvent.press(screen.getByRole('button', { name: 'Archived, 0' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Browse other goal lists' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Select draft goals, 1' }));
+
+    expect(screen.getByText('Write a mystery novel')).toBeTruthy();
+    expect(screen.queryByText('Run a 10k')).toBeNull();
+    expect(screen.getByRole('header', { name: 'Draft goals' })).toBeTruthy();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Browse other goal lists' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Select archived goals, 0' }));
 
     expect(screen.queryByText('Run a 10k')).toBeNull();
     expect(screen.queryByText('Read twelve books')).toBeNull();
+    expect(screen.getByRole('header', { name: 'Archived goals' })).toBeTruthy();
   });
 
   it('shows completed-filter empty copy', () => {
@@ -408,7 +435,8 @@ describe('GoalsScreen', () => {
     const navigate = jest.fn();
 
     render(<GoalsScreen navigation={{ navigate }} />);
-    fireEvent.press(screen.getByRole('button', { name: 'Completed, 0' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Browse other goal lists' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Select completed goals, 0' }));
 
     expect(screen.getByText('No completed goals.')).toBeTruthy();
     expect(screen.getByText('Goals you finish will stay available here.')).toBeTruthy();
@@ -472,7 +500,9 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Select goal target year'));
     fireEvent.press(screen.getByLabelText('Select goal target year 2026'));
     expect(screen.queryByText('Unlock AI goal builder with Bearing 360.')).toBeNull();
-    fireEvent.press(screen.getByLabelText('Continue'));
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Continue'));
+    });
     expect(screen.getByText('Unlock AI goal builder with Bearing 360.')).toBeTruthy();
     expect(screen.getByText('View Bearing 360 Plans')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Continue'));
@@ -582,6 +612,68 @@ describe('GoalsScreen', () => {
     });
   });
 
+  it('creates a manual goal draft as soon as the goal basics validate', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 6, 20));
+    const draftGoal = makeGoal({ id: 'goal-draft-1', title: 'Run a 10k', status: 'draft' });
+    const goals: GoalWithMilestones[] = [];
+    const createGoalDraft = jest.fn(async () => {
+      goals.push(draftGoal);
+      return draftGoal.id;
+    });
+
+    (useGoals as jest.MockedFunction<typeof useGoals>).mockReturnValue({
+      goals,
+      uiState: 'empty',
+      createGoal: jest.fn(async () => undefined),
+      createGoalDraft,
+      saveGoalDraft: jest.fn(async () => ({ milestones: [] })),
+      activateGoalDraft: jest.fn(async () => undefined),
+      updateGoal: jest.fn(async () => undefined),
+      setGoalManuallyCompleted: jest.fn(async () => undefined),
+      setMilestoneManuallyCompleted: jest.fn(async () => undefined),
+      createMilestone: jest.fn(async () => undefined),
+      deleteMilestone: jest.fn(async () => undefined),
+      updateMilestone: jest.fn(async () => undefined),
+      reorderMilestones: jest.fn(async () => undefined),
+      retry: jest.fn(),
+    });
+    (useMilestoneEvents as jest.MockedFunction<typeof useMilestoneEvents>).mockReturnValue({
+      events: [],
+      uiState: 'idle',
+    });
+
+    render(<GoalsScreen route={{ params: { createGoal: true } }} />);
+
+    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
+    fireEvent.changeText(screen.getByLabelText('Planning context'), 'Train three times weekly.');
+    fireEvent.press(screen.getByLabelText('Continue'));
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Continue'));
+    });
+
+    expect(createGoalDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Run a 10k',
+        description: 'Train three times weekly.',
+        status: 'draft',
+        milestones: [],
+      }),
+    );
+    expect(screen.getByText('Unlock AI goal builder with Bearing 360.')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Close Create Goal'));
+
+    await waitFor(() => {
+      expect(screen.getByRole('header', { name: 'Draft goals' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Show current goals' })).toBeTruthy();
+      expect(screen.getByText('Run a 10k')).toBeTruthy();
+    });
+  });
+
   it('opens the premium paywall from the AI planning step for free users', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
     const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
@@ -686,10 +778,15 @@ describe('GoalsScreen', () => {
     >;
     (
       getAiPlanningErrorDetails as jest.MockedFunction<typeof getAiPlanningErrorDetails>
-    ).mockReturnValue(
-      'AI planning is temporarily unavailable. Please try again shortly.',
-    );
+    ).mockReturnValue('AI planning is temporarily unavailable. Please try again shortly.');
     const createGoalMock = jest.fn(async () => undefined);
+    const createGoalDraftMock = jest.fn(async () => 'goal-draft-1');
+    const saveGoalDraftMock = jest.fn(
+      async (_goalId: string, _input: GoalDraftSaveInput): Promise<GoalDraftSaveResult> => ({
+        milestones: [],
+      }),
+    );
+    const activateGoalDraftMock = jest.fn(async () => undefined);
     const mockedGenerateAiGoalPlanDraft = generateAiGoalPlanDraft as jest.MockedFunction<
       typeof generateAiGoalPlanDraft
     >;
@@ -704,6 +801,9 @@ describe('GoalsScreen', () => {
       goals: [],
       uiState: 'empty',
       createGoal: createGoalMock,
+      createGoalDraft: createGoalDraftMock,
+      saveGoalDraft: saveGoalDraftMock,
+      activateGoalDraft: activateGoalDraftMock,
       updateGoal: async () => undefined,
       setGoalManuallyCompleted: async () => undefined,
       setMilestoneManuallyCompleted: async () => undefined,
@@ -725,11 +825,13 @@ describe('GoalsScreen', () => {
       },
       milestones: [
         {
+          id: 'server-milestone-1',
           title: 'Build a running base',
           description: 'Establish a consistent weekly rhythm.',
           targetDate: '2026-08-20',
           tasks: [
             {
+              id: 'server-task-1',
               title: 'Choose weekly run times',
               description: 'Reserve three repeatable windows.',
               starter: 'Open the calendar.',
@@ -738,6 +840,7 @@ describe('GoalsScreen', () => {
           ],
         },
       ],
+      goalId: 'goal-draft-1',
       timelineSummary: 'Build consistency before increasing distance.',
       requestId: '123e4567-e89b-42d3-a456-426614174000',
       availableCredits: 9,
@@ -754,7 +857,9 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Continue'));
     fireEvent.press(screen.getByLabelText('Select goal target year'));
     fireEvent.press(screen.getByLabelText('Select goal target year 2027'));
-    fireEvent.press(screen.getByLabelText('Continue'));
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Continue'));
+    });
 
     expect(screen.getByText('Build an editable first draft.')).toBeTruthy();
     expect(screen.getByText('What the AI plans from')).toBeTruthy();
@@ -768,10 +873,18 @@ describe('GoalsScreen', () => {
 
     await waitFor(() => expect(screen.getByText('Review your AI draft.')).toBeTruthy());
     expect(screen.getByText(/AI credits available: 9/)).toBeTruthy();
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(700);
+    });
+    expect(saveGoalDraftMock).toHaveBeenCalledTimes(2);
+    expect(createGoalDraftMock).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'draft', title: 'Run a 10k' }),
+    );
     expect(mockedGenerateAiGoalPlanDraft).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Run a 10k',
         description: 'Train consistently for eight weeks.',
+        goalId: 'goal-draft-1',
         provider: 'openai',
       }),
     );
@@ -794,6 +907,9 @@ describe('GoalsScreen', () => {
       fireEvent.press(screen.getByLabelText('Confirm AI goal plan regeneration'));
     });
     await waitFor(() => expect(mockedGenerateAiGoalPlanDraft).toHaveBeenCalledTimes(2));
+    expect(mockedGenerateAiGoalPlanDraft).toHaveBeenLastCalledWith(
+      expect.objectContaining({ goalId: 'goal-draft-1' }),
+    );
 
     fireEvent.press(screen.getByLabelText('Continue'));
     expect(screen.getByText('Build a running base')).toBeTruthy();
@@ -819,20 +935,18 @@ describe('GoalsScreen', () => {
       fireEvent.press(screen.getByLabelText('Save goal'));
     });
 
-    await waitFor(() =>
-      expect(createGoalMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          isAiAssisted: true,
-          aiPlanVersion: 1,
-          milestones: [
-            expect.objectContaining({
-              title: 'Build consistency',
-              estimatedFinishDate: new Date(2026, 7, 24),
-              tasks: [expect.objectContaining({ title: 'Schedule weekly runs' })],
-            }),
-          ],
-        }),
-      ),
+    await waitFor(() => expect(activateGoalDraftMock).toHaveBeenCalledWith('goal-draft-1'));
+    expect(createGoalMock).not.toHaveBeenCalled();
+    expect(saveGoalDraftMock).toHaveBeenCalledWith(
+      'goal-draft-1',
+      expect.objectContaining({
+        milestones: [
+          expect.objectContaining({
+            id: 'server-milestone-1',
+            tasks: [expect.objectContaining({ id: 'server-task-1' })],
+          }),
+        ],
+      }),
     );
   });
 
@@ -882,9 +996,7 @@ describe('GoalsScreen', () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText(
-          'AI planning is temporarily unavailable. Please try again shortly.',
-        ),
+        screen.getByText('AI planning is temporarily unavailable. Please try again shortly.'),
       ).toBeTruthy(),
     );
     await act(async () => {
@@ -994,7 +1106,9 @@ describe('GoalsScreen', () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText('An AI plan is already being created. Please wait a moment and try again.'),
+        screen.getByText(
+          'An AI plan is already being created. Please wait a moment and try again.',
+        ),
       ).toBeTruthy(),
     );
   });

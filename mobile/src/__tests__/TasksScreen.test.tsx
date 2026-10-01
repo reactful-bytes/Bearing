@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { CreateEventInput } from '../features/calendar/calendarTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
+import { GoalWithMilestones } from '../features/goals/goalTypes';
+import { useGoals } from '../features/goals/useGoals';
 import { TaskRecord } from '../features/tasks/taskTypes';
 import { useTasks } from '../features/tasks/useTasks';
 import { TasksScreen } from '../screens/TasksScreen';
@@ -24,6 +26,7 @@ jest.mock('@react-navigation/native', () => ({
 jest.mock('../features/tasks/useTasks', () => ({
   useTasks: jest.fn(),
 }));
+jest.mock('../features/goals/useGoals', () => ({ useGoals: jest.fn() }));
 
 jest.mock('../features/calendar/useCalendarPublication', () => ({
   useCalendarPublication: jest.fn(),
@@ -64,9 +67,16 @@ function makeTask(overrides: Partial<TaskRecord> = {}): TaskRecord {
   };
 }
 
+function mockGoals(goals: GoalWithMilestones[] = []): void {
+  (useGoals as jest.MockedFunction<typeof useGoals>).mockReturnValue({
+    goals,
+  } as ReturnType<typeof useGoals>);
+}
+
 describe('TasksScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGoals();
     (useCalendarPublication as jest.MockedFunction<typeof useCalendarPublication>).mockReturnValue({
       publicationCalendarTitle: null,
       createEvent: jest.fn(async () => 'event-new'),
@@ -155,6 +165,40 @@ describe('TasksScreen', () => {
 
     expect(screen.getByText('Inbox zero')).toBeTruthy();
     expect(screen.getByText('Archived planning note')).toBeTruthy();
+  });
+
+  it('excludes tasks linked to draft goals from every task filter', () => {
+    mockGoals([{ id: 'draft-goal', status: 'draft' } as GoalWithMilestones]);
+    (useTasks as jest.MockedFunction<typeof useTasks>).mockReturnValue({
+      tasks: [
+        makeTask({ goalId: 'draft-goal', title: 'Draft-only task' }),
+        makeTask({ id: 'task-2', title: 'Active task' }),
+      ],
+      uiState: 'ready',
+      createTask: async () => undefined,
+      updateTask: async () => undefined,
+      completeTask: async () => undefined,
+      convertTaskToEvent: async () => ({
+        eventId: 'event-1',
+        eventInput: {
+          title: 'Active task',
+          description: '',
+          startAt: new Date(),
+          endAt: new Date(),
+          timezone: 'UTC',
+        },
+        created: true,
+      }),
+      deleteTask: async () => undefined,
+      retry: jest.fn(),
+    });
+
+    render(<TasksScreen />);
+
+    expect(screen.getByText('Active task')).toBeTruthy();
+    expect(screen.queryByText('Draft-only task')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Active, 1', selected: true })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'All, 1' })).toBeTruthy();
   });
 
   it('shows filter-specific empty copy', () => {

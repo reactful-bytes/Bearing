@@ -598,7 +598,7 @@ not make the dashboard visually busy.
 Use:
 
 ``` text
-Current | Completed | Archived
+Draft | Current | Completed | Archived
 ```
 
 Current is the default.
@@ -615,6 +615,11 @@ Each card contains:
 -   completed task count
 
 Tapping opens Goal Detail.
+
+Draft cards open the same detail and editing flows as active goals. Draft details
+offer Make Active; Save Draft preserves draft status. Draft-linked tasks remain
+editable in goal details but do not appear in active task or planning surfaces and
+cannot be scheduled, started, or completed until activation.
 
 ## Empty states
 
@@ -841,6 +846,13 @@ Every step should show:
 
 Avoid showing "Step 1 of 5" as the only progress representation. Use
 dots or a progress bar plus a short step label.
+
+Once the goal outcome, planning context, and target date validate, create a
+persisted draft before continuing. Autosave draft edits as they change, including
+milestone and task edits. AI generation updates that same draft and must persist
+the validated plan before its callable response returns. Closing the wizard keeps
+the draft; Save Goal activates it. Regeneration replaces the existing draft plan
+rather than creating another goal.
 
 ------------------------------------------------------------------------
 

@@ -13,6 +13,9 @@ import {
 } from '../screens/CreationScreens';
 
 const mockCreateGoal = jest.fn(async () => undefined);
+const mockCreateGoalDraft = jest.fn(async () => 'goal-draft-1');
+const mockSaveGoalDraft = jest.fn(async () => ({ milestones: [] }));
+const mockActivateGoalDraft = jest.fn(async () => undefined);
 const mockCreateTask = jest.fn(async () => undefined);
 const mockCreateNote = jest.fn(async () => undefined);
 const mockCreateEvent = jest.fn(async () => 'event-1');
@@ -27,16 +30,28 @@ jest.mock('../components/goals/CreateGoalModal', () => {
     CreateGoalModal: ({
       onClose,
       onSave,
+      onCreateDraft,
+      onActivateDraft,
       initialTitle,
       initialDescription,
     }: {
       onClose: () => void;
       onSave: (input: unknown) => void;
+      onCreateDraft?: (input: unknown) => Promise<string>;
+      onActivateDraft?: (goalId: string) => Promise<void>;
       initialTitle?: string;
       initialDescription?: string;
     }) => (
       <>
         <Text testID="goal-draft">{`${initialTitle ?? ''}:${initialDescription ?? ''}`}</Text>
+        <Button
+          title="Create draft"
+          onPress={() => void onCreateDraft?.({ title: 'Goal' })}
+        />
+        <Button
+          title="Activate draft"
+          onPress={() => void onActivateDraft?.('goal-draft-1')}
+        />
         <Button title="Save goal" onPress={() => void onSave({ title: 'Goal' })} />
         <Button title="Cancel goal" onPress={onClose} />
       </>
@@ -118,7 +133,12 @@ jest.mock('../components/premium/PremiumPaywallModal', () => ({
 }));
 
 jest.mock('../features/goals/useGoals', () => ({
-  useGoals: () => ({ createGoal: mockCreateGoal }),
+  useGoals: () => ({
+    createGoal: mockCreateGoal,
+    createGoalDraft: mockCreateGoalDraft,
+    saveGoalDraft: mockSaveGoalDraft,
+    activateGoalDraft: mockActivateGoalDraft,
+  }),
 }));
 
 jest.mock('../features/tasks/useTasks', () => ({
@@ -158,14 +178,36 @@ jest.mock('../services/firebase/firebaseAiGoalPlans', () => ({
 
 describe('creation route screens', () => {
   it('delegates goal save and cancel to the existing wizard and navigation', async () => {
+    mockCreateGoalDraft.mockClear();
+    mockActivateGoalDraft.mockClear();
     const goBack = jest.fn();
     render(<CreateGoalScreen navigation={{ canGoBack: () => true, goBack }} />);
 
+    fireEvent.press(screen.getByText('Create draft'));
+    await waitFor(() =>
+      expect(mockCreateGoalDraft).toHaveBeenCalledWith({ title: 'Goal' }),
+    );
+    fireEvent.press(screen.getByText('Activate draft'));
+    await waitFor(() => expect(mockActivateGoalDraft).toHaveBeenCalledWith('goal-draft-1'));
     fireEvent.press(screen.getByText('Save goal'));
     await waitFor(() => expect(mockCreateGoal).toHaveBeenCalledWith({ title: 'Goal' }));
 
     fireEvent.press(screen.getByText('Cancel goal'));
     expect(goBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('provides draft persistence to the goal-from-note wizard', async () => {
+    mockCreateGoalDraft.mockClear();
+    mockActivateGoalDraft.mockClear();
+    render(<CreateGoalFromNoteScreen route={{ params: { noteId: 'note-1' } }} />);
+
+    fireEvent.press(screen.getByText('Create draft'));
+
+    await waitFor(() =>
+      expect(mockCreateGoalDraft).toHaveBeenCalledWith({ title: 'Goal' }),
+    );
+    fireEvent.press(screen.getByText('Activate draft'));
+    await waitFor(() => expect(mockActivateGoalDraft).toHaveBeenCalledWith('goal-draft-1'));
   });
 
   it('delegates task save without adding a second back navigation', async () => {

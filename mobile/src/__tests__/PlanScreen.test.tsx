@@ -335,6 +335,27 @@ describe('PlanScreen', () => {
     expect(stackNavigate).toHaveBeenCalledWith('Tasks');
   });
 
+  it('excludes draft-linked tasks from the Plan task surface', () => {
+    const draftGoal = { ...makeGoal(), id: 'draft-goal', status: 'draft' as const };
+    mockUseGoals.mockReturnValue({
+      goals: [draftGoal],
+      uiState: 'ready',
+      retry: jest.fn(),
+    } as unknown as ReturnType<typeof useGoals>);
+    const draftTask = { ...makeTask(1), goalId: 'draft-goal' };
+    const activeTask = makeTask(2);
+    mockUseTasks.mockReturnValue({
+      tasks: [draftTask, activeTask],
+      uiState: 'ready',
+      retry: jest.fn(),
+    } as unknown as ReturnType<typeof useTasks>);
+
+    render(<PlanScreen navigation={{ navigate: jest.fn() } as never} />);
+
+    expect(screen.queryByText('Task 1')).toBeNull();
+    expect(screen.getByText('Task 2')).toBeTruthy();
+  });
+
   it('renders recovery states for each live Plan source', () => {
     mockUseCalendarEvents.mockReturnValue({
       events: [],

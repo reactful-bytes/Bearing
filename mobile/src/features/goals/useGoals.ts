@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { composeGoalWithMilestones, sortGoalMilestones } from './goalHelpers';
 import {
   CreateGoalInput,
+  GoalDraftSaveInput,
+  GoalDraftSaveResult,
   GoalMilestoneRecord,
   GoalRecord,
   GoalUiState,
@@ -13,12 +15,14 @@ import {
 import { TaskRecord } from '../tasks/taskTypes';
 import { getFirebaseAuth } from '../../services/firebase/firebaseAuth';
 import {
+  activateGoalDraft as activateFirebaseGoalDraft,
   createGoal as createFirebaseGoal,
   createMilestone as createFirebaseMilestone,
   deleteMilestone as deleteFirebaseMilestone,
   reorderMilestones as reorderFirebaseMilestones,
   setGoalManuallyCompleted as setFirebaseGoalManuallyCompleted,
   setMilestoneManuallyCompleted as setFirebaseMilestoneManuallyCompleted,
+  saveGoalDraft as saveFirebaseGoalDraft,
   subscribeToGoals,
   subscribeToMilestones,
   updateGoal as updateFirebaseGoal,
@@ -37,9 +41,10 @@ const goalSubscriptionCache = new Map<string, GoalSubscriptionCache>();
 
 function sortGoals(goals: GoalWithMilestones[]): GoalWithMilestones[] {
   const statusWeight: Record<GoalRecord['status'], number> = {
-    active: 0,
-    completed: 1,
-    archived: 2,
+    draft: 0,
+    active: 1,
+    completed: 2,
+    archived: 3,
   };
   return [...goals].sort((left, right) => {
     const statusDifference = statusWeight[left.status] - statusWeight[right.status];
@@ -54,6 +59,9 @@ export type UseGoalsReturn = {
   goals: GoalWithMilestones[];
   uiState: GoalUiState;
   createGoal: (input: CreateGoalInput) => Promise<void>;
+  createGoalDraft?: (input: CreateGoalInput) => Promise<string>;
+  saveGoalDraft?: (goalId: string, input: GoalDraftSaveInput) => Promise<GoalDraftSaveResult>;
+  activateGoalDraft?: (goalId: string) => Promise<void>;
   updateGoal: (goalId: string, fields: UpdateGoalInput) => Promise<void>;
   setGoalManuallyCompleted: (goalId: string, completed: boolean) => Promise<void>;
   createMilestone: (goalId: string, input: { title: string; description: string }) => Promise<void>;
@@ -171,6 +179,22 @@ export function useGoals(): UseGoalsReturn {
     await createFirebaseGoal(requireUserId(), input);
   }, []);
 
+  const createGoalDraft = useCallback(
+    async (input: CreateGoalInput): Promise<string> =>
+      createFirebaseGoal(requireUserId(), { ...input, status: 'draft' }),
+    [],
+  );
+
+  const saveGoalDraft = useCallback(
+    (goalId: string, input: GoalDraftSaveInput): Promise<GoalDraftSaveResult> =>
+      saveFirebaseGoalDraft(requireUserId(), goalId, input),
+    [],
+  );
+
+  const activateGoalDraft = useCallback(async (goalId: string): Promise<void> => {
+    await activateFirebaseGoalDraft(requireUserId(), goalId);
+  }, []);
+
   const updateGoal = useCallback(async (goalId: string, fields: UpdateGoalInput): Promise<void> => {
     await updateFirebaseGoal(requireUserId(), goalId, fields);
   }, []);
@@ -220,6 +244,9 @@ export function useGoals(): UseGoalsReturn {
     goals: goalMap,
     uiState,
     createGoal,
+    createGoalDraft,
+    saveGoalDraft,
+    activateGoalDraft,
     updateGoal,
     setGoalManuallyCompleted,
     createMilestone,

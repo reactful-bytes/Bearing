@@ -1,7 +1,11 @@
-import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { GoalMilestoneWithTasks, GoalWithMilestones } from '../../features/goals/goalTypes';
+import {
+  GoalMilestoneWithTasks,
+  GoalStatus,
+  GoalWithMilestones,
+} from '../../features/goals/goalTypes';
 import { useTheme } from '../../design/ThemeProvider';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import type { Theme } from '../../design/tokens';
@@ -10,7 +14,7 @@ import { Card } from '../ui/Card';
 import { ProgressBar } from '../ui/ProgressBar';
 import { SegmentedControl, SegmentedControlOption } from '../ui/SegmentedControl';
 
-export type GoalFilter = 'active' | 'completed' | 'archived' | 'all';
+export type GoalFilter = GoalStatus | 'all';
 
 export function getGoalProgressPercent(
   goal: Pick<GoalWithMilestones, 'status' | 'completedMilestoneCount' | 'totalMilestoneCount'>,
@@ -31,23 +35,25 @@ export function GoalCard({ goal, formatDate, onPress }: GoalCardProps) {
   const progressPercent = getGoalProgressPercent(goal);
   const nextMilestone =
     goal.nextMilestone?.title ??
-    (goal.status === 'completed'
-      ? 'Completed'
-      : goal.status === 'archived'
-        ? 'Archived'
-        : 'Add a milestone');
+    (goal.status === 'draft'
+      ? 'Draft plan'
+      : goal.status === 'completed'
+        ? 'Completed'
+        : goal.status === 'archived'
+          ? 'Archived'
+          : 'Add a milestone');
   const badgeStyle =
     goal.status === 'completed'
       ? styles.badgeCompleted
-      : goal.status === 'archived'
-        ? styles.badgeArchived
-        : styles.badgeActive;
+      : goal.status === 'active'
+        ? styles.badgeActive
+        : styles.badgeArchived;
   const badgeTextStyle =
     goal.status === 'completed'
       ? styles.badgeTextCompleted
-      : goal.status === 'archived'
-        ? styles.badgeTextArchived
-        : styles.badgeTextActive;
+      : goal.status === 'active'
+        ? styles.badgeTextActive
+        : styles.badgeTextArchived;
   const statusLabel =
     goal.status === 'active' ? 'Current' : `${goal.status[0].toUpperCase()}${goal.status.slice(1)}`;
   const statusIcon = goal.status === 'completed' ? 'complete' : 'goalsOutline';
@@ -80,9 +86,9 @@ export function GoalCard({ goal, formatDate, onPress }: GoalCardProps) {
             accent={
               goal.status === 'completed'
                 ? 'success'
-                : goal.status === 'archived'
-                  ? 'neutral'
-                  : 'brand'
+                : goal.status === 'active'
+                  ? 'brand'
+                  : 'neutral'
             }
             accessibilityValueText={goal.progressText}
             style={styles.progressBar}
@@ -114,6 +120,155 @@ export function GoalStatusTabs({
       value={value}
       onChange={onChange}
     />
+  );
+}
+
+export function GoalListFilter({
+  value,
+  options,
+  onChange,
+}: GoalStatusTabsProps) {
+  const styles = useThemedStyles(createStyles);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [pickerProgress] = useState(() => new Animated.Value(0));
+  const selectedOption = options.find((option) => option.value === value);
+  const secondaryOptions = options.filter((option) => option.value !== 'active');
+  const title = value === 'active' ? 'Current goals' : `${selectedOption?.label ?? 'Other'} goals`;
+  const count = selectedOption?.count ?? 0;
+
+  useEffect(() => {
+    if (!pickerVisible) return;
+
+    pickerProgress.setValue(0);
+    const animation = Animated.timing(pickerProgress, {
+      toValue: 1,
+      duration: 180,
+      useNativeDriver: true,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [pickerProgress, pickerVisible]);
+
+  function selectList(nextValue: GoalFilter): void {
+    onChange(nextValue);
+    setPickerVisible(false);
+  }
+
+  return (
+    <>
+      <View style={styles.listFilter}>
+        <View style={styles.listFilterHeader}>
+          <View style={styles.listFilterHeading}>
+            <Text accessibilityRole="header" style={styles.listFilterTitle}>
+              {title}
+            </Text>
+            <Text style={styles.listFilterCount}>
+              {count} {count === 1 ? 'goal' : 'goals'}
+            </Text>
+          </View>
+          {value !== 'active' ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Show current goals"
+              onPress={() => {
+                setPickerVisible(false);
+                onChange('active');
+              }}
+              style={({ pressed }) => [
+                styles.listFilterButton,
+                styles.listFilterCurrentButton,
+                pressed ? styles.listFilterButtonPressed : null,
+              ]}
+            >
+              <AppIcon name="goalsOutline" size={17} color={styles.listFilterButtonText.color} />
+              <Text style={[styles.listFilterButtonText, styles.listFilterCurrentText]}>Current</Text>
+            </Pressable>
+          ) : null}
+        </View>
+
+        <View style={styles.listFilterAnchor}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Browse other goal lists"
+            accessibilityState={{ expanded: pickerVisible }}
+            onPress={() => setPickerVisible((visible) => !visible)}
+            style={({ pressed }) => [
+              styles.listFilterBrowseButton,
+              pressed ? styles.listFilterButtonPressed : null,
+            ]}
+          >
+            <AppIcon name="archive" size={17} color={styles.listFilterBrowseText.color} />
+            <Text style={styles.listFilterBrowseText}>Other lists</Text>
+            <AppIcon
+              name={pickerVisible ? 'collapse' : 'expand'}
+              size={16}
+              color={styles.listFilterBrowseText.color}
+            />
+          </Pressable>
+
+          {pickerVisible ? (
+            <Animated.View
+              accessibilityLabel="Other goal lists"
+              style={[
+                styles.listFilterDropdown,
+                {
+                  opacity: pickerProgress,
+                  transform: [
+                    {
+                      translateY: pickerProgress.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-6, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              {secondaryOptions.map((option) => {
+                const isSelected = option.value === value;
+                const iconName =
+                  option.value === 'draft'
+                    ? 'document'
+                    : option.value === 'completed'
+                      ? 'completed'
+                      : 'archive';
+
+                return (
+                  <Pressable
+                    key={option.value}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Select ${option.label.toLowerCase()} goals, ${option.count}`}
+                    accessibilityState={{ selected: isSelected }}
+                    onPress={() => selectList(option.value)}
+                    style={({ pressed }) => [
+                      styles.listFilterOption,
+                      isSelected ? styles.listFilterOptionSelected : null,
+                      pressed ? styles.listFilterButtonPressed : null,
+                    ]}
+                  >
+                    <AppIcon
+                      name={iconName}
+                      size={19}
+                      color={isSelected ? styles.listFilterOptionSelectedText.color : undefined}
+                    />
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.listFilterOptionText,
+                        isSelected ? styles.listFilterOptionSelectedText : null,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                    <Text style={styles.listFilterOptionCount}>{option.count}</Text>
+                  </Pressable>
+                );
+              })}
+            </Animated.View>
+          ) : null}
+        </View>
+      </View>
+    </>
   );
 }
 
@@ -227,6 +382,82 @@ const createStyles = (theme: Theme) =>
     badgeTextActive: { color: theme.colors.brand },
     badgeTextCompleted: { color: theme.colors.success },
     badgeTextArchived: { color: theme.colors.textSecondary },
+    listFilter: { gap: theme.spacing.sm },
+    listFilterHeader: {
+      minHeight: 52,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: theme.spacing.md,
+    },
+    listFilterHeading: { flex: 1, gap: 2 },
+    listFilterAnchor: {
+      width: '100%',
+      gap: theme.spacing.xs,
+    },
+    listFilterTitle: { ...theme.typography.sectionTitle, color: theme.colors.text },
+    listFilterCount: { ...theme.typography.caption, color: theme.colors.textSecondary },
+    listFilterButton: {
+      minHeight: 40,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.md,
+      borderRadius: theme.radii.md,
+    },
+    listFilterCurrentButton: { backgroundColor: theme.colors.surfaceBrand },
+    listFilterButtonPressed: { opacity: 0.72 },
+    listFilterButtonText: { ...theme.typography.label, color: theme.colors.brand },
+    listFilterCurrentText: { color: theme.colors.brand },
+    listFilterBrowseButton: {
+      minHeight: 40,
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.md,
+      borderRadius: theme.radii.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    listFilterBrowseText: { ...theme.typography.label, color: theme.colors.text },
+    listFilterDropdown: {
+      flexDirection: 'row',
+      gap: theme.spacing.xs,
+      padding: theme.spacing.xs,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: theme.radii.md,
+      backgroundColor: theme.colors.surfaceRaised,
+      shadowColor: '#000000',
+      shadowOpacity: 0.16,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 5 },
+      elevation: 3,
+    },
+    listFilterOption: {
+      minHeight: 68,
+      flex: 1,
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.xs,
+      borderRadius: theme.radii.md,
+    },
+    listFilterOptionSelected: { backgroundColor: theme.colors.surfaceBrand },
+    listFilterOptionText: {
+      ...theme.typography.caption,
+      color: theme.colors.text,
+      fontWeight: '700',
+      textAlign: 'center',
+    },
+    listFilterOptionSelectedText: { color: theme.colors.brand, fontWeight: '700' },
+    listFilterOptionCount: {
+      ...theme.typography.caption,
+      color: theme.colors.textSecondary,
+    },
     meta: { ...theme.typography.caption, color: theme.colors.textSecondary },
     nextStep: { ...theme.typography.caption, color: theme.colors.textSecondary },
     progressBar: { marginTop: theme.spacing.xs },

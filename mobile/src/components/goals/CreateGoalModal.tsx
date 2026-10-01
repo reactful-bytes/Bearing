@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -37,7 +37,12 @@ import {
   DEFAULT_AI_GOAL_PLAN_PROVIDER,
   shouldShowAiGoalPlanProviderSelector,
 } from '../../features/goals/aiGoalPlanTypes';
-import { CreateGoalInput, GoalTaskInput } from '../../features/goals/goalTypes';
+import {
+  CreateGoalInput,
+  GoalDraftSaveInput,
+  GoalDraftSaveResult,
+  GoalTaskInput,
+} from '../../features/goals/goalTypes';
 import {
   getAiPlanningErrorCode,
   getAiPlanningErrorDetails,
@@ -47,6 +52,9 @@ type CreateGoalModalProps = {
   visible: boolean;
   onClose: () => void;
   onSave: (input: CreateGoalInput) => Promise<void>;
+  onCreateDraft?: (input: CreateGoalInput) => Promise<string>;
+  onSaveDraft?: (goalId: string, input: GoalDraftSaveInput) => Promise<GoalDraftSaveResult>;
+  onActivateDraft?: (goalId: string) => Promise<void>;
   hasPremiumAccess: boolean;
   isPremiumStatusResolved: boolean;
   onOpenPremiumPaywall: () => void;
@@ -59,11 +67,13 @@ type CreateGoalModalProps = {
 
 type DraftGoalTask = GoalTaskInput & {
   id: string;
+  persistedId?: string;
   dateParts: GoalDateParts;
 };
 
 type DraftGoalMilestone = {
   id: string;
+  persistedId?: string;
   title: string;
   description: string;
   estimatedFinishDate: Date | null;
@@ -207,6 +217,9 @@ export function CreateGoalModal({
   visible,
   onClose,
   onSave,
+  onCreateDraft,
+  onSaveDraft,
+  onActivateDraft,
   hasPremiumAccess,
   isPremiumStatusResolved,
   onOpenPremiumPaywall,
@@ -230,6 +243,7 @@ export function CreateGoalModal({
   const [wizardIndex, setWizardIndex] = useState(0);
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
+  const [persistedGoalId, setPersistedGoalId] = useState<string | null>(null);
   const [goalDateParts, setGoalDateParts] = useState<GoalDateParts>(() =>
     buildDefaultGoalDateParts(today),
   );
@@ -242,6 +256,7 @@ export function CreateGoalModal({
   const [removeConfirmationVisible, setRemoveConfirmationVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autosaveError, setAutosaveError] = useState<string | null>(null);
   const [aiDraft, setAiDraft] = useState<AiGoalPlanDraft | null>(null);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [regenerationConfirmationVisible, setRegenerationConfirmationVisible] = useState(false);
@@ -251,6 +266,9 @@ export function CreateGoalModal({
   const [aiCreditStatusError, setAiCreditStatusError] = useState<string | null>(null);
   const [creditPackVisible, setCreditPackVisible] = useState(false);
   const aiRequestId = useRef<string | null>(null);
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autosaveQueue = useRef<Promise<void>>(Promise.resolve());
+  const generationAttempt = useRef(0);
 
   useEffect(() => {
     if (!visible) return;
@@ -289,11 +307,127 @@ export function CreateGoalModal({
     };
   }, [hasPremiumAccess, isPremiumStatusResolved, onLoadAiCreditStatus, visible, wizardIndex]);
 
+  const buildGoalInput = useCallback((): CreateGoalInput => {
+    const parsedDate = getGoalDateFromParts(goalDateParts);
+    return {
+      title: title.trim(),
+      description: description.trim(),
+      smartMeta: aiDraft?.smartMeta ?? {
+        specific: '',
+        measurable: '',
+        achievable: '',
+        relevant: '',
+        timeBound: '',
+      },
+      estimatedCompletionDate: parsedDate,
+      isAiAssisted: aiDraft !== null,
+      aiPlanVersion: aiDraft?.promptVersion ?? null,
+      status: 'draft',
+      milestones: draftMilestones
+        .filter((milestone) => milestone.title.trim())
+        .map((milestone) => ({
+          title: milestone.title.trim(),
+          description: milestone.description.trim(),
+          estimatedFinishDate: milestone.estimatedFinishDate,
+          tasks: milestone.tasks
+            .filter((task) => task.title.trim())
+            .map((task) => ({
+              title: task.title.trim(),
+              description: task.description.trim(),
+              starter: task.starter.trim(),
+              dueDate: task.dueDate,
+            })),
+        })),
+    };
+  }, [aiDraft, description, draftMilestones, goalDateParts, title]);
+
+  const buildDraftSaveInput = useCallback(
+    (): GoalDraftSaveInput => ({
+      ...buildGoalInput(),
+      milestones: draftMilestones
+        .filter((milestone) => milestone.title.trim())
+        .map((milestone) => ({
+          clientId: milestone.id,
+          id: milestone.persistedId,
+          title: milestone.title.trim(),
+          description: milestone.description.trim(),
+          estimatedFinishDate: milestone.estimatedFinishDate,
+          tasks: milestone.tasks
+            .filter((task) => task.title.trim())
+            .map((task) => ({
+              clientId: task.id,
+              id: task.persistedId,
+              title: task.title.trim(),
+              description: task.description.trim(),
+              starter: task.starter.trim(),
+              dueDate: task.dueDate,
+            })),
+        })),
+    }),
+    [buildGoalInput, draftMilestones],
+  );
+
+  const applyDraftSaveResult = useCallback((result: GoalDraftSaveResult): void => {
+    const savedMilestones = new Map(
+      result.milestones.map((milestone) => [milestone.clientId, milestone]),
+    );
+    setDraftMilestones((current) => {
+      let stateChanged = false;
+      const next = current.map((milestone) => {
+        const savedMilestone = savedMilestones.get(milestone.id);
+        if (!savedMilestone) return milestone;
+        const savedTasks = new Map(savedMilestone.tasks.map((task) => [task.clientId, task.id]));
+        let tasksChanged = false;
+        const tasks = milestone.tasks.map((task) => {
+          const persistedId = savedTasks.get(task.id) ?? task.persistedId;
+          if (persistedId === task.persistedId) return task;
+          tasksChanged = true;
+          return { ...task, persistedId };
+        });
+        if (milestone.persistedId === savedMilestone.id && !tasksChanged) return milestone;
+        stateChanged = true;
+        return {
+          ...milestone,
+          persistedId: savedMilestone.id,
+          tasks,
+        };
+      });
+      return stateChanged ? next : current;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!visible || !persistedGoalId || !onSaveDraft || aiGenerating) return;
+    autosaveTimer.current = setTimeout(() => {
+      const goalId = persistedGoalId;
+      const input = buildDraftSaveInput();
+      setAutosaveError(null);
+      autosaveQueue.current = autosaveQueue.current
+        .catch(() => undefined)
+        .then(() => onSaveDraft(goalId, input))
+        .then(applyDraftSaveResult)
+        .catch(() => setAutosaveError('Draft changes could not be saved. Try again.'));
+    }, 350);
+
+    return () => {
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+      autosaveTimer.current = null;
+    };
+  }, [
+    applyDraftSaveResult,
+    buildDraftSaveInput,
+    aiGenerating,
+    onSaveDraft,
+    persistedGoalId,
+    visible,
+  ]);
+
   function resetForm(): void {
     setAiGoalPlanProvider(DEFAULT_AI_GOAL_PLAN_PROVIDER);
     setWizardIndex(0);
     setTitle('');
     setDescription('');
+    setPersistedGoalId(null);
     setGoalDateParts(buildDefaultGoalDateParts(today));
     setDraftMilestones([makeEmptyDraftMilestone(1, today)]);
     setExpandedRows(new Set());
@@ -302,6 +436,7 @@ export function CreateGoalModal({
     setRemoveConfirmationVisible(false);
     setSaving(false);
     setError(null);
+    setAutosaveError(null);
     setAiDraft(null);
     setAiGenerating(false);
     setRegenerationConfirmationVisible(false);
@@ -309,10 +444,21 @@ export function CreateGoalModal({
     setAiCreditStatus(null);
     setAiCreditsLoading(false);
     setAiCreditStatusError(null);
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = null;
     aiRequestId.current = null;
   }
 
-  function handleClose(): void {
+  async function handleClose(): Promise<void> {
+    generationAttempt.current += 1;
+    if (!aiGenerating) {
+      try {
+        await flushDraftAutosave();
+      } catch {
+        setAutosaveError('Draft changes could not be saved. Try again before closing.');
+        return;
+      }
+    }
     resetForm();
     onClose();
   }
@@ -535,20 +681,27 @@ export function CreateGoalModal({
       setAiError('Choose a valid future target date before generating a plan.');
       return;
     }
+    const currentGenerationAttempt = ++generationAttempt.current;
     setAiGenerating(true);
     setAiError(null);
 
     try {
+      await flushDraftAutosave();
+      if (currentGenerationAttempt !== generationAttempt.current) return;
       aiRequestId.current ??= randomUUID();
       const draft = await onGenerateAiPlan({
         title: title.trim(),
         description: description.trim(),
         targetDate: formatAiTargetDate(goalDateParts),
+        goalId: persistedGoalId ?? undefined,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         provider: aiGoalPlanProvider,
         requestId: aiRequestId.current,
       });
 
+      if (currentGenerationAttempt !== generationAttempt.current) return;
       aiRequestId.current = null;
+      if (draft.goalId) setPersistedGoalId(draft.goalId);
       if (typeof draft.availableCredits === 'number') {
         setAiCreditStatus((current) =>
           current ? { ...current, availableCredits: draft.availableCredits! } : current,
@@ -566,7 +719,8 @@ export function CreateGoalModal({
             responseDate,
           );
           return {
-            id: `ai-draft-milestone-${milestoneIndex + 1}`,
+            id: milestone.id ?? `ai-draft-milestone-${milestoneIndex + 1}`,
+            persistedId: milestone.id,
             title: milestone.title,
             description: milestone.description,
             estimatedFinishDate: getGoalDateFromParts(milestoneDateParts),
@@ -574,7 +728,8 @@ export function CreateGoalModal({
             tasks: milestone.tasks.map((task, taskIndex) => {
               const dateParts = parseAiDateParts(task.targetDate, goalDateParts, responseDate);
               return {
-                id: `ai-draft-task-${milestoneIndex + 1}-${taskIndex + 1}`,
+                id: task.id ?? `ai-draft-task-${milestoneIndex + 1}-${taskIndex + 1}`,
+                persistedId: task.id,
                 title: task.title,
                 description: task.description,
                 starter: task.starter,
@@ -586,6 +741,7 @@ export function CreateGoalModal({
         }),
       );
     } catch (generationError) {
+      if (currentGenerationAttempt !== generationAttempt.current) return;
       const code = getAiPlanningErrorCode(generationError);
       const providerDetails = getAiPlanningErrorDetails(generationError);
       if (code === 'resource-exhausted') {
@@ -619,13 +775,22 @@ export function CreateGoalModal({
         setAiCreditStatusError('AI credit balance is unavailable right now.');
       }
     } finally {
-      setAiGenerating(false);
+      if (currentGenerationAttempt === generationAttempt.current) setAiGenerating(false);
     }
   }
 
   function updateGoalDate(date: Date): void {
     setGoalDateParts(buildGoalDateParts(date));
     setError(null);
+  }
+
+  async function flushDraftAutosave(): Promise<void> {
+    if (!persistedGoalId || !onSaveDraft) return;
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = null;
+    await autosaveQueue.current;
+    const result = await onSaveDraft(persistedGoalId, buildDraftSaveInput());
+    applyDraftSaveResult(result);
   }
 
   function validateCurrentStep(): boolean {
@@ -693,9 +858,23 @@ export function CreateGoalModal({
     return true;
   }
 
-  function handleNext(): void {
+  async function handleNext(): Promise<void> {
     if (!validateCurrentStep()) {
       return;
+    }
+
+    if (wizardIndex === 2 && !persistedGoalId && onCreateDraft) {
+      setSaving(true);
+      setError(null);
+      try {
+        const goalId = await onCreateDraft(buildGoalInput());
+        setPersistedGoalId(goalId);
+      } catch {
+        setError('Failed to save the goal draft. Please try again.');
+        setSaving(false);
+        return;
+      }
+      setSaving(false);
     }
 
     setWizardIndex((current) => Math.min(current + 1, WIZARD_TITLES.length - 1));
@@ -723,36 +902,17 @@ export function CreateGoalModal({
     setError(null);
 
     try {
-      await onSave({
-        title: goalTitle,
-        description: description.trim(),
-        smartMeta: aiDraft?.smartMeta ?? {
-          specific: '',
-          measurable: '',
-          achievable: '',
-          relevant: '',
-          timeBound: '',
-        },
-        estimatedCompletionDate: parsedDate,
-        isAiAssisted: aiDraft !== null,
-        aiPlanVersion: aiDraft?.promptVersion ?? null,
-        milestones: draftMilestones
-          .filter((milestone) => milestone.title.trim())
-          .map((step) => ({
-            title: step.title.trim(),
-            description: step.description.trim(),
-            estimatedFinishDate: step.estimatedFinishDate,
-            tasks: step.tasks
-              .filter((task) => task.title.trim())
-              .map((task) => ({
-                title: task.title.trim(),
-                description: task.description.trim(),
-                starter: task.starter.trim(),
-                dueDate: task.dueDate,
-              })),
-          })),
-      });
-      handleClose();
+      const input = { ...buildGoalInput(), title: goalTitle };
+      if (persistedGoalId && onActivateDraft) {
+        await flushDraftAutosave();
+        await onActivateDraft(persistedGoalId);
+        resetForm();
+        onClose();
+        return;
+      } else {
+        await onSave({ ...input, status: 'active' });
+      }
+      await handleClose();
     } catch {
       setError('Failed to save goal. Please try again.');
       setSaving(false);
@@ -764,7 +924,7 @@ export function CreateGoalModal({
       <AppModal
         visible={visible && !creditPackVisible}
         title="Create Goal"
-        onClose={handleClose}
+        onClose={() => void handleClose()}
         fullScreen
         fullScreenEdgeToEdge
         hideHeader
@@ -925,8 +1085,9 @@ export function CreateGoalModal({
                     <Text style={styles.exampleLabel}>What the AI plans from</Text>
                     <Text style={styles.cardBody}>
                       Your goal outcome, objectives, success measures, starting point, resources,
-                      constraints, and timing guide the generated milestones and their tasks.
-                      Nothing is saved until you review the draft and save the goal.
+                      constraints, and timing guide the generated milestones and their tasks. Your
+                      goal is saved as a draft before planning begins. AI-generated plans are
+                      persisted before they return, and edits save automatically.
                     </Text>
                   </>
                 )}
@@ -1274,6 +1435,7 @@ export function CreateGoalModal({
           ) : null}
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {autosaveError ? <Text style={styles.errorText}>{autosaveError}</Text> : null}
 
           <View style={styles.actionRow}>
             {canGoBack ? (
@@ -1290,7 +1452,8 @@ export function CreateGoalModal({
               <AppButton
                 label="Continue"
                 accessibilityLabel="Continue"
-                onPress={handleNext}
+                onPress={() => void handleNext()}
+                loading={saving}
                 style={styles.actionButton}
               />
             ) : (

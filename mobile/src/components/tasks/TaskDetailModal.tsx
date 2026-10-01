@@ -26,6 +26,7 @@ type TaskDetailModalProps = {
   onSchedule: (task: TaskRecord) => void;
   onStartNow: (task: TaskRecord) => void;
   onMarkComplete: (task: TaskRecord) => Promise<void>;
+  taskActionsEnabled?: boolean;
 };
 
 function formatDateTime(date: Date | null, timeFormat: TimeFormat, locale?: string): string {
@@ -69,6 +70,7 @@ export function TaskDetailModal({
   onSchedule,
   onStartNow,
   onMarkComplete,
+  taskActionsEnabled = true,
 }: TaskDetailModalProps) {
   const styles = useThemedStyles(createStyles);
   const [editMode, setEditMode] = useState(false);
@@ -255,7 +257,7 @@ export function TaskDetailModal({
               loading={saving}
               loadingLabel="Saving..."
             />
-          ) : task.status === 'active' ? (
+          ) : task.status === 'active' && taskActionsEnabled ? (
             <View style={styles.actionStack}>
               <AppButton
                 label="Schedule"

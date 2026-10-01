@@ -11,6 +11,7 @@ type MilestoneListProps = {
   onOpenMilestone: (milestone: GoalMilestoneWithTasks) => void;
   onToggleMilestoneCompletion: (milestone: GoalMilestoneWithTasks, completed: boolean) => void;
   onReorder: (orderedMilestoneIds: string[]) => Promise<void> | void;
+  completionEnabled?: boolean;
 };
 
 export function MilestoneList({
@@ -18,6 +19,7 @@ export function MilestoneList({
   onOpenMilestone,
   onToggleMilestoneCompletion,
   onReorder,
+  completionEnabled = true,
 }: MilestoneListProps) {
   const styles = useThemedStyles(createStyles);
   const orderedMilestones = useMemo(
@@ -73,15 +75,17 @@ export function MilestoneList({
               </Text>
             </Pressable>
             <View style={styles.controls}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${actionLabel} milestone ${milestone.title}`}
-                disabled={complete && !canReopen}
-                onPress={() => onToggleMilestoneCompletion(milestone, !complete)}
-                style={[styles.statusButton, complete ? styles.completeButton : null]}
-              >
-                <Text style={styles.statusText}>{actionLabel}</Text>
-              </Pressable>
+              {completionEnabled ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${actionLabel} milestone ${milestone.title}`}
+                  disabled={complete && !canReopen}
+                  onPress={() => onToggleMilestoneCompletion(milestone, !complete)}
+                  style={[styles.statusButton, complete ? styles.completeButton : null]}
+                >
+                  <Text style={styles.statusText}>{actionLabel}</Text>
+                </Pressable>
+              ) : null}
               <View style={styles.reorderColumn}>
                 <Pressable
                   accessibilityRole="button"

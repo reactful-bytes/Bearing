@@ -57,7 +57,11 @@ describe('usePremiumEntitlement', () => {
     const { result } = renderHook(() => usePremiumEntitlement('user-1'));
 
     await waitFor(() => expect(result.current.entitlement).toEqual(storeEntitlement));
-    expect(mockedSubscribe).toHaveBeenCalledWith('user-1', expect.any(Function), expect.any(Function));
+    expect(mockedSubscribe).toHaveBeenCalledWith(
+      'user-1',
+      expect.any(Function),
+      expect.any(Function),
+    );
   });
 
   it('fails closed when the subscription read fails', async () => {

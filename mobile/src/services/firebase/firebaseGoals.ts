@@ -20,6 +20,8 @@ import {
   CreateGoalMilestoneInput,
   GoalMilestoneRecord,
   GoalRecord,
+  GoalDraftSaveInput,
+  GoalDraftSaveResult,
   GoalTaskInput,
   GoalStatus,
   UpdateGoalInput,
@@ -171,7 +173,7 @@ export async function createGoal(userId: string, input: CreateGoalInput): Promis
     estimatedCompletionDate: Timestamp.fromDate(input.estimatedCompletionDate),
     nextMilestoneId: milestoneRefs[0]?.id ?? null,
     manuallyCompletedAt: null,
-    status: 'active',
+    status: input.status ?? 'active',
     isAiAssisted: input.isAiAssisted,
     aiPlanVersion: input.aiPlanVersion ?? null,
     createdAt: now,
@@ -241,6 +243,10 @@ export async function updateGoal(
     updates.estimatedCompletionDate = Timestamp.fromDate(fields.estimatedCompletionDate);
   }
   if (fields.status === 'archived') updates.status = 'archived';
+  if (fields.status === 'draft') {
+    updates.status = 'draft';
+    updates.manuallyCompletedAt = null;
+  }
   if (fields.status === 'active') {
     updates.status = 'active';
     updates.manuallyCompletedAt = null;
@@ -249,6 +255,161 @@ export async function updateGoal(
     const snapshot = await transaction.get(goalRef);
     if (!snapshot.exists() || snapshot.data().userId !== userId) throw new Error('Goal not found.');
     transaction.update(goalRef, updates);
+  });
+}
+
+export async function saveGoalDraft(
+  userId: string,
+  goalId: string,
+  input: GoalDraftSaveInput,
+): Promise<GoalDraftSaveResult> {
+  const db = getFirebaseFirestore();
+  const goalRef = doc(db, 'goals', goalId);
+  const milestonesQuery = query(
+    collection(db, 'milestones'),
+    where('userId', '==', userId),
+    where('goalId', '==', goalId),
+  );
+  const tasksQuery = query(
+    collection(db, 'tasks'),
+    where('userId', '==', userId),
+    where('goalId', '==', goalId),
+  );
+  const [milestoneQuerySnapshot, taskQuerySnapshot] = await Promise.all([
+    getDocs(milestonesQuery),
+    getDocs(tasksQuery),
+  ]);
+  const title = input.title.trim();
+  if (!title) throw new Error('Goal title is required.');
+  const now = Timestamp.now();
+
+  return runTransaction(db, async (transaction) => {
+    const childSnapshots = await Promise.all([
+      ...milestoneQuerySnapshot.docs.map((snapshot) => transaction.get(snapshot.ref)),
+      ...taskQuerySnapshot.docs.map((snapshot) => transaction.get(snapshot.ref)),
+    ]);
+    const [goalSnapshot] = await Promise.all([transaction.get(goalRef)]);
+    if (
+      !goalSnapshot.exists() ||
+      goalSnapshot.data().userId !== userId ||
+      goalSnapshot.data().status !== 'draft'
+    ) {
+      throw new Error('Goal draft not found.');
+    }
+
+    const milestoneSnapshots = childSnapshots.slice(0, milestoneQuerySnapshot.size);
+    const taskSnapshots = childSnapshots.slice(milestoneQuerySnapshot.size);
+    const existingMilestones = new Map(
+      milestoneSnapshots.map((snapshot) => [snapshot.id, snapshot]),
+    );
+    const existingTasks = new Map(taskSnapshots.map((snapshot) => [snapshot.id, snapshot]));
+    if (
+      [...milestoneSnapshots, ...taskSnapshots].some(
+        (snapshot) => snapshot.data()?.userId !== userId || snapshot.data()?.goalId !== goalId,
+      )
+    ) {
+      throw new Error('Goal draft contains an invalid linked record.');
+    }
+    const nextMilestoneIds = new Set<string>();
+    const nextTaskIds = new Set<string>();
+    const result: GoalDraftSaveResult = { milestones: [] };
+
+    const milestoneRefs = input.milestones
+      .filter((milestone) => milestone.title.trim())
+      .map((milestone) => {
+        const reference = milestone.id
+          ? doc(db, 'milestones', milestone.id)
+          : doc(collection(db, 'milestones'));
+        if (milestone.id && !existingMilestones.has(milestone.id)) {
+          throw new Error('Milestone does not belong to this goal draft.');
+        }
+        nextMilestoneIds.add(reference.id);
+        return { milestone, reference };
+      });
+
+    transaction.update(goalRef, {
+      title,
+      description: input.description.trim(),
+      smartMeta: {
+        specific: input.smartMeta.specific.trim(),
+        measurable: input.smartMeta.measurable.trim(),
+        achievable: input.smartMeta.achievable.trim(),
+        relevant: input.smartMeta.relevant.trim(),
+        timeBound: input.smartMeta.timeBound.trim(),
+      },
+      estimatedCompletionDate: Timestamp.fromDate(input.estimatedCompletionDate),
+      nextMilestoneId: milestoneRefs[0]?.reference.id ?? null,
+      isAiAssisted: input.isAiAssisted,
+      aiPlanVersion: input.aiPlanVersion ?? null,
+      updatedAt: now,
+    });
+
+    milestoneSnapshots.forEach((snapshot) => {
+      if (!nextMilestoneIds.has(snapshot.id)) transaction.delete(snapshot.ref);
+    });
+
+    milestoneRefs.forEach(({ milestone, reference }, order) => {
+      const oldMilestone = existingMilestones.get(reference.id);
+      const tasks = milestone.tasks.filter((task) => task.title.trim());
+      const persistedTasks = tasks.map((task) => {
+        const taskRef = task.id ? doc(db, 'tasks', task.id) : doc(collection(db, 'tasks'));
+        if (task.id && !existingTasks.has(task.id)) {
+          throw new Error('Task does not belong to this goal draft.');
+        }
+        nextTaskIds.add(taskRef.id);
+        const oldTask = existingTasks.get(taskRef.id);
+        transaction.set(taskRef, {
+          ...taskFields(userId, goalId, reference.id, task, now),
+          createdAt: oldTask?.data()?.createdAt ?? now,
+        });
+        return { clientId: task.clientId, id: taskRef.id };
+      });
+
+      transaction.set(reference, {
+        userId,
+        goalId,
+        title: milestone.title.trim(),
+        description: milestone.description.trim(),
+        order,
+        estimatedFinishDate: milestone.estimatedFinishDate
+          ? Timestamp.fromDate(milestone.estimatedFinishDate)
+          : null,
+        manuallyCompletedAt: null,
+        createdAt: oldMilestone?.data()?.createdAt ?? now,
+        updatedAt: now,
+      });
+      result.milestones.push({
+        clientId: milestone.clientId,
+        id: reference.id,
+        tasks: persistedTasks.map(({ clientId, id }) => ({ clientId, id })),
+      });
+    });
+
+    taskSnapshots.forEach((snapshot) => {
+      if (!nextTaskIds.has(snapshot.id)) transaction.delete(snapshot.ref);
+    });
+
+    return result;
+  });
+}
+
+export async function activateGoalDraft(userId: string, goalId: string): Promise<void> {
+  const db = getFirebaseFirestore();
+  const goalRef = doc(db, 'goals', goalId);
+  await runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(goalRef);
+    if (
+      !snapshot.exists() ||
+      snapshot.data().userId !== userId ||
+      snapshot.data().status !== 'draft'
+    ) {
+      throw new Error('Goal draft not found.');
+    }
+    transaction.update(goalRef, {
+      status: 'active',
+      manuallyCompletedAt: null,
+      updatedAt: Timestamp.now(),
+    });
   });
 }
 

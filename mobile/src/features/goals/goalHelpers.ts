@@ -47,6 +47,7 @@ export function deriveGoalStatus(
   })[],
   tasksByMilestoneId: ReadonlyMap<string, TaskRecord[]>,
 ): GoalStatus {
+  if (goal.status === 'draft') return 'draft';
   if (goal.status === 'archived') return 'archived';
   if (goal.manuallyCompletedAt) return 'completed';
   if (

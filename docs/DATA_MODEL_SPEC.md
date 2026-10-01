@@ -59,15 +59,24 @@ Fields:
 - estimatedCompletionDate: timestamp
 - nextMilestoneId: string | null
 - manuallyCompletedAt: timestamp | null (explicit user completion latch)
-- status: enum (active, completed, archived)
+- status: enum (draft, active, completed, archived)
 - isAiAssisted: boolean
 - aiPlanVersion: number | null
 - createdAt: timestamp
 - updatedAt: timestamp
 
-Goal status is active, completed, or archived. Archived is an explicit override. A goal with
-`manuallyCompletedAt` remains completed until explicitly reopened; otherwise completion is derived
-when it has at least one milestone and every milestone is effectively complete.
+Goal status is draft, active, completed, or archived. Draft is an explicit
+pre-activation state and takes precedence over completion derived from milestones.
+Draft-linked tasks remain editable with the draft but are excluded from active
+task and planning surfaces and cannot be scheduled, started, or completed until
+activation. Activating a draft changes its status to active. Archived is an
+explicit override. A goal with `manuallyCompletedAt` remains completed until
+explicitly reopened; otherwise completion is derived when it has at least one
+milestone and every milestone is effectively complete.
+
+AI plan generation persists the validated goal and its milestone/task tree before the callable
+returns. The request ID makes generation replayable, and the returned Firestore IDs let subsequent
+edits and regenerations update the same draft rather than create duplicates.
 
 Indexes (planned):
 

@@ -9,7 +9,11 @@ import { useTasks } from '../features/tasks/useTasks';
 import { useMilestoneEvents } from '../features/goals/useMilestoneEvents';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { useUserProfile } from '../features/profile/useUserProfile';
-import { GoalMilestoneWithTasks, GoalWithMilestones } from '../features/goals/goalTypes';
+import {
+  GoalMilestoneWithTasks,
+  GoalWithMilestones,
+  UpdateGoalInput,
+} from '../features/goals/goalTypes';
 import { CompleteTaskInput, CreateTaskInput, TaskRecord } from '../features/tasks/taskTypes';
 
 const mockGoBack = jest.fn();
@@ -98,6 +102,9 @@ function mockHooks(
   overrides: {
     createTask?: (input: CreateTaskInput) => Promise<void>;
     completeTask?: (taskId: string, input: CompleteTaskInput) => Promise<void>;
+    goal?: GoalWithMilestones;
+    activateGoalDraft?: (goalId: string) => Promise<void>;
+    updateGoal?: (goalId: string, fields: UpdateGoalInput) => Promise<void>;
   } = {},
 ): void {
   (useUserProfile as jest.MockedFunction<typeof useUserProfile>).mockReturnValue({
@@ -113,16 +120,17 @@ function mockHooks(
     uiState: 'idle',
   });
   (useGoals as jest.MockedFunction<typeof useGoals>).mockReturnValue({
-    goals: [goal],
+    goals: [overrides.goal ?? goal],
     uiState: 'ready',
     createGoal: jest.fn(async () => undefined),
-    updateGoal: jest.fn(async () => undefined),
+    updateGoal: overrides.updateGoal ?? jest.fn(async () => undefined),
     setGoalManuallyCompleted: jest.fn(async () => undefined),
     setMilestoneManuallyCompleted: jest.fn(async () => undefined),
     createMilestone: jest.fn(async () => undefined),
     deleteMilestone: jest.fn(async () => undefined),
     updateMilestone: jest.fn(async () => undefined),
     reorderMilestones: jest.fn(async () => undefined),
+    activateGoalDraft: overrides.activateGoalDraft ?? jest.fn(async () => undefined),
     retry: jest.fn(),
   });
   (useTasks as jest.MockedFunction<typeof useTasks>).mockReturnValue({
@@ -222,5 +230,53 @@ describe('GoalDetailScreen', () => {
     expect(screen.getAllByText('Timeline')).toHaveLength(2);
     expect(screen.getByText('Current · 0 of 0 tasks')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Open milestone Choose a race date' })).toBeTruthy();
+  });
+
+  it('keeps draft tasks editable but disables completion and scheduling until activation', async () => {
+    const activateGoalDraft = jest.fn(async () => undefined);
+    mockHooks({
+      goal: { ...goal, status: 'draft' },
+      activateGoalDraft,
+    });
+
+    render(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
+
+    expect(screen.getByRole('button', { name: 'Make goal active' })).toBeTruthy();
+    expect(screen.queryByRole('checkbox')).toBeNull();
+    fireEvent.press(screen.getAllByRole('button', { name: 'Open task Book the race' })[0]);
+    expect(screen.getByText('Task Details')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Schedule task' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Start task now' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Mark task complete' })).toBeNull();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Close Task Details' }));
+    fireEvent.press(screen.getByRole('tab', { name: 'Timeline' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Open milestone Choose a race date' }));
+    expect(screen.queryByRole('button', { name: 'Schedule milestone event' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Manually complete milestone' })).toBeNull();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Make goal active' }));
+    await waitFor(() => expect(activateGoalDraft).toHaveBeenCalledWith('goal-1'));
+  });
+
+  it('labels draft goal edits Save Draft and preserves the draft while saving', async () => {
+    const updateGoal = jest.fn(async () => undefined);
+    mockHooks({ goal: { ...goal, status: 'draft' }, updateGoal });
+
+    render(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
+
+    fireEvent.press(screen.getByRole('button', { name: 'Edit goal' }));
+    fireEvent.press(screen.getAllByRole('button', { name: 'Edit goal' })[1]);
+    expect(screen.getByRole('button', { name: 'Save draft changes' })).toBeTruthy();
+    fireEvent.changeText(screen.getByLabelText('Edit goal name'), 'Run a local 10k');
+
+    await act(async () => {
+      fireEvent.press(screen.getByRole('button', { name: 'Save draft changes' }));
+    });
+
+    expect(updateGoal).toHaveBeenCalledWith(
+      'goal-1',
+      expect.objectContaining({ title: 'Run a local 10k' }),
+    );
   });
 });

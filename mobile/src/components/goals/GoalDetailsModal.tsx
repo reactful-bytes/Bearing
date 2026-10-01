@@ -29,6 +29,7 @@ type GoalDetailsModalProps = {
     goalId: string,
     fields: { title: string; description: string; estimatedCompletionDate: Date },
   ) => Promise<void>;
+  onActivateDraft?: (goalId: string) => Promise<void>;
   onToggleGoalManualCompletion: (goalId: string, completed: boolean) => Promise<void>;
   onAddMilestone: () => void;
   onOpenMilestone: (milestone: GoalMilestoneWithTasks) => void;
@@ -52,6 +53,7 @@ export function GoalDetailsModal({
   visible,
   onClose,
   onSaveGoal,
+  onActivateDraft,
   onToggleGoalManualCompletion,
   onAddMilestone,
   onOpenMilestone,
@@ -149,6 +151,19 @@ export function GoalDetailsModal({
     }
   }
 
+  async function handleActivateDraft(): Promise<void> {
+    if (!goal || !onActivateDraft) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await onActivateDraft(goal.id);
+    } catch {
+      setError('Failed to activate goal draft.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const headerAccessory = goal ? (
     <AppButton
       label={editMode ? 'Cancel' : 'Edit'}
@@ -211,14 +226,18 @@ export function GoalDetailsModal({
 
               <View style={styles.actionColumn}>
                 <AppButton
-                  label="Save Changes"
-                  accessibilityLabel="Save goal changes"
+                  label={goal.status === 'draft' ? 'Save Draft' : 'Save Changes'}
+                  accessibilityLabel={
+                    goal.status === 'draft' ? 'Save draft changes' : 'Save goal changes'
+                  }
                   onPress={handleSave}
                   loading={saving}
                   loadingLabel="Saving..."
                 />
 
-                {goal.status !== 'completed' && goal.status !== 'archived' ? (
+                {goal.status !== 'draft' &&
+                goal.status !== 'completed' &&
+                goal.status !== 'archived' ? (
                   <AppButton
                     label="Mark Goal Complete"
                     variant="secondary"
@@ -255,6 +274,15 @@ export function GoalDetailsModal({
                 </Text>
                 <Text style={styles.metaText}>{goal.progressText}</Text>
               </AppCard>
+              {goal.status === 'draft' && onActivateDraft ? (
+                <AppButton
+                  label="Make Active"
+                  accessibilityLabel="Make goal active"
+                  onPress={() => void handleActivateDraft()}
+                  loading={saving}
+                  loadingLabel="Activating..."
+                />
+              ) : null}
             </View>
           )}
 
@@ -287,6 +315,7 @@ export function GoalDetailsModal({
                 onReorder={(orderedMilestoneIds) =>
                   onReorderMilestones(goal.id, orderedMilestoneIds)
                 }
+                completionEnabled={goal.status !== 'draft'}
               />
             )}
           </View>

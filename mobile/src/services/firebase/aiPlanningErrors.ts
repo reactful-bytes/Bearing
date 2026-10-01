@@ -21,8 +21,7 @@ export function getAiPlanningErrorDetails(error: unknown): string | null {
 
   if (diagnostic.reason === 'goal_plan_input' && Array.isArray(diagnostic.invalidFields)) {
     const invalidFields = diagnostic.invalidFields.filter(
-      (field): field is string =>
-        field === 'title' || field === 'targetDate' || field === 'input',
+      (field): field is string => field === 'title' || field === 'targetDate' || field === 'input',
     );
     if (invalidFields.includes('title')) {
       return 'The goal name is missing or exceeds 120 characters. Re-enter the goal name and try again.';

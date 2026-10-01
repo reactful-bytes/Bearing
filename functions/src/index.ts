@@ -17,6 +17,7 @@ import {
 } from "./aiCreditStatus";
 import { createGeminiGoalPlanGenerator } from "./geminiGoalPlan";
 import { createOpenAiGoalPlanGenerator } from "./openAiGoalPlan";
+import { createGoalPlanDraftAdminPersister } from "./goalDraftAdmin";
 import {
   deleteUserAccount as deleteUserAccountHandler,
   exportUserData as exportUserDataHandler,
@@ -176,7 +177,10 @@ export const generateGoalPlanDraft = onCall(
       request,
       generator,
       undefined,
-      createRevenueCatGoalPlanCreditService(revenueCatV2Config()),
+      createRevenueCatGoalPlanCreditService(
+        revenueCatV2Config(),
+        createGoalPlanDraftAdminPersister(),
+      ),
       new Date(),
     );
   },

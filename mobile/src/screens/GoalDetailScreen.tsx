@@ -60,6 +60,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
     goals,
     uiState,
     updateGoal,
+    activateGoalDraft,
     setGoalManuallyCompleted,
     createMilestone,
     deleteMilestone,
@@ -80,6 +81,8 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
   const [addMilestoneVisible, setAddMilestoneVisible] = useState(false);
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
   const [scheduleMilestoneId, setScheduleMilestoneId] = useState<string | null>(null);
+  const [activatingDraft, setActivatingDraft] = useState(false);
+  const [draftActionError, setDraftActionError] = useState<string | null>(null);
 
   const goal = useMemo(
     () => goals.find((candidate) => candidate.id === route.params.goalId) ?? null,
@@ -114,6 +117,19 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
     setTaskMilestoneId(null);
   }
 
+  async function handleActivateDraft(): Promise<void> {
+    if (!goal || !activateGoalDraft) return;
+    setActivatingDraft(true);
+    setDraftActionError(null);
+    try {
+      await activateGoalDraft(goal.id);
+    } catch {
+      setDraftActionError('Failed to activate goal draft.');
+    } finally {
+      setActivatingDraft(false);
+    }
+  }
+
   async function handleUpdateTask(taskId: string, fields: UpdateTaskInput): Promise<void> {
     await updateTask(taskId, fields);
   }
@@ -131,6 +147,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
     input: CreateEventInput,
     options: CreateEventOptions,
   ): Promise<void> {
+    if (goal?.status === 'draft') throw new Error('Activate the goal before scheduling tasks.');
     if (!scheduleTask) throw new Error('Task not found.');
     const conversion = await convertTaskToEvent(scheduleTask.id, input, 'scheduled');
     if (options.publishToDevice) await publishEvent(conversion.eventId, conversion.eventInput);
@@ -139,6 +156,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
   }
 
   async function handleStartNow(minutes: number, options: CreateEventOptions): Promise<void> {
+    if (goal?.status === 'draft') throw new Error('Activate the goal before starting tasks.');
     if (!startNowTask) throw new Error('Task not found.');
     const startAt = new Date();
     const endAt = new Date(startAt.getTime() + minutes * 60_000);
@@ -190,6 +208,8 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
     input: CreateEventInput,
     options: CreateEventOptions,
   ): Promise<void> {
+    if (goal?.status === 'draft')
+      throw new Error('Activate the goal before scheduling milestones.');
     if (!scheduleMilestone) throw new Error('Milestone not found.');
     await createEvent(input, options);
     setScheduleMilestoneId(null);
@@ -269,6 +289,20 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
           accent="brand"
           accessibilityValueText={`${getGoalProgressPercent(goal)}% complete`}
         />
+        {goal.status === 'draft' ? (
+          <View style={styles.section}>
+            <AppButton
+              label="Make Active"
+              accessibilityLabel="Make goal active"
+              onPress={() => void handleActivateDraft()}
+              loading={activatingDraft}
+              loadingLabel="Activating..."
+            />
+            {draftActionError ? (
+              <Text style={styles.stateDescription}>{draftActionError}</Text>
+            ) : null}
+          </View>
+        ) : null}
         <View accessibilityLabel="Goal detail tabs" style={styles.tabRow}>
           {DETAIL_TABS.map((tab) => (
             <Pressable
@@ -306,7 +340,13 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
                   task={nextTask}
                   context={formatTaskContext(nextTask, goal, profile?.locale)}
                   onPress={() => setSelectedTaskId(nextTask.id)}
-                  onToggleComplete={() => void handleToggleTask(nextTask)}
+                  onToggleComplete={
+                    goal.status === 'draft'
+                      ? undefined
+                      : () => {
+                          void handleToggleTask(nextTask);
+                        }
+                  }
                 />
               </AppCard>
             ) : (
@@ -336,7 +376,13 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
                   task={task}
                   context={formatTaskContext(task, goal, profile?.locale)}
                   onPress={() => setSelectedTaskId(task.id)}
-                  onToggleComplete={() => void handleToggleTask(task)}
+                  onToggleComplete={
+                    goal.status === 'draft'
+                      ? undefined
+                      : () => {
+                          void handleToggleTask(task);
+                        }
+                  }
                 />
               ))
             )}
@@ -390,6 +436,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
           await handleToggleTask(task);
           setSelectedTaskId(null);
         }}
+        taskActionsEnabled={goal.status !== 'draft'}
       />
       <AddEventModal
         visible={scheduleTask !== null}
@@ -423,6 +470,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
         visible={editGoalVisible}
         onClose={() => setEditGoalVisible(false)}
         onSaveGoal={updateGoal}
+        onActivateDraft={activateGoalDraft}
         onToggleGoalManualCompletion={setGoalManuallyCompleted}
         onAddMilestone={() => {
           setEditGoalVisible(false);
@@ -465,6 +513,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
         onToggleManualCompletion={(milestone, completed) =>
           setMilestoneManuallyCompleted(milestone.id, completed)
         }
+        milestoneActionsEnabled={goal.status !== 'draft'}
       />
       <AddEventModal
         visible={scheduleMilestone !== null}

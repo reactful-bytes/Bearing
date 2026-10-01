@@ -1,6 +1,6 @@
 import type { TaskRecord } from '../tasks/taskTypes';
 
-export type GoalStatus = 'active' | 'completed' | 'archived';
+export type GoalStatus = 'draft' | 'active' | 'completed' | 'archived';
 
 export type GoalMilestoneStatus = 'pending' | 'in_progress' | 'completed';
 
@@ -90,8 +90,25 @@ export type CreateGoalInput = {
   estimatedCompletionDate: Date;
   isAiAssisted: boolean;
   aiPlanVersion?: number | null;
+  status?: Extract<GoalStatus, 'draft' | 'active'>;
   milestones: CreateGoalMilestoneInput[];
   tasks?: GoalTaskInput[];
+};
+
+export type GoalDraftSaveInput = Omit<CreateGoalInput, 'milestones' | 'status' | 'tasks'> & {
+  milestones: (Omit<CreateGoalMilestoneInput, 'tasks'> & {
+    clientId: string;
+    id?: string;
+    tasks: (GoalTaskInput & { clientId: string; id?: string })[];
+  })[];
+};
+
+export type GoalDraftSaveResult = {
+  milestones: {
+    clientId: string;
+    id: string;
+    tasks: { clientId: string; id: string }[];
+  }[];
 };
 
 export type UpdateGoalInput = Partial<
