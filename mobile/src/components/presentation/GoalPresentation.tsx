@@ -123,11 +123,7 @@ export function GoalStatusTabs({
   );
 }
 
-export function GoalListFilter({
-  value,
-  options,
-  onChange,
-}: GoalStatusTabsProps) {
+export function GoalListFilter({ value, options, onChange }: GoalStatusTabsProps) {
   const styles = useThemedStyles(createStyles);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pickerProgress] = useState(() => new Animated.Value(0));
@@ -181,7 +177,9 @@ export function GoalListFilter({
               ]}
             >
               <AppIcon name="goalsOutline" size={17} color={styles.listFilterButtonText.color} />
-              <Text style={[styles.listFilterButtonText, styles.listFilterCurrentText]}>Current</Text>
+              <Text style={[styles.listFilterButtonText, styles.listFilterCurrentText]}>
+                Current
+              </Text>
             </Pressable>
           ) : null}
         </View>

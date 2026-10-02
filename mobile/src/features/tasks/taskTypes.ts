@@ -50,6 +50,5 @@ export type UpdateTaskInput = Partial<
 >;
 
 export type CompleteTaskInput = {
-  completionSource: TaskCompletionSource;
-  completedEventId?: string | null;
+  completionSource: 'manual';
 };

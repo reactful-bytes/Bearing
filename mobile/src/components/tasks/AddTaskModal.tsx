@@ -13,6 +13,8 @@ import type { Theme } from '../../design/tokens';
 import { eventFormValueToDate } from '../../features/calendar/eventEditor';
 import { useUserProfile } from '../../features/profile/useUserProfile';
 import { CreateTaskInput } from '../../features/tasks/taskTypes';
+import { GoalWithMilestones } from '../../features/goals/goalTypes';
+import { TaskAssociationSelector } from './TaskAssociationSelector';
 
 type AddTaskModalProps = {
   visible: boolean;
@@ -23,6 +25,9 @@ type AddTaskModalProps = {
   initialTitle?: string;
   initialDescription?: string;
   contextLabel?: string;
+  goals?: readonly GoalWithMilestones[];
+  goalsLoading?: boolean;
+  allowedDraftGoalId?: string | null;
   fullScreen?: boolean;
 };
 
@@ -35,7 +40,10 @@ export function AddTaskModal({
   initialTitle = '',
   initialDescription = '',
   contextLabel,
-  fullScreen = false,
+  goals = [],
+  goalsLoading = false,
+  allowedDraftGoalId = null,
+  fullScreen = true,
 }: AddTaskModalProps) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
@@ -50,6 +58,8 @@ export function AddTaskModal({
   const [scheduledEndDate, setScheduledEndDate] = useState('');
   const [scheduledEndTime, setScheduledEndTime] = useState('');
   const [allDay, setAllDay] = useState(false);
+  const [goalId, setGoalId] = useState(initialGoalId);
+  const [milestoneId, setMilestoneId] = useState(initialMilestoneId);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -57,7 +67,9 @@ export function AddTaskModal({
     if (!visible) return;
     setTitle(initialTitle);
     setDescription(initialDescription);
-  }, [initialDescription, initialTitle, visible]);
+    setGoalId(initialGoalId);
+    setMilestoneId(initialMilestoneId);
+  }, [initialDescription, initialGoalId, initialMilestoneId, initialTitle, visible]);
 
   function resetForm(): void {
     setTitle('');
@@ -70,6 +82,8 @@ export function AddTaskModal({
     setScheduledEndDate('');
     setScheduledEndTime('');
     setAllDay(false);
+    setGoalId(initialGoalId);
+    setMilestoneId(initialMilestoneId);
     setError(null);
   }
 
@@ -130,8 +144,8 @@ export function AddTaskModal({
         title: trimmedTitle,
         description: description.trim(),
         starter: starter.trim(),
-        ...(initialGoalId ? { goalId: initialGoalId } : {}),
-        ...(initialMilestoneId ? { milestoneId: initialMilestoneId } : {}),
+        ...(goalId ? { goalId } : {}),
+        ...(goalId && milestoneId ? { milestoneId } : {}),
         ...(dueDateValue ? { dueDate: dueDateValue } : {}),
         ...(scheduledStart ? { scheduledStart } : {}),
         ...(scheduledEnd ? { scheduledEnd } : {}),
@@ -289,6 +303,18 @@ export function AddTaskModal({
             ) : null}
           </View>
         ) : null}
+
+        <TaskAssociationSelector
+          goals={goals}
+          goalsLoading={goalsLoading}
+          allowedDraftGoalId={allowedDraftGoalId}
+          goalId={goalId}
+          milestoneId={milestoneId}
+          onChange={({ goalId: nextGoalId, milestoneId: nextMilestoneId }) => {
+            setGoalId(nextGoalId);
+            setMilestoneId(nextMilestoneId);
+          }}
+        />
 
         {contextLabel ? (
           <Text accessibilityLabel="Task context" style={styles.contextLabel}>

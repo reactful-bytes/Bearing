@@ -569,6 +569,11 @@ describe('GoalsScreen', () => {
 
     fireEvent.press(screen.getByLabelText('Add another draft milestone'));
     fireEvent.press(screen.getByLabelText('Save plan item changes'));
+    fireEvent.press(screen.getByLabelText('Add task to draft milestone 1'));
+    fireEvent.press(screen.getByLabelText('Save plan item changes'));
+    fireEvent.press(screen.getByLabelText('Open actions for task 2 in milestone 1'));
+    expect(screen.getAllByLabelText('task actions menu')).toHaveLength(1);
+    fireEvent.press(screen.getByLabelText('Dismiss item action menus'));
     fireEvent.press(screen.getByLabelText('Open actions for milestone 2'));
     fireEvent.press(screen.getByLabelText('Delete milestone 2'));
     expect(screen.getByLabelText('Delete milestone? confirmation dialog')).toBeTruthy();

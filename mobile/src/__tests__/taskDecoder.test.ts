@@ -64,4 +64,44 @@ describe('decodeTaskData', () => {
     expect(task.scheduledEnd).toEqual(scheduledEnd);
     expect(task.allDay).toBe(true);
   });
+
+  it.each(['scheduled', 'start_now'] as const)(
+    'normalizes legacy %s completion to active for the app',
+    (completionSource) => {
+      const task = decodeTaskData('task-legacy-completed', {
+        userId: 'user-1',
+        title: 'Legacy converted task',
+        description: '',
+        status: 'completed',
+        completionSource,
+        completedAt: timestamp(updatedAt),
+        completedEventId: 'task-event-1',
+        createdAt: timestamp(createdAt),
+        updatedAt: timestamp(updatedAt),
+      });
+
+      expect(task).toMatchObject({
+        status: 'active',
+        completionSource: null,
+        completedAt: null,
+        completedEventId: null,
+      });
+    },
+  );
+
+  it('preserves manual completion when decoding', () => {
+    const task = decodeTaskData('task-manually-completed', {
+      userId: 'user-1',
+      title: 'Completed task',
+      description: '',
+      status: 'completed',
+      completionSource: 'manual',
+      completedAt: timestamp(updatedAt),
+      createdAt: timestamp(createdAt),
+      updatedAt: timestamp(updatedAt),
+    });
+
+    expect(task).toMatchObject({ status: 'completed', completionSource: 'manual' });
+    expect(task.completedAt).toEqual(updatedAt);
+  });
 });

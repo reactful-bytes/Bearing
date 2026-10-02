@@ -12,7 +12,7 @@ import { AppModal } from '../ui/AppModal';
 import { AppIcon } from '../ui/AppIcon';
 import { CreditPackPurchaseModal } from '../premium/CreditPackPurchaseModal';
 import { FormField } from '../ui/FormField';
-import { IconButton } from '../ui/IconButton';
+import { RowContextMenu } from '../ui/RowContextMenu';
 import { ConfirmationModal } from '../ui/ConfirmationModal';
 import { ScreenHeader } from '../ui/ScreenHeader';
 import { SegmentedControl } from '../ui/SegmentedControl';
@@ -628,45 +628,6 @@ export function CreateGoalModal({
     setEditorDraft(null);
   }
 
-  function renderItemActionMenu(
-    menuId: string,
-    itemType: 'milestone' | 'task',
-    itemLabel: string,
-    onEdit: () => void,
-    onDelete: () => void,
-  ) {
-    if (!activeActionMenus.has(menuId)) return null;
-
-    return (
-      <View accessibilityLabel={`${itemType} actions menu`} style={styles.actionMenu}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Edit ${itemType} ${itemLabel}`}
-          onPress={() => {
-            closeActionMenus();
-            onEdit();
-          }}
-          style={({ pressed }) => [styles.actionMenuItem, pressed && styles.rowPressed]}
-        >
-          <AppIcon name="edit" size={18} color={theme.colors.textSecondary} decorative />
-          <Text style={styles.actionMenuText}>Edit</Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Delete ${itemType} ${itemLabel}`}
-          onPress={() => {
-            closeActionMenus();
-            onDelete();
-          }}
-          style={({ pressed }) => [styles.actionMenuItem, pressed && styles.rowPressed]}
-        >
-          <AppIcon name="delete" size={18} color={theme.colors.dangerText} decorative />
-          <Text style={styles.actionMenuDeleteText}>Delete</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
   async function handleGenerateAiPlan(): Promise<void> {
     setRegenerationConfirmationVisible(false);
     if (!title.trim() || title.trim().length > 120) {
@@ -1215,7 +1176,9 @@ export function CreateGoalModal({
                 const milestoneMenuId = `milestone:${milestone.id}`;
                 const groupHasOpenMenu =
                   activeActionMenus.has(milestoneMenuId) ||
-                  milestone.tasks.some((task) => activeActionMenus.has(`task:${task.id}`));
+                  milestone.tasks.some((task) =>
+                    activeActionMenus.has(`task:${milestone.id}:${task.id}`),
+                  );
                 const menuLayerStyle =
                   activeActionMenus.size > 0
                     ? groupHasOpenMenu
@@ -1281,20 +1244,27 @@ export function CreateGoalModal({
                           decorative
                         />
                       </Pressable>
-                      <IconButton
-                        name="moreVertical"
-                        size={20}
-                        color={theme.colors.textSecondary}
+                      <RowContextMenu
                         accessibilityLabel={`Open actions for milestone ${index + 1}`}
-                        onPress={() => toggleActionMenu(milestoneMenuId)}
+                        menuAccessibilityLabel="milestone actions menu"
+                        visible={activeActionMenus.has(milestoneMenuId)}
+                        onToggle={() => toggleActionMenu(milestoneMenuId)}
+                        items={[
+                          {
+                            label: 'Edit',
+                            accessibilityLabel: `Edit milestone ${milestone.title || index + 1}`,
+                            icon: 'edit',
+                            onPress: () => openMilestoneEditor(milestone),
+                          },
+                          {
+                            label: 'Delete',
+                            accessibilityLabel: `Delete milestone ${milestone.title || index + 1}`,
+                            icon: 'delete',
+                            tone: 'danger',
+                            onPress: () => requestMilestoneDelete(milestone),
+                          },
+                        ]}
                       />
-                      {renderItemActionMenu(
-                        milestoneMenuId,
-                        'milestone',
-                        milestone.title || String(index + 1),
-                        () => openMilestoneEditor(milestone),
-                        () => requestMilestoneDelete(milestone),
-                      )}
                     </View>
                     {expandedRows.has(`milestone:${milestone.id}`) ? (
                       <View style={styles.expandedTasks}>
@@ -1310,72 +1280,82 @@ export function CreateGoalModal({
                               No tasks yet. Add one to get started.
                             </Text>
                           ) : null}
-                          {milestone.tasks.map((task, taskIndex) => (
-                            <View
-                              key={task.id}
-                              style={[
-                                styles.taskItem,
-                                activeActionMenus.size > 0 ? styles.menuTriggerLayer : null,
-                                activeActionMenus.has(`task:${task.id}`)
-                                  ? styles.menuInteractionLayer
-                                  : null,
-                              ]}
-                            >
-                              <View style={styles.taskRow}>
-                                <Pressable
-                                  accessibilityRole="button"
-                                  accessibilityLabel={`Open task ${taskIndex + 1} in milestone ${index + 1}: ${task.title || `Task ${taskIndex + 1}`}`}
-                                  accessibilityHint="Opens task details, target date, and starter cue"
-                                  onPress={() => {
-                                    closeActionMenus();
-                                    openTaskEditor(milestone, task);
-                                  }}
-                                  style={({ pressed }) => [
-                                    styles.taskRowCopy,
-                                    pressed && styles.rowPressed,
-                                  ]}
-                                >
-                                  <View
-                                    pointerEvents="none"
-                                    testID={`draft-task-number-${taskIndex + 1}`}
-                                    style={styles.taskNumberBadge}
+                          {milestone.tasks.map((task, taskIndex) => {
+                            const taskMenuId = `task:${milestone.id}:${task.id}`;
+                            return (
+                              <View
+                                key={`${milestone.id}:${task.id}`}
+                                style={[
+                                  styles.taskItem,
+                                  activeActionMenus.size > 0 ? styles.menuTriggerLayer : null,
+                                  activeActionMenus.has(taskMenuId)
+                                    ? styles.menuInteractionLayer
+                                    : null,
+                                ]}
+                              >
+                                <View style={styles.taskRow}>
+                                  <Pressable
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`Open task ${taskIndex + 1} in milestone ${index + 1}: ${task.title || `Task ${taskIndex + 1}`}`}
+                                    accessibilityHint="Opens task details, target date, and starter cue"
+                                    onPress={() => {
+                                      closeActionMenus();
+                                      openTaskEditor(milestone, task);
+                                    }}
+                                    style={({ pressed }) => [
+                                      styles.taskRowCopy,
+                                      pressed && styles.rowPressed,
+                                    ]}
                                   >
-                                    <Text style={styles.taskNumberText}>{taskIndex + 1}</Text>
-                                  </View>
-                                  <View style={styles.rowCopy}>
-                                    <Text style={styles.rowTitle} numberOfLines={2}>
-                                      {task.title || 'Untitled task'}
-                                    </Text>
-                                    <View style={styles.rowMeta}>
-                                      <AppIcon
-                                        name="date"
-                                        size={14}
-                                        color={theme.colors.textSecondary}
-                                        decorative
-                                      />
-                                      <Text style={styles.taskDate}>
-                                        {formatReviewDate(task.dateParts)}
-                                      </Text>
+                                    <View
+                                      pointerEvents="none"
+                                      testID={`draft-task-number-${taskIndex + 1}`}
+                                      style={styles.taskNumberBadge}
+                                    >
+                                      <Text style={styles.taskNumberText}>{taskIndex + 1}</Text>
                                     </View>
-                                  </View>
-                                </Pressable>
-                                <IconButton
-                                  name="moreVertical"
-                                  size={20}
-                                  color={theme.colors.textSecondary}
-                                  accessibilityLabel={`Open actions for task ${taskIndex + 1} in milestone ${index + 1}`}
-                                  onPress={() => toggleActionMenu(`task:${task.id}`)}
-                                />
+                                    <View style={styles.rowCopy}>
+                                      <Text style={styles.rowTitle} numberOfLines={2}>
+                                        {task.title || 'Untitled task'}
+                                      </Text>
+                                      <View style={styles.rowMeta}>
+                                        <AppIcon
+                                          name="date"
+                                          size={14}
+                                          color={theme.colors.textSecondary}
+                                          decorative
+                                        />
+                                        <Text style={styles.taskDate}>
+                                          {formatReviewDate(task.dateParts)}
+                                        </Text>
+                                      </View>
+                                    </View>
+                                  </Pressable>
+                                  <RowContextMenu
+                                    accessibilityLabel={`Open actions for task ${taskIndex + 1} in milestone ${index + 1}`}
+                                    menuAccessibilityLabel="task actions menu"
+                                    visible={activeActionMenus.has(taskMenuId)}
+                                    onToggle={() => toggleActionMenu(taskMenuId)}
+                                    items={[
+                                      {
+                                        label: 'Edit',
+                                        accessibilityLabel: `Edit task ${taskIndex + 1} in milestone ${index + 1}`,
+                                        icon: 'edit',
+                                        onPress: () => openTaskEditor(milestone, task),
+                                      },
+                                      {
+                                        label: 'Delete',
+                                        accessibilityLabel: `Delete task ${taskIndex + 1} in milestone ${index + 1}`,
+                                        icon: 'delete',
+                                        tone: 'danger',
+                                        onPress: () => requestTaskDelete(milestone, task),
+                                      },
+                                    ]}
+                                  />
+                                </View>
                               </View>
-                              {renderItemActionMenu(
-                                `task:${task.id}`,
-                                'task',
-                                `${taskIndex + 1} in milestone ${index + 1}`,
-                                () => openTaskEditor(milestone, task),
-                                () => requestTaskDelete(milestone, task),
-                              )}
-                            </View>
-                          ))}
+                            );
+                          })}
                         </View>
                         <Pressable
                           accessibilityRole="button"
@@ -1952,35 +1932,6 @@ const createStyles = (theme: Theme) =>
     taskDate: {
       ...typography.helper,
       color: theme.colors.textSecondary,
-    },
-    actionMenu: {
-      position: 'absolute',
-      top: '70%',
-      right: 0,
-      minWidth: 176,
-      padding: spacing.xs,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: radii.md,
-      backgroundColor: theme.colors.surface,
-      zIndex: 13,
-      elevation: 13,
-    },
-    actionMenuItem: {
-      minHeight: 44,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      paddingHorizontal: spacing.sm,
-      borderRadius: radii.sm,
-    },
-    actionMenuText: {
-      ...typography.label,
-      color: theme.colors.text,
-    },
-    actionMenuDeleteText: {
-      ...typography.label,
-      color: theme.colors.dangerText,
     },
     emptyTasksText: {
       ...typography.helper,

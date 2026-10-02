@@ -142,6 +142,7 @@ function mockHooks(
     completeTask:
       overrides.completeTask ??
       jest.fn(async (_taskId: string, _input: CompleteTaskInput): Promise<void> => undefined),
+    reactivateTask: jest.fn(async () => undefined),
     convertTaskToEvent: jest.fn(async () => ({
       eventId: 'event-1',
       eventInput: {
@@ -245,9 +246,21 @@ describe('GoalDetailScreen', () => {
     expect(screen.queryByRole('checkbox')).toBeNull();
     fireEvent.press(screen.getAllByRole('button', { name: 'Open task Book the race' })[0]);
     expect(screen.getByText('Task Details')).toBeTruthy();
+    const taskHeroStyle = StyleSheet.flatten(screen.getByTestId('task-details-hero').props.style);
+    expect(taskHeroStyle).not.toHaveProperty('borderLeftWidth');
+    expect(taskHeroStyle).not.toHaveProperty('borderRadius');
+    expect(taskHeroStyle).not.toHaveProperty('backgroundColor');
     expect(screen.queryByRole('button', { name: 'Schedule task' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Start task now' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Mark task complete' })).toBeNull();
+
+    fireEvent.press(screen.getAllByLabelText('Task actions')[1]);
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Edit task' }));
+    expect(screen.getByRole('header', { name: 'Edit Task' })).toBeTruthy();
+    expect(
+      screen.getByLabelText('Task goal or milestone: Milestone · Choose a race date'),
+    ).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Back to task details'));
 
     fireEvent.press(screen.getByRole('button', { name: 'Close Task Details' }));
     fireEvent.press(screen.getByRole('tab', { name: 'Timeline' }));

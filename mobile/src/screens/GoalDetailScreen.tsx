@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AddEventModal } from '../components/calendar/AddEventModal';
@@ -29,8 +29,11 @@ import { useUserProfile } from '../features/profile/useUserProfile';
 import { DEFAULT_TIME_FORMAT } from '../features/profile/timeFormat';
 import { AppTabParamList, PlanStackParamList } from '../navigation/navigationTypes';
 import { AddTaskModal } from '../components/tasks/AddTaskModal';
+import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { StartNowModal } from '../components/tasks/StartNowModal';
-import { TaskDetailModal } from '../components/tasks/TaskDetailModal';
+import { TaskDetailsModal } from '../components/tasks/TaskDetailsModal';
+import { TaskListRow } from '../components/tasks/TaskListRow';
+import { ConfirmationModal } from '../components/ui/ConfirmationModal';
 
 const DETAIL_TABS = ['tasks', 'timeline'] as const;
 type DetailTab = (typeof DETAIL_TABS)[number];
@@ -48,6 +51,15 @@ function formatTaskContext(task: TaskRecord, goal: GoalWithMilestones, locale?: 
     ? date.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
     : 'Unscheduled';
   return milestone ? `${milestone.title} · ${dateText}` : dateText;
+}
+
+function formatTaskDateLabel(task: TaskRecord, locale?: string): string {
+  const date =
+    task.status === 'completed' ? task.completedAt : (task.dueDate ?? task.scheduledStart);
+  if (!date) return task.status === 'completed' ? 'Completed' : 'Unscheduled';
+  const formatted = date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+  if (task.status === 'completed') return `Completed ${formatted}`;
+  return task.dueDate ? `Due ${formatted}` : `Scheduled ${formatted}`;
 }
 
 export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
@@ -69,12 +81,21 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
     reorderMilestones,
     retry,
   } = useGoals();
-  const { tasks, createTask, updateTask, completeTask, convertTaskToEvent, deleteTask } =
-    useTasks();
+  const {
+    tasks,
+    createTask,
+    updateTask,
+    completeTask,
+    reactivateTask,
+    convertTaskToEvent,
+    deleteTask,
+  } = useTasks();
   const [activeTab, setActiveTab] = useState<DetailTab>(route.params.initialTab ?? 'tasks');
   const [addTaskVisible, setAddTaskVisible] = useState(false);
   const [taskMilestoneId, setTaskMilestoneId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [pendingDeleteTask, setPendingDeleteTask] = useState<TaskRecord | null>(null);
   const [scheduleTaskId, setScheduleTaskId] = useState<string | null>(null);
   const [startNowTaskId, setStartNowTaskId] = useState<string | null>(null);
   const [editGoalVisible, setEditGoalVisible] = useState(false);
@@ -100,6 +121,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
   );
   const nextTask = goalTasks.find((task) => task.status === 'active') ?? null;
   const selectedTask = goalTasks.find((task) => task.id === selectedTaskId) ?? null;
+  const editingTask = goalTasks.find((task) => task.id === editingTaskId) ?? null;
   const scheduleTask = goalTasks.find((task) => task.id === scheduleTaskId) ?? null;
   const startNowTask = goalTasks.find((task) => task.id === startNowTaskId) ?? null;
   const selectedMilestone =
@@ -134,9 +156,30 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
     await updateTask(taskId, fields);
   }
 
-  async function handleDeleteTask(taskId: string): Promise<void> {
-    await deleteTask(taskId);
-    setSelectedTaskId(null);
+  async function handleDeleteTask(): Promise<void> {
+    if (!pendingDeleteTask) return;
+    try {
+      await deleteTask(pendingDeleteTask.id);
+      setSelectedTaskId(null);
+      setEditingTaskId(null);
+      setPendingDeleteTask(null);
+    } catch {
+      Alert.alert('Unable to delete task', 'Please try again.');
+    }
+  }
+
+  function confirmDeleteTask(task: TaskRecord): void {
+    setPendingDeleteTask(task);
+  }
+
+  async function handleReactivateTask(task: TaskRecord): Promise<void> {
+    if (goal?.status === 'draft') return;
+    try {
+      await reactivateTask(task.id);
+      setSelectedTaskId(null);
+    } catch {
+      Alert.alert('Unable to reactivate task', 'Please try again.');
+    }
   }
 
   async function handleToggleTask(task: TaskRecord): Promise<void> {
@@ -149,7 +192,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
   ): Promise<void> {
     if (goal?.status === 'draft') throw new Error('Activate the goal before scheduling tasks.');
     if (!scheduleTask) throw new Error('Task not found.');
-    const conversion = await convertTaskToEvent(scheduleTask.id, input, 'scheduled');
+    const conversion = await convertTaskToEvent(scheduleTask.id, input);
     if (options.publishToDevice) await publishEvent(conversion.eventId, conversion.eventInput);
     setScheduleTaskId(null);
     setSelectedTaskId(null);
@@ -169,7 +212,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
       goalId: startNowTask.goalId,
       milestoneId: startNowTask.milestoneId,
     };
-    const conversion = await convertTaskToEvent(startNowTask.id, eventInput, 'start_now');
+    const conversion = await convertTaskToEvent(startNowTask.id, eventInput);
     if (options.publishToDevice) await publishEvent(conversion.eventId, conversion.eventInput);
     setStartNowTaskId(null);
     setSelectedTaskId(null);
@@ -371,18 +414,21 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
               </Text>
             ) : (
               goalTasks.map((task) => (
-                <TaskRow
+                <TaskListRow
                   key={task.id}
                   task={task}
-                  context={formatTaskContext(task, goal, profile?.locale)}
+                  dateLabel={formatTaskDateLabel(task, profile?.locale)}
                   onPress={() => setSelectedTaskId(task.id)}
-                  onToggleComplete={
-                    goal.status === 'draft'
-                      ? undefined
-                      : () => {
-                          void handleToggleTask(task);
-                        }
+                  onComplete={
+                    goal.status === 'draft' ? undefined : () => void handleToggleTask(task)
                   }
+                  onReactivate={
+                    goal.status === 'draft' || task.status !== 'completed'
+                      ? undefined
+                      : () => void handleReactivateTask(task)
+                  }
+                  onEdit={() => setEditingTaskId(task.id)}
+                  onDelete={() => confirmDeleteTask(task)}
                 />
               ))
             )}
@@ -414,29 +460,61 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
           setTaskMilestoneId(null);
         }}
         onSave={handleCreateTask}
+        goals={goals}
+        allowedDraftGoalId={goal.status === 'draft' ? goal.id : null}
         initialGoalId={goal.id}
         initialMilestoneId={taskMilestoneId}
-        contextLabel={
-          taskMilestoneId
-            ? `Milestone: ${goal.milestones.find((milestone) => milestone.id === taskMilestoneId)?.title}`
-            : 'Linked to this goal'
-        }
       />
-      <TaskDetailModal
-        visible={selectedTask !== null}
+      <TaskDetailsModal
+        visible={
+          selectedTask !== null &&
+          editingTask === null &&
+          scheduleTask === null &&
+          startNowTask === null
+        }
         task={selectedTask}
+        goals={goals}
         locale={profile?.locale}
         timeFormat={timeFormat}
         onClose={() => setSelectedTaskId(null)}
-        onSave={handleUpdateTask}
-        onDelete={handleDeleteTask}
-        onSchedule={(task) => setScheduleTaskId(task.id)}
-        onStartNow={(task) => setStartNowTaskId(task.id)}
+        onEdit={(task) => setEditingTaskId(task.id)}
+        onDelete={confirmDeleteTask}
+        onSchedule={(task) => {
+          setSelectedTaskId(null);
+          setScheduleTaskId(task.id);
+        }}
+        onStartNow={(task) => {
+          setSelectedTaskId(null);
+          setStartNowTaskId(task.id);
+        }}
         onMarkComplete={async (task) => {
           await handleToggleTask(task);
           setSelectedTaskId(null);
         }}
+        onReactivate={handleReactivateTask}
         taskActionsEnabled={goal.status !== 'draft'}
+      />
+      <EditTaskModal
+        visible={editingTask !== null}
+        task={editingTask}
+        goals={goals}
+        allowedDraftGoalId={goal.status === 'draft' ? goal.id : null}
+        onClose={() => setEditingTaskId(null)}
+        onSave={handleUpdateTask}
+      />
+      <ConfirmationModal
+        visible={pendingDeleteTask !== null}
+        title="Delete task?"
+        message={
+          pendingDeleteTask ? `"${pendingDeleteTask.title}" will be permanently deleted.` : ''
+        }
+        confirmLabel="Delete task"
+        confirmVariant="danger"
+        confirmAccessibilityLabel="Confirm delete task"
+        icon="delete"
+        iconTone="danger"
+        onCancel={() => setPendingDeleteTask(null)}
+        onConfirm={() => void handleDeleteTask()}
       />
       <AddEventModal
         visible={scheduleTask !== null}
@@ -455,6 +533,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
         publicationCalendarTitle={publicationCalendarTitle}
         locale={profile?.locale}
         timeFormat={timeFormat}
+        fullScreen
         onClose={() => setScheduleTaskId(null)}
         onSave={handleScheduleTaskEvent}
       />
@@ -462,6 +541,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
         visible={startNowTask !== null}
         task={startNowTask}
         publicationCalendarTitle={publicationCalendarTitle}
+        fullScreen
         onClose={() => setStartNowTaskId(null)}
         onConfirm={handleStartNow}
       />

@@ -239,11 +239,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
             }
           }}
         />
-        <GoalListFilter
-          options={goalFilterOptions}
-          value={goalFilter}
-          onChange={setGoalFilter}
-        />
+        <GoalListFilter options={goalFilterOptions} value={goalFilter} onChange={setGoalFilter} />
 
         {uiState === 'loading' ? (
           <AppCard>
@@ -372,6 +368,9 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
           setTaskMilestoneId(null);
         }}
         onSave={createTask}
+        goals={goals}
+        goalsLoading={uiState === 'loading'}
+        allowedDraftGoalId={selectedGoal?.status === 'draft' ? selectedGoal.id : null}
         initialGoalId={selectedGoal?.id ?? null}
         initialMilestoneId={taskMilestoneId}
         contextLabel={

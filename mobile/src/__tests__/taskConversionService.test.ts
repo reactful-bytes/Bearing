@@ -6,7 +6,6 @@ import {
   TaskConversionTask,
   TaskConversionTransaction,
   convertTaskToEventAtomically,
-  taskConversionEventId,
 } from '../features/tasks/taskConversionService';
 import { CreateEventInput } from '../features/calendar/calendarTypes';
 
@@ -22,8 +21,6 @@ function activeTask(): TaskConversionTask {
   return {
     userId: 'user-1',
     status: 'active',
-    completionSource: null,
-    completedEventId: null,
   };
 }
 
@@ -43,16 +40,10 @@ function makeStore(
       event = { userId, sourceTaskId: taskId, input: eventInput };
     },
   );
-  const completeTask = jest.fn<TaskConversionTransaction['completeTask']>(
-    (_taskId, completionSource, eventId) => {
-      task = {
-        userId: task?.userId ?? 'user-1',
-        status: 'completed',
-        completionSource,
-        completedEventId: eventId,
-      };
-    },
-  );
+  const updateEvent = jest.fn<TaskConversionTransaction['updateEvent']>((eventId, eventInput) => {
+    if (!event) throw new Error(`Event ${eventId} not found.`);
+    event = { ...event, input: eventInput };
+  });
   const store: TaskConversionStore = {
     runTransaction: (operation) => {
       const result = queue.then(() =>
@@ -60,7 +51,7 @@ function makeStore(
           getTask: async () => task,
           getEvent: async () => event,
           createEvent,
-          completeTask,
+          updateEvent,
         }),
       );
       queue = result.then(
@@ -71,16 +62,14 @@ function makeStore(
     },
   };
 
-  return { store, createEvent, completeTask };
+  return { store, createEvent, updateEvent, getTask: () => task };
 }
 
 describe('taskConversionService', () => {
-  it('creates one deterministic event and completes the task in one transaction', async () => {
-    const { store, createEvent, completeTask } = makeStore();
+  it('creates one deterministic event without completing the task', async () => {
+    const { store, createEvent, getTask } = makeStore();
 
-    await expect(
-      convertTaskToEventAtomically(store, 'user-1', 'task-1', input, 'scheduled'),
-    ).resolves.toEqual({
+    await expect(convertTaskToEventAtomically(store, 'user-1', 'task-1', input)).resolves.toEqual({
       eventId: 'task-task-1',
       eventInput: input,
       created: true,
@@ -92,54 +81,45 @@ describe('taskConversionService', () => {
       input,
       expect.any(Date),
     );
-    expect(completeTask).toHaveBeenCalledWith(
-      'task-1',
-      'scheduled',
-      'task-task-1',
-      expect.any(Date),
+    expect(getTask()?.status).toBe('active');
+  });
+
+  it('keeps the task active when the event write fails', async () => {
+    const { store, getTask } = makeStore({ failCreate: true });
+
+    await expect(convertTaskToEventAtomically(store, 'user-1', 'task-1', input)).rejects.toThrow(
+      'Simulated event write failure.',
     );
+    expect(getTask()?.status).toBe('active');
   });
 
-  it('does not complete the task when the event write fails', async () => {
-    const { store, completeTask } = makeStore({ failCreate: true });
+  it('updates an existing linked event without completing its active task', async () => {
+    const previousInput = { ...input, title: 'Old title' };
+    const event = { userId: 'user-1', sourceTaskId: 'task-1', input: previousInput };
+    const { store, createEvent, updateEvent, getTask } = makeStore({ event });
 
-    await expect(
-      convertTaskToEventAtomically(store, 'user-1', 'task-1', input, 'scheduled'),
-    ).rejects.toThrow('Simulated event write failure.');
-    expect(completeTask).not.toHaveBeenCalled();
-  });
-
-  it('returns the original event for an idempotent retry', async () => {
-    const eventId = taskConversionEventId('task-1');
-    const event = { userId: 'user-1', sourceTaskId: 'task-1', input };
-    const { store, createEvent, completeTask } = makeStore({
-      task: {
-        userId: 'user-1',
-        status: 'completed',
-        completionSource: 'start_now',
-        completedEventId: eventId,
-      },
-      event,
+    await expect(convertTaskToEventAtomically(store, 'user-1', 'task-1', input)).resolves.toEqual({
+      eventId: 'task-task-1',
+      eventInput: input,
+      created: false,
     });
-
-    await expect(
-      convertTaskToEventAtomically(store, 'user-1', 'task-1', input, 'start_now'),
-    ).resolves.toEqual({ eventId, eventInput: input, created: false });
     expect(createEvent).not.toHaveBeenCalled();
-    expect(completeTask).not.toHaveBeenCalled();
+    expect(updateEvent).toHaveBeenCalledWith('task-task-1', input, expect.any(Date));
+    expect(getTask()?.status).toBe('active');
   });
 
   it('serializes concurrent submissions into one event', async () => {
-    const { store, createEvent, completeTask } = makeStore();
+    const { store, createEvent, updateEvent, getTask } = makeStore();
 
     const results = await Promise.all([
-      convertTaskToEventAtomically(store, 'user-1', 'task-1', input, 'scheduled'),
-      convertTaskToEventAtomically(store, 'user-1', 'task-1', input, 'scheduled'),
+      convertTaskToEventAtomically(store, 'user-1', 'task-1', input),
+      convertTaskToEventAtomically(store, 'user-1', 'task-1', input),
     ]);
 
     expect(results.map((result) => result.eventId)).toEqual(['task-task-1', 'task-task-1']);
     expect(createEvent).toHaveBeenCalledTimes(1);
-    expect(completeTask).toHaveBeenCalledTimes(1);
+    expect(updateEvent).toHaveBeenCalledTimes(1);
+    expect(getTask()?.status).toBe('active');
   });
 
   it('rejects completed tasks linked to another event', async () => {
@@ -147,13 +127,11 @@ describe('taskConversionService', () => {
       task: {
         userId: 'user-1',
         status: 'completed',
-        completionSource: 'manual',
-        completedEventId: null,
       },
     });
 
-    await expect(
-      convertTaskToEventAtomically(store, 'user-1', 'task-1', input, 'scheduled'),
-    ).rejects.toThrow('Task has already been completed.');
+    await expect(convertTaskToEventAtomically(store, 'user-1', 'task-1', input)).rejects.toThrow(
+      'Task has already been completed.',
+    );
   });
 });

@@ -1,16 +1,8 @@
 import { CreateEventInput } from '../calendar/calendarTypes';
-import { TaskCompletionSource } from './taskTypes';
-
-export type TaskConversionCompletionSource = Extract<
-  TaskCompletionSource,
-  'scheduled' | 'start_now'
->;
 
 export type TaskConversionTask = {
   userId: string;
   status: 'active' | 'completed';
-  completionSource: TaskCompletionSource | null;
-  completedEventId: string | null;
 };
 
 export type TaskConversionEvent = {
@@ -29,12 +21,7 @@ export type TaskConversionTransaction = {
     input: CreateEventInput,
     now: Date,
   ) => void;
-  completeTask: (
-    taskId: string,
-    completionSource: TaskConversionCompletionSource,
-    eventId: string,
-    now: Date,
-  ) => void;
+  updateEvent: (eventId: string, input: CreateEventInput, now: Date) => void;
 };
 
 export type TaskConversionStore = {
@@ -70,7 +57,6 @@ export async function convertTaskToEventAtomically(
   userId: string,
   taskId: string,
   input: CreateEventInput,
-  completionSource: TaskConversionCompletionSource,
   now: () => Date = () => new Date(),
 ): Promise<TaskConversionResult> {
   const eventId = taskConversionEventId(taskId);
@@ -86,26 +72,18 @@ export async function convertTaskToEventAtomically(
     if (!task) throw new Error('Task not found.');
     if (task.userId !== userId) throw new Error('Task ownership does not match.');
 
-    if (task.status === 'completed') {
-      if (
-        task.completedEventId === eventId &&
-        task.completionSource === completionSource &&
-        existingEvent
-      ) {
-        return { eventId, eventInput: existingEvent.input, created: false };
-      }
-      throw new Error('Task has already been completed.');
-    }
+    if (task.status === 'completed') throw new Error('Task has already been completed.');
 
     const conversionTime = now();
-    if (!existingEvent) {
+    if (existingEvent) {
+      transaction.updateEvent(eventId, input, conversionTime);
+    } else {
       transaction.createEvent(eventId, userId, taskId, input, conversionTime);
     }
-    transaction.completeTask(taskId, completionSource, eventId, conversionTime);
 
     return {
       eventId,
-      eventInput: existingEvent?.input ?? input,
+      eventInput: input,
       created: !existingEvent,
     };
   });

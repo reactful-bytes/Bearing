@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { StyleSheet } from 'react-native';
 
 import { CreateEventInput } from '../features/calendar/calendarTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
@@ -93,6 +94,7 @@ describe('TasksScreen', () => {
       createTask: async () => undefined,
       updateTask: async () => undefined,
       completeTask: async () => undefined,
+      reactivateTask: async () => undefined,
       convertTaskToEvent: async () => ({
         eventId: 'task-task-1',
         eventInput: {
@@ -132,6 +134,7 @@ describe('TasksScreen', () => {
       createTask: async () => undefined,
       updateTask: async () => undefined,
       completeTask: async () => undefined,
+      reactivateTask: async () => undefined,
       convertTaskToEvent: async () => ({
         eventId: 'task-task-1',
         eventInput: {
@@ -151,17 +154,23 @@ describe('TasksScreen', () => {
 
     expect(screen.getByText('Inbox zero')).toBeTruthy();
     expect(screen.queryByText('Archived planning note')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Active, 1', selected: true })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Completed, 1', selected: false })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'All, 2', selected: false })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Task status: Active', expanded: false }),
+    ).toBeTruthy();
 
-    fireEvent.press(screen.getByRole('button', { name: 'Completed, 1' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Task status: Active' }));
+    expect(screen.getByRole('button', { name: 'Select Active', selected: true })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Select Completed', selected: false })).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Select Completed' }));
 
     expect(screen.getByText('Archived planning note')).toBeTruthy();
     expect(screen.queryByText('Inbox zero')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Completed, 1', selected: true })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Task status: Completed', expanded: false }),
+    ).toBeTruthy();
 
-    fireEvent.press(screen.getByRole('button', { name: 'All, 2' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Task status: Completed' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Select All tasks' }));
 
     expect(screen.getByText('Inbox zero')).toBeTruthy();
     expect(screen.getByText('Archived planning note')).toBeTruthy();
@@ -178,6 +187,7 @@ describe('TasksScreen', () => {
       createTask: async () => undefined,
       updateTask: async () => undefined,
       completeTask: async () => undefined,
+      reactivateTask: async () => undefined,
       convertTaskToEvent: async () => ({
         eventId: 'event-1',
         eventInput: {
@@ -197,8 +207,266 @@ describe('TasksScreen', () => {
 
     expect(screen.getByText('Active task')).toBeTruthy();
     expect(screen.queryByText('Draft-only task')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Active, 1', selected: true })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'All, 1' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Task status: Active' })).toBeTruthy();
+  });
+
+  it('groups each task once by milestone and keeps unlinked tasks together', () => {
+    mockGoals([
+      {
+        id: 'goal-1',
+        title: 'Build a routine',
+        status: 'active',
+        milestones: [
+          { id: 'milestone-1', title: 'Plan the week' },
+          { id: 'milestone-2', title: 'Review progress' },
+        ],
+      } as GoalWithMilestones,
+    ]);
+    (useTasks as jest.MockedFunction<typeof useTasks>).mockReturnValue({
+      tasks: [
+        makeTask({
+          id: 'task-1',
+          title: 'Choose a day',
+          goalId: 'goal-1',
+          milestoneId: 'milestone-1',
+        }),
+        makeTask({
+          id: 'task-2',
+          title: 'Track habits',
+          goalId: 'goal-1',
+          milestoneId: 'milestone-2',
+        }),
+        makeTask({ id: 'task-3', title: 'Buy a notebook' }),
+      ],
+      uiState: 'ready',
+      createTask: async () => undefined,
+      updateTask: async () => undefined,
+      completeTask: async () => undefined,
+      reactivateTask: async () => undefined,
+      convertTaskToEvent: async () => ({
+        eventId: 'event-1',
+        eventInput: {
+          title: '',
+          description: '',
+          startAt: new Date(),
+          endAt: new Date(),
+          timezone: 'UTC',
+        },
+        created: true,
+      }),
+      deleteTask: async () => undefined,
+      retry: jest.fn(),
+    });
+
+    render(<TasksScreen />);
+    fireEvent.press(screen.getByLabelText('Task grouping: None'));
+    fireEvent.press(screen.getByLabelText('Select Milestone'));
+
+    expect(screen.getByRole('button', { name: 'Build a routine, 2 tasks' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Plan the week, 1 task' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Review progress, 1 task' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Unlinked tasks, 1 task' })).toBeTruthy();
+    expect(screen.getAllByLabelText('Open task Choose a day')).toHaveLength(1);
+    expect(screen.getAllByLabelText('Open task Track habits')).toHaveLength(1);
+    expect(screen.getAllByLabelText('Open task Buy a notebook')).toHaveLength(1);
+    expect(screen.getAllByRole('header', { name: 'TASKS' })).toHaveLength(3);
+    expect(
+      StyleSheet.flatten(screen.getByTestId('task-group-children-goal-1').props.style)
+        .borderLeftWidth,
+    ).toBe(0);
+    const milestoneGroupStyle = StyleSheet.flatten(
+      screen.getByTestId('task-group-children-goal-1').props.style,
+    );
+    expect(milestoneGroupStyle.marginLeft).toBe(0);
+    expect(milestoneGroupStyle.paddingLeft).toBe(0);
+    const milestoneTaskStyle = StyleSheet.flatten(
+      screen.getByTestId('milestone-task-children-milestone-1').props.style,
+    );
+    expect(milestoneTaskStyle.borderLeftWidth).toBe(2);
+    expect(milestoneTaskStyle.marginLeft).toBe(16);
+    const taskTitleStyle = StyleSheet.flatten(screen.getByText('Choose a day').props.style);
+    expect(taskTitleStyle.fontSize).toBe(14);
+    expect(taskTitleStyle.fontWeight).toBe('600');
+    expect(screen.queryByText('Build a routine / Plan the week')).toBeNull();
+    expect(screen.queryByText('1', { exact: true })).toBeNull();
+  });
+
+  it('switches directly between open task list dropdowns', () => {
+    (useTasks as jest.MockedFunction<typeof useTasks>).mockReturnValue({
+      tasks: [makeTask()],
+      uiState: 'ready',
+      createTask: async () => undefined,
+      updateTask: async () => undefined,
+      completeTask: async () => undefined,
+      reactivateTask: async () => undefined,
+      convertTaskToEvent: async () => ({
+        eventId: 'event-1',
+        eventInput: {
+          title: '',
+          description: '',
+          startAt: new Date(),
+          endAt: new Date(),
+          timezone: 'UTC',
+        },
+        created: true,
+      }),
+      deleteTask: async () => undefined,
+      retry: jest.fn(),
+    });
+
+    render(<TasksScreen />);
+    expect(screen.getByLabelText('Task list controls')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Task grouping: None'));
+    expect(screen.getByLabelText('Group options')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Task sorting: Due date ascending'));
+
+    expect(screen.getByLabelText('Sort options')).toBeTruthy();
+    expect(screen.queryByLabelText('Group options')).toBeNull();
+    expect(screen.getByLabelText('Select Due date descending')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Dismiss task list menus'));
+    expect(screen.queryByLabelText('Sort options')).toBeNull();
+  });
+
+  it('sorts tasks ascending and descending by due date, updated time, and title', () => {
+    (useTasks as jest.MockedFunction<typeof useTasks>).mockReturnValue({
+      tasks: [
+        makeTask({
+          id: 'task-later',
+          title: 'Zeta',
+          dueDate: new Date(2026, 8, 1),
+          updatedAt: new Date(2026, 8, 3),
+        }),
+        makeTask({
+          id: 'task-earlier',
+          title: 'Beta',
+          dueDate: new Date(2026, 7, 1),
+          updatedAt: new Date(2026, 8, 2),
+        }),
+        makeTask({ id: 'task-undated', title: 'Alpha', updatedAt: new Date(2026, 8, 1) }),
+      ],
+      uiState: 'ready',
+      createTask: async () => undefined,
+      updateTask: async () => undefined,
+      completeTask: async () => undefined,
+      reactivateTask: async () => undefined,
+      convertTaskToEvent: async () => ({
+        eventId: 'event-1',
+        eventInput: {
+          title: '',
+          description: '',
+          startAt: new Date(),
+          endAt: new Date(),
+          timezone: 'UTC',
+        },
+        created: true,
+      }),
+      deleteTask: async () => undefined,
+      retry: jest.fn(),
+    });
+
+    render(<TasksScreen />);
+    const taskOrder = () =>
+      screen
+        .getAllByRole('button', { name: /Open task/ })
+        .map((row) => row.props.accessibilityLabel);
+
+    expect(taskOrder()).toEqual(['Open task Beta', 'Open task Zeta', 'Open task Alpha']);
+    fireEvent.press(screen.getByLabelText('Task sorting: Due date ascending'));
+    fireEvent.press(screen.getByLabelText('Select Title A to Z'));
+    expect(taskOrder()).toEqual(['Open task Alpha', 'Open task Beta', 'Open task Zeta']);
+
+    fireEvent.press(screen.getByLabelText('Task sorting: Title A to Z'));
+    fireEvent.press(screen.getByLabelText('Select Title Z to A'));
+    expect(taskOrder()).toEqual(['Open task Zeta', 'Open task Beta', 'Open task Alpha']);
+
+    fireEvent.press(screen.getByLabelText('Task sorting: Title Z to A'));
+    fireEvent.press(screen.getByLabelText('Select Due date descending'));
+    expect(taskOrder()).toEqual(['Open task Zeta', 'Open task Beta', 'Open task Alpha']);
+
+    fireEvent.press(screen.getByLabelText('Task sorting: Due date descending'));
+    fireEvent.press(screen.getByLabelText('Select Updated ascending'));
+    expect(taskOrder()).toEqual(['Open task Alpha', 'Open task Beta', 'Open task Zeta']);
+
+    fireEvent.press(screen.getByLabelText('Task sorting: Updated ascending'));
+    fireEvent.press(screen.getByLabelText('Select Updated descending'));
+    expect(taskOrder()).toEqual(['Open task Zeta', 'Open task Beta', 'Open task Alpha']);
+  });
+
+  it('opens a separate edit screen and confirms deletion with the shared dialog', async () => {
+    const updateTask = jest.fn(async () => undefined);
+    const deleteTask = jest.fn(async () => undefined);
+    const reactivateTask = jest.fn(async () => undefined);
+    (useTasks as jest.MockedFunction<typeof useTasks>).mockReturnValue({
+      tasks: [makeTask()],
+      uiState: 'ready',
+      createTask: async () => undefined,
+      updateTask,
+      completeTask: async () => undefined,
+      reactivateTask,
+      convertTaskToEvent: async () => ({
+        eventId: 'event-1',
+        eventInput: {
+          title: '',
+          description: '',
+          startAt: new Date(),
+          endAt: new Date(),
+          timezone: 'UTC',
+        },
+        created: true,
+      }),
+      deleteTask,
+      retry: jest.fn(),
+    });
+
+    render(<TasksScreen />);
+    fireEvent.press(screen.getByLabelText('Task actions'));
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Edit task' }));
+    expect(screen.getByRole('header', { name: 'Edit Task' })).toBeTruthy();
+    expect(screen.queryByRole('header', { name: 'Task Details' })).toBeNull();
+    fireEvent.press(screen.getByLabelText('Back to task details'));
+
+    fireEvent.press(screen.getByLabelText('Task actions'));
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Delete task' }));
+    expect(screen.getByLabelText('Delete task? confirmation dialog')).toBeTruthy();
+    await act(async () => fireEvent.press(screen.getByLabelText('Confirm delete task')));
+    await waitFor(() => expect(deleteTask).toHaveBeenCalledWith('task-1'));
+    expect(reactivateTask).not.toHaveBeenCalled();
+  });
+
+  it('reactivates completed tasks from the task action menu', async () => {
+    const reactivateTask = jest.fn(async () => undefined);
+    (useTasks as jest.MockedFunction<typeof useTasks>).mockReturnValue({
+      tasks: [
+        makeTask({ status: 'completed', completionSource: 'manual', completedAt: new Date() }),
+      ],
+      uiState: 'ready',
+      createTask: async () => undefined,
+      updateTask: async () => undefined,
+      completeTask: async () => undefined,
+      reactivateTask,
+      convertTaskToEvent: async () => ({
+        eventId: 'event-1',
+        eventInput: {
+          title: '',
+          description: '',
+          startAt: new Date(),
+          endAt: new Date(),
+          timezone: 'UTC',
+        },
+        created: true,
+      }),
+      deleteTask: async () => undefined,
+      retry: jest.fn(),
+    });
+
+    render(<TasksScreen />);
+    fireEvent.press(screen.getByLabelText('Task status: Active'));
+    fireEvent.press(screen.getByRole('button', { name: 'Select Completed' }));
+    fireEvent.press(screen.getByLabelText('Task actions'));
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Mark task active' }));
+
+    await waitFor(() => expect(reactivateTask).toHaveBeenCalledWith('task-1'));
   });
 
   it('shows filter-specific empty copy', () => {
@@ -210,6 +478,7 @@ describe('TasksScreen', () => {
       createTask: async () => undefined,
       updateTask: async () => undefined,
       completeTask: async () => undefined,
+      reactivateTask: async () => undefined,
       convertTaskToEvent: async () => ({
         eventId: 'task-task-1',
         eventInput: {
@@ -226,12 +495,11 @@ describe('TasksScreen', () => {
     });
 
     render(<TasksScreen />);
-    fireEvent.press(screen.getByRole('button', { name: 'Completed, 0' }));
+    fireEvent.press(screen.getByLabelText('Task status: Active'));
+    fireEvent.press(screen.getByRole('button', { name: 'Select Completed' }));
 
     expect(screen.getByText('No completed tasks.')).toBeTruthy();
-    expect(
-      screen.getByText('Tasks you finish, schedule, or start now will appear here.'),
-    ).toBeTruthy();
+    expect(screen.getByText('Tasks you mark complete will appear here.')).toBeTruthy();
   });
 
   it('creates a task from the route-driven modal without a screen FAB', async () => {
@@ -245,6 +513,7 @@ describe('TasksScreen', () => {
       createTask: createTaskMock,
       updateTask: async () => undefined,
       completeTask: async () => undefined,
+      reactivateTask: async () => undefined,
       convertTaskToEvent: async () => ({
         eventId: 'task-task-1',
         eventInput: {
@@ -283,7 +552,7 @@ describe('TasksScreen', () => {
     });
   });
 
-  it('schedules a task by prefilling the event modal and auto-completing the task', async () => {
+  it('schedules a task by prefilling the event modal without completing the task', async () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date(2026, 6, 28, 9, 15, 0));
 
@@ -306,6 +575,7 @@ describe('TasksScreen', () => {
       createTask: async () => undefined,
       updateTask: async () => undefined,
       completeTask: completeTaskMock,
+      reactivateTask: async () => undefined,
       convertTaskToEvent,
       deleteTask: async () => undefined,
       retry: jest.fn(),
@@ -331,7 +601,6 @@ describe('TasksScreen', () => {
           description: 'Clear the remaining work messages.',
           timezone: expect.any(String),
         }),
-        'scheduled',
       );
       expect(completeTaskMock).not.toHaveBeenCalled();
     });
@@ -366,6 +635,7 @@ describe('TasksScreen', () => {
       createTask: async () => undefined,
       updateTask: async () => undefined,
       completeTask: completeTaskMock,
+      reactivateTask: async () => undefined,
       convertTaskToEvent,
       deleteTask: async () => undefined,
       retry: jest.fn(),
@@ -384,17 +654,13 @@ describe('TasksScreen', () => {
     });
 
     await waitFor(() => {
-      expect(convertTaskToEvent).toHaveBeenCalledWith(
-        'task-1',
-        {
-          title: 'Write proposal',
-          description: 'Focus on the executive summary.',
-          startAt,
-          endAt: new Date(2026, 6, 28, 14, 30, 0),
-          timezone: expect.any(String),
-        },
-        'start_now',
-      );
+      expect(convertTaskToEvent).toHaveBeenCalledWith('task-1', {
+        title: 'Write proposal',
+        description: 'Focus on the executive summary.',
+        startAt,
+        endAt: new Date(2026, 6, 28, 14, 30, 0),
+        timezone: expect.any(String),
+      });
       expect(publishEvent).toHaveBeenCalledWith(
         'task-task-1',
         expect.objectContaining({ title: 'Write proposal' }),

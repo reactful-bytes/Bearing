@@ -6,6 +6,7 @@ import {
   convertTaskToEvent as convertFirebaseTaskToEvent,
   createTask as createFirebaseTask,
   deleteTask as deleteFirebaseTask,
+  reactivateTask as reactivateFirebaseTask,
   subscribeToTasks,
   updateTask as updateFirebaseTask,
 } from '../../services/firebase/firebaseTasks';
@@ -17,7 +18,7 @@ import {
   UpdateTaskInput,
 } from './taskTypes';
 import { CreateEventInput } from '../calendar/calendarTypes';
-import { TaskConversionCompletionSource, TaskConversionResult } from './taskConversionService';
+import { TaskConversionResult } from './taskConversionService';
 
 export type UseTasksReturn = {
   tasks: TaskRecord[];
@@ -25,11 +26,8 @@ export type UseTasksReturn = {
   createTask: (input: CreateTaskInput) => Promise<void>;
   updateTask: (taskId: string, fields: UpdateTaskInput) => Promise<void>;
   completeTask: (taskId: string, input: CompleteTaskInput) => Promise<void>;
-  convertTaskToEvent: (
-    taskId: string,
-    input: CreateEventInput,
-    completionSource: TaskConversionCompletionSource,
-  ) => Promise<TaskConversionResult>;
+  reactivateTask: (taskId: string) => Promise<void>;
+  convertTaskToEvent: (taskId: string, input: CreateEventInput) => Promise<TaskConversionResult>;
   deleteTask: (taskId: string) => Promise<void>;
   retry: () => void;
 };
@@ -107,15 +105,17 @@ export function useTasks(): UseTasksReturn {
     await deleteFirebaseTask(userId, taskId);
   }, []);
 
+  const reactivateTask = useCallback(async (taskId: string): Promise<void> => {
+    const userId = getFirebaseAuth().currentUser?.uid;
+    if (!userId) throw new Error('User is not authenticated.');
+    await reactivateFirebaseTask(userId, taskId);
+  }, []);
+
   const convertTaskToEvent = useCallback(
-    async (
-      taskId: string,
-      input: CreateEventInput,
-      completionSource: TaskConversionCompletionSource,
-    ): Promise<TaskConversionResult> => {
+    async (taskId: string, input: CreateEventInput): Promise<TaskConversionResult> => {
       const userId = getFirebaseAuth().currentUser?.uid;
       if (!userId) throw new Error('User is not authenticated.');
-      return convertFirebaseTaskToEvent(userId, taskId, input, completionSource);
+      return convertFirebaseTaskToEvent(userId, taskId, input);
     },
     [],
   );
@@ -126,6 +126,7 @@ export function useTasks(): UseTasksReturn {
     createTask,
     updateTask,
     completeTask,
+    reactivateTask,
     convertTaskToEvent,
     deleteTask,
     retry,

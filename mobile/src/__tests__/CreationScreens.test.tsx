@@ -44,14 +44,8 @@ jest.mock('../components/goals/CreateGoalModal', () => {
     }) => (
       <>
         <Text testID="goal-draft">{`${initialTitle ?? ''}:${initialDescription ?? ''}`}</Text>
-        <Button
-          title="Create draft"
-          onPress={() => void onCreateDraft?.({ title: 'Goal' })}
-        />
-        <Button
-          title="Activate draft"
-          onPress={() => void onActivateDraft?.('goal-draft-1')}
-        />
+        <Button title="Create draft" onPress={() => void onCreateDraft?.({ title: 'Goal' })} />
+        <Button title="Activate draft" onPress={() => void onActivateDraft?.('goal-draft-1')} />
         <Button title="Save goal" onPress={() => void onSave({ title: 'Goal' })} />
         <Button title="Cancel goal" onPress={onClose} />
       </>
@@ -184,9 +178,7 @@ describe('creation route screens', () => {
     render(<CreateGoalScreen navigation={{ canGoBack: () => true, goBack }} />);
 
     fireEvent.press(screen.getByText('Create draft'));
-    await waitFor(() =>
-      expect(mockCreateGoalDraft).toHaveBeenCalledWith({ title: 'Goal' }),
-    );
+    await waitFor(() => expect(mockCreateGoalDraft).toHaveBeenCalledWith({ title: 'Goal' }));
     fireEvent.press(screen.getByText('Activate draft'));
     await waitFor(() => expect(mockActivateGoalDraft).toHaveBeenCalledWith('goal-draft-1'));
     fireEvent.press(screen.getByText('Save goal'));
@@ -203,9 +195,7 @@ describe('creation route screens', () => {
 
     fireEvent.press(screen.getByText('Create draft'));
 
-    await waitFor(() =>
-      expect(mockCreateGoalDraft).toHaveBeenCalledWith({ title: 'Goal' }),
-    );
+    await waitFor(() => expect(mockCreateGoalDraft).toHaveBeenCalledWith({ title: 'Goal' }));
     fireEvent.press(screen.getByText('Activate draft'));
     await waitFor(() => expect(mockActivateGoalDraft).toHaveBeenCalledWith('goal-draft-1'));
   });

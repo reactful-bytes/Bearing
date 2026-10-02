@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppCard } from './AppCard';
@@ -23,6 +24,7 @@ type SelectionModalProps = {
   emptyStateDescription?: string;
   selectedLabel?: string;
   unselectedLabel?: string;
+  fullScreen?: boolean;
   onClose: () => void;
   onSelect: (value: string) => void;
 };
@@ -36,10 +38,12 @@ export function SelectionModal({
   emptyStateDescription = 'Try a different search.',
   selectedLabel = 'Selected',
   unselectedLabel = 'Choose',
+  fullScreen = false,
   onClose,
   onSelect,
 }: SelectionModalProps) {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
 
   const filteredOptions = useMemo(() => {
@@ -62,8 +66,14 @@ export function SelectionModal({
   }
 
   return (
-    <AppModal visible={visible} onClose={handleClose} hideHeader>
-      <View style={styles.content}>
+    <AppModal visible={visible} onClose={handleClose} hideHeader fullScreen={fullScreen}>
+      <View
+        style={[
+          styles.content,
+          fullScreen ? styles.fullScreenContent : null,
+          fullScreen ? { paddingTop: insets.top, paddingBottom: insets.bottom } : null,
+        ]}
+      >
         <ScreenHeader
           title={title}
           onPressBack={handleClose}
@@ -81,7 +91,7 @@ export function SelectionModal({
         <AppCard style={styles.resultsCard}>
           <Text style={styles.resultsLabel}>{filteredOptions.length} options</Text>
           <ScrollView
-            style={styles.scrollList}
+            style={[styles.scrollList, fullScreen ? styles.fullScreenScrollList : null]}
             nestedScrollEnabled
             keyboardShouldPersistTaps="handled"
           >
@@ -130,6 +140,7 @@ const createStyles = (theme: Theme) =>
     content: {
       gap: spacing.lg,
     },
+    fullScreenContent: { flex: 1 },
     resultsCard: {
       gap: spacing.sm,
       paddingVertical: spacing.md,
@@ -142,6 +153,7 @@ const createStyles = (theme: Theme) =>
     scrollList: {
       maxHeight: 320,
     },
+    fullScreenScrollList: { flex: 1, maxHeight: undefined },
     optionRow: {
       minHeight: 44,
       flexDirection: 'row',

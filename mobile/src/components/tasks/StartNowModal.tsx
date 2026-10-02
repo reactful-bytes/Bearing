@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../../design/ThemeProvider';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { FormField } from '../ui/FormField';
+import { ScreenHeader } from '../ui/ScreenHeader';
 import { radii, spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
 import { TaskRecord } from '../../features/tasks/taskTypes';
@@ -17,6 +19,7 @@ type StartNowModalProps = {
   publicationCalendarTitle?: string | null;
   onClose: () => void;
   onConfirm: (minutes: number, options: CreateEventOptions) => Promise<void>;
+  fullScreen?: boolean;
 };
 
 const DEFAULT_MINUTES = '30';
@@ -27,9 +30,11 @@ export function StartNowModal({
   publicationCalendarTitle,
   onClose,
   onConfirm,
+  fullScreen = false,
 }: StartNowModalProps) {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const [minutes, setMinutes] = useState(DEFAULT_MINUTES);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -67,8 +72,8 @@ export function StartNowModal({
     }
   }
 
-  return (
-    <AppModal visible={visible} title="Start Now" onClose={onClose}>
+  const content = (
+    <View style={styles.formContent}>
       <View style={styles.summaryCard}>
         <Text style={styles.summaryLabel}>Task</Text>
         <Text style={styles.summaryTitle}>{task?.title ?? 'Task'}</Text>
@@ -109,12 +114,39 @@ export function StartNowModal({
         loading={saving}
         loadingLabel="Starting..."
       />
+    </View>
+  );
+
+  return (
+    <AppModal
+      visible={visible}
+      title="Start Now"
+      onClose={onClose}
+      fullScreen={fullScreen}
+      hideHeader={fullScreen}
+    >
+      {fullScreen ? (
+        <ScrollView
+          contentContainerStyle={[
+            styles.fullScreenContent,
+            { paddingTop: insets.top, paddingBottom: spacing.xl + insets.bottom },
+          ]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <ScreenHeader title="Start Now" onPressBack={onClose} />
+          {content}
+        </ScrollView>
+      ) : (
+        content
+      )}
     </AppModal>
   );
 }
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
+    fullScreenContent: { flexGrow: 1, gap: spacing.lg },
+    formContent: { gap: spacing.lg },
     summaryCard: {
       gap: spacing.xs,
       borderRadius: radii.lg,

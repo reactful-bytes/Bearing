@@ -1,4 +1,5 @@
 import { TaskRecord } from './taskTypes';
+import { getLegacyTaskCompletionSource } from './taskCompletionRepair';
 
 type TimestampLike = { toDate: () => Date };
 
@@ -15,6 +16,10 @@ function nullableString(value: unknown): string | null {
 }
 
 export function decodeTaskData(id: string, data: Record<string, unknown>): TaskRecord {
+  const status = data.status as TaskRecord['status'];
+  const completionSource = (data.completionSource as TaskRecord['completionSource']) ?? null;
+  const isLegacyAutoCompletion = getLegacyTaskCompletionSource(status, completionSource) !== null;
+
   return {
     id,
     userId: data.userId as string,
@@ -27,10 +32,10 @@ export function decodeTaskData(id: string, data: Record<string, unknown>): TaskR
     scheduledStart: toDate(data.scheduledStart),
     scheduledEnd: toDate(data.scheduledEnd),
     allDay: data.allDay === true,
-    status: data.status as TaskRecord['status'],
-    completionSource: (data.completionSource as TaskRecord['completionSource']) ?? null,
-    completedAt: toDate(data.completedAt),
-    completedEventId: nullableString(data.completedEventId),
+    status: isLegacyAutoCompletion ? 'active' : status,
+    completionSource: isLegacyAutoCompletion ? null : completionSource,
+    completedAt: isLegacyAutoCompletion ? null : toDate(data.completedAt),
+    completedEventId: isLegacyAutoCompletion ? null : nullableString(data.completedEventId),
     createdAt: (data.createdAt as TimestampLike).toDate(),
     updatedAt: (data.updatedAt as TimestampLike).toDate(),
   };
