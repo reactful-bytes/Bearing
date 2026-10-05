@@ -184,11 +184,22 @@ export function RowContextMenu({
         right: Math.max(safeRight, windowWidth - x - width),
       });
     });
-  }, [insets.bottom, insets.left, insets.right, insets.top, items.length, visible, windowHeight, windowWidth]);
+  }, [
+    insets.bottom,
+    insets.left,
+    insets.right,
+    insets.top,
+    items.length,
+    visible,
+    windowHeight,
+    windowWidth,
+  ]);
 
   const animatedStyle = {
     opacity: animation,
-    transform: [{ translateY: animation.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) }],
+    transform: [
+      { translateY: animation.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) },
+    ],
   };
 
   return (
@@ -235,7 +246,12 @@ export function RowContextMenu({
             accessibilityElementsHidden={!visible}
             importantForAccessibility={visible ? 'auto' : 'no-hide-descendants'}
             pointerEvents={visible ? 'auto' : 'none'}
-            style={[styles.menu, position, { maxWidth: windowWidth - insets.left - insets.right - spacing.lg }, animatedStyle]}
+            style={[
+              styles.menu,
+              position,
+              { maxWidth: windowWidth - insets.left - insets.right - spacing.lg },
+              animatedStyle,
+            ]}
           >
             <ScrollView bounces={false} style={styles.menuItems}>
               {items.map((item) => {

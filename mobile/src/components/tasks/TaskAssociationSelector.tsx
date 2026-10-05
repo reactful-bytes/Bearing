@@ -102,18 +102,8 @@ export function TaskAssociationSelector({
         </Pressable>
       </View>
 
-      <AppModal
-        visible={visible}
-        onClose={closeSelector}
-        fullScreen
-        hideHeader
-      >
-        <View
-          style={[
-            styles.selectorContent,
-            { paddingTop: insets.top },
-          ]}
-        >
+      <AppModal visible={visible} onClose={closeSelector} fullScreen hideHeader>
+        <View style={[styles.selectorContent, { paddingTop: insets.top }]}>
           <ScreenHeader
             title="Link Task"
             onPressBack={closeSelector}

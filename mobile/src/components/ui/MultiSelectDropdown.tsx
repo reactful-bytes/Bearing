@@ -1,5 +1,13 @@
 import { useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { spacing, typography } from '../../design/tokens';
@@ -44,19 +52,27 @@ export function MultiSelectDropdown({
 }: MultiSelectDropdownProps) {
   const styles = useThemedStyles(createStyles);
   const [expanded, setExpanded] = useState(false);
-  const [anchor, setAnchor] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [anchor, setAnchor] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
   const anchorRef = useRef<View>(null);
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const showClear = selectionMode === 'multiple' && selectedIds.size > 0 && onClear;
   const menuHeight = Math.max(48, Math.min(options.length * 48, 224)) + (showClear ? 52 : 16);
-  const menuWidth = anchor?.width ? Math.min(anchor.width, windowWidth - spacing.md * 2) : windowWidth - spacing.md * 2;
+  const menuWidth = anchor?.width
+    ? Math.min(anchor.width, windowWidth - spacing.md * 2)
+    : windowWidth - spacing.md * 2;
   const menuLeft = anchor
     ? Math.max(spacing.md, Math.min(anchor.x, windowWidth - menuWidth - spacing.md))
     : spacing.md;
   const belowTop = (anchor?.y ?? spacing.md) + (anchor?.height ?? 0) + spacing.xs;
-  const menuTop = belowTop + menuHeight <= windowHeight - spacing.md
-    ? belowTop
-    : Math.max(spacing.md, (anchor?.y ?? spacing.md) - menuHeight - spacing.xs);
+  const menuTop =
+    belowTop + menuHeight <= windowHeight - spacing.md
+      ? belowTop
+      : Math.max(spacing.md, (anchor?.y ?? spacing.md) - menuHeight - spacing.xs);
 
   function openMenu(): void {
     setExpanded(true);
@@ -96,7 +112,6 @@ export function MultiSelectDropdown({
             decorative
           />
         </Pressable>
-
       </View>
       <Modal
         visible={expanded}

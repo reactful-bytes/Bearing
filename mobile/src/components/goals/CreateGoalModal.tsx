@@ -1252,10 +1252,7 @@ export function CreateGoalModal({
                           {milestone.tasks.map((task, taskIndex) => {
                             const taskMenuId = `goal-wizard:task:${milestone.id}:${task.id}`;
                             return (
-                              <View
-                                key={`${milestone.id}:${task.id}`}
-                                style={styles.taskItem}
-                              >
+                              <View key={`${milestone.id}:${task.id}`} style={styles.taskItem}>
                                 <View style={styles.taskRow}>
                                   <Pressable
                                     accessibilityRole="button"

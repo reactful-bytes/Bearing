@@ -305,9 +305,7 @@ describe('TasksScreen', () => {
     );
     expect(milestoneRowStyle.borderLeftWidth).toBeUndefined();
     expect(milestoneRowStyle.borderBottomWidth).toBeUndefined();
-    const taskRowStyle = StyleSheet.flatten(
-      screen.getByTestId('task-list-row-task-3').props.style,
-    );
+    const taskRowStyle = StyleSheet.flatten(screen.getByTestId('task-list-row-task-3').props.style);
     expect(taskRowStyle.borderBottomWidth).toBeUndefined();
     const taskTitleStyle = StyleSheet.flatten(screen.getByText('Choose a day').props.style);
     expect(taskTitleStyle.fontSize).toBe(14);
@@ -316,11 +314,17 @@ describe('TasksScreen', () => {
     expect(screen.queryByText('1', { exact: true })).toBeNull();
 
     fireEvent.press(screen.getByLabelText('Collapse all groups'));
-    expect(screen.getByRole('button', { name: 'Build a routine, 2 tasks', expanded: false })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Build a routine, 2 tasks', expanded: false }),
+    ).toBeTruthy();
     expect(screen.queryByLabelText('Open task Choose a day')).toBeNull();
     fireEvent.press(screen.getByLabelText('Expand all groups'));
-    expect(screen.getByRole('button', { name: 'Build a routine, 2 tasks', expanded: true })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Plan the week, 1 task', expanded: true })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Build a routine, 2 tasks', expanded: true }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Plan the week, 1 task', expanded: true }),
+    ).toBeTruthy();
 
     expect(screen.getByLabelText('Open task Choose a day')).toBeTruthy();
   });
@@ -407,7 +411,9 @@ describe('TasksScreen', () => {
     });
 
     const taskScreen = render(
-      <TasksScreen route={{ params: { viewResult: taskViewDraft({ selectedGoalIds: ['goal-1'] }) } }} />,
+      <TasksScreen
+        route={{ params: { viewResult: taskViewDraft({ selectedGoalIds: ['goal-1'] }) } }}
+      />,
     );
     expect(screen.getByLabelText('Open task Plan mornings')).toBeTruthy();
     expect(screen.queryByLabelText('Open task Practice verbs')).toBeNull();
@@ -531,7 +537,9 @@ describe('TasksScreen', () => {
       retry: jest.fn(),
     });
 
-    render(<TasksScreen route={{ params: { viewResult: taskViewDraft({ taskFilter: 'all' }) } }} />);
+    render(
+      <TasksScreen route={{ params: { viewResult: taskViewDraft({ taskFilter: 'all' }) } }} />,
+    );
     const actionTriggers = screen.getAllByLabelText('Task actions');
     expect(actionTriggers).toHaveLength(2);
 
@@ -728,7 +736,9 @@ describe('TasksScreen', () => {
     });
 
     render(
-      <TasksScreen route={{ params: { viewResult: taskViewDraft({ taskFilter: 'completed' }) } }} />,
+      <TasksScreen
+        route={{ params: { viewResult: taskViewDraft({ taskFilter: 'completed' }) } }}
+      />,
     );
     fireEvent.press(screen.getByLabelText('Task actions'));
     fireEvent.press(screen.getByRole('menuitem', { name: 'Mark task active' }));
@@ -762,7 +772,9 @@ describe('TasksScreen', () => {
     });
 
     render(
-      <TasksScreen route={{ params: { viewResult: taskViewDraft({ taskFilter: 'completed' }) } }} />,
+      <TasksScreen
+        route={{ params: { viewResult: taskViewDraft({ taskFilter: 'completed' }) } }}
+      />,
     );
 
     expect(screen.getByText('No completed tasks.')).toBeTruthy();
@@ -811,9 +823,9 @@ describe('TasksScreen', () => {
     );
     const associationScroll = screen.getByTestId('task-association-options-scroll');
     expect(StyleSheet.flatten(associationScroll.props.style).marginRight).toBe(-spacing.lg);
-    expect(
-      StyleSheet.flatten(associationScroll.props.contentContainerStyle).paddingRight,
-    ).toBe(spacing.lg);
+    expect(StyleSheet.flatten(associationScroll.props.contentContainerStyle).paddingRight).toBe(
+      spacing.lg,
+    );
     fireEvent.press(screen.getByLabelText('Back to task'));
     fireEvent.changeText(screen.getByLabelText('Task title'), 'Plan weekly meals');
     fireEvent.changeText(

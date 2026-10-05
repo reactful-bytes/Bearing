@@ -18,14 +18,8 @@ import {
 import { DEFAULT_TASK_VIEW, TASK_SORT_OPTIONS } from './taskViewOptions';
 
 type TaskViewScreenProps = NativeStackScreenProps<PlanStackParamList, 'TaskView'>;
-type TaskGoalSelectionScreenProps = NativeStackScreenProps<
-  PlanStackParamList,
-  'TaskGoalSelection'
->;
-type TaskSortSelectionScreenProps = NativeStackScreenProps<
-  PlanStackParamList,
-  'TaskSortSelection'
->;
+type TaskGoalSelectionScreenProps = NativeStackScreenProps<PlanStackParamList, 'TaskGoalSelection'>;
+type TaskSortSelectionScreenProps = NativeStackScreenProps<PlanStackParamList, 'TaskSortSelection'>;
 
 const taskFilterOptions: { value: TaskFilter; label: string }[] = [
   { value: 'active', label: 'Active' },
@@ -178,7 +172,12 @@ export function TaskViewScreen({ route, navigation }: TaskViewScreenProps) {
           onPress={() => navigation.push('TaskSortSelection', { draft, goals: route.params.goals })}
           style={({ pressed }) => [styles.selectionRow, pressed ? styles.pressed : null]}
         >
-          <AppIcon name={selectedSort.icon} size={18} color={styles.selectedIcon.color} decorative />
+          <AppIcon
+            name={selectedSort.icon}
+            size={18}
+            color={styles.selectedIcon.color}
+            decorative
+          />
           <View style={styles.selectionCopy}>
             <Text style={styles.selectionLabel}>Sort</Text>
             <Text numberOfLines={1} style={styles.selectionValue}>
@@ -208,10 +207,7 @@ export function TaskViewScreen({ route, navigation }: TaskViewScreenProps) {
   );
 }
 
-export function TaskGoalSelectionScreen({
-  route,
-  navigation,
-}: TaskGoalSelectionScreenProps) {
+export function TaskGoalSelectionScreen({ route, navigation }: TaskGoalSelectionScreenProps) {
   const styles = useThemedStyles(createStyles);
   const [query, setQuery] = useState('');
   const [selectedGoalIds, setSelectedGoalIds] = useState(
@@ -220,7 +216,9 @@ export function TaskGoalSelectionScreen({
   const filteredGoals = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
     return normalizedQuery
-      ? route.params.goals.filter((goal) => goal.title.toLocaleLowerCase().includes(normalizedQuery))
+      ? route.params.goals.filter((goal) =>
+          goal.title.toLocaleLowerCase().includes(normalizedQuery),
+        )
       : route.params.goals;
   }, [query, route.params.goals]);
 

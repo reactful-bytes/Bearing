@@ -79,9 +79,11 @@ export function AppModal({
     })
     .onEnd((event) => {
       if (event.translationY > 88 || event.velocityY > 700) {
-        sheetTranslateY.set(withTiming(windowHeight, { duration: 180 }, (finished) => {
-          if (finished) runOnJS(onClose)();
-        }));
+        sheetTranslateY.set(
+          withTiming(windowHeight, { duration: 180 }, (finished) => {
+            if (finished) runOnJS(onClose)();
+          }),
+        );
         return;
       }
 
@@ -225,7 +227,7 @@ export function AppModal({
             <CreateFabGroup
               visible={createFab.visible}
               bottomOffset={insets.bottom + spacing.md}
-                rightOffset={spacing.md}
+              rightOffset={spacing.md}
               onPress={createFab.open}
               onDismiss={createFab.dismiss}
               onCreateGoal={() => createFab.create('goal')}

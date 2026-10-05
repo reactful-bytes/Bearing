@@ -684,7 +684,6 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
             : null}
         </PlanSurface>
       </View>
-
     </AppScreen>
   );
 }

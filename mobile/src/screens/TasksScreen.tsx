@@ -216,7 +216,8 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
   const tasksForSelectedGoals = useMemo(
     () =>
       operationalTasks.filter(
-        (task) => selectedGoalIds.size === 0 || (task.goalId !== null && selectedGoalIds.has(task.goalId)),
+        (task) =>
+          selectedGoalIds.size === 0 || (task.goalId !== null && selectedGoalIds.has(task.goalId)),
       ),
     [operationalTasks, selectedGoalIds],
   );
@@ -229,14 +230,20 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
     taskFilter === 'all' ? 'All tasks' : taskFilter === 'active' ? 'Active' : 'Completed',
     groupBy === 'none' ? null : groupBy === 'goal' ? 'Goal' : 'Milestone',
     selectedSort.summary,
-    selectedGoalIds.size > 0 ? `${selectedGoalIds.size} ${selectedGoalIds.size === 1 ? 'goal' : 'goals'}` : null,
+    selectedGoalIds.size > 0
+      ? `${selectedGoalIds.size} ${selectedGoalIds.size === 1 ? 'goal' : 'goals'}`
+      : null,
     taskSearch.trim() ? 'Search' : null,
-  ].filter(Boolean).join(' · ');
+  ]
+    .filter(Boolean)
+    .join(' · ');
   const taskViewAccessibilityLabel = [
     `Task view: ${taskFilter === 'all' ? 'all tasks' : taskFilter}, ${groupBy === 'none' ? 'ungrouped' : `grouped by ${groupBy}`}, ${selectedSort.label.toLowerCase()}`,
     selectedGoalIds.size > 0 ? `${selectedGoalIds.size} selected goals` : null,
     taskSearch.trim() ? `search ${taskSearch.trim()}` : null,
-  ].filter(Boolean).join(', ');
+  ]
+    .filter(Boolean)
+    .join(', ');
   const visibleTasks = useMemo(() => {
     const filtered =
       taskFilter === 'all'
@@ -544,108 +551,105 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
               {taskSearch.trim() || selectedGoalIds.size > 0
                 ? 'No matching tasks.'
                 : taskFilter === 'active'
-                ? 'No active tasks.'
-                : taskFilter === 'completed'
-                  ? 'No completed tasks.'
-                  : 'No tasks yet.'}
+                  ? 'No active tasks.'
+                  : taskFilter === 'completed'
+                    ? 'No completed tasks.'
+                    : 'No tasks yet.'}
             </Text>
             <Text style={styles.stateDescription}>
               {taskSearch.trim() || selectedGoalIds.size > 0
                 ? 'Try a different search or adjust the task filters.'
                 : taskFilter === 'active'
-                ? 'Add a task to capture work before it belongs on the calendar.'
-                : taskFilter === 'completed'
-                  ? 'Tasks you mark complete will appear here.'
-                  : 'Add a task to start building your unscheduled work list.'}
+                  ? 'Add a task to capture work before it belongs on the calendar.'
+                  : taskFilter === 'completed'
+                    ? 'Tasks you mark complete will appear here.'
+                    : 'Add a task to start building your unscheduled work list.'}
             </Text>
           </AppCard>
         ) : null}
 
-        {uiState === 'ready' || uiState === 'empty'
-          ? groupBy === 'none'
-            ? (
-                <View testID="flat-task-list" style={styles.flatTaskList}>
-                  {pageTasks.map((task) => renderTaskRow(task))}
+        {uiState === 'ready' || uiState === 'empty' ? (
+          groupBy === 'none' ? (
+            <View testID="flat-task-list" style={styles.flatTaskList}>
+              {pageTasks.map((task) => renderTaskRow(task))}
+            </View>
+          ) : (
+            taskGroups.map((group) => {
+              const rootKey = `goal:${group.id}`;
+              const rootCollapsed = collapsedGroups.has(rootKey);
+              const totalCount =
+                group.tasks.length +
+                group.milestones.reduce((count, milestone) => count + milestone.tasks.length, 0);
+              return (
+                <View key={rootKey} style={styles.taskGroup}>
+                  <TaskHierarchyRow
+                    title={group.label}
+                    kind={group.kind}
+                    detail={group.kind === 'goal' ? 'Goal tasks' : 'Tasks without a goal'}
+                    countLabel={`${totalCount} ${totalCount === 1 ? 'task' : 'tasks'}`}
+                    expanded={!rootCollapsed}
+                    accessibilityLabel={`${group.label}, ${totalCount} ${totalCount === 1 ? 'task' : 'tasks'}`}
+                    onPress={() => toggleGroup(rootKey)}
+                    onToggleExpanded={() => toggleGroup(rootKey)}
+                  />
+                  {!rootCollapsed ? (
+                    <View
+                      testID={`task-group-children-${group.id}`}
+                      style={[
+                        styles.groupChildren,
+                        groupBy === 'milestone' && group.kind === 'goal'
+                          ? styles.milestoneGroupChildren
+                          : null,
+                      ]}
+                    >
+                      {group.tasks.length > 0 ? (
+                        <>
+                          {group.kind !== 'unlinked' ? (
+                            <Text accessibilityRole="header" style={styles.groupTaskHeader}>
+                              TASKS
+                            </Text>
+                          ) : null}
+                          {group.tasks.map((task) => renderTaskRow(task, group.kind === 'goal'))}
+                        </>
+                      ) : null}
+                      {groupBy === 'milestone'
+                        ? group.milestones.map((milestone) => {
+                            const milestoneKey = `milestone:${group.id}:${milestone.id}`;
+                            const milestoneCollapsed = collapsedGroups.has(milestoneKey);
+                            return (
+                              <View key={milestoneKey}>
+                                <TaskHierarchyRow
+                                  title={milestone.label}
+                                  kind="milestone"
+                                  nested
+                                  countLabel={`${milestone.tasks.length} ${milestone.tasks.length === 1 ? 'task' : 'tasks'}`}
+                                  expanded={!milestoneCollapsed}
+                                  accessibilityLabel={`${milestone.label}, ${milestone.tasks.length} ${milestone.tasks.length === 1 ? 'task' : 'tasks'}`}
+                                  onPress={() => toggleGroup(milestoneKey)}
+                                  onToggleExpanded={() => toggleGroup(milestoneKey)}
+                                />
+                                {!milestoneCollapsed ? (
+                                  <View
+                                    testID={`milestone-task-children-${milestone.id}`}
+                                    style={styles.milestoneTasks}
+                                  >
+                                    <Text accessibilityRole="header" style={styles.groupTaskHeader}>
+                                      TASKS
+                                    </Text>
+                                    {milestone.tasks.map((task) => renderTaskRow(task, true))}
+                                  </View>
+                                ) : null}
+                              </View>
+                            );
+                          })
+                        : null}
+                    </View>
+                  ) : null}
                 </View>
-              )
-            : taskGroups.map((group) => {
-                const rootKey = `goal:${group.id}`;
-                const rootCollapsed = collapsedGroups.has(rootKey);
-                const totalCount =
-                  group.tasks.length +
-                  group.milestones.reduce((count, milestone) => count + milestone.tasks.length, 0);
-                return (
-                  <View key={rootKey} style={styles.taskGroup}>
-                    <TaskHierarchyRow
-                      title={group.label}
-                      kind={group.kind}
-                      detail={group.kind === 'goal' ? 'Goal tasks' : 'Tasks without a goal'}
-                      countLabel={`${totalCount} ${totalCount === 1 ? 'task' : 'tasks'}`}
-                      expanded={!rootCollapsed}
-                      accessibilityLabel={`${group.label}, ${totalCount} ${totalCount === 1 ? 'task' : 'tasks'}`}
-                      onPress={() => toggleGroup(rootKey)}
-                      onToggleExpanded={() => toggleGroup(rootKey)}
-                    />
-                    {!rootCollapsed ? (
-                      <View
-                        testID={`task-group-children-${group.id}`}
-                        style={[
-                          styles.groupChildren,
-                          groupBy === 'milestone' && group.kind === 'goal'
-                            ? styles.milestoneGroupChildren
-                            : null,
-                        ]}
-                      >
-                        {group.tasks.length > 0 ? (
-                          <>
-                            {group.kind !== 'unlinked' ? (
-                              <Text accessibilityRole="header" style={styles.groupTaskHeader}>
-                                TASKS
-                              </Text>
-                            ) : null}
-                            {group.tasks.map((task) => renderTaskRow(task, group.kind === 'goal'))}
-                          </>
-                        ) : null}
-                        {groupBy === 'milestone'
-                          ? group.milestones.map((milestone) => {
-                              const milestoneKey = `milestone:${group.id}:${milestone.id}`;
-                              const milestoneCollapsed = collapsedGroups.has(milestoneKey);
-                              return (
-                                <View key={milestoneKey}>
-                                  <TaskHierarchyRow
-                                    title={milestone.label}
-                                    kind="milestone"
-                                    nested
-                                    countLabel={`${milestone.tasks.length} ${milestone.tasks.length === 1 ? 'task' : 'tasks'}`}
-                                    expanded={!milestoneCollapsed}
-                                    accessibilityLabel={`${milestone.label}, ${milestone.tasks.length} ${milestone.tasks.length === 1 ? 'task' : 'tasks'}`}
-                                    onPress={() => toggleGroup(milestoneKey)}
-                                    onToggleExpanded={() => toggleGroup(milestoneKey)}
-                                  />
-                                  {!milestoneCollapsed ? (
-                                    <View
-                                      testID={`milestone-task-children-${milestone.id}`}
-                                      style={styles.milestoneTasks}
-                                    >
-                                      <Text
-                                        accessibilityRole="header"
-                                        style={styles.groupTaskHeader}
-                                      >
-                                        TASKS
-                                      </Text>
-                                      {milestone.tasks.map((task) => renderTaskRow(task, true))}
-                                    </View>
-                                  ) : null}
-                                </View>
-                              );
-                            })
-                          : null}
-                      </View>
-                    ) : null}
-                  </View>
-                );
-              })
-          : null}
+              );
+            })
+          )
+        ) : null}
         {groupBy === 'none' && visibleTasks.length > 0 ? (
           <View style={styles.pagination}>
             <Text style={styles.paginationSummary}>

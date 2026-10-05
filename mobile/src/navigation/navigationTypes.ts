@@ -16,12 +16,7 @@ export type CalendarFocusLaunch = {
 export type TaskFilter = 'active' | 'completed' | 'all';
 export type TaskGroupBy = 'none' | 'goal' | 'milestone';
 export type TaskSortBy =
-  | 'dueDate:asc'
-  | 'dueDate:desc'
-  | 'updated:asc'
-  | 'updated:desc'
-  | 'title:asc'
-  | 'title:desc';
+  'dueDate:asc' | 'dueDate:desc' | 'updated:asc' | 'updated:desc' | 'title:asc' | 'title:desc';
 
 export type TaskViewDraft = {
   taskFilter: TaskFilter;

@@ -225,20 +225,19 @@ describe('UI primitives', () => {
             <Text>Task filters</Text>
           </AppModal>
           {!visible ? (
-            <Pressable accessibilityRole="button" accessibilityLabel="Reopen sheet" onPress={() => setVisible(true)} />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Reopen sheet"
+              onPress={() => setVisible(true)}
+            />
           ) : null}
         </>
       );
     }
 
     render(<ReopenableSheet />);
-    const gesture = jest
-      .requireMock('react-native-gesture-handler')
-      .__getLatestPanGesture();
-    const sharedValue = jest
-      .requireMock('react-native-reanimated')
-      .__getSharedValues()
-      .at(-1);
+    const gesture = jest.requireMock('react-native-gesture-handler').__getLatestPanGesture();
+    const sharedValue = jest.requireMock('react-native-reanimated').__getSharedValues().at(-1);
     const animatedStyles = jest.requireMock('react-native-reanimated').__getAnimatedStyles();
     const backdropStyle = () => animatedStyles.at(-1)();
 

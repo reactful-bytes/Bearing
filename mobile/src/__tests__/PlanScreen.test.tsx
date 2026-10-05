@@ -409,9 +409,8 @@ describe('PlanScreen', () => {
       StyleSheet.flatten(screen.getByTestId('task-detail-screen').props.style).paddingHorizontal,
     ).toBeUndefined();
     expect(
-      StyleSheet.flatten(
-        screen.getByTestId('task-details-content').props.contentContainerStyle,
-      ).paddingHorizontal,
+      StyleSheet.flatten(screen.getByTestId('task-details-content').props.contentContainerStyle)
+        .paddingHorizontal,
     ).toBe(spacing.lg);
     fireEvent.press(screen.getByLabelText('Back to Plan'));
     expect(goBack).toHaveBeenCalledTimes(1);

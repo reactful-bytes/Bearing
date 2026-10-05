@@ -106,7 +106,11 @@ export function TaskDetailScreen({ route, navigation }: TaskDetailScreenProps) {
   if (uiState === 'loading') {
     return (
       <View style={[styles.screen, styles.stateScreen]}>
-        <ScreenHeader title="Task Details" onPressBack={navigation.goBack} backAccessibilityLabel="Back to Plan" />
+        <ScreenHeader
+          title="Task Details"
+          onPressBack={navigation.goBack}
+          backAccessibilityLabel="Back to Plan"
+        />
         <AppCard>
           <Text style={styles.stateText}>Loading task...</Text>
         </AppCard>
@@ -117,7 +121,11 @@ export function TaskDetailScreen({ route, navigation }: TaskDetailScreenProps) {
   if (uiState === 'error') {
     return (
       <View style={[styles.screen, styles.stateScreen]}>
-        <ScreenHeader title="Task Details" onPressBack={navigation.goBack} backAccessibilityLabel="Back to Plan" />
+        <ScreenHeader
+          title="Task Details"
+          onPressBack={navigation.goBack}
+          backAccessibilityLabel="Back to Plan"
+        />
         <RecoveryCard
           title="Unable to load task."
           description="Check your connection, then retry."
@@ -130,7 +138,11 @@ export function TaskDetailScreen({ route, navigation }: TaskDetailScreenProps) {
   if (!task) {
     return (
       <View style={[styles.screen, styles.stateScreen]}>
-        <ScreenHeader title="Task Details" onPressBack={navigation.goBack} backAccessibilityLabel="Back to Plan" />
+        <ScreenHeader
+          title="Task Details"
+          onPressBack={navigation.goBack}
+          backAccessibilityLabel="Back to Plan"
+        />
         <EmptyState
           title="Task unavailable"
           description="This task may have been removed."
