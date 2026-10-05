@@ -30,7 +30,7 @@ function createWebInputStyle(theme: Theme, preference: ThemePreference): CSSProp
     minWidth: 0,
     minHeight: 44,
     border: `1px solid ${theme.colors.border}`,
-    borderRadius: radii.sm,
+    borderRadius: radii.md,
     backgroundColor: theme.colors.surface,
     color: theme.colors.text,
     colorScheme: preference,

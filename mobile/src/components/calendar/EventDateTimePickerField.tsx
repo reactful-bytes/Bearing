@@ -102,9 +102,7 @@ export function EventDateTimePickerField({
       timezone,
     ) ?? new Date();
 
-  function handleValueChange(_event: DateTimePickerChangeEvent, selectedDate?: Date): void {
-    if (!selectedDate) return;
-
+  function handleValueChange(_event: DateTimePickerChangeEvent, selectedDate: Date): void {
     onChange(
       mode === 'date'
         ? toEventDateString(selectedDate, timezone)
@@ -122,7 +120,7 @@ export function EventDateTimePickerField({
         display: 'default',
         timeZoneName: timezone,
         is24Hour: mode === 'time' ? timeFormat === '24-hour' : undefined,
-        onChange: handleValueChange,
+        onValueChange: handleValueChange,
       });
       return;
     }
@@ -229,7 +227,7 @@ const createStyles = (theme: Theme) =>
       justifyContent: 'center',
       borderWidth: 1,
       borderColor: theme.colors.border,
-      borderRadius: radii.sm,
+      borderRadius: radii.md,
       backgroundColor: theme.colors.surface,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,

@@ -102,9 +102,17 @@ export function TaskAssociationSelector({
         </Pressable>
       </View>
 
-      <AppModal visible={visible} onClose={closeSelector} fullScreen hideHeader>
+      <AppModal
+        visible={visible}
+        onClose={closeSelector}
+        fullScreen
+        hideHeader
+      >
         <View
-          style={[styles.selectorContent, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
+          style={[
+            styles.selectorContent,
+            { paddingTop: insets.top },
+          ]}
         >
           <ScreenHeader
             title="Link Task"
@@ -119,7 +127,15 @@ export function TaskAssociationSelector({
             placeholder="Find a goal or milestone"
             autoCapitalize="none"
           />
-          <ScrollView contentContainerStyle={styles.optionList} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            testID="task-association-options-scroll"
+            style={styles.optionScroll}
+            contentContainerStyle={[
+              styles.optionList,
+              { paddingBottom: spacing.xl + insets.bottom },
+            ]}
+            keyboardShouldPersistTaps="handled"
+          >
             <TaskHierarchyRow
               title="No goal or milestone"
               kind="unlinked"
@@ -232,7 +248,8 @@ const createStyles = (theme: Theme) =>
     },
     chooseButtonText: { ...typography.helper, color: theme.colors.brand, fontWeight: '700' },
     selectorContent: { flex: 1, gap: spacing.lg },
-    optionList: { gap: spacing.xs, paddingBottom: spacing.xl },
+    optionScroll: { flex: 1, marginRight: -spacing.lg },
+    optionList: { gap: spacing.xs, paddingRight: spacing.lg, paddingBottom: spacing.xl },
     emptyDescription: {
       ...typography.body,
       color: theme.colors.textSecondary,

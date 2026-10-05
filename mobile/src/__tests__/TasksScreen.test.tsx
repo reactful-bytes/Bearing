@@ -10,6 +10,7 @@ import { TaskRecord } from '../features/tasks/taskTypes';
 import { useTasks } from '../features/tasks/useTasks';
 import { TasksScreen } from '../screens/TasksScreen';
 import type { TaskViewDraft } from '../navigation/navigationTypes';
+import { spacing } from '../design/tokens';
 
 jest.mock('../features/profile/useUserProfile', () => ({
   useUserProfile: jest.fn(() => ({
@@ -799,6 +800,21 @@ describe('TasksScreen', () => {
 
     expect(screen.queryByRole('button', { name: 'New task' })).toBeNull();
     expect(setParams).toHaveBeenCalledWith({ createTask: undefined });
+    expect(screen.getByLabelText('Task due date')).toBeTruthy();
+    expect(screen.queryByLabelText('Add schedule details')).toBeNull();
+    expect(screen.queryByLabelText('Task schedule start date')).toBeNull();
+    expect(screen.queryByLabelText('All-day task')).toBeNull();
+    fireEvent.press(
+      screen.getByRole('button', {
+        name: 'Choose task goal or milestone, currently No goal or milestone',
+      }),
+    );
+    const associationScroll = screen.getByTestId('task-association-options-scroll');
+    expect(StyleSheet.flatten(associationScroll.props.style).marginRight).toBe(-spacing.lg);
+    expect(
+      StyleSheet.flatten(associationScroll.props.contentContainerStyle).paddingRight,
+    ).toBe(spacing.lg);
+    fireEvent.press(screen.getByLabelText('Back to task'));
     fireEvent.changeText(screen.getByLabelText('Task title'), 'Plan weekly meals');
     fireEvent.changeText(
       screen.getByLabelText('Task description'),

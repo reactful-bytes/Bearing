@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { EventDateTimePickerField } from '../components/calendar/EventDateTimePickerField.web';
+import { radii } from '../design/tokens';
 
 describe('EventDateTimePickerField web fallback', () => {
   it('emits the browser date input value', () => {
@@ -21,7 +22,9 @@ describe('EventDateTimePickerField web fallback', () => {
 
     const input = screen.getByLabelText('Start date');
     expect(input.props.type).toBe('date');
-    expect(input.props.style).toEqual(expect.objectContaining({ colorScheme: 'dark' }));
+    expect(input.props.style).toEqual(
+      expect.objectContaining({ colorScheme: 'dark', borderRadius: radii.md }),
+    );
     fireEvent(input, 'change', { currentTarget: { value: '2026-08-05' } });
 
     expect(onChange).toHaveBeenCalledWith('2026-08-05');
