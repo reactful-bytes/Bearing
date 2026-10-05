@@ -13,10 +13,35 @@ export type CalendarFocusLaunch = {
   timezone: string;
 };
 
+export type TaskFilter = 'active' | 'completed' | 'all';
+export type TaskGroupBy = 'none' | 'goal' | 'milestone';
+export type TaskSortBy =
+  | 'dueDate:asc'
+  | 'dueDate:desc'
+  | 'updated:asc'
+  | 'updated:desc'
+  | 'title:asc'
+  | 'title:desc';
+
+export type TaskViewDraft = {
+  taskFilter: TaskFilter;
+  groupBy: TaskGroupBy;
+  sortBy: TaskSortBy;
+  selectedGoalIds: string[];
+  taskSearch: string;
+};
+
+export type TaskViewGoal = { id: string; title: string };
+export type TaskViewParams = { draft: TaskViewDraft; goals: TaskViewGoal[] };
+
 export type PlanStackParamList = {
   PlanHome: undefined;
   Goals: { createGoal?: boolean } | undefined;
-  Tasks: { createTask?: boolean } | undefined;
+  Tasks: { createTask?: boolean; viewResult?: TaskViewDraft } | undefined;
+  TaskView: TaskViewParams;
+  TaskGoalSelection: TaskViewParams;
+  TaskSortSelection: TaskViewParams;
+  TaskDetail: { taskId: string };
   GoalDetail: { goalId: string; initialTab?: 'tasks' | 'timeline' };
   FocusMode:
     | {

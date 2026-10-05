@@ -1,5 +1,71 @@
 /* global jest */
 
+jest.mock('react-native-reanimated', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  const sharedValues = [];
+  const animatedStyles = [];
+
+  return {
+    __esModule: true,
+    default: { View, createAnimatedComponent: (Component) => Component },
+    cancelAnimation: jest.fn(),
+    runOnJS: (callback) => callback,
+    useAnimatedStyle: (createStyle) => {
+      animatedStyles.push(createStyle);
+      return createStyle();
+    },
+    useSharedValue: (initialValue) => {
+      const sharedValueRef = React.useRef(null);
+      if (!sharedValueRef.current) {
+        sharedValueRef.current = {
+          value: initialValue,
+          set(value) {
+            this.value = value;
+          },
+        };
+        sharedValues.push(sharedValueRef.current);
+      }
+      return sharedValueRef.current;
+    },
+    __getSharedValues: () => sharedValues,
+    __getAnimatedStyles: () => animatedStyles,
+    withSpring: (value) => value,
+    withTiming: (value, _configuration, callback) => {
+      callback?.(true);
+      return value;
+    },
+  };
+});
+
+jest.mock('react-native-gesture-handler', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  const gesture = { onUpdateCallback: undefined, onEndCallback: undefined };
+  const chain = () => gesture;
+
+  Object.assign(gesture, {
+    enabled: chain,
+    activeOffsetY: chain,
+    failOffsetX: chain,
+    onUpdate: (callback) => {
+      gesture.onUpdateCallback = callback;
+      return gesture;
+    },
+    onEnd: (callback) => {
+      gesture.onEndCallback = callback;
+      return gesture;
+    },
+  });
+
+  return {
+    Gesture: { Pan: () => gesture },
+    GestureDetector: ({ children }) => React.createElement(React.Fragment, null, children),
+    GestureHandlerRootView: View,
+    __getLatestPanGesture: () => gesture,
+  };
+});
+
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );

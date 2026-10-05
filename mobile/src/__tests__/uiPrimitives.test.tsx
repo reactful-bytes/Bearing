@@ -1,5 +1,7 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
+import { useState } from 'react';
+import { Dimensions, Pressable, Text } from 'react-native';
 
 import { CreateFabProvider } from '../components/presentation/CreateFabContext';
 import { AppCard } from '../components/ui/AppCard';
@@ -207,6 +209,62 @@ describe('UI primitives', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Close Goal Details' }));
 
     expect(handleClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('resets the draggable sheet position after closing and reopening', () => {
+    function ReopenableSheet() {
+      const [visible, setVisible] = useState(true);
+      return (
+        <>
+          <AppModal
+            visible={visible}
+            title="View tasks"
+            onClose={() => setVisible(false)}
+            dragToClose
+          >
+            <Text>Task filters</Text>
+          </AppModal>
+          {!visible ? (
+            <Pressable accessibilityRole="button" accessibilityLabel="Reopen sheet" onPress={() => setVisible(true)} />
+          ) : null}
+        </>
+      );
+    }
+
+    render(<ReopenableSheet />);
+    const gesture = jest
+      .requireMock('react-native-gesture-handler')
+      .__getLatestPanGesture();
+    const sharedValue = jest
+      .requireMock('react-native-reanimated')
+      .__getSharedValues()
+      .at(-1);
+    const animatedStyles = jest.requireMock('react-native-reanimated').__getAnimatedStyles();
+    const backdropStyle = () => animatedStyles.at(-1)();
+
+    fireEvent.press(screen.getByTestId('app-modal-drag-handle'));
+    expect(screen.getByLabelText('View tasks modal')).toBeTruthy();
+
+    act(() => {
+      gesture.onUpdateCallback({ translationY: 120 });
+    });
+    expect(backdropStyle().opacity).toBeLessThan(1);
+    expect(backdropStyle().opacity).toBeGreaterThan(0);
+
+    act(() => {
+      gesture.onUpdateCallback({ translationY: Dimensions.get('window').height });
+    });
+    expect(backdropStyle().opacity).toBe(0);
+
+    act(() => {
+      gesture.onEndCallback({ translationY: 120, velocityY: 0 });
+    });
+    expect(screen.queryByLabelText('View tasks modal')).toBeNull();
+    expect(sharedValue.value).toBe(0);
+
+    fireEvent.press(screen.getByRole('button', { name: 'Reopen sheet' }));
+    expect(screen.getByText('Task filters')).toBeTruthy();
+    expect(sharedValue.value).toBe(0);
   });
 
   it('supports generic yes/no confirmation choices', () => {

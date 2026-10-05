@@ -20,10 +20,12 @@ import { AppIcon } from '../ui/AppIcon';
 
 type TaskDetailsModalProps = {
   visible: boolean;
+  embedded?: boolean;
   task: TaskRecord | null;
   goals: readonly GoalWithMilestones[];
   locale?: string;
   timeFormat?: TimeFormat;
+  backAccessibilityLabel?: string;
   onClose: () => void;
   onEdit: (task: TaskRecord) => void;
   onDelete: (task: TaskRecord) => void;
@@ -47,10 +49,12 @@ function formatDateTime(date: Date, timeFormat: TimeFormat, locale?: string): st
 
 export function TaskDetailsModal({
   visible,
+  embedded = false,
   task,
   goals,
   locale,
   timeFormat = DEFAULT_TIME_FORMAT,
+  backAccessibilityLabel = 'Close Task Details',
   onClose,
   onEdit,
   onDelete,
@@ -98,18 +102,21 @@ export function TaskDetailsModal({
     ? linkedGoal?.milestones.find((milestone) => milestone.id === task.milestoneId)
     : null;
   return (
-    <AppModal visible={visible} onClose={onClose} fullScreen hideHeader>
+    <AppModal visible={visible} onClose={onClose} fullScreen hideHeader embedded={embedded}>
       {task ? (
         <ScrollView
+          testID={embedded ? 'task-details-content' : undefined}
+          style={embedded ? styles.embeddedScroll : undefined}
           contentContainerStyle={[
             styles.content,
+            embedded ? styles.embeddedContent : null,
             { paddingTop: insets.top, paddingBottom: spacing.xl + insets.bottom },
           ]}
         >
           <ScreenHeader
             title="Task Details"
             onPressBack={onClose}
-            backAccessibilityLabel="Close Task Details"
+            backAccessibilityLabel={backAccessibilityLabel}
             trailing={
               <TaskActionMenu
                 onEdit={() => onEdit(task)}
@@ -286,6 +293,8 @@ function InfoLine({ icon, text }: { icon: 'date' | 'calendar' | 'complete'; text
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
     content: { flexGrow: 1, gap: spacing.lg },
+    embeddedScroll: { flex: 1 },
+    embeddedContent: { paddingHorizontal: spacing.lg },
     hero: {
       gap: spacing.md,
       paddingVertical: spacing.md,

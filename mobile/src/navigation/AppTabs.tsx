@@ -51,6 +51,12 @@ import { LegalDocumentScreen } from '../screens/LegalDocumentScreen';
 import { PremiumPaywallScreen } from '../screens/PremiumPaywallScreen';
 import type { ProfileNavigationTarget, ProfileSection } from '../screens/ProfileScreen';
 import { TasksScreen } from '../screens/TasksScreen';
+import {
+  TaskGoalSelectionScreen,
+  TaskSortSelectionScreen,
+  TaskViewScreen,
+} from '../screens/TaskViewScreens';
+import { TaskDetailScreen } from '../screens/TaskDetailScreen';
 import { NoteEditorScreen } from '../screens/NoteEditorScreen';
 import {
   AppTabParamList,
@@ -117,6 +123,10 @@ function PlanNavigator() {
       <PlanStack.Screen name="PlanHome" component={PlanScreen} />
       <PlanStack.Screen name="Goals" component={GoalsScreen} />
       <PlanStack.Screen name="Tasks" component={TasksScreen} />
+      <PlanStack.Screen name="TaskView" component={TaskViewScreen} />
+      <PlanStack.Screen name="TaskGoalSelection" component={TaskGoalSelectionScreen} />
+      <PlanStack.Screen name="TaskSortSelection" component={TaskSortSelectionScreen} />
+      <PlanStack.Screen name="TaskDetail" component={TaskDetailScreen} />
       <PlanStack.Screen name="GoalDetail" component={GoalDetailScreen} />
       <PlanStack.Screen name="FocusMode" component={FocusModeScreen} />
       <PlanStack.Screen name="CreateGoal" component={CreateGoalScreen} />

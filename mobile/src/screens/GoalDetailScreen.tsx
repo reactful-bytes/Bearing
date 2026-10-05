@@ -508,7 +508,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
         message={
           pendingDeleteTask ? `"${pendingDeleteTask.title}" will be permanently deleted.` : ''
         }
-        confirmLabel="Delete task"
+        confirmLabel="Delete"
         confirmVariant="danger"
         confirmAccessibilityLabel="Confirm delete task"
         icon="delete"

@@ -24,6 +24,7 @@ type TaskListDropdownProps = {
   value: string;
   options: readonly TaskListDropdownOption[];
   onSelect: (value: string) => void;
+  edge?: 'start' | 'end';
 };
 
 const MENU_WIDTH = 224;
@@ -37,6 +38,7 @@ export function TaskListDropdown({
   value,
   options,
   onSelect,
+  edge,
 }: TaskListDropdownProps) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
@@ -77,6 +79,8 @@ export function TaskListDropdown({
         onPress={onToggle}
         style={({ pressed }) => [
           styles.trigger,
+          edge === 'start' ? styles.triggerStart : null,
+          edge === 'end' ? styles.triggerEnd : null,
           isOpen ? styles.triggerOpen : null,
           pressed ? styles.pressed : null,
         ]}
@@ -161,6 +165,14 @@ const createStyles = (theme: Theme) =>
       backgroundColor: theme.colors.surface,
       paddingHorizontal: spacing.sm,
       paddingVertical: spacing.xs,
+    },
+    triggerStart: {
+      borderTopLeftRadius: theme.radii.md,
+      borderBottomLeftRadius: theme.radii.md,
+    },
+    triggerEnd: {
+      borderTopRightRadius: theme.radii.md,
+      borderBottomRightRadius: theme.radii.md,
     },
     triggerOpen: { backgroundColor: theme.colors.surfaceBrand },
     triggerTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },

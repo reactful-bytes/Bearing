@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useLayoutEffect } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -7,7 +7,17 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, {
+  cancelAnimation,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { Edge, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,6 +42,8 @@ type AppModalProps = {
   hideHeader?: boolean;
   embedded?: boolean;
   fullScreenEdgeToEdge?: boolean;
+  dragToClose?: boolean;
+  sheetPaddingBottom?: number;
   children: ReactNode;
 };
 
@@ -43,17 +55,49 @@ export function AppModal({
   headerAccessory,
   fullScreen = false,
   hideCloseButton = false,
-  hideCreateFab = true,
+  hideCreateFab = false,
   safeAreaEdges,
   hideHeader = false,
   embedded = false,
   fullScreenEdgeToEdge = false,
+  dragToClose = false,
+  sheetPaddingBottom,
   children,
 }: AppModalProps) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const createFab = useCreateFab();
+  const { height: windowHeight } = useWindowDimensions();
+  const sheetTranslateY = useSharedValue(0);
   const accessibleTitle = title || 'Modal';
+  const sheetPanGesture = Gesture.Pan()
+    .enabled(dragToClose)
+    .activeOffsetY(8)
+    .failOffsetX([-12, 12])
+    .onUpdate((event) => {
+      sheetTranslateY.set(Math.max(0, event.translationY));
+    })
+    .onEnd((event) => {
+      if (event.translationY > 88 || event.velocityY > 700) {
+        sheetTranslateY.set(withTiming(windowHeight, { duration: 180 }, (finished) => {
+          if (finished) runOnJS(onClose)();
+        }));
+        return;
+      }
+
+      sheetTranslateY.set(withSpring(0, { damping: 24, stiffness: 260 }));
+    });
+  const sheetAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: sheetTranslateY.value }],
+  }));
+  const sheetBackdropAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: windowHeight > 0 ? Math.max(0, 1 - sheetTranslateY.value / windowHeight) : 0,
+  }));
+  useLayoutEffect(() => {
+    if (!dragToClose) return;
+    cancelAnimation(sheetTranslateY);
+    sheetTranslateY.set(0);
+  }, [dragToClose, sheetTranslateY, visible]);
 
   if (embedded) {
     return <>{children}</>;
@@ -75,95 +119,151 @@ export function AppModal({
       onRequestClose={onClose}
       accessibilityLabel={`${accessibleTitle} modal`}
     >
-      <KeyboardAvoidingView
-        accessibilityViewIsModal={!fullScreen}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={[styles.backdrop, fullScreen && styles.fullScreenBackdrop]}
-      >
-        {!fullScreen ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Dismiss ${accessibleTitle}`}
-            style={styles.backdropPressArea}
-            onPress={onClose}
-          />
-        ) : null}
-        <SafeAreaView
-          edges={safeAreaEdges ?? (fullScreen ? [] : ['top', 'right', 'bottom', 'left'])}
-          style={[fullScreen ? styles.fullScreenSheet : styles.sheet]}
+      <GestureHandlerRootView style={styles.gestureRoot}>
+        <KeyboardAvoidingView
+          accessibilityViewIsModal={!fullScreen}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={[styles.backdrop, fullScreen && styles.fullScreenBackdrop]}
         >
-          {!hideHeader ? (
-            <View style={styles.header}>
-              {fullScreen ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`${closeLabel} ${accessibleTitle}`}
-                  onPress={onClose}
-                  style={styles.closeIconButton}
-                >
-                  <AppIcon name="back" size={20} decorative />
-                </Pressable>
-              ) : null}
-              {title ? (
-                <Text
-                  accessibilityRole="header"
-                  accessibilityLabel={title}
-                  style={[styles.title, fullScreen && styles.fullScreenTitle]}
-                >
-                  {title}
-                </Text>
-              ) : null}
-              <View style={styles.headerActions}>
-                {headerAccessory}
-                {!fullScreen && !hideCloseButton ? (
-                  <AppButton
-                    label={closeLabel}
-                    variant="secondary"
-                    accessibilityLabel={`${closeLabel} ${accessibleTitle}`}
-                    onPress={onClose}
-                    style={styles.closeButton}
-                    textStyle={styles.closeButtonText}
-                  />
-                ) : (
-                  <View style={styles.headerPlaceholder} />
-                )}
-              </View>
-            </View>
+          {!fullScreen ? (
+            <>
+              <Animated.View
+                pointerEvents="none"
+                style={[styles.scrim, dragToClose ? sheetBackdropAnimatedStyle : null]}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Dismiss ${accessibleTitle}`}
+                style={styles.backdropPressArea}
+                onPress={onClose}
+              />
+            </>
           ) : null}
-          <View
+          <Animated.View
             style={[
-              styles.body,
-              fullScreen && styles.fullScreenBody,
-              fullScreen && fullScreenEdgeToEdge ? styles.fullScreenBodyEdgeToEdge : null,
+              styles.sheetMotion,
+              fullScreen ? styles.fullScreenMotion : null,
+              dragToClose ? sheetAnimatedStyle : null,
             ]}
           >
-            {children}
-          </View>
-        </SafeAreaView>
-        {!fullScreen && !hideCreateFab && createFab ? (
-          <CreateFabGroup
-            visible={createFab.visible}
-            bottomOffset={insets.bottom + spacing.md}
-            rightOffset={spacing.md}
-            onPress={createFab.open}
-            onDismiss={createFab.dismiss}
-            onCreateGoal={() => createFab.create('goal')}
-            onCreateTask={() => createFab.create('task')}
-            onCreateNote={() => createFab.create('note')}
-            onCreateEvent={() => createFab.create('event')}
-            onCreateFocus={() => createFab.create('focus')}
-          />
-        ) : null}
-      </KeyboardAvoidingView>
+            <SafeAreaView
+              edges={
+                safeAreaEdges ??
+                (fullScreen
+                  ? []
+                  : dragToClose
+                    ? ['right', 'bottom', 'left']
+                    : ['top', 'right', 'bottom', 'left'])
+              }
+              style={[
+                fullScreen ? styles.fullScreenSheet : styles.sheet,
+                !fullScreen && dragToClose ? styles.sheetWithDragHandle : null,
+                !fullScreen && sheetPaddingBottom !== undefined
+                  ? { paddingBottom: sheetPaddingBottom }
+                  : null,
+              ]}
+            >
+              {dragToClose ? (
+                <GestureDetector gesture={sheetPanGesture}>
+                  <View testID="app-modal-drag-handle" style={styles.dragHandleContainer}>
+                    <View style={styles.dragHandleTarget}>
+                      <View style={styles.dragHandle} />
+                    </View>
+                  </View>
+                </GestureDetector>
+              ) : null}
+              {!hideHeader ? (
+                <View style={styles.header}>
+                  {fullScreen ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`${closeLabel} ${accessibleTitle}`}
+                      onPress={onClose}
+                      style={styles.closeIconButton}
+                    >
+                      <AppIcon name="back" size={20} decorative />
+                    </Pressable>
+                  ) : null}
+                  {title ? (
+                    <Text
+                      accessibilityRole="header"
+                      accessibilityLabel={title}
+                      style={[styles.title, fullScreen && styles.fullScreenTitle]}
+                    >
+                      {title}
+                    </Text>
+                  ) : null}
+                  <View style={styles.headerActions}>
+                    {headerAccessory}
+                    {!fullScreen && !hideCloseButton ? (
+                      <AppButton
+                        label={closeLabel}
+                        variant="secondary"
+                        accessibilityLabel={`${closeLabel} ${accessibleTitle}`}
+                        onPress={onClose}
+                        style={styles.closeButton}
+                        textStyle={styles.closeButtonText}
+                      />
+                    ) : (
+                      <View style={styles.headerPlaceholder} />
+                    )}
+                  </View>
+                </View>
+              ) : null}
+              <View
+                style={[
+                  styles.body,
+                  fullScreen && styles.fullScreenBody,
+                  fullScreen && fullScreenEdgeToEdge ? styles.fullScreenBodyEdgeToEdge : null,
+                ]}
+              >
+                {children}
+              </View>
+            </SafeAreaView>
+          </Animated.View>
+          {!fullScreen && !hideCreateFab && createFab?.visible ? (
+            <CreateFabGroup
+              visible={createFab.visible}
+              bottomOffset={insets.bottom + spacing.md}
+                rightOffset={spacing.md}
+              onPress={createFab.open}
+              onDismiss={createFab.dismiss}
+              onCreateGoal={() => createFab.create('goal')}
+              onCreateTask={() => createFab.create('task')}
+              onCreateNote={() => createFab.create('note')}
+              onCreateEvent={() => createFab.create('event')}
+              onCreateFocus={() => createFab.create('focus')}
+            />
+          ) : null}
+        </KeyboardAvoidingView>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
+    gestureRoot: { flex: 1 },
+    sheetMotion: { alignSelf: 'stretch' },
+    dragHandleContainer: { alignItems: 'center' },
+    dragHandleTarget: {
+      minWidth: 64,
+      minHeight: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dragHandle: {
+      width: 28,
+      height: 3,
+      borderRadius: 2,
+      backgroundColor: theme.colors.textMuted,
+    },
     backdrop: {
       flex: 1,
       justifyContent: 'flex-end',
+    },
+    scrim: {
+      ...StyleSheet.absoluteFill,
       backgroundColor: theme.colors.scrim,
     },
     backdropPressArea: {
@@ -182,6 +282,12 @@ const createStyles = (theme: Theme) =>
       paddingBottom: spacing['3xl'],
       gap: spacing.lg,
     },
+    sheetWithDragHandle: {
+      maxHeight: '100%',
+      paddingTop: 0,
+      paddingHorizontal: 0,
+    },
+    fullScreenMotion: { flex: 1 },
     header: {
       flexDirection: 'row',
       alignItems: 'center',

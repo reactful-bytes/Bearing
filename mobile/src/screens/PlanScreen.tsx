@@ -678,12 +678,13 @@ export function PlanScreen({ navigation }: PlanScreenProps) {
                       ? 'In focus mode'
                       : (goals.find((goal) => goal.id === task.goalId)?.title ?? 'Recent task')
                   }
-                  onPress={() => navigation.navigate('Tasks')}
+                  onPress={() => navigation.navigate('TaskDetail', { taskId: task.id })}
                 />
               ))
             : null}
         </PlanSurface>
       </View>
+
     </AppScreen>
   );
 }

@@ -12,7 +12,7 @@ import { AppModal } from '../ui/AppModal';
 import { AppIcon } from '../ui/AppIcon';
 import { CreditPackPurchaseModal } from '../premium/CreditPackPurchaseModal';
 import { FormField } from '../ui/FormField';
-import { RowContextMenu } from '../ui/RowContextMenu';
+import { RowContextMenu, closeRowContextMenu } from '../ui/RowContextMenu';
 import { ConfirmationModal } from '../ui/ConfirmationModal';
 import { ScreenHeader } from '../ui/ScreenHeader';
 import { SegmentedControl } from '../ui/SegmentedControl';
@@ -251,7 +251,6 @@ export function CreateGoalModal({
     makeEmptyDraftMilestone(1, today),
   ]);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
-  const [activeActionMenus, setActiveActionMenus] = useState<Set<string>>(() => new Set());
   const [editorDraft, setEditorDraft] = useState<GoalPlanEditorDraft | null>(null);
   const [removeConfirmationVisible, setRemoveConfirmationVisible] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -431,7 +430,7 @@ export function CreateGoalModal({
     setGoalDateParts(buildDefaultGoalDateParts(today));
     setDraftMilestones([makeEmptyDraftMilestone(1, today)]);
     setExpandedRows(new Set());
-    setActiveActionMenus(new Set());
+    closeRowContextMenu();
     setEditorDraft(null);
     setRemoveConfirmationVisible(false);
     setSaving(false);
@@ -472,14 +471,8 @@ export function CreateGoalModal({
     });
   }
 
-  function toggleActionMenu(menuId: string): void {
-    setActiveActionMenus((current) => {
-      return current.has(menuId) ? new Set() : new Set([menuId]);
-    });
-  }
-
   function closeActionMenus(): void {
-    setActiveActionMenus(new Set());
+    closeRowContextMenu();
   }
 
   function openMilestoneEditor(milestone: DraftGoalMilestone, isNew = false): void {
@@ -1164,36 +1157,13 @@ export function CreateGoalModal({
                   delete it.
                 </Text>
               </View>
-              {activeActionMenus.size > 0 ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Dismiss item action menus"
-                  onPress={closeActionMenus}
-                  style={styles.menuDismissOverlay}
-                />
-              ) : null}
               {draftMilestones.map((milestone, index) => {
-                const milestoneMenuId = `milestone:${milestone.id}`;
-                const groupHasOpenMenu =
-                  activeActionMenus.has(milestoneMenuId) ||
-                  milestone.tasks.some((task) =>
-                    activeActionMenus.has(`task:${milestone.id}:${task.id}`),
-                  );
-                const menuLayerStyle =
-                  activeActionMenus.size > 0
-                    ? groupHasOpenMenu
-                      ? styles.menuInteractionLayer
-                      : styles.menuTriggerLayer
-                    : null;
-                const milestoneMenuPositionStyle = activeActionMenus.has(milestoneMenuId)
-                  ? styles.activeMilestoneMenuPosition
-                  : null;
+                const milestoneRowId = `milestone:${milestone.id}`;
+                const milestoneMenuId = `goal-wizard:milestone:${milestone.id}`;
 
                 return (
                   <View key={milestone.id} style={styles.milestoneGroup}>
-                    <View
-                      style={[styles.milestoneHeader, menuLayerStyle, milestoneMenuPositionStyle]}
-                    >
+                    <View style={styles.milestoneHeader}>
                       <Pressable
                         accessibilityRole="button"
                         accessibilityLabel={`${expandedRows.has(`milestone:${milestone.id}`) ? 'Collapse' : 'Expand'} milestone ${index + 1}: ${milestone.title || `Milestone ${index + 1}`}`}
@@ -1203,7 +1173,7 @@ export function CreateGoalModal({
                         }}
                         onPress={() => {
                           closeActionMenus();
-                          toggleExpandedRow(milestoneMenuId);
+                          toggleExpandedRow(milestoneRowId);
                         }}
                         style={({ pressed }) => [styles.milestoneRow, pressed && styles.rowPressed]}
                       >
@@ -1245,10 +1215,9 @@ export function CreateGoalModal({
                         />
                       </Pressable>
                       <RowContextMenu
+                        menuId={milestoneMenuId}
                         accessibilityLabel={`Open actions for milestone ${index + 1}`}
                         menuAccessibilityLabel="milestone actions menu"
-                        visible={activeActionMenus.has(milestoneMenuId)}
-                        onToggle={() => toggleActionMenu(milestoneMenuId)}
                         items={[
                           {
                             label: 'Edit',
@@ -1281,17 +1250,11 @@ export function CreateGoalModal({
                             </Text>
                           ) : null}
                           {milestone.tasks.map((task, taskIndex) => {
-                            const taskMenuId = `task:${milestone.id}:${task.id}`;
+                            const taskMenuId = `goal-wizard:task:${milestone.id}:${task.id}`;
                             return (
                               <View
                                 key={`${milestone.id}:${task.id}`}
-                                style={[
-                                  styles.taskItem,
-                                  activeActionMenus.size > 0 ? styles.menuTriggerLayer : null,
-                                  activeActionMenus.has(taskMenuId)
-                                    ? styles.menuInteractionLayer
-                                    : null,
-                                ]}
+                                style={styles.taskItem}
                               >
                                 <View style={styles.taskRow}>
                                   <Pressable
@@ -1332,10 +1295,9 @@ export function CreateGoalModal({
                                     </View>
                                   </Pressable>
                                   <RowContextMenu
+                                    menuId={taskMenuId}
                                     accessibilityLabel={`Open actions for task ${taskIndex + 1} in milestone ${index + 1}`}
                                     menuAccessibilityLabel="task actions menu"
-                                    visible={activeActionMenus.has(taskMenuId)}
-                                    onToggle={() => toggleActionMenu(taskMenuId)}
                                     items={[
                                       {
                                         label: 'Edit',
@@ -1820,10 +1782,6 @@ const createStyles = (theme: Theme) =>
       alignItems: 'center',
       gap: spacing.xs,
     },
-    activeMilestoneMenuPosition: {
-      zIndex: 13,
-      elevation: 13,
-    },
     milestoneRow: {
       flex: 1,
       flexDirection: 'row',
@@ -1968,13 +1926,6 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.textSecondary,
     },
     reviewSection: { position: 'relative' },
-    menuDismissOverlay: {
-      ...StyleSheet.absoluteFill,
-      zIndex: 10,
-      elevation: 10,
-    },
-    menuTriggerLayer: { zIndex: 11, elevation: 11 },
-    menuInteractionLayer: { zIndex: 12, elevation: 12 },
     editorContent: {
       gap: spacing.lg,
       paddingBottom: spacing.md,

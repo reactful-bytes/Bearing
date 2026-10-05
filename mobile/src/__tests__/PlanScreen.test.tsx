@@ -1,8 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { StyleSheet } from 'react-native';
 
 import { BearingEvent, CalendarDisplayEvent } from '../features/calendar/calendarTypes';
 import { GoalWithMilestones } from '../features/goals/goalTypes';
+import { spacing } from '../design/tokens';
 import { NoteRecord } from '../features/notes/noteTypes';
 import { UserProfileRecord } from '../features/profile/profileTypes';
 import { TaskRecord } from '../features/tasks/taskTypes';
@@ -13,6 +15,7 @@ import { useNotes } from '../features/notes/useNotes';
 import { useTasks } from '../features/tasks/useTasks';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { PlanScreen } from '../screens/PlanScreen';
+import { TaskDetailScreen } from '../screens/TaskDetailScreen';
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(() => ({ navigate: mockRootNavigate })),
@@ -20,6 +23,12 @@ jest.mock('@react-navigation/native', () => ({
 
 jest.mock('../features/calendar/useCalendarEvents', () => ({
   useCalendarEvents: jest.fn(),
+}));
+jest.mock('../features/calendar/useCalendarPublication', () => ({
+  useCalendarPublication: jest.fn(() => ({
+    publicationCalendarTitle: null,
+    publishEvent: jest.fn(async () => undefined),
+  })),
 }));
 jest.mock('../features/focus/focusSession', () => ({
   useFocusSession: jest.fn(),
@@ -358,7 +367,54 @@ describe('PlanScreen', () => {
     expect(screen.getByText('Task 1')).toBeTruthy();
     expect(screen.getByText('In focus mode')).toBeTruthy();
     fireEvent.press(screen.getByTestId('plan-task-task-1'));
-    expect(stackNavigate).toHaveBeenCalledWith('Tasks');
+    expect(stackNavigate).toHaveBeenCalledWith('TaskDetail', { taskId: 'task-1' });
+    expect(screen.queryByRole('header', { name: 'Task Details' })).toBeNull();
+  });
+
+  it('renders task details as a navigation screen whose back action returns to Plan', () => {
+    const task = makeTask(1);
+    const goBack = jest.fn();
+    mockUseTasks.mockReturnValue({
+      tasks: [task],
+      uiState: 'ready',
+      retry: jest.fn(),
+      updateTask: jest.fn(async () => undefined),
+      completeTask: jest.fn(async () => undefined),
+      reactivateTask: jest.fn(async () => undefined),
+      convertTaskToEvent: jest.fn(async () => ({
+        eventId: 'event-1',
+        eventInput: {
+          title: task.title,
+          description: task.description,
+          startAt: new Date(),
+          endAt: new Date(),
+          timezone: 'UTC',
+        },
+        created: true,
+      })),
+      deleteTask: jest.fn(async () => undefined),
+    } as unknown as ReturnType<typeof useTasks>);
+
+    render(
+      <TaskDetailScreen
+        route={{ params: { taskId: task.id } }}
+        navigation={{ goBack, navigate: jest.fn() } as never}
+      />,
+    );
+
+    expect(screen.getByRole('header', { name: 'Task Details' })).toBeTruthy();
+    expect(screen.getByLabelText('Back to Plan')).toBeTruthy();
+    expect(screen.queryByLabelText('Task Details modal')).toBeNull();
+    expect(
+      StyleSheet.flatten(screen.getByTestId('task-detail-screen').props.style).paddingHorizontal,
+    ).toBeUndefined();
+    expect(
+      StyleSheet.flatten(
+        screen.getByTestId('task-details-content').props.contentContainerStyle,
+      ).paddingHorizontal,
+    ).toBe(spacing.lg);
+    fireEvent.press(screen.getByLabelText('Back to Plan'));
+    expect(goBack).toHaveBeenCalledTimes(1);
   });
 
   it('excludes draft-linked tasks from the Plan task surface', () => {

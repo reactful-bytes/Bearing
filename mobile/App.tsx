@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AuthShell } from './src/components/auth/AuthShell';
 import { SignedOutAuth } from './src/components/auth/SignedOutAuth';
@@ -176,12 +177,14 @@ export default function App() {
   const showFoundationGallery = process.env.EXPO_PUBLIC_FOUNDATION_GALLERY === 'true';
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <ThemedNavigationBar />
-        {showFoundationGallery ? <FoundationGallery /> : <AppContent />}
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <ThemedNavigationBar />
+          {showFoundationGallery ? <FoundationGallery /> : <AppContent />}
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { NavigationProp, useNavigation } from '@react-navigation/native';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
@@ -10,28 +12,37 @@ import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { StartNowModal } from '../components/tasks/StartNowModal';
 import { TaskDetailsModal } from '../components/tasks/TaskDetailsModal';
 import { TaskHierarchyRow } from '../components/tasks/TaskHierarchyRow';
-import { TaskListDropdown } from '../components/tasks/TaskListDropdown';
 import { TaskListRow } from '../components/tasks/TaskListRow';
 import { AppCard } from '../components/ui/AppCard';
 import { ConfirmationModal } from '../components/ui/ConfirmationModal';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
+import { IconButton } from '../components/ui/IconButton';
+import { AppIcon } from '../components/ui/AppIcon';
 import { layout, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { useTasks } from '../features/tasks/useTasks';
 import { useGoals } from '../features/goals/useGoals';
+import type { GoalWithMilestones } from '../features/goals/goalTypes';
 import { CreateTaskInput, TaskRecord, UpdateTaskInput } from '../features/tasks/taskTypes';
-import { AppTabParamList, PlanStackParamList } from '../navigation/navigationTypes';
+import {
+  AppTabParamList,
+  PlanStackParamList,
+  TaskFilter,
+  TaskGroupBy,
+  TaskSortBy,
+} from '../navigation/navigationTypes';
+import { TASK_SORT_OPTIONS } from './taskViewOptions';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { DEFAULT_TIME_FORMAT } from '../features/profile/timeFormat';
 
-type TaskFilter = 'active' | 'completed' | 'all';
-type TaskGroupBy = 'none' | 'goal' | 'milestone';
-type TaskSortBy =
-  'dueDate:asc' | 'dueDate:desc' | 'updated:asc' | 'updated:desc' | 'title:asc' | 'title:desc';
-type TaskDropdown = 'status' | 'group' | 'sort';
+type TaskPageSize = 10 | 15 | 25;
+type TasksNavigation = CompositeNavigationProp<
+  NativeStackNavigationProp<PlanStackParamList, 'Tasks'>,
+  BottomTabNavigationProp<AppTabParamList, 'Plan'>
+>;
 type TaskMilestoneGroup = { id: string; label: string; tasks: TaskRecord[] };
 type TaskGroup = {
   id: string;
@@ -70,6 +81,42 @@ function compareTasks(left: TaskRecord, right: TaskRecord, sortBy: TaskSortBy): 
   return left.title.localeCompare(right.title);
 }
 
+function filterTasksForSearch(
+  tasks: TaskRecord[],
+  query: string,
+  groupBy: TaskGroupBy,
+  goals: GoalWithMilestones[],
+): TaskRecord[] {
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  if (!normalizedQuery) return tasks;
+
+  const matchingGoalIds = new Set(
+    goals
+      .filter((goal) => goal.title.toLocaleLowerCase().includes(normalizedQuery))
+      .map((goal) => goal.id),
+  );
+  const matchingMilestoneKeys = new Set(
+    groupBy === 'milestone'
+      ? goals.flatMap((goal) =>
+          goal.milestones
+            .filter((milestone) => milestone.title.toLocaleLowerCase().includes(normalizedQuery))
+            .map((milestone) => `${goal.id}:${milestone.id}`),
+        )
+      : [],
+  );
+
+  return tasks.filter((task) => {
+    if (task.title.toLocaleLowerCase().includes(normalizedQuery)) return true;
+    if (!task.goalId || groupBy === 'none') return false;
+    if (matchingGoalIds.has(task.goalId)) return true;
+    return (
+      groupBy === 'milestone' &&
+      task.milestoneId !== null &&
+      matchingMilestoneKeys.has(`${task.goalId}:${task.milestoneId}`)
+    );
+  });
+}
+
 type TasksScreenProps = {
   route?: { params?: PlanStackParamList['Tasks'] };
   navigation?: { setParams: (params: PlanStackParamList['Tasks']) => void };
@@ -78,7 +125,7 @@ type TasksScreenProps = {
 export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenProps = {}) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<NavigationProp<AppTabParamList>>();
+  const navigation = useNavigation<TasksNavigation>();
   const { profile } = useUserProfile();
   const { goals, uiState: goalsUiState } = useGoals();
   const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
@@ -98,22 +145,41 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
   const [taskFilter, setTaskFilter] = useState<TaskFilter>('active');
   const [groupBy, setGroupBy] = useState<TaskGroupBy>('none');
   const [sortBy, setSortBy] = useState<TaskSortBy>('dueDate:asc');
-  const [activeDropdown, setActiveDropdown] = useState<TaskDropdown | null>(null);
+  const [selectedGoalIds, setSelectedGoalIds] = useState<Set<string>>(() => new Set());
+  const [taskSearch, setTaskSearch] = useState('');
+  const [pageSize, setPageSize] = useState<TaskPageSize>(15);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pageNumberInput, setPageNumberInput] = useState('1');
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set());
   const [pendingDeleteTask, setPendingDeleteTask] = useState<TaskRecord | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [scheduleTaskId, setScheduleTaskId] = useState<string | null>(null);
   const [startNowTaskId, setStartNowTaskId] = useState<string | null>(null);
+  const createTaskParam = route?.params?.createTask;
+  const viewResultParam = route?.params?.viewResult;
 
   useEffect(() => {
-    if (!route?.params?.createTask) {
+    if (!createTaskParam) {
       return;
     }
 
     setAddTaskVisible(true);
     stackNavigation?.setParams({ createTask: undefined });
-  }, [route?.params?.createTask, stackNavigation]);
+  }, [createTaskParam, stackNavigation]);
+
+  useEffect(() => {
+    if (!viewResultParam) return;
+    setTaskFilter(viewResultParam.taskFilter);
+    setGroupBy(viewResultParam.groupBy);
+    setSortBy(viewResultParam.sortBy);
+    setSelectedGoalIds(new Set(viewResultParam.selectedGoalIds));
+    setTaskSearch(viewResultParam.taskSearch);
+    setCollapsedGroups(new Set());
+    setPageNumber(1);
+    setPageNumberInput('1');
+    stackNavigation?.setParams({ createTask: undefined, viewResult: undefined });
+  }, [stackNavigation, viewResultParam]);
 
   const draftGoalIds = useMemo(
     () => new Set(goals.filter((goal) => goal.status === 'draft').map((goal) => goal.id)),
@@ -122,6 +188,14 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
   const operationalTasks = useMemo(
     () => tasks.filter((task) => !task.goalId || !draftGoalIds.has(task.goalId)),
     [draftGoalIds, tasks],
+  );
+  const goalIdsWithTasks = useMemo(
+    () => new Set(operationalTasks.flatMap((task) => (task.goalId ? [task.goalId] : []))),
+    [operationalTasks],
+  );
+  const selectableGoals = useMemo(
+    () => goals.filter((goal) => goal.status !== 'draft' && goalIdsWithTasks.has(goal.id)),
+    [goalIdsWithTasks, goals],
   );
   const selectedTask = useMemo(
     () => operationalTasks.find((task) => task.id === selectedTaskId) ?? null,
@@ -139,18 +213,37 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
     () => operationalTasks.find((task) => task.id === startNowTaskId) ?? null,
     [operationalTasks, startNowTaskId],
   );
-  const activeTaskCount = useMemo(
-    () => operationalTasks.filter((task) => task.status === 'active').length,
-    [operationalTasks],
+  const tasksForSelectedGoals = useMemo(
+    () =>
+      operationalTasks.filter(
+        (task) => selectedGoalIds.size === 0 || (task.goalId !== null && selectedGoalIds.has(task.goalId)),
+      ),
+    [operationalTasks, selectedGoalIds],
   );
-  const completedTaskCount = operationalTasks.length - activeTaskCount;
+  const searchMatchedTasks = useMemo(
+    () => filterTasksForSearch(tasksForSelectedGoals, taskSearch, groupBy, selectableGoals),
+    [groupBy, selectableGoals, taskSearch, tasksForSelectedGoals],
+  );
+  const selectedSort = TASK_SORT_OPTIONS.find((option) => option.value === sortBy)!;
+  const taskViewSummary = [
+    taskFilter === 'all' ? 'All tasks' : taskFilter === 'active' ? 'Active' : 'Completed',
+    groupBy === 'none' ? null : groupBy === 'goal' ? 'Goal' : 'Milestone',
+    selectedSort.summary,
+    selectedGoalIds.size > 0 ? `${selectedGoalIds.size} ${selectedGoalIds.size === 1 ? 'goal' : 'goals'}` : null,
+    taskSearch.trim() ? 'Search' : null,
+  ].filter(Boolean).join(' · ');
+  const taskViewAccessibilityLabel = [
+    `Task view: ${taskFilter === 'all' ? 'all tasks' : taskFilter}, ${groupBy === 'none' ? 'ungrouped' : `grouped by ${groupBy}`}, ${selectedSort.label.toLowerCase()}`,
+    selectedGoalIds.size > 0 ? `${selectedGoalIds.size} selected goals` : null,
+    taskSearch.trim() ? `search ${taskSearch.trim()}` : null,
+  ].filter(Boolean).join(', ');
   const visibleTasks = useMemo(() => {
     const filtered =
       taskFilter === 'all'
-        ? operationalTasks
-        : operationalTasks.filter((task) => task.status === taskFilter);
+        ? searchMatchedTasks
+        : searchMatchedTasks.filter((task) => task.status === taskFilter);
     return [...filtered].sort((left, right) => compareTasks(left, right, sortBy));
-  }, [operationalTasks, sortBy, taskFilter]);
+  }, [searchMatchedTasks, sortBy, taskFilter]);
   const taskGroups = useMemo(() => {
     if (groupBy === 'none') return [];
     const groups = new Map<string, TaskGroup>();
@@ -185,6 +278,14 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
     }
     return [...groups.values()].sort((left, right) => left.label.localeCompare(right.label));
   }, [goals, groupBy, visibleTasks]);
+  const pageCount = Math.max(1, Math.ceil(visibleTasks.length / pageSize));
+  const currentPage = Math.min(pageNumber, pageCount);
+  const pageTasks = visibleTasks.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => {
+    if (pageNumber !== currentPage) setPageNumber(currentPage);
+    setPageNumberInput(String(currentPage));
+  }, [currentPage, pageNumber]);
 
   async function handleCreateTask(input: CreateTaskInput): Promise<void> {
     await createTask(input);
@@ -235,6 +336,33 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
       else next.add(id);
       return next;
     });
+  }
+
+  function setAllGroupsExpanded(expanded: boolean): void {
+    if (expanded) {
+      setCollapsedGroups(new Set());
+      return;
+    }
+
+    setCollapsedGroups(
+      new Set(
+        taskGroups.flatMap((group) => [
+          `goal:${group.id}`,
+          ...group.milestones.map((milestone) => `milestone:${group.id}:${milestone.id}`),
+        ]),
+      ),
+    );
+  }
+
+  function selectPage(page: number): void {
+    const nextPage = Math.max(1, Math.min(page, pageCount));
+    setPageNumber(nextPage);
+    setPageNumberInput(String(nextPage));
+  }
+
+  function commitPageInput(): void {
+    const requestedPage = Number.parseInt(pageNumberInput, 10);
+    selectPage(Number.isNaN(requestedPage) ? currentPage : requestedPage);
   }
 
   function renderTaskRow(task: TaskRecord, nested = false) {
@@ -323,76 +451,77 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
         ]}
       >
         <ScreenHeader title="Tasks" onPressBack={() => navigation.goBack()} />
-        <View
-          accessibilityRole="toolbar"
-          accessibilityLabel="Task list controls"
-          style={[styles.listControls, activeDropdown ? styles.listControlsRaised : null]}
-        >
-          <TaskListDropdown
-            title="Status"
-            accessibilityLabel="Task status"
-            icon="filter"
-            isOpen={activeDropdown === 'status'}
-            onToggle={() =>
-              setActiveDropdown((current) => (current === 'status' ? null : 'status'))
-            }
-            value={taskFilter}
-            options={[
-              { value: 'active', label: 'Active', icon: 'active', count: activeTaskCount },
-              {
-                value: 'completed',
-                label: 'Completed',
-                icon: 'completed',
-                count: completedTaskCount,
-              },
-              { value: 'all', label: 'All tasks', icon: 'tasks', count: operationalTasks.length },
-            ]}
-            onSelect={(value) => {
-              setTaskFilter(value as TaskFilter);
-              setActiveDropdown(null);
+        <View style={styles.taskSearchField}>
+          <AppIcon name="search" size={18} color={styles.searchIcon.color} decorative />
+          <TextInput
+            accessibilityLabel="Search tasks by name or title"
+            autoCapitalize="none"
+            onChangeText={(value) => {
+              setTaskSearch(value);
+              selectPage(1);
             }}
+            placeholder="Search tasks"
+            placeholderTextColor={styles.searchPlaceholder.color}
+            returnKeyType="search"
+            style={styles.taskSearchInput}
+            value={taskSearch}
           />
-          <View pointerEvents="none" style={styles.controlDivider} />
-          <TaskListDropdown
-            title="Group"
-            accessibilityLabel="Task grouping"
-            icon="tasks"
-            isOpen={activeDropdown === 'group'}
-            onToggle={() => setActiveDropdown((current) => (current === 'group' ? null : 'group'))}
-            value={groupBy}
-            options={[
-              { value: 'none', label: 'None', icon: 'tasks' },
-              { value: 'goal', label: 'Goal', icon: 'goal' },
-              { value: 'milestone', label: 'Milestone', icon: 'goalMilestone' },
-            ]}
-            onSelect={(value) => {
-              setGroupBy(value as TaskGroupBy);
-              setCollapsedGroups(new Set());
-              setActiveDropdown(null);
-            }}
-          />
-          <View pointerEvents="none" style={styles.controlDivider} />
-          <TaskListDropdown
-            title="Sort"
-            accessibilityLabel="Task sorting"
-            icon="date"
-            isOpen={activeDropdown === 'sort'}
-            onToggle={() => setActiveDropdown((current) => (current === 'sort' ? null : 'sort'))}
-            value={sortBy}
-            options={[
-              { value: 'dueDate:asc', label: 'Due date ascending', icon: 'dateAscending' },
-              { value: 'dueDate:desc', label: 'Due date descending', icon: 'dateDescending' },
-              { value: 'updated:asc', label: 'Updated ascending', icon: 'updatedAscending' },
-              { value: 'updated:desc', label: 'Updated descending', icon: 'updatedDescending' },
-              { value: 'title:asc', label: 'Title A to Z', icon: 'textAscending' },
-              { value: 'title:desc', label: 'Title Z to A', icon: 'textDescending' },
-            ]}
-            onSelect={(value) => {
-              setSortBy(value as TaskSortBy);
-              setActiveDropdown(null);
-            }}
-          />
+          {taskSearch.length > 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Clear task search"
+              onPress={() => setTaskSearch('')}
+              style={styles.clearTaskSearch}
+            >
+              <AppIcon name="close" size={16} color={styles.searchIcon.color} decorative />
+            </Pressable>
+          ) : null}
         </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={taskViewAccessibilityLabel}
+          onPress={() =>
+            navigation.navigate('TaskView', {
+              draft: {
+                taskFilter,
+                groupBy,
+                sortBy,
+                selectedGoalIds: [...selectedGoalIds],
+                taskSearch,
+              },
+              goals: selectableGoals.map(({ id, title }) => ({ id, title })),
+            })
+          }
+          style={({ pressed }) => [styles.viewControlsTrigger, pressed ? styles.pressed : null]}
+        >
+          <AppIcon name="filter" size={18} color={styles.viewControlsIcon.color} decorative />
+          <Text numberOfLines={1} style={styles.viewControlsSummary}>
+            {taskViewSummary}
+          </Text>
+          <AppIcon name="expand" size={16} color={styles.viewControlsIcon.color} decorative />
+        </Pressable>
+        {groupBy !== 'none' && taskGroups.length > 0 ? (
+          <View style={styles.hierarchyActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Expand all groups"
+              onPress={() => setAllGroupsExpanded(true)}
+              style={({ pressed }) => [styles.hierarchyAction, pressed ? styles.pressed : null]}
+            >
+              <AppIcon name="expand" size={16} color={styles.viewControlsIcon.color} decorative />
+              <Text style={styles.hierarchyActionText}>Expand all</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Collapse all groups"
+              onPress={() => setAllGroupsExpanded(false)}
+              style={({ pressed }) => [styles.hierarchyAction, pressed ? styles.pressed : null]}
+            >
+              <AppIcon name="collapse" size={16} color={styles.viewControlsIcon.color} decorative />
+              <Text style={styles.hierarchyActionText}>Collapse all</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         {uiState === 'loading' ? (
           <AppCard>
@@ -412,14 +541,18 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
         {(uiState === 'empty' || uiState === 'ready') && visibleTasks.length === 0 ? (
           <AppCard>
             <Text style={styles.stateTitle}>
-              {taskFilter === 'active'
+              {taskSearch.trim() || selectedGoalIds.size > 0
+                ? 'No matching tasks.'
+                : taskFilter === 'active'
                 ? 'No active tasks.'
                 : taskFilter === 'completed'
                   ? 'No completed tasks.'
                   : 'No tasks yet.'}
             </Text>
             <Text style={styles.stateDescription}>
-              {taskFilter === 'active'
+              {taskSearch.trim() || selectedGoalIds.size > 0
+                ? 'Try a different search or adjust the task filters.'
+                : taskFilter === 'active'
                 ? 'Add a task to capture work before it belongs on the calendar.'
                 : taskFilter === 'completed'
                   ? 'Tasks you mark complete will appear here.'
@@ -430,7 +563,11 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
 
         {uiState === 'ready' || uiState === 'empty'
           ? groupBy === 'none'
-            ? visibleTasks.map((task) => renderTaskRow(task))
+            ? (
+                <View testID="flat-task-list" style={styles.flatTaskList}>
+                  {pageTasks.map((task) => renderTaskRow(task))}
+                </View>
+              )
             : taskGroups.map((group) => {
                 const rootKey = `goal:${group.id}`;
                 const rootCollapsed = collapsedGroups.has(rootKey);
@@ -461,9 +598,11 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
                       >
                         {group.tasks.length > 0 ? (
                           <>
-                            <Text accessibilityRole="header" style={styles.groupTaskHeader}>
-                              TASKS
-                            </Text>
+                            {group.kind !== 'unlinked' ? (
+                              <Text accessibilityRole="header" style={styles.groupTaskHeader}>
+                                TASKS
+                              </Text>
+                            ) : null}
                             {group.tasks.map((task) => renderTaskRow(task, group.kind === 'goal'))}
                           </>
                         ) : null}
@@ -507,13 +646,65 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
                 );
               })
           : null}
-        {activeDropdown ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Dismiss task list menus"
-            onPress={() => setActiveDropdown(null)}
-            style={styles.menuDismissLayer}
-          />
+        {groupBy === 'none' && visibleTasks.length > 0 ? (
+          <View style={styles.pagination}>
+            <Text style={styles.paginationSummary}>
+              Showing {(currentPage - 1) * pageSize + 1}-
+              {Math.min(currentPage * pageSize, visibleTasks.length)} of {visibleTasks.length}
+            </Text>
+            <View style={styles.pageNavigation}>
+              <IconButton
+                name="back"
+                accessibilityLabel="Previous page"
+                disabled={currentPage === 1}
+                onPress={() => selectPage(currentPage - 1)}
+              />
+              <TextInput
+                accessibilityLabel="Page number"
+                keyboardType="number-pad"
+                returnKeyType="done"
+                value={pageNumberInput}
+                onChangeText={(value) => setPageNumberInput(value.replace(/\D/g, ''))}
+                onEndEditing={commitPageInput}
+                style={styles.pageNumberInput}
+              />
+              <Text style={styles.pageCount}>of {pageCount}</Text>
+              <IconButton
+                name="forward"
+                accessibilityLabel="Next page"
+                disabled={currentPage === pageCount}
+                onPress={() => selectPage(currentPage + 1)}
+              />
+            </View>
+            <View style={styles.pageSizeSelector}>
+              <Text style={styles.pageSizeLabel}>Tasks per page</Text>
+              {([10, 15, 25] as const).map((size) => (
+                <Pressable
+                  key={size}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${size} tasks per page`}
+                  accessibilityState={{ selected: pageSize === size }}
+                  onPress={() => {
+                    setPageSize(size);
+                    selectPage(1);
+                  }}
+                  style={[
+                    styles.pageSizeOption,
+                    pageSize === size ? styles.pageSizeOptionSelected : null,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.pageSizeOptionText,
+                      pageSize === size ? styles.pageSizeOptionTextSelected : null,
+                    ]}
+                  >
+                    {size}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
         ) : null}
       </ScrollView>
 
@@ -592,7 +783,7 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
         message={
           pendingDeleteTask ? `“${pendingDeleteTask.title}” will be permanently deleted.` : ''
         }
-        confirmLabel="Delete task"
+        confirmLabel="Delete"
         confirmVariant="danger"
         confirmAccessibilityLabel="Confirm delete task"
         icon="delete"
@@ -625,19 +816,73 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.textPrimary,
       marginTop: spacing.sm,
     },
-    listControls: {
-      position: 'relative',
+    viewControlsTrigger: {
+      minHeight: 48,
       flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
       borderWidth: 1,
       borderColor: theme.colors.border,
       borderRadius: theme.radii.md,
       backgroundColor: theme.colors.surface,
+      paddingHorizontal: spacing.md,
     },
-    listControlsRaised: { zIndex: 20, elevation: 20 },
-    controlDivider: {
-      width: StyleSheet.hairlineWidth,
-      backgroundColor: theme.colors.border,
+    viewControlsIcon: { color: theme.colors.brand },
+    viewControlsSummary: {
+      ...typography.helper,
+      color: theme.colors.text,
+      fontWeight: '600',
+      flex: 1,
     },
+    taskSearchField: {
+      minHeight: 48,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: theme.radii.md,
+      backgroundColor: theme.colors.surface,
+      paddingLeft: spacing.md,
+    },
+    searchIcon: { color: theme.colors.textSecondary },
+    searchPlaceholder: { color: theme.colors.textSecondary },
+    taskSearchInput: {
+      flex: 1,
+      minWidth: 0,
+      minHeight: 46,
+      color: theme.colors.text,
+      ...typography.helper,
+    },
+    clearTaskSearch: {
+      width: 44,
+      height: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    hierarchyActions: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    hierarchyAction: {
+      flex: 1,
+      minHeight: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: theme.radii.sm,
+      paddingHorizontal: spacing.sm,
+    },
+    hierarchyActionText: {
+      ...typography.caption,
+      color: theme.colors.textPrimary,
+      fontWeight: '600',
+    },
+    flatTaskList: { gap: spacing.xs },
+    pressed: { opacity: 0.72 },
     taskGroup: { gap: spacing.xs },
     groupChildren: {
       gap: spacing.xs,
@@ -660,18 +905,41 @@ const createStyles = (theme: Theme) =>
     },
     milestoneTasks: {
       gap: spacing.xs,
-      marginLeft: spacing.lg,
+      marginLeft: spacing['2xl'],
       paddingLeft: spacing.sm,
       borderLeftWidth: 2,
       borderLeftColor: theme.colors.border,
     },
     nestedTask: { paddingLeft: spacing.xs },
-    menuDismissLayer: {
-      position: 'absolute',
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0,
-      zIndex: 10,
+    pagination: { alignItems: 'center', gap: spacing.sm, paddingTop: spacing.sm },
+    paginationSummary: { ...typography.caption, color: theme.colors.textSecondary },
+    pageNavigation: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    pageNumberInput: {
+      width: 52,
+      height: 44,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: theme.radii.sm,
+      color: theme.colors.text,
+      textAlign: 'center',
+      ...typography.helper,
     },
+    pageCount: { ...typography.helper, color: theme.colors.textSecondary },
+    pageSizeSelector: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    pageSizeLabel: {
+      ...typography.caption,
+      color: theme.colors.textSecondary,
+      marginRight: spacing.xs,
+    },
+    pageSizeOption: {
+      minWidth: 38,
+      height: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.sm,
+      paddingHorizontal: spacing.sm,
+    },
+    pageSizeOptionSelected: { backgroundColor: theme.colors.surfaceBrand },
+    pageSizeOptionText: { ...typography.caption, color: theme.colors.textSecondary },
+    pageSizeOptionTextSelected: { color: theme.colors.brand, fontWeight: '700' },
   });

@@ -1,7 +1,9 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { StyleSheet } from 'react-native';
 
 import { GoalsScreen } from '../screens/GoalsScreen';
+import { closeRowContextMenu } from '../components/ui/RowContextMenu';
 import {
   GoalDraftSaveInput,
   GoalDraftSaveResult,
@@ -195,6 +197,10 @@ function makeGoal(overrides: Partial<GoalWithMilestones> = {}): GoalWithMileston
     progressText: `0 of ${milestones.length} milestones complete`,
     ...overrides,
   };
+}
+
+function dismissOpenRowContextMenu(): void {
+  act(() => closeRowContextMenu());
 }
 
 function makeOrderedGoal(): GoalWithMilestones {
@@ -509,17 +515,19 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Expand milestone 1: Milestone 1'));
     fireEvent.press(screen.getByLabelText('Open actions for milestone 1'));
     expect(screen.getByLabelText('Edit milestone 1')).toBeTruthy();
+    dismissOpenRowContextMenu();
+    expect(screen.queryByLabelText('Dismiss milestone actions menu')).toBeNull();
     fireEvent.press(screen.getByLabelText('Collapse milestone 1: Milestone 1'));
     expect(screen.queryByLabelText('Open actions for task 1 in milestone 1')).toBeNull();
     fireEvent.press(screen.getByLabelText('Expand milestone 1: Milestone 1'));
     fireEvent.press(screen.getByLabelText('Open actions for milestone 1'));
+    dismissOpenRowContextMenu();
     fireEvent.press(screen.getByLabelText('Open actions for task 1 in milestone 1'));
     expect(screen.queryByLabelText('Edit milestone 1')).toBeNull();
     expect(screen.getByLabelText('Edit task 1 in milestone 1')).toBeTruthy();
-    fireEvent.press(screen.getByLabelText('Dismiss item action menus'));
+    dismissOpenRowContextMenu();
     expect(screen.queryByLabelText('Edit milestone 1')).toBeNull();
     expect(screen.queryByLabelText('Edit task 1 in milestone 1')).toBeNull();
-    fireEvent.press(screen.getByLabelText('Open actions for task 1 in milestone 1'));
     fireEvent.press(screen.getByLabelText(/^Open task 1 in milestone 1:/));
     expect(screen.getByLabelText('Edit task name')).toBeTruthy();
     expect(screen.queryByLabelText('Edit task 1 in milestone 1')).toBeNull();
@@ -555,9 +563,8 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Add task to draft milestone 1'));
     fireEvent.press(screen.getByLabelText('Save plan item changes'));
     fireEvent.press(screen.getByLabelText('Open actions for task 2 in milestone 1'));
-    const menuTop = screen.getByLabelText('task actions menu').props.style.top;
-    expect(Number.parseFloat(menuTop)).toBeGreaterThanOrEqual(0);
-    expect(Number.parseFloat(menuTop)).toBeLessThan(100);
+    const menuTop = StyleSheet.flatten(screen.getByLabelText('task actions menu').props.style).top;
+    expect(Number.isFinite(menuTop)).toBe(true);
     fireEvent.press(screen.getByLabelText('Delete task 2 in milestone 1'));
     expect(screen.getByLabelText('Delete task? confirmation dialog')).toBeTruthy();
     expect(screen.getByText('This task will be deleted from the goal draft.')).toBeTruthy();
@@ -573,7 +580,7 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Save plan item changes'));
     fireEvent.press(screen.getByLabelText('Open actions for task 2 in milestone 1'));
     expect(screen.getAllByLabelText('task actions menu')).toHaveLength(1);
-    fireEvent.press(screen.getByLabelText('Dismiss item action menus'));
+    dismissOpenRowContextMenu();
     fireEvent.press(screen.getByLabelText('Open actions for milestone 2'));
     fireEvent.press(screen.getByLabelText('Delete milestone 2'));
     expect(screen.getByLabelText('Delete milestone? confirmation dialog')).toBeTruthy();

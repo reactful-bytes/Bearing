@@ -30,7 +30,7 @@ export function TaskListRow({
   const completed = task.status === 'completed';
 
   return (
-    <View style={styles.row}>
+    <View testID={`task-list-row-${task.id}`} style={styles.row}>
       {onComplete ? (
         <Pressable
           accessibilityRole="checkbox"
@@ -83,8 +83,6 @@ const createStyles = (theme: Theme) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: theme.colors.border,
       paddingVertical: spacing.xs,
     },
     completeButton: {

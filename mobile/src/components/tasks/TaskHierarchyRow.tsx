@@ -17,6 +17,7 @@ type TaskHierarchyRowProps = {
   accessibilityLabel: string;
   onPress: () => void;
   onToggleExpanded?: () => void;
+  testID?: string;
 };
 
 const ROW_ICONS: Record<TaskHierarchyRowProps['kind'], AppIconName> = {
@@ -36,11 +37,12 @@ export function TaskHierarchyRow({
   accessibilityLabel,
   onPress,
   onToggleExpanded,
+  testID,
 }: TaskHierarchyRowProps) {
   const styles = useThemedStyles(createStyles);
 
   return (
-    <View style={[styles.row, nested ? styles.nestedRow : null]}>
+    <View testID={testID} style={[styles.row, nested ? styles.nestedRow : null]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
@@ -104,13 +106,9 @@ const createStyles = (theme: Theme) =>
       minHeight: 68,
       flexDirection: 'row',
       alignItems: 'center',
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: theme.colors.border,
     },
     nestedRow: {
       marginLeft: spacing.lg,
-      borderLeftWidth: 2,
-      borderLeftColor: theme.colors.border,
     },
     main: {
       flex: 1,
