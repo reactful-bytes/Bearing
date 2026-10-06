@@ -37,6 +37,10 @@ jest.mock('../screens/GoalDetailScreen', () => ({
   GoalDetailScreen: () => null,
 }));
 
+jest.mock('../screens/TaskDetailScreen', () => ({
+  TaskDetailScreen: () => null,
+}));
+
 jest.mock('../screens/FocusModeScreen', () => ({
   FocusModeScreen: () => null,
 }));
@@ -63,6 +67,12 @@ jest.mock('../screens/LegalDocumentScreen', () => ({
 
 jest.mock('../screens/TasksScreen', () => ({
   TasksScreen: () => null,
+}));
+
+jest.mock('../screens/TaskViewScreens', () => ({
+  TaskGoalSelectionScreen: () => null,
+  TaskSortSelectionScreen: () => null,
+  TaskViewScreen: () => null,
 }));
 
 jest.mock('../screens/NoteEditorScreen', () => ({

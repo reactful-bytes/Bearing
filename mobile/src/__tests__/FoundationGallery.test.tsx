@@ -46,12 +46,13 @@ describe('FoundationGallery', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Month' }));
     expect(screen.getByText('month view selected.')).toBeTruthy();
 
-    fireEvent.press(
-      screen.getByRole('checkbox', { name: 'Mark Lay out running clothes complete' }),
+    const task = screen.getByRole('button', { name: 'Open task Lay out running clothes' });
+    fireEvent(task, 'accessibilityAction', { nativeEvent: { actionName: 'complete' } });
+    await waitFor(() =>
+      expect(screen.getByText('Lay out running clothes').props.style).toEqual(
+        expect.arrayContaining([expect.objectContaining({ textDecorationLine: 'line-through' })]),
+      ),
     );
-    expect(
-      screen.getByRole('checkbox', { name: 'Mark Lay out running clothes incomplete' }),
-    ).toBeTruthy();
 
     fireEvent.press(screen.getAllByRole('tab', { name: 'Calendar' })[0]);
     expect(screen.getByText('calendar destination selected.')).toBeTruthy();
