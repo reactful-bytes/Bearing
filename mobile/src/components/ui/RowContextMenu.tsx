@@ -95,6 +95,7 @@ type RowContextMenuProps = {
   menuAccessibilityLabel: string;
   items: readonly RowContextMenuItem[];
   menuId?: string;
+  disabled?: boolean;
 };
 
 export function RowContextMenu({
@@ -102,6 +103,7 @@ export function RowContextMenu({
   menuAccessibilityLabel,
   items,
   menuId: providedMenuId,
+  disabled = false,
 }: RowContextMenuProps) {
   const styles = useThemedStyles(createStyles);
   const generatedMenuId = useId();
@@ -213,6 +215,7 @@ export function RowContextMenu({
           name="moreVertical"
           accessibilityLabel={accessibilityLabel}
           onPress={() => toggleRowContextMenu(menuId)}
+          disabled={disabled}
         />
       </View>
       {modalMounted ? (

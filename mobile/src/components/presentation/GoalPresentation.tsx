@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -273,6 +273,7 @@ export function GoalListFilter({ value, options, onChange }: GoalStatusTabsProps
 type GoalTimelineProps = {
   milestones: readonly GoalMilestoneWithTasks[];
   onPressMilestone?: (milestone: GoalMilestoneWithTasks) => void;
+  renderMilestoneTasks?: (milestone: GoalMilestoneWithTasks) => ReactNode;
 };
 
 function getCurrentMilestoneId(milestones: readonly GoalMilestoneWithTasks[]): string | null {
@@ -280,53 +281,80 @@ function getCurrentMilestoneId(milestones: readonly GoalMilestoneWithTasks[]): s
   return ordered.find((milestone) => milestone.status !== 'completed')?.id ?? null;
 }
 
-export function GoalTimeline({ milestones, onPressMilestone }: GoalTimelineProps) {
+export function GoalTimeline({
+  milestones,
+  onPressMilestone,
+  renderMilestoneTasks,
+}: GoalTimelineProps) {
   const styles = useThemedStyles(createStyles);
   const { theme } = useTheme();
   const currentMilestoneId = useMemo(() => getCurrentMilestoneId(milestones), [milestones]);
+  const [expandedMilestoneIds, setExpandedMilestoneIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+
+  function toggleMilestone(milestoneId: string): void {
+    setExpandedMilestoneIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(milestoneId)) next.delete(milestoneId);
+      else next.add(milestoneId);
+      return next;
+    });
+  }
 
   return (
     <View accessibilityLabel="Goal milestone timeline" style={styles.timeline}>
-      {milestones.map((milestone, index) => {
+      {milestones.map((milestone) => {
         const isCompleted = milestone.status === 'completed';
         const isCurrent = !isCompleted && milestone.id === currentMilestoneId;
+        const isExpanded = expandedMilestoneIds.has(milestone.id);
 
         return (
-          <Pressable
-            key={milestone.id}
-            accessibilityRole={onPressMilestone ? 'button' : undefined}
-            accessibilityLabel={onPressMilestone ? `Open milestone ${milestone.title}` : undefined}
-            disabled={!onPressMilestone}
-            onPress={() => onPressMilestone?.(milestone)}
-            style={styles.timelineItem}
-          >
-            <View style={styles.timelineMarkerColumn}>
-              <View
-                style={[
-                  styles.timelineMarker,
-                  isCompleted
-                    ? styles.timelineMarkerComplete
-                    : isCurrent
-                      ? styles.timelineMarkerCurrent
-                      : styles.timelineMarkerUpcoming,
-                ]}
-              >
-                {isCompleted ? (
-                  <AppIcon name="complete" size={12} color={theme.colors.onBrand} decorative />
+          <View key={milestone.id} style={styles.timelineItem}>
+            <View style={styles.timelineBody}>
+              <View testID={`milestone-header-${milestone.id}`} style={styles.timelineHeader}>
+                {renderMilestoneTasks ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${isExpanded ? 'Collapse' : 'Expand'} milestone ${milestone.title}`}
+                    accessibilityState={{ expanded: isExpanded }}
+                    onPress={() => toggleMilestone(milestone.id)}
+                    style={({ pressed }) => [
+                      styles.timelineDisclosure,
+                      pressed ? styles.listFilterButtonPressed : null,
+                    ]}
+                  >
+                    <AppIcon
+                      name={isExpanded ? 'expand' : 'forward'}
+                      size={18}
+                      color={theme.colors.textSecondary}
+                      decorative
+                    />
+                  </Pressable>
                 ) : null}
+                <Pressable
+                  accessibilityRole={onPressMilestone ? 'button' : undefined}
+                  accessibilityLabel={
+                    onPressMilestone ? `Open milestone ${milestone.title}` : undefined
+                  }
+                  disabled={!onPressMilestone}
+                  onPress={() => onPressMilestone?.(milestone)}
+                  style={styles.timelineCopy}
+                >
+                  <View style={styles.timelineTitleRow}>
+                    <Text style={styles.timelineTitle}>{milestone.title}</Text>
+                  </View>
+                  <Text style={styles.meta}>
+                    {isCompleted ? 'Completed' : isCurrent ? 'Current' : 'Upcoming'}
+                    {` · ${milestone.progressText}`}
+                  </Text>
+                </Pressable>
               </View>
-              {index < milestones.length - 1 ? <View style={styles.timelineConnector} /> : null}
+              {renderMilestoneTasks && isExpanded ? (
+                <View style={styles.timelineTasks}>{renderMilestoneTasks(milestone)}</View>
+              ) : null}
             </View>
-            <View style={styles.timelineCopy}>
-              <View style={styles.timelineTitleRow}>
-                <Text style={styles.timelineTitle}>{milestone.title}</Text>
-              </View>
-              <Text style={styles.meta}>
-                {isCompleted ? 'Completed' : isCurrent ? 'Current' : 'Upcoming'}
-                {` · ${milestone.progressText}`}
-              </Text>
-            </View>
-          </Pressable>
+          </View>
         );
       })}
     </View>
@@ -466,37 +494,17 @@ const createStyles = (theme: Theme) =>
       alignItems: 'stretch',
       gap: theme.spacing.md,
     },
-    timelineMarkerColumn: {
-      width: 20,
-      alignItems: 'center',
-    },
-    timelineMarker: {
-      width: 16,
-      height: 16,
-      borderRadius: 8,
+    timelineCopy: { flex: 1, gap: theme.spacing.xs, paddingBottom: theme.spacing.sm },
+    timelineBody: { flex: 1, gap: theme.spacing.sm },
+    timelineHeader: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
+    timelineTasks: { paddingLeft: theme.layout.minimumTouchTarget + theme.spacing.xs },
+    timelineDisclosure: {
+      width: theme.layout.minimumTouchTarget,
+      height: theme.layout.minimumTouchTarget,
       alignItems: 'center',
       justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.background,
+      borderRadius: theme.radii.md,
     },
-    timelineMarkerComplete: {
-      backgroundColor: theme.colors.success,
-      borderColor: theme.colors.success,
-    },
-    timelineMarkerCurrent: {
-      borderWidth: 2,
-      borderColor: theme.colors.brand,
-      backgroundColor: theme.colors.surfaceBrand,
-    },
-    timelineMarkerUpcoming: { borderColor: theme.colors.border },
-    timelineConnector: {
-      flex: 1,
-      width: 1,
-      backgroundColor: theme.colors.border,
-      marginVertical: theme.spacing.xs,
-    },
-    timelineCopy: { flex: 1, gap: theme.spacing.xs, paddingBottom: theme.spacing.sm },
     timelineTitleRow: {
       flexDirection: 'row',
       alignItems: 'baseline',

@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { render, screen } from '@testing-library/react-native';
+import { Image } from 'react-native';
 import Svg from 'react-native-svg';
 
 import { icons } from '../design/icons';
@@ -34,7 +35,7 @@ describe('AppIcon', () => {
   it('tints alpha-mask brand artwork with an explicit color', () => {
     render(<AppIcon name="bearingMark" color="#22C55E" testID="bearing-mark-icon" />);
 
-    expect(screen.getByTestId('bearing-mark-icon').findByType('Image').props.style).toEqual(
+    expect(screen.getByTestId('bearing-mark-icon').findByType(Image).props.style).toEqual(
       expect.arrayContaining([expect.objectContaining({ tintColor: '#22C55E' })]),
     );
   });

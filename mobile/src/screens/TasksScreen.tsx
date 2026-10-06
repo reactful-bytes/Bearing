@@ -53,11 +53,9 @@ type TaskGroup = {
 };
 
 function taskDateLabel(task: TaskRecord, locale?: string): string {
-  const date =
-    task.status === 'completed' ? task.completedAt : (task.dueDate ?? task.scheduledStart);
-  if (!date) return task.status === 'completed' ? 'Completed' : 'No due date';
+  const date = task.dueDate ?? task.scheduledStart;
+  if (!date) return 'No due date';
   const formatted = date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
-  if (task.status === 'completed') return `Completed ${formatted}`;
   return task.dueDate ? `Due ${formatted}` : `Scheduled ${formatted}`;
 }
 
@@ -381,7 +379,7 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
           onPress={() => setSelectedTaskId(task.id)}
           onComplete={
             task.status === 'active'
-              ? () => void completeTask(task.id, { completionSource: 'manual' })
+              ? () => completeTask(task.id, { completionSource: 'manual' })
               : undefined
           }
           onReactivate={

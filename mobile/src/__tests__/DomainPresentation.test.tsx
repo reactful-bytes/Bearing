@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import {
@@ -139,12 +139,13 @@ describe('domain presentation', () => {
     expect(onGoalPress).toHaveBeenCalledTimes(1);
     expect(onFilterChange).toHaveBeenCalledWith('completed');
     expect(onMilestonePress).toHaveBeenCalledWith(milestone);
+    expect(screen.queryByRole('button', { name: 'Expand milestone Buy shoes' })).toBeNull();
     expect(screen.getByText('First 5k')).toBeTruthy();
   });
 
-  it('keeps task completion and row presses independent and renders optional context', () => {
+  it('keeps task completion actions and row presses independent and renders optional context', async () => {
     const onPress = jest.fn();
-    const onToggleComplete = jest.fn();
+    const onToggleComplete = jest.fn<() => void>();
     render(
       <TaskRow
         task={task}
@@ -153,7 +154,14 @@ describe('domain presentation', () => {
         onToggleComplete={onToggleComplete}
       />,
     );
-    fireEvent.press(screen.getByRole('checkbox', { name: 'Mark Plan meals complete' }));
+    expect(screen.queryByRole('checkbox')).toBeNull();
+    await act(async () => {
+      fireEvent(
+        screen.getByRole('button', { name: 'Open task Plan meals' }),
+        'accessibilityAction',
+        { nativeEvent: { actionName: 'complete' } },
+      );
+    });
     fireEvent.press(screen.getByRole('button', { name: 'Open task Plan meals' }));
     expect(onToggleComplete).toHaveBeenCalledTimes(1);
     expect(onPress).toHaveBeenCalledTimes(1);
@@ -250,7 +258,7 @@ describe('domain presentation', () => {
   });
 
   it('renders domain components with the default dark fallback and persisted light theme', async () => {
-    render(<TaskRow task={task} onPress={jest.fn()} onToggleComplete={jest.fn()} />);
+    render(<TaskRow task={task} onPress={jest.fn()} onToggleComplete={jest.fn<() => void>()} />);
     expect(screen.getByText('Plan meals')).toBeTruthy();
 
     await AsyncStorage.setItem('@bearing/theme-preference', 'light');

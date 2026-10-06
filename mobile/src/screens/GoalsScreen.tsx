@@ -78,7 +78,6 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
     createMilestone,
     deleteMilestone,
     updateMilestone,
-    setMilestoneManuallyCompleted,
     reorderMilestones,
     retry,
   } = useGoals();
@@ -326,9 +325,6 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
         onToggleGoalManualCompletion={setGoalManuallyCompleted}
         onAddMilestone={() => setAddMilestoneVisible(true)}
         onOpenMilestone={(milestone) => setSelectedMilestoneId(milestone.id)}
-        onToggleMilestoneCompletion={(milestone, completed) =>
-          setMilestoneManuallyCompleted(milestone.id, completed)
-        }
         onReorderMilestones={reorderMilestones}
       />
 
@@ -355,9 +351,6 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
           setTaskMilestoneId(milestone.id);
           setAddTaskVisible(true);
         }}
-        onToggleManualCompletion={(milestone, completed) =>
-          setMilestoneManuallyCompleted(milestone.id, completed)
-        }
         milestoneActionsEnabled={selectedGoal?.status !== 'draft'}
       />
 

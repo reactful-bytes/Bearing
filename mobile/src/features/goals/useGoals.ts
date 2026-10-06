@@ -18,6 +18,7 @@ import {
   activateGoalDraft as activateFirebaseGoalDraft,
   createGoal as createFirebaseGoal,
   createMilestone as createFirebaseMilestone,
+  deleteGoal as deleteFirebaseGoal,
   deleteMilestone as deleteFirebaseMilestone,
   reorderMilestones as reorderFirebaseMilestones,
   setGoalManuallyCompleted as setFirebaseGoalManuallyCompleted,
@@ -63,10 +64,12 @@ export type UseGoalsReturn = {
   saveGoalDraft?: (goalId: string, input: GoalDraftSaveInput) => Promise<GoalDraftSaveResult>;
   activateGoalDraft?: (goalId: string) => Promise<void>;
   updateGoal: (goalId: string, fields: UpdateGoalInput) => Promise<void>;
+  deleteGoal: (goalId: string) => Promise<void>;
   setGoalManuallyCompleted: (goalId: string, completed: boolean) => Promise<void>;
   createMilestone: (goalId: string, input: { title: string; description: string }) => Promise<void>;
   deleteMilestone: (milestoneId: string) => Promise<void>;
   updateMilestone: (milestoneId: string, fields: UpdateGoalMilestoneInput) => Promise<void>;
+  /** @deprecated Milestone completion is derived from tasks. */
   setMilestoneManuallyCompleted: (milestoneId: string, completed: boolean) => Promise<void>;
   reorderMilestones: (goalId: string, orderedMilestoneIds: string[]) => Promise<void>;
   retry: () => void;
@@ -201,10 +204,24 @@ export function useGoals(): UseGoalsReturn {
 
   const setGoalManuallyCompleted = useCallback(
     async (goalId: string, completed: boolean): Promise<void> => {
-      await setFirebaseGoalManuallyCompleted(requireUserId(), goalId, completed);
+      const currentUserId = requireUserId();
+      const goal = goalMap.find((candidate) => candidate.id === goalId);
+      if (!goal) throw new Error('Goal not found.');
+      if (
+        !completed &&
+        goal.milestones.length > 0 &&
+        goal.milestones.every((milestone) => milestone.status === 'completed')
+      ) {
+        throw new Error('Uncomplete a task or add a new milestone before uncompleting this goal.');
+      }
+      await setFirebaseGoalManuallyCompleted(currentUserId, goalId, completed);
     },
-    [],
+    [goalMap],
   );
+
+  const deleteGoal = useCallback(async (goalId: string): Promise<void> => {
+    await deleteFirebaseGoal(requireUserId(), goalId);
+  }, []);
 
   const createMilestone = useCallback(
     async (goalId: string, input: { title: string; description: string }): Promise<void> => {
@@ -248,6 +265,7 @@ export function useGoals(): UseGoalsReturn {
     saveGoalDraft,
     activateGoalDraft,
     updateGoal,
+    deleteGoal,
     setGoalManuallyCompleted,
     createMilestone,
     deleteMilestone,

@@ -121,6 +121,11 @@ export function TaskDetailsModal({
               <TaskActionMenu
                 onEdit={() => onEdit(task)}
                 onDelete={() => onDelete(task)}
+                onComplete={
+                  task.status === 'active' && taskActionsEnabled
+                    ? () => void handleMarkComplete()
+                    : undefined
+                }
                 onReactivate={
                   task.status === 'completed' && taskActionsEnabled
                     ? () => void handleReactivate()

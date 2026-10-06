@@ -95,15 +95,18 @@ Fields:
 - description: string
 - estimatedFinishDate: timestamp | null
 - order: number
-- manuallyCompletedAt: timestamp | null
+- manuallyCompletedAt: timestamp | null (legacy field; ignored for milestone status)
 - createdAt: timestamp
 - updatedAt: timestamp
 
-Milestone status and progress are read-model values, not persisted fields. When not manually
-completed, status is derived from its linked tasks: no tasks or no completed tasks is pending; a
-mix is in progress; one or more tasks with all completed is completed. Counts and percentage remain
-task-derived even when the manual completion latch is set. Reopening is blocked while all linked
-tasks are complete; add a task first.
+Milestone status and progress are read-model values, not persisted fields. Status is always
+derived from its linked tasks: no tasks or no completed tasks is pending; a mix is in progress;
+one or more tasks with all completed is completed. Uncompleting a task or adding an active task
+automatically reopens the milestone; deleting its last task makes it pending. Legacy
+`manuallyCompletedAt` values are retained for data compatibility but do not override status,
+counts, or percentage. Manual milestone controls are removed, and the legacy manual-completion
+API rejects requests with an actionable error rather than writing an ineffective override.
+Goal-level manual completion remains supported independently.
 
 Indexes (planned):
 

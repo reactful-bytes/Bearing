@@ -3,6 +3,7 @@ import { RowContextMenu } from '../ui/RowContextMenu';
 type TaskActionMenuProps = {
   onEdit: () => void;
   onDelete: () => void;
+  onComplete?: () => void;
   onReactivate?: () => void;
   accessibilityLabel?: string;
 };
@@ -10,6 +11,7 @@ type TaskActionMenuProps = {
 export function TaskActionMenu({
   onEdit,
   onDelete,
+  onComplete,
   onReactivate,
   accessibilityLabel = 'Task actions',
 }: TaskActionMenuProps) {
@@ -19,11 +21,21 @@ export function TaskActionMenu({
       menuAccessibilityLabel="Task actions menu"
       items={[
         { label: 'Edit', accessibilityLabel: 'Edit task', icon: 'edit', onPress: onEdit },
+        ...(onComplete
+          ? [
+              {
+                label: 'Complete',
+                accessibilityLabel: 'Complete task',
+                icon: 'complete' as const,
+                onPress: onComplete,
+              },
+            ]
+          : []),
         ...(onReactivate
           ? [
               {
-                label: 'Mark Active',
-                accessibilityLabel: 'Mark task active',
+                label: 'Uncomplete',
+                accessibilityLabel: 'Uncomplete task',
                 icon: 'refresh' as const,
                 onPress: onReactivate,
               },

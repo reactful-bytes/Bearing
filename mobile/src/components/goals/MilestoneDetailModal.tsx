@@ -33,7 +33,8 @@ type MilestoneDetailModalProps = {
   onDeleteMilestone: (milestone: GoalMilestoneWithTasks) => Promise<void>;
   onSchedule: (milestone: GoalMilestoneWithTasks) => void;
   onAddTask: (milestone: GoalMilestoneWithTasks) => void;
-  onToggleManualCompletion: (
+  /** @deprecated Milestone completion is derived from tasks. */
+  onToggleManualCompletion?: (
     milestone: GoalMilestoneWithTasks,
     completed: boolean,
   ) => Promise<void>;
@@ -63,7 +64,6 @@ export function MilestoneDetailModal({
   onDeleteMilestone,
   onSchedule,
   onAddTask,
-  onToggleManualCompletion,
   milestoneActionsEnabled = true,
 }: MilestoneDetailModalProps) {
   const styles = useThemedStyles(createStyles);
@@ -113,31 +113,6 @@ export function MilestoneDetailModal({
       setSaving(false);
     }
   }
-
-  async function handleToggleCompletion(completed: boolean): Promise<void> {
-    if (!milestone) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await onToggleManualCompletion(milestone, completed);
-    } catch (completionError) {
-      setError(
-        completionError instanceof Error
-          ? completionError.message
-          : 'Failed to update milestone completion.',
-      );
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const allTasksComplete = Boolean(
-    milestone &&
-    milestone.totalTaskCount > 0 &&
-    milestone.completedTaskCount === milestone.totalTaskCount,
-  );
-  const manuallyComplete = Boolean(milestone?.manuallyCompletedAt);
-  const canReopen = manuallyComplete && !allTasksComplete;
 
   return (
     <AppModal visible={visible} title="Milestone Details" onClose={onClose} closeLabel="Back">
@@ -202,11 +177,11 @@ export function MilestoneDetailModal({
                   </AppCard>
                 ))
               )}
-              {manuallyComplete && allTasksComplete ? (
-                <Text style={styles.guidance}>
-                  All linked tasks are complete. Add a new task before reopening this milestone.
-                </Text>
-              ) : null}
+              <Text style={styles.guidance}>
+                {milestone.totalTaskCount === 0
+                  ? 'Add a task to this milestone. It completes automatically when all its tasks are complete.'
+                  : 'Completion updates automatically when tasks are completed or uncompleted.'}
+              </Text>
               <View style={styles.actionColumn}>
                 <AppButton
                   label="Add Task"
@@ -219,25 +194,6 @@ export function MilestoneDetailModal({
                     accessibilityLabel="Schedule milestone event"
                     variant="secondary"
                     onPress={() => onSchedule(milestone)}
-                  />
-                ) : null}
-                {milestoneActionsEnabled && manuallyComplete ? (
-                  canReopen ? (
-                    <AppButton
-                      label="Reopen Milestone"
-                      accessibilityLabel="Reopen milestone"
-                      variant="secondary"
-                      onPress={() => void handleToggleCompletion(false)}
-                      loading={saving}
-                    />
-                  ) : null
-                ) : milestoneActionsEnabled && milestone.status !== 'completed' ? (
-                  <AppButton
-                    label="Mark Milestone Complete"
-                    accessibilityLabel="Manually complete milestone"
-                    variant="secondary"
-                    onPress={() => void handleToggleCompletion(true)}
-                    loading={saving}
                   />
                 ) : null}
                 <AppButton

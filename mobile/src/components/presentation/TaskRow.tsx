@@ -3,50 +3,75 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { TaskRecord } from '../../features/tasks/taskTypes';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import type { Theme } from '../../design/tokens';
-import { AppIcon } from '../ui/AppIcon';
+import { TaskActionMenu } from '../tasks/TaskActionMenu';
+import { TaskSwipeRow } from '../tasks/TaskSwipeRow';
+import { useTaskCompletionAction } from '../tasks/useTaskCompletionAction';
 
 type TaskRowProps = {
   task: TaskRecord;
   onPress: () => void;
-  onToggleComplete?: () => void;
+  onToggleComplete?: () => void | Promise<void>;
   context?: string;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onReactivate?: () => void;
 };
 
-export function TaskRow({ task, onPress, onToggleComplete, context }: TaskRowProps) {
+export function TaskRow({
+  task,
+  onPress,
+  onToggleComplete,
+  context,
+  onEdit,
+  onDelete,
+  onReactivate,
+}: TaskRowProps) {
   const styles = useThemedStyles(createStyles);
   const completed = task.status === 'completed';
+  const { complete, working } = useTaskCompletionAction(onToggleComplete, completed);
 
   return (
-    <View style={[styles.row, completed ? styles.rowCompleted : null]}>
-      {onToggleComplete ? (
+    <TaskSwipeRow
+      key={task.id}
+      completed={completed}
+      onComplete={onToggleComplete ? complete : undefined}
+      disabled={working}
+    >
+      <View style={[styles.row, completed ? styles.rowCompleted : null]}>
         <Pressable
-          accessibilityRole="checkbox"
-          accessibilityLabel={`Mark ${task.title} ${completed ? 'incomplete' : 'complete'}`}
-          accessibilityState={{ checked: completed }}
-          onPress={onToggleComplete}
-          style={styles.toggle}
+          accessibilityRole="button"
+          accessibilityLabel={`Open task ${task.title}`}
+          onPress={onPress}
+          accessibilityActions={
+            onToggleComplete && !completed ? [{ name: 'complete', label: 'Complete task' }] : []
+          }
+          onAccessibilityAction={(event) => {
+            if (event.nativeEvent.actionName === 'complete') complete();
+          }}
+          style={styles.copy}
         >
-          {completed ? (
-            <AppIcon name="complete" size={12} color={styles.toggleComplete.color} decorative />
+          <Text numberOfLines={1} style={[styles.title, completed ? styles.titleCompleted : null]}>
+            {task.title}
+          </Text>
+          {context ? (
+            <Text
+              numberOfLines={1}
+              style={[styles.context, completed ? styles.titleCompleted : null]}
+            >
+              {context}
+            </Text>
           ) : null}
         </Pressable>
-      ) : null}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Open task ${task.title}`}
-        onPress={onPress}
-        style={styles.copy}
-      >
-        <Text numberOfLines={1} style={[styles.title, completed ? styles.titleCompleted : null]}>
-          {task.title}
-        </Text>
-        {context ? (
-          <Text numberOfLines={1} style={styles.context}>
-            {context}
-          </Text>
+        {onEdit && onDelete ? (
+          <TaskActionMenu
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onComplete={onToggleComplete && !completed ? complete : undefined}
+            onReactivate={completed ? onReactivate : undefined}
+          />
         ) : null}
-      </Pressable>
-    </View>
+      </View>
+    </TaskSwipeRow>
   );
 }
 
@@ -59,21 +84,6 @@ const createStyles = (theme: Theme) =>
       gap: theme.spacing.md,
     },
     rowCompleted: { opacity: 0.68 },
-    toggle: {
-      width: 20,
-      height: 20,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1,
-      borderRadius: 10,
-      borderColor: theme.colors.border,
-      color: theme.colors.textSecondary,
-    },
-    toggleComplete: {
-      borderColor: theme.colors.success,
-      backgroundColor: theme.colors.success,
-      color: theme.colors.onBrand,
-    },
     copy: {
       flex: 1,
       minHeight: theme.layout.minimumTouchTarget,

@@ -968,7 +968,7 @@ export function CreateGoalModal({
                 accessibilityLabel="Goal outcome"
                 value={title}
                 onChangeText={setTitle}
-                placeholder="Complete my first 10k"
+                placeholder="Example: Complete my first 10k by next month."
                 placeholderTextColor={theme.colors.textSecondary}
               />
 
@@ -978,17 +978,16 @@ export function CreateGoalModal({
                 value={description}
                 onChangeText={setDescription}
                 multiline
-                placeholder="List 2-4 objectives, success measures, your starting point, constraints, and timing for each outcome."
+                placeholder="Starting Point, success measures, any sub-goals, any constraints, and timing for each outcome."
                 placeholderTextColor={theme.colors.textSecondary}
               />
 
               <AppCard style={styles.exampleCard}>
                 <Text style={styles.exampleLabel}>Planning details to include</Text>
-                <Text style={styles.exampleText}>Objectives: 2-4 concrete results you want.</Text>
+                <Text style={styles.exampleText}>Starting point: what is already in place.</Text>
                 <Text style={styles.exampleText}>
                   Success measures: how you will track progress.
                 </Text>
-                <Text style={styles.exampleText}>Starting point: what is already in place.</Text>
                 <Text style={styles.exampleText}>
                   Resources: time, tools, or support available.
                 </Text>
@@ -996,7 +995,7 @@ export function CreateGoalModal({
                   Constraints: limits or challenges to plan around.
                 </Text>
                 <Text style={styles.exampleText}>
-                  Timing: intermediate deadlines and the pace for each outcome.
+                  Timing: any intermediate deadlines or a pace you want to maintain.
                 </Text>
               </AppCard>
             </View>

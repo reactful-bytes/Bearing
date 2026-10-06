@@ -227,6 +227,7 @@ function mockGoals(overrides: Partial<ReturnType<typeof useGoals>> = {}): void {
     uiState: 'empty',
     createGoal: async () => undefined,
     updateGoal: async () => undefined,
+    deleteGoal: async () => undefined,
     setGoalManuallyCompleted: async () => undefined,
     setMilestoneManuallyCompleted: async () => undefined,
     createMilestone: async () => undefined,
@@ -292,6 +293,7 @@ describe('GoalsScreen', () => {
       uiState: 'error',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
+      deleteGoal: async () => undefined,
       setGoalManuallyCompleted: async () => undefined,
       setMilestoneManuallyCompleted: async () => undefined,
       createMilestone: async () => undefined,
@@ -320,6 +322,7 @@ describe('GoalsScreen', () => {
       uiState: 'empty',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
+      deleteGoal: async () => undefined,
       setGoalManuallyCompleted: async () => undefined,
       setMilestoneManuallyCompleted: async () => undefined,
       createMilestone: async () => undefined,
@@ -363,6 +366,7 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
+      deleteGoal: async () => undefined,
       setGoalManuallyCompleted: async () => undefined,
       setMilestoneManuallyCompleted: async () => undefined,
       createMilestone: async () => undefined,
@@ -429,6 +433,7 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
+      deleteGoal: async () => undefined,
       setGoalManuallyCompleted: async () => undefined,
       setMilestoneManuallyCompleted: async () => undefined,
       createMilestone: async () => undefined,
@@ -466,6 +471,7 @@ describe('GoalsScreen', () => {
       uiState: 'empty',
       createGoal: createGoalMock,
       updateGoal: async () => undefined,
+      deleteGoal: async () => undefined,
       setGoalManuallyCompleted: async () => undefined,
       setMilestoneManuallyCompleted: async () => undefined,
       createMilestone: async () => undefined,
@@ -482,6 +488,14 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Continue'));
     expect(screen.getByLabelText('Create Goal modal')).toBeTruthy();
 
+    expect(
+      screen.getByPlaceholderText('Example: Complete my first 10k by next month.'),
+    ).toBeTruthy();
+    expect(
+      screen.getByPlaceholderText(
+        'Starting Point, success measures, any sub-goals, any constraints, and timing for each outcome.',
+      ),
+    ).toBeTruthy();
     fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.press(screen.getByLabelText('Continue'));
     expect(screen.getByText('Planning context is required for milestones and tasks.')).toBeTruthy();
@@ -490,13 +504,13 @@ describe('GoalsScreen', () => {
       'Train consistently for eight weeks.',
     );
     expect(screen.getByText('Planning details to include')).toBeTruthy();
-    expect(screen.getByText('Objectives: 2-4 concrete results you want.')).toBeTruthy();
+    expect(screen.queryByText('Objectives: 2-4 concrete results you want.')).toBeNull();
     expect(screen.getByText('Success measures: how you will track progress.')).toBeTruthy();
     expect(screen.getByText('Starting point: what is already in place.')).toBeTruthy();
     expect(screen.getByText('Resources: time, tools, or support available.')).toBeTruthy();
     expect(screen.getByText('Constraints: limits or challenges to plan around.')).toBeTruthy();
     expect(
-      screen.getByText('Timing: intermediate deadlines and the pace for each outcome.'),
+      screen.getByText('Timing: any intermediate deadlines or a pace you want to maintain.'),
     ).toBeTruthy();
     expect(screen.queryByText('What the AI plans from')).toBeNull();
     expect(screen.queryByLabelText('SMART Specific')).toBeNull();
@@ -642,6 +656,7 @@ describe('GoalsScreen', () => {
       saveGoalDraft: jest.fn(async () => ({ milestones: [] })),
       activateGoalDraft: jest.fn(async () => undefined),
       updateGoal: jest.fn(async () => undefined),
+      deleteGoal: async () => undefined,
       setGoalManuallyCompleted: jest.fn(async () => undefined),
       setMilestoneManuallyCompleted: jest.fn(async () => undefined),
       createMilestone: jest.fn(async () => undefined),
@@ -697,6 +712,7 @@ describe('GoalsScreen', () => {
       uiState: 'empty',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
+      deleteGoal: async () => undefined,
       setGoalManuallyCompleted: async () => undefined,
       setMilestoneManuallyCompleted: async () => undefined,
       createMilestone: async () => undefined,
@@ -817,6 +833,7 @@ describe('GoalsScreen', () => {
       saveGoalDraft: saveGoalDraftMock,
       activateGoalDraft: activateGoalDraftMock,
       updateGoal: async () => undefined,
+      deleteGoal: async () => undefined,
       setGoalManuallyCompleted: async () => undefined,
       setMilestoneManuallyCompleted: async () => undefined,
       createMilestone: async () => undefined,
@@ -980,6 +997,7 @@ describe('GoalsScreen', () => {
       uiState: 'empty',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
+      deleteGoal: async () => undefined,
       setGoalManuallyCompleted: async () => undefined,
       setMilestoneManuallyCompleted: async () => undefined,
       createMilestone: async () => undefined,
@@ -1139,6 +1157,7 @@ describe('GoalsScreen', () => {
       uiState: 'empty',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
+      deleteGoal: async () => undefined,
       setGoalManuallyCompleted: async () => undefined,
       setMilestoneManuallyCompleted: async () => undefined,
       createMilestone: async () => undefined,
@@ -1191,6 +1210,7 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
+      deleteGoal: async () => undefined,
       setGoalManuallyCompleted: async () => undefined,
       setMilestoneManuallyCompleted: async () => undefined,
       createMilestone: createMilestoneMock,
@@ -1227,7 +1247,7 @@ describe('GoalsScreen', () => {
     });
   });
 
-  it('allows manually completing a milestone independently of its task progress', async () => {
+  it('shows task-derived milestone progress without manual completion controls', () => {
     const setMilestoneManuallyCompleted = jest.fn(async () => undefined);
     const milestone = makeMilestone();
     mockGoals({
@@ -1240,16 +1260,24 @@ describe('GoalsScreen', () => {
 
     fireEvent.press(screen.getByLabelText('Open goal Run a 10k'));
     expect(screen.getByText('Not started · 0 of 0 tasks')).toBeTruthy();
-    await act(async () => {
-      fireEvent.press(
-        screen.getByRole('button', { name: 'Mark Done milestone Buy running shoes' }),
-      );
-    });
-
-    expect(setMilestoneManuallyCompleted).toHaveBeenCalledWith('milestone-1', true);
+    expect(
+      screen.queryByRole('button', { name: 'Mark Done milestone Buy running shoes' }),
+    ).toBeNull();
+    expect(screen.getByLabelText('Move milestone Buy running shoes up')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Open milestone Buy running shoes'));
+    expect(screen.queryByRole('button', { name: 'Manually complete milestone' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Reopen milestone' })).toBeNull();
+    expect(
+      screen.getByText(
+        'Add a task to this milestone. It completes automatically when all its tasks are complete.',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByLabelText('Add task to milestone Buy running shoes')).toBeTruthy();
+    expect(screen.getByLabelText('Schedule milestone event')).toBeTruthy();
+    expect(setMilestoneManuallyCompleted).not.toHaveBeenCalled();
   });
 
-  it('requires a new task before reopening a manually completed milestone with all tasks done', () => {
+  it('shows automatic completion guidance without legacy manual reopen controls', () => {
     const completedMilestone = makeMilestone({
       status: 'completed',
       manuallyCompletedAt: new Date(2026, 6, 20),
@@ -1269,11 +1297,10 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Open milestone Buy running shoes'));
 
     expect(
-      screen.getByText(
-        'All linked tasks are complete. Add a new task before reopening this milestone.',
-      ),
+      screen.getByText('Completion updates automatically when tasks are completed or uncompleted.'),
     ).toBeTruthy();
     expect(screen.queryByLabelText('Reopen milestone')).toBeNull();
+    expect(screen.queryByLabelText('Manually complete milestone')).toBeNull();
   });
 
   it('opens goal details and marks a goal complete from edit mode', async () => {
@@ -1297,6 +1324,7 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
+      deleteGoal: async () => undefined,
       setGoalManuallyCompleted: markGoalCompletedMock,
       setMilestoneManuallyCompleted: async () => undefined,
       createMilestone: async () => undefined,
@@ -1337,6 +1365,7 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: updateGoalMock,
+      deleteGoal: async () => undefined,
       setGoalManuallyCompleted: async () => undefined,
       setMilestoneManuallyCompleted: async () => undefined,
       createMilestone: async () => undefined,
@@ -1387,6 +1416,7 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
+      deleteGoal: async () => undefined,
       setGoalManuallyCompleted: async () => undefined,
       setMilestoneManuallyCompleted: async () => undefined,
       createMilestone: async () => undefined,
@@ -1469,6 +1499,7 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
+      deleteGoal: async () => undefined,
       setGoalManuallyCompleted: async () => undefined,
       setMilestoneManuallyCompleted: async () => undefined,
       createMilestone: async () => undefined,
@@ -1504,6 +1535,7 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
+      deleteGoal: async () => undefined,
       setGoalManuallyCompleted: async () => undefined,
       setMilestoneManuallyCompleted: async () => undefined,
       createMilestone: async () => undefined,
@@ -1539,6 +1571,7 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
+      deleteGoal: async () => undefined,
       setGoalManuallyCompleted: async () => undefined,
       setMilestoneManuallyCompleted: async () => undefined,
       createMilestone: async () => undefined,
@@ -1570,6 +1603,7 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       createGoal: async () => undefined,
       updateGoal: async () => undefined,
+      deleteGoal: async () => undefined,
       setGoalManuallyCompleted: async () => undefined,
       setMilestoneManuallyCompleted: async () => undefined,
       createMilestone: async () => undefined,

@@ -30,10 +30,9 @@ export function sortGoalTasks(tasks: TaskRecord[]): TaskRecord[] {
 }
 
 export function deriveMilestoneStatus(
-  milestone: Pick<GoalMilestoneRecord, 'manuallyCompletedAt'>,
+  _milestone: Pick<GoalMilestoneRecord, 'manuallyCompletedAt'>,
   tasks: TaskRecord[],
 ): GoalMilestoneStatus {
-  if (milestone.manuallyCompletedAt) return 'completed';
   const completedCount = tasks.filter((task) => task.status === 'completed').length;
   if (tasks.length > 0 && completedCount === tasks.length) return 'completed';
   if (completedCount > 0) return 'in_progress';
