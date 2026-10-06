@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { subscribeToPremiumEntitlement } from '../../services/firebase/firebaseSubscriptions';
 import { PremiumEntitlementRecord, PremiumEntitlementUiState } from './premiumTypes';
 import {
+  getPremiumDebugAccessMode,
   getPremiumDebugEntitlement,
   isPremiumDebugEnabled,
   subscribeToPremiumDebugAccess,
@@ -13,6 +14,20 @@ export type UsePremiumEntitlementReturn = {
   uiState: PremiumEntitlementUiState;
   error: Error | null;
 };
+
+function expireEntitlementIfNeeded(
+  entitlement: PremiumEntitlementRecord | null,
+): PremiumEntitlementRecord | null {
+  if (
+    entitlement &&
+    (entitlement.status === 'active' || entitlement.status === 'in_grace_period') &&
+    entitlement.periodEndAt &&
+    entitlement.periodEndAt.getTime() <= Date.now()
+  ) {
+    return { ...entitlement, status: 'expired' };
+  }
+  return entitlement;
+}
 
 export function usePremiumEntitlement(userId: string | null): UsePremiumEntitlementReturn {
   const [entitlement, setEntitlement] = useState<PremiumEntitlementRecord | null>(null);
@@ -35,10 +50,14 @@ export function usePremiumEntitlement(userId: string | null): UsePremiumEntitlem
 
     function updateEntitlement(): void {
       if (!active) return;
-      setEntitlement(
-        (isPremiumDebugEnabled() ? getPremiumDebugEntitlement(currentUserId) : null) ??
-          storeEntitlement,
-      );
+      const debugAccessMode = isPremiumDebugEnabled() ? getPremiumDebugAccessMode() : 'revenuecat';
+      const nextEntitlement =
+        debugAccessMode === 'free'
+          ? null
+          : debugAccessMode === 'premium'
+            ? getPremiumDebugEntitlement(currentUserId)
+            : storeEntitlement;
+      setEntitlement(expireEntitlementIfNeeded(nextEntitlement));
     }
 
     const unsubscribeDebug = isPremiumDebugEnabled()
@@ -54,6 +73,12 @@ export function usePremiumEntitlement(userId: string | null): UsePremiumEntitlem
         setError(null);
       },
       (subscriptionError) => {
+        if (isPremiumDebugEnabled() && getPremiumDebugAccessMode() === 'free') {
+          setEntitlement(null);
+          setUiState('ready');
+          setError(null);
+          return;
+        }
         const debugEntitlement = isPremiumDebugEnabled()
           ? getPremiumDebugEntitlement(currentUserId)
           : null;
@@ -69,6 +94,33 @@ export function usePremiumEntitlement(userId: string | null): UsePremiumEntitlem
       unsubscribeDebug?.();
     };
   }, [userId]);
+
+  useEffect(() => {
+    if (
+      !entitlement ||
+      (entitlement.status !== 'active' && entitlement.status !== 'in_grace_period') ||
+      !entitlement.periodEndAt
+    ) {
+      return;
+    }
+
+    const periodEndAt = entitlement.periodEndAt.getTime();
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+
+    function checkExpiry(): void {
+      const remaining = periodEndAt - Date.now();
+      if (remaining <= 0) {
+        setEntitlement(expireEntitlementIfNeeded);
+        return;
+      }
+      timeout = setTimeout(checkExpiry, Math.min(remaining, 2_147_000_000));
+    }
+
+    checkExpiry();
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [entitlement]);
 
   return { entitlement, uiState, error };
 }

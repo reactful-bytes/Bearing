@@ -87,7 +87,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
   const [taskMilestoneId, setTaskMilestoneId] = useState<string | null>(null);
   const [goalFilter, setGoalFilter] = useState<GoalFilter>('active');
-  const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
+  const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status, entitlement?.periodEndAt);
 
   useEffect(() => {
     if (!route?.params?.createGoal) {

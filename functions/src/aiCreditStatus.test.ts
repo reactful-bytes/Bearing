@@ -27,6 +27,7 @@ describe("getAiCreditStatus", () => {
         subscriptionUserId = userId;
         return subscription;
       },
+      new Date("2026-04-01T00:00:00.000Z"),
     );
 
     assert.equal(balanceUserId, "user-1");
@@ -40,6 +41,7 @@ describe("getAiCreditStatus", () => {
         { auth: { uid: "user-1" } },
         async () => 4,
         async () => ({ ...subscription, status: "in_grace_period" }),
+        new Date("2026-04-01T00:00:00.000Z"),
       ),
       { eligible: true, availableCredits: 4 },
     );
@@ -48,6 +50,19 @@ describe("getAiCreditStatus", () => {
         { auth: { uid: "user-1" } },
         async () => 6,
         async () => ({ ...subscription, status: "expired" }),
+        new Date("2026-04-01T00:00:00.000Z"),
+      ),
+      { eligible: false, availableCredits: 6 },
+    );
+  });
+
+  it("locks an active status after the recorded period end", async () => {
+    assert.deepEqual(
+      await getAiCreditStatus(
+        { auth: { uid: "user-1" } },
+        async () => 6,
+        async () => subscription,
+        new Date("2026-10-05T12:00:00.000Z"),
       ),
       { eligible: false, availableCredits: 6 },
     );

@@ -1,4 +1,4 @@
-import { getFirestore } from "firebase-admin/firestore";
+import { Timestamp, getFirestore } from "firebase-admin/firestore";
 import { HttpsError } from "firebase-functions/v2/https";
 
 import {
@@ -18,6 +18,21 @@ export type EntitlementLookup = (
   userId: string,
 ) => Promise<SubscriptionStatus | null>;
 
+export function getEffectiveSubscriptionStatus(
+  status: SubscriptionStatus | null,
+  periodEndAt: Date | null,
+  now = new Date(),
+): SubscriptionStatus | null {
+  if (
+    (status === "active" || status === "in_grace_period") &&
+    periodEndAt &&
+    periodEndAt.getTime() <= now.getTime()
+  ) {
+    return "expired";
+  }
+  return status;
+}
+
 const SUBSCRIPTION_STATUSES = new Set<SubscriptionStatus>([
   "active",
   "in_grace_period",
@@ -34,10 +49,16 @@ export async function loadSubscriptionStatus(
     return null;
   }
 
-  const status = snapshot.data()?.status;
-  return SUBSCRIPTION_STATUSES.has(status as SubscriptionStatus)
+  const record = snapshot.data();
+  const status = record?.status;
+  const validStatus = SUBSCRIPTION_STATUSES.has(status as SubscriptionStatus)
     ? (status as SubscriptionStatus)
     : null;
+  const periodEndAt =
+    record?.periodEndAt instanceof Timestamp
+      ? record.periodEndAt.toDate()
+      : null;
+  return getEffectiveSubscriptionStatus(validStatus, periodEndAt);
 }
 
 export async function requirePremiumCaller(

@@ -50,10 +50,11 @@ import { hasActivePremiumStatus } from '../features/premium/premiumAccess';
 import { setAiCreditBalance, useAiCreditBalance } from '../features/premium/aiCreditBalance';
 import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
 import {
-  isPremiumDebugAccessEnabled,
+  getPremiumDebugAccessMode,
   isPremiumDebugEnabled,
   isPremiumDebugLocalPlansEnabled,
   setPremiumDebugAccess,
+  setPremiumDebugAccessMode,
   setPremiumDebugLocalPlansEnabled,
   subscribeToPremiumDebugAccess,
 } from '../features/premium/premiumDebug';
@@ -193,12 +194,13 @@ export function ProfileScreen({
   const [deletePending, setDeletePending] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [legalError, setLegalError] = useState<string | null>(null);
-  const [premiumDebugAccess, setPremiumDebugAccessState] = useState(isPremiumDebugAccessEnabled);
+  const [premiumDebugAccessMode, setPremiumDebugAccessModeState] =
+    useState(getPremiumDebugAccessMode);
   const [premiumDebugLocalPlans, setPremiumDebugLocalPlansState] = useState(
     isPremiumDebugLocalPlansEnabled,
   );
   const profileScrollRef = useRef<ScrollView>(null);
-  const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
+  const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status, entitlement?.periodEndAt);
   const isHubRoute = profileSection === undefined;
   const profileForRender =
     profile ??
@@ -256,7 +258,7 @@ export function ProfileScreen({
   useEffect(() => {
     if (!isPremiumDebugEnabled()) return;
     return subscribeToPremiumDebugAccess(() => {
-      setPremiumDebugAccessState(isPremiumDebugAccessEnabled());
+      setPremiumDebugAccessModeState(getPremiumDebugAccessMode());
       setPremiumDebugLocalPlansState(isPremiumDebugLocalPlansEnabled());
     });
   }, []);
@@ -1018,10 +1020,10 @@ export function ProfileScreen({
                       trailingContent={
                         <Switch
                           accessibilityLabel="Enable premium plan"
-                          value={premiumDebugAccess}
+                          value={premiumDebugAccessMode === 'premium'}
                           onValueChange={(enabled) => {
                             setPremiumDebugAccess(enabled);
-                            setPremiumDebugAccessState(enabled);
+                            setPremiumDebugAccessModeState(getPremiumDebugAccessMode());
                           }}
                         />
                       }
@@ -1047,10 +1049,20 @@ export function ProfileScreen({
                       icon="settings"
                       showDivider={false}
                       title="Reset premium plan"
-                      description="Return to the free plan without disabling local plans."
-                      onPress={() => setPremiumDebugAccess(false)}
-                      disabled={!premiumDebugAccess}
+                      description="Force the free plan locally without disabling local plans."
+                      onPress={() => setPremiumDebugAccessMode('free')}
+                      disabled={premiumDebugAccessMode === 'free'}
                     />
+                    {premiumDebugAccessMode !== 'revenuecat' ? (
+                      <ListItem
+                        variant="row"
+                        icon="settings"
+                        showDivider={false}
+                        title="Use RevenueCat subscription"
+                        description="Remove the local access override for this account."
+                        onPress={() => setPremiumDebugAccessMode('revenuecat')}
+                      />
+                    ) : null}
                   </View>
                 ) : null}
 

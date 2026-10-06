@@ -2,6 +2,7 @@ import { PremiumEntitlementRecord } from './premiumTypes';
 import { PremiumPlan } from './purchaseTypes';
 
 export type PremiumDebugMode = 'off' | 'profile';
+export type PremiumDebugAccessMode = 'revenuecat' | 'premium' | 'free';
 
 function getDebugMode(): PremiumDebugMode {
   if (!__DEV__ || process.env.EXPO_PUBLIC_APP_ENV === 'production') return 'off';
@@ -11,6 +12,7 @@ function getDebugMode(): PremiumDebugMode {
 
 const debugMode = getDebugMode();
 let debugAccessEnabled = false;
+let debugAccessMode: PremiumDebugAccessMode = 'revenuecat';
 let debugLocalPlansEnabled = false;
 let debugAccessPlanType: 'monthly' | 'annual' = 'monthly';
 const listeners = new Set<() => void>();
@@ -23,6 +25,10 @@ export function isPremiumDebugAccessEnabled(): boolean {
   return isPremiumDebugEnabled() && debugAccessEnabled;
 }
 
+export function getPremiumDebugAccessMode(): PremiumDebugAccessMode {
+  return isPremiumDebugEnabled() ? debugAccessMode : 'revenuecat';
+}
+
 export function isPremiumDebugLocalPlansEnabled(): boolean {
   return isPremiumDebugEnabled() && debugLocalPlansEnabled;
 }
@@ -33,11 +39,17 @@ export function subscribeToPremiumDebugAccess(listener: () => void): () => void 
 }
 
 export function setPremiumDebugAccess(enabled: boolean, plan?: PremiumPlan): void {
-  if (!isPremiumDebugEnabled() || debugAccessEnabled === enabled) return;
+  if (!isPremiumDebugEnabled()) return;
   if (plan) {
     debugAccessPlanType = plan.telemetryPlanType === 'ANNUAL' ? 'annual' : 'monthly';
   }
-  debugAccessEnabled = enabled;
+  setPremiumDebugAccessMode(enabled ? 'premium' : 'revenuecat');
+}
+
+export function setPremiumDebugAccessMode(mode: PremiumDebugAccessMode): void {
+  if (!isPremiumDebugEnabled() || debugAccessMode === mode) return;
+  debugAccessMode = mode;
+  debugAccessEnabled = mode === 'premium';
   listeners.forEach((listener) => listener());
 }
 
@@ -79,7 +91,7 @@ export function getPremiumDebugPlans(): PremiumPlan[] {
 }
 
 export function getPremiumDebugEntitlement(userId: string): PremiumEntitlementRecord | null {
-  if (!isPremiumDebugAccessEnabled()) return null;
+  if (getPremiumDebugAccessMode() !== 'premium') return null;
   const now = new Date();
   const renewalDate = new Date(now);
   if (debugAccessPlanType === 'annual') {

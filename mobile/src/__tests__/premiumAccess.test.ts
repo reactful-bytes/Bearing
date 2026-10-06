@@ -17,6 +17,15 @@ describe('premium access', () => {
     },
   );
 
+  it('expires active access when its period end has passed', () => {
+    const now = new Date('2026-10-05T12:00:00.000Z');
+
+    expect(hasActivePremiumStatus('active', new Date(now.getTime() + 1), now)).toBe(true);
+    expect(hasActivePremiumStatus('active', now, now)).toBe(false);
+    expect(hasActivePremiumStatus('in_grace_period', new Date(now.getTime() - 1), now)).toBe(false);
+    expect(hasActivePremiumStatus('active', null, now)).toBe(true);
+  });
+
   it('maps authoritative statuses to display labels', () => {
     expect(getPremiumEntitlementLabel('active')).toBe('Active');
     expect(getPremiumEntitlementLabel('in_grace_period')).toBe('Grace Period');

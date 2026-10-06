@@ -87,7 +87,7 @@ export function CreateGoalScreen({ navigation }: CreateGoalScreenProps) {
   const { authUser, isAnonymous } = useUserProfile();
   const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
   const { createGoal, createGoalDraft, saveGoalDraft, activateGoalDraft } = useGoals();
-  const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
+  const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status, entitlement?.periodEndAt);
 
   return (
     <AppScreen mode="unmanaged">
@@ -188,7 +188,7 @@ export function CreateGoalFromNoteScreen({ route, navigation }: NoteConversionPr
   const { authUser, isAnonymous } = useUserProfile();
   const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
   const { createGoal, createGoalDraft, saveGoalDraft, activateGoalDraft } = useGoals();
-  const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
+  const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status, entitlement?.periodEndAt);
 
   if (!note) {
     return (

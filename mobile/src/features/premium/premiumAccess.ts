@@ -20,8 +20,13 @@ const PREMIUM_PAYWALL_COPY: PremiumPaywallCopy = {
   ],
 };
 
-export function hasActivePremiumStatus(status: SubscriptionStatus | null | undefined): boolean {
-  return status === 'active' || status === 'in_grace_period';
+export function hasActivePremiumStatus(
+  status: SubscriptionStatus | null | undefined,
+  periodEndAt?: Date | null,
+  now = new Date(),
+): boolean {
+  const hasActiveStatus = status === 'active' || status === 'in_grace_period';
+  return hasActiveStatus && (!periodEndAt || periodEndAt.getTime() > now.getTime());
 }
 
 export function getPremiumEntitlementLabel(status: SubscriptionStatus | null | undefined): string {

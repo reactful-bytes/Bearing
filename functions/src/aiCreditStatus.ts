@@ -8,6 +8,7 @@ import {
   CallableIdentityRequest,
   requireAuthenticatedCaller,
 } from "./security";
+import { getEffectiveSubscriptionStatus } from "./entitlement";
 
 type AiCreditSubscriptionStatus =
   "active" | "in_grace_period" | "expired" | "canceled";
@@ -60,15 +61,20 @@ export async function getAiCreditStatus(
   request: CallableIdentityRequest,
   balanceLookup: AiCreditBalanceLookup,
   lookup: AiCreditSubscriptionLookup = loadAiCreditSubscription,
+  now = new Date(),
 ): Promise<AiCreditStatus> {
   const caller = requireAuthenticatedCaller(request);
   const [subscription, availableCredits] = await Promise.all([
     lookup(caller.uid),
     balanceLookup(caller.uid),
   ]);
+  const effectiveStatus = getEffectiveSubscriptionStatus(
+    subscription.status,
+    subscription.periodEndAt,
+    now,
+  );
   const eligible =
-    subscription.status === "active" ||
-    subscription.status === "in_grace_period";
+    effectiveStatus === "active" || effectiveStatus === "in_grace_period";
 
   return {
     eligible,

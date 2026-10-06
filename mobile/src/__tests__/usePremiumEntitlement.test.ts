@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
+import { getPremiumDebugAccessMode } from '../features/premium/premiumDebug';
 import { subscribeToPremiumEntitlement } from '../services/firebase/firebaseSubscriptions';
 
 jest.mock('../services/firebase/firebaseSubscriptions', () => ({
@@ -9,6 +10,7 @@ jest.mock('../services/firebase/firebaseSubscriptions', () => ({
 }));
 
 jest.mock('../features/premium/premiumDebug', () => ({
+  getPremiumDebugAccessMode: jest.fn(() => 'revenuecat'),
   getPremiumDebugEntitlement: jest.fn(() => null),
   isPremiumDebugEnabled: jest.fn(() => true),
   subscribeToPremiumDebugAccess: jest.fn(() => jest.fn()),
@@ -18,9 +20,13 @@ describe('usePremiumEntitlement', () => {
   const mockedSubscribe = subscribeToPremiumEntitlement as jest.MockedFunction<
     typeof subscribeToPremiumEntitlement
   >;
+  const mockedDebugAccessMode = getPremiumDebugAccessMode as jest.MockedFunction<
+    typeof getPremiumDebugAccessMode
+  >;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockedDebugAccessMode.mockReturnValue('revenuecat');
   });
 
   it('resolves a missing subscription as free access', async () => {
@@ -62,6 +68,62 @@ describe('usePremiumEntitlement', () => {
       expect.any(Function),
       expect.any(Function),
     );
+  });
+
+  it('forces free access locally while leaving the stored entitlement untouched', async () => {
+    mockedDebugAccessMode.mockReturnValue('free');
+    mockedSubscribe.mockImplementation((_userId, onNext) => {
+      onNext({
+        userId: 'user-1',
+        platform: 'android',
+        productId: 'bearing_premium_monthly',
+        status: 'active',
+        periodStartAt: null,
+        periodEndAt: null,
+        autoRenew: true,
+        lastValidatedAt: null,
+        createdAt: null,
+        updatedAt: null,
+      });
+      return jest.fn();
+    });
+
+    const { result } = renderHook(() => usePremiumEntitlement('user-1'));
+
+    await waitFor(() => expect(result.current.uiState).toBe('ready'));
+    expect(result.current.entitlement).toBeNull();
+    expect(result.current.error).toBeNull();
+  });
+
+  it('expires a stored entitlement when its period end passes without a new snapshot', () => {
+    jest.useFakeTimers();
+    try {
+      const periodEndAt = new Date(Date.now() + 5_000);
+      mockedSubscribe.mockImplementation((_userId, onNext) => {
+        onNext({
+          userId: 'user-1',
+          platform: 'android',
+          productId: 'bearing_premium_monthly',
+          status: 'active',
+          periodStartAt: null,
+          periodEndAt,
+          autoRenew: true,
+          lastValidatedAt: null,
+          createdAt: null,
+          updatedAt: null,
+        });
+        return jest.fn();
+      });
+
+      const { result, unmount } = renderHook(() => usePremiumEntitlement('user-1'));
+
+      expect(result.current.entitlement?.status).toBe('active');
+      act(() => jest.advanceTimersByTime(5_000));
+      expect(result.current.entitlement?.status).toBe('expired');
+      unmount();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('fails closed when the subscription read fails', async () => {

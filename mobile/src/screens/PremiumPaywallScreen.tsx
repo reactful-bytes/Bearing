@@ -34,7 +34,7 @@ export function PremiumPaywallScreen({ route, navigation }: PremiumPaywallScreen
         feature={route.params.feature}
         userId={authUser?.uid ?? null}
         isAnonymous={isAnonymous}
-        hasPremiumAccess={hasActivePremiumStatus(entitlement?.status)}
+        hasPremiumAccess={hasActivePremiumStatus(entitlement?.status, entitlement?.periodEndAt)}
         onClose={navigation.goBack}
         fullScreen
         screenPresentation
