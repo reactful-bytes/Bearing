@@ -92,6 +92,7 @@ type ThemeColors = {
   borderStrong: string;
   text: string;
   textPrimary: string;
+  textEmphasis: string;
   textSecondary: string;
   textMuted: string;
   brand: string;
@@ -121,6 +122,7 @@ const darkColors: ThemeColors = {
   borderStrong: '#334155',
   text: '#E2E8F0',
   textPrimary: '#E2E8F0',
+  textEmphasis: '#FFFFFF',
   textSecondary: '#94A3B8',
   textMuted: '#64748B',
   brand: '#2F7FE8',
@@ -150,6 +152,7 @@ const lightColors: ThemeColors = {
   borderStrong: '#B7CBD4',
   text: '#0B1F2A',
   textPrimary: '#153748',
+  textEmphasis: '#0B1F2A',
   textSecondary: '#496879',
   textMuted: '#6B7D88',
   brand: '#0E5E85',

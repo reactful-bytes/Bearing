@@ -16,6 +16,7 @@ import { useTasks } from '../features/tasks/useTasks';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { PlanScreen } from '../screens/PlanScreen';
 import { TaskDetailScreen } from '../screens/TaskDetailScreen';
+import { EditTaskModal } from '../components/tasks/EditTaskModal';
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(() => ({ navigate: mockRootNavigate })),
@@ -414,6 +415,28 @@ describe('PlanScreen', () => {
     ).toBe(spacing.lg);
     fireEvent.press(screen.getByLabelText('Back to Plan'));
     expect(goBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps draft task details editable while disabling completion and calendar actions', () => {
+    const draftGoal = { ...makeGoal(), status: 'draft' as const };
+    const task = { ...makeTask(1), goalId: draftGoal.id, starter: 'Compare races.' };
+    mockUseGoals.mockReturnValue({ ...mockUseGoals(), goals: [draftGoal] });
+    mockUseTasks.mockReturnValue({ ...mockUseTasks(), tasks: [task] });
+    render(
+      <TaskDetailScreen
+        route={{ params: { taskId: task.id } }}
+        navigation={{ goBack: jest.fn(), navigate: jest.fn() } as never}
+      />,
+    );
+    expect(screen.getByRole('header', { name: 'Task Details' })).toBeTruthy();
+    expect(screen.getByText('Compare races.')).toBeTruthy();
+    expect(screen.queryByLabelText('Schedule task')).toBeNull();
+    expect(screen.queryByLabelText('Start task now')).toBeNull();
+    expect(screen.queryByLabelText('Mark task complete')).toBeNull();
+    fireEvent.press(screen.getByLabelText('Task actions'));
+    expect(screen.queryByRole('menuitem', { name: 'Complete task' })).toBeNull();
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Edit task' }));
+    expect(screen.UNSAFE_getByType(EditTaskModal).props.allowedDraftGoalId).toBe(draftGoal.id);
   });
 
   it('excludes draft-linked tasks from the Plan task surface', () => {

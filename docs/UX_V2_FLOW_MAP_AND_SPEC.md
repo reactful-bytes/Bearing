@@ -688,8 +688,12 @@ an actionable error and do not change the displayed saved status.
 
 ## Overview tab
 
-Show the goal description and locale-formatted finish date above the milestone
-list. The milestone list scrolls independently within a bounded area.
+Show the locale-formatted finish date above the Description heading, using
+emphasized text distinct from section headings. Description body copy uses
+14px primary foreground text: off-white in dark mode and readable dark text in
+light mode. The finish date is brighter white in dark mode and a stronger dark
+foreground in light mode. Keep this summary above the independently scrollable,
+bounded milestone list.
 
 Milestones have no circle or timeline connector. They start collapsed. A
 left-hand right-facing disclosure arrow expands
@@ -736,6 +740,46 @@ Use different visual states:
 
 Tapping the left disclosure arrow expands its associated tasks; tapping the
 milestone title opens its details.
+
+Milestone details use the shared full-screen wrapper used by goal editing.
+The header matches goal details: a top-left back arrow, milestone title, and a
+top-right vertical-dot menu with Edit and Delete. Use a flat layout without cards
+for the parent goal, milestone status, target date, and description.
+
+Place the progress bar directly below the description, with percent complete
+and the completed/total task count directly underneath. Tasks use the shared
+task-list row presentation in a bounded, independently scrollable list. Keep
+completed-task title/date strikethrough styling. Rows open the existing Task
+Detail screen by task ID; do not show the "Start here:" starter cue in this list
+(the cue remains available in task details). Hide goal/milestone overlays while
+their screen is unfocused, and retain the selected milestone so Back restores
+its details. Draft task details remain editable but cannot complete/reactivate,
+schedule, or start tasks before goal activation.
+Place a wizard-style "+ Add Task" text button above the list, outside its scroll
+area, so task creation stays visible. Do not show a Schedule Event action or
+linked-events section, and do not subscribe to milestone events from details.
+Existing calendar events remain unchanged.
+
+Show "Expected completion date" in milestone details, or "Not set" if absent.
+The automatic-completion note uses smaller caption text prefixed with "*".
+Goal Overview has a "+ Add Milestone" text button above the milestone list,
+including its empty state. Each expanded milestone has a "+ Add Task" text
+button after its tasks or empty-state message that preselects that goal and
+milestone in the task form. The Tasks tab's Next Up row uses the same "+ Add Task"
+text action on the right, preserving its existing goal/next-milestone context.
+
+Edit opens a full-screen form with the same top-left back arrow. This arrow
+discards unsaved changes and returns to milestone details; saving a valid name
+and description also returns to details. Reuse the goal/wizard date picker to
+edit the expected completion date; undated milestones can explicitly set a date.
+Changed dates must be today or later and no later than the goal finish date.
+Preserve unchanged dates, including old past dates and unset dates, when editing
+only text. Back discards date changes too. Keep validation/save errors visible.
+
+Delete opens an "Are you sure?" confirmation. Cancel leaves the milestone
+unchanged; successful deletion closes details. Preserve tasks, calendar events,
+and notes while removing their milestone links. Block repeated submissions and
+back/cancel actions during deletion; surface failures in details and allow retry.
 
 ------------------------------------------------------------------------
 

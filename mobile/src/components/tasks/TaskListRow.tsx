@@ -12,12 +12,19 @@ import { useTaskCompletionAction } from './useTaskCompletionAction';
 type TaskListRowProps = {
   task: TaskRecord;
   dateLabel: string;
-  onPress: () => void;
+  onPress?: () => void;
   onComplete?: () => void | Promise<void>;
   onReactivate?: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 };
+
+export function formatTaskDateLabel(task: TaskRecord, locale?: string): string {
+  const date = task.dueDate ?? task.scheduledStart;
+  if (!date) return task.status === 'completed' ? 'Completed' : 'Unscheduled';
+  const formatted = date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+  return task.dueDate ? `Due ${formatted}` : `Scheduled ${formatted}`;
+}
 
 export function TaskListRow({
   task,
@@ -31,6 +38,19 @@ export function TaskListRow({
   const styles = useThemedStyles(createStyles);
   const completed = task.status === 'completed';
   const { complete, working } = useTaskCompletionAction(onComplete, completed);
+  const copy = (
+    <>
+      <Text numberOfLines={2} style={[styles.title, completed ? styles.titleCompleted : null]}>
+        {task.title}
+      </Text>
+      <View style={styles.dateRow}>
+        <AppIcon name="date" size={14} color={styles.dateIcon.color} decorative />
+        <Text numberOfLines={1} style={[styles.dateText, completed ? styles.dateCompleted : null]}>
+          {dateLabel}
+        </Text>
+      </View>
+    </>
+  );
 
   return (
     <TaskSwipeRow
@@ -40,32 +60,27 @@ export function TaskListRow({
       disabled={working}
     >
       <View testID={`task-list-row-${task.id}`} style={styles.row}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Open task ${task.title}`}
-          onPress={onPress}
-          style={({ pressed }) => [styles.copy, pressed ? styles.pressed : null]}
-        >
-          <Text numberOfLines={2} style={[styles.title, completed ? styles.titleCompleted : null]}>
-            {task.title}
-          </Text>
-          <View style={styles.dateRow}>
-            <AppIcon name="date" size={14} color={styles.dateIcon.color} decorative />
-            <Text
-              numberOfLines={1}
-              style={[styles.dateText, completed ? styles.dateCompleted : null]}
-            >
-              {dateLabel}
-            </Text>
-          </View>
-        </Pressable>
+        {onPress ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Open task ${task.title}`}
+            onPress={onPress}
+            style={({ pressed }) => [styles.copy, pressed ? styles.pressed : null]}
+          >
+            {copy}
+          </Pressable>
+        ) : (
+          <View style={styles.copy}>{copy}</View>
+        )}
 
-        <TaskActionMenu
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onComplete={!completed && onComplete ? complete : undefined}
-          onReactivate={completed ? onReactivate : undefined}
-        />
+        {onEdit && onDelete ? (
+          <TaskActionMenu
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onComplete={!completed && onComplete ? complete : undefined}
+            onReactivate={completed ? onReactivate : undefined}
+          />
+        ) : null}
       </View>
     </TaskSwipeRow>
   );

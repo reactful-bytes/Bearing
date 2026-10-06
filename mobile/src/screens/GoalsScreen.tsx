@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
+import { NavigationProp, useIsFocused, useNavigation } from '@react-navigation/native';
 import { ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
-import { AddEventModal } from '../components/calendar/AddEventModal';
 import { AddMilestoneModal } from '../components/goals/AddMilestoneModal';
 import { CreateGoalModal } from '../components/goals/CreateGoalModal';
 import { GoalDetailsModal } from '../components/goals/GoalDetailsModal';
@@ -25,9 +25,6 @@ import { hasActivePremiumStatus } from '../features/premium/premiumAccess';
 import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { useGoals } from '../features/goals/useGoals';
-import { useMilestoneEvents } from '../features/goals/useMilestoneEvents';
-import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
-import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { useTasks } from '../features/tasks/useTasks';
 import { PlanStackParamList, RootStackParamList } from '../navigation/navigationTypes';
 import {
@@ -62,8 +59,9 @@ type GoalsScreenProps = {
 
 export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   const styles = useThemedStyles(createStyles);
+  const taskNavigation = useNavigation<NavigationProp<PlanStackParamList>>();
+  const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
-  const { createEvent, publicationCalendarTitle } = useCalendarPublication();
   const { authUser, isAnonymous, profile } = useUserProfile();
   const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
   const {
@@ -87,7 +85,6 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   const [addTaskVisible, setAddTaskVisible] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
-  const [scheduleMilestoneId, setScheduleMilestoneId] = useState<string | null>(null);
   const [taskMilestoneId, setTaskMilestoneId] = useState<string | null>(null);
   const [goalFilter, setGoalFilter] = useState<GoalFilter>('active');
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status);
@@ -131,17 +128,6 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   );
   const selectedMilestone =
     selectedGoal?.milestones.find((milestone) => milestone.id === selectedMilestoneId) ?? null;
-  const scheduleMilestone =
-    goals
-      .flatMap((goal) => goal.milestones)
-      .find((milestone) => milestone.id === scheduleMilestoneId) ?? null;
-  const scheduleGoal =
-    goals.find((goal) =>
-      goal.milestones.some((milestone) => milestone.id === scheduleMilestoneId),
-    ) ?? null;
-  const { events: linkedEvents, uiState: linkedEventsState } = useMilestoneEvents(
-    selectedMilestone?.id ?? null,
-  );
 
   async function handleCreateGoal(input: CreateGoalInput): Promise<void> {
     await createGoal(input);
@@ -187,20 +173,9 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
 
   async function handleSaveMilestone(
     milestoneId: string,
-    fields: { title: string; description: string },
+    fields: { title: string; description: string; estimatedFinishDate?: Date | null },
   ): Promise<void> {
     await updateMilestone(milestoneId, fields);
-  }
-
-  async function handleScheduleMilestoneEvent(
-    input: CreateEventInput,
-    options: CreateEventOptions,
-  ): Promise<void> {
-    if (scheduleGoal?.status === 'draft') {
-      throw new Error('Activate the goal before scheduling milestones.');
-    }
-    await createEvent(input, options);
-    setScheduleMilestoneId(null);
   }
 
   function openGoal(goal: GoalWithMilestones): void {
@@ -318,7 +293,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
 
       <GoalDetailsModal
         goal={selectedGoal}
-        visible={selectedGoal !== null && !addMilestoneVisible && !addTaskVisible}
+        visible={isFocused && selectedGoal !== null && !addMilestoneVisible && !addTaskVisible}
         onClose={closeGoalDetails}
         onSaveGoal={handleSaveGoal}
         onActivateDraft={activateGoalDraft ? handleActivateGoalDraft : undefined}
@@ -335,23 +310,20 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
       />
 
       <MilestoneDetailModal
-        goalTitle={selectedGoal?.title ?? scheduleGoal?.title ?? 'Goal'}
+        goalTitle={selectedGoal?.title ?? 'Goal'}
         milestone={selectedMilestone}
-        visible={selectedMilestone !== null}
-        linkedEvents={linkedEvents}
-        linkedEventsState={linkedEventsState}
+        visible={selectedMilestone !== null && isFocused}
         locale={profile?.locale}
-        timeFormat={profile?.timeFormat}
+        goalEstimatedCompletionDate={selectedGoal?.estimatedCompletionDate}
         onClose={() => setSelectedMilestoneId(null)}
         onSaveMilestone={handleSaveMilestone}
+        onOpenTask={(task) => taskNavigation.navigate('TaskDetail', { taskId: task.id })}
         onDeleteMilestone={handleDeleteMilestone}
-        onSchedule={(milestone) => setScheduleMilestoneId(milestone.id)}
         onAddTask={(milestone) => {
           setSelectedMilestoneId(null);
           setTaskMilestoneId(milestone.id);
           setAddTaskVisible(true);
         }}
-        milestoneActionsEnabled={selectedGoal?.status !== 'draft'}
       />
 
       <AddTaskModal
@@ -371,27 +343,6 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
             ? `Milestone: ${selectedGoal.milestones.find((milestone) => milestone.id === taskMilestoneId)?.title}`
             : 'Linked to this goal'
         }
-      />
-
-      <AddEventModal
-        visible={scheduleMilestone !== null}
-        modalTitle="Schedule Milestone Event"
-        initialDate={scheduleGoal?.estimatedCompletionDate ?? new Date()}
-        initialValues={
-          scheduleMilestone
-            ? {
-                title: scheduleMilestone.title,
-                description: scheduleMilestone.description,
-                goalId: scheduleGoal?.id ?? null,
-                milestoneId: scheduleMilestone.id,
-              }
-            : undefined
-        }
-        publicationCalendarTitle={publicationCalendarTitle}
-        locale={profile?.locale}
-        timeFormat={profile?.timeFormat}
-        onClose={() => setScheduleMilestoneId(null)}
-        onSave={handleScheduleMilestoneEvent}
       />
     </SafeAreaView>
   );
