@@ -47,6 +47,8 @@ export function TaskDetailScreen({ route, navigation }: TaskDetailScreenProps) {
   const [startingNow, setStartingNow] = useState(false);
   const [pendingDeleteTask, setPendingDeleteTask] = useState<TaskRecord | null>(null);
   const task = tasks.find((candidate) => candidate.id === route.params.taskId) ?? null;
+  const linkedGoal = goals.find((goal) => goal.id === task?.goalId) ?? null;
+  const isDraftGoal = linkedGoal?.status === 'draft';
   const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
 
   async function handleUpdateTask(taskId: string, fields: UpdateTaskInput): Promise<void> {
@@ -68,6 +70,7 @@ export function TaskDetailScreen({ route, navigation }: TaskDetailScreenProps) {
     input: CreateEventInput,
     options: CreateEventOptions,
   ): Promise<void> {
+    if (isDraftGoal) throw new Error('Activate the goal before scheduling tasks.');
     if (!task) throw new Error('Task not found.');
     const conversion = await convertTaskToEvent(task.id, input);
     if (options.publishToDevice) await publishEvent(conversion.eventId, conversion.eventInput);
@@ -75,6 +78,7 @@ export function TaskDetailScreen({ route, navigation }: TaskDetailScreenProps) {
   }
 
   async function handleStartNow(minutes: number, options: CreateEventOptions): Promise<void> {
+    if (isDraftGoal) throw new Error('Activate the goal before starting tasks.');
     if (!task) throw new Error('Task not found.');
     const startAt = new Date();
     const endAt = new Date(startAt.getTime() + minutes * 60_000);
@@ -162,6 +166,7 @@ export function TaskDetailScreen({ route, navigation }: TaskDetailScreenProps) {
           goals={goals}
           locale={profile?.locale}
           timeFormat={timeFormat}
+          taskActionsEnabled={!isDraftGoal}
           backAccessibilityLabel="Back to Plan"
           onClose={navigation.goBack}
           onEdit={() => setEditing(true)}
@@ -178,6 +183,7 @@ export function TaskDetailScreen({ route, navigation }: TaskDetailScreenProps) {
         visible={editing}
         task={task}
         goals={goals}
+        allowedDraftGoalId={isDraftGoal ? linkedGoal.id : null}
         onClose={() => setEditing(false)}
         onSave={handleUpdateTask}
       />

@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { StyleSheet } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 
 import { GoalsScreen } from '../screens/GoalsScreen';
 import { closeRowContextMenu } from '../components/ui/RowContextMenu';
@@ -23,6 +24,13 @@ import {
   getAiCreditStatus,
   getAiPlanningErrorDetails,
 } from '../services/firebase/firebaseAiGoalPlans';
+
+const mockTaskNavigate = jest.fn();
+
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: jest.fn(() => ({ navigate: mockTaskNavigate })),
+  useIsFocused: jest.fn(() => true),
+}));
 
 jest.mock('expo-crypto', () => ({
   randomUUID: jest.fn(() => '123e4567-e89b-42d3-a456-426614174000'),
@@ -261,6 +269,7 @@ function openAiPlanningStep(): void {
 describe('GoalsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (useIsFocused as jest.MockedFunction<typeof useIsFocused>).mockReturnValue(true);
     mockUserProfile();
     (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
       entitlement: null,
@@ -1269,7 +1278,7 @@ describe('GoalsScreen', () => {
     expect(screen.queryByRole('button', { name: 'Reopen milestone' })).toBeNull();
     expect(
       screen.getByText(
-        'Add a task to this milestone. It completes automatically when all its tasks are complete.',
+        '* Add a task to this milestone. It completes automatically when all its tasks are complete.',
       ),
     ).toBeTruthy();
     expect(screen.getByLabelText('Add task to milestone Buy running shoes')).toBeTruthy();
@@ -1297,7 +1306,9 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Open milestone Buy running shoes'));
 
     expect(
-      screen.getByText('Completion updates automatically when tasks are completed or uncompleted.'),
+      screen.getByText(
+        '* Completion updates automatically when tasks are completed or uncompleted.',
+      ),
     ).toBeTruthy();
     expect(screen.queryByLabelText('Reopen milestone')).toBeNull();
     expect(screen.queryByLabelText('Manually complete milestone')).toBeNull();
@@ -1622,6 +1633,57 @@ describe('GoalsScreen', () => {
         title: 'Choose a local race',
         description: 'Compare dates.',
       });
+    });
+  });
+
+  it('opens task details from a milestone and hides parent overlays until returning', () => {
+    const milestoneTask = makeTask({ starter: 'Compare races.' });
+    const taskMilestone = makeMilestone({ tasks: [milestoneTask] });
+    mockGoals({ goals: [makeGoal({ milestones: [taskMilestone] })], uiState: 'ready' });
+    const { rerender } = render(<GoalsScreen />);
+    fireEvent.press(screen.getByText('Run a 10k'));
+    fireEvent.press(screen.getByLabelText(`Open milestone ${taskMilestone.title}`));
+    expect(screen.queryByText('Start here: Compare races.')).toBeNull();
+    fireEvent.press(screen.getByLabelText(`Open task ${milestoneTask.title}`));
+    expect(mockTaskNavigate).toHaveBeenCalledWith('TaskDetail', { taskId: milestoneTask.id });
+    (useIsFocused as jest.MockedFunction<typeof useIsFocused>).mockReturnValue(false);
+    rerender(<GoalsScreen />);
+    expect(screen.queryByLabelText('Milestone Details modal')).toBeNull();
+    expect(screen.queryByLabelText('Goal Details modal')).toBeNull();
+    (useIsFocused as jest.MockedFunction<typeof useIsFocused>).mockReturnValue(true);
+    rerender(<GoalsScreen />);
+    expect(screen.getByLabelText('Milestone Details modal')).toBeTruthy();
+    expect(screen.getByLabelText(`Open task ${milestoneTask.title}`)).toBeTruthy();
+  });
+
+  it('persists milestone date edits through the goals-list details entry point', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 9, 6, 12));
+    const updateMilestone = jest.fn(async () => undefined);
+    const datedMilestone = makeMilestone({ estimatedFinishDate: new Date(2026, 10, 1) });
+    mockGoals({
+      goals: [
+        makeGoal({
+          estimatedCompletionDate: new Date(2026, 11, 1),
+          milestones: [datedMilestone],
+        }),
+      ],
+      uiState: 'ready',
+      updateMilestone,
+    });
+    render(<GoalsScreen />);
+    fireEvent.press(screen.getByText('Run a 10k'));
+    fireEvent.press(screen.getByLabelText(`Open milestone ${datedMilestone.title}`));
+    fireEvent.press(screen.getByLabelText('Milestone actions'));
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Edit milestone' }));
+    fireEvent.press(screen.getByRole('button', { name: 'November 15, 2026' }));
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Save milestone changes'));
+    });
+    expect(updateMilestone).toHaveBeenCalledWith(datedMilestone.id, {
+      title: datedMilestone.title,
+      description: datedMilestone.description,
+      estimatedFinishDate: new Date(2026, 10, 15),
     });
   });
 });

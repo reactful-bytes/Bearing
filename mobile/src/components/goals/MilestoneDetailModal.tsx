@@ -19,6 +19,13 @@ import { GoalMilestoneWithTasks } from '../../features/goals/goalTypes';
 import { MilestoneEventsUiState } from '../../features/goals/useMilestoneEvents';
 import { TimeFormat } from '../../features/profile/timeFormat';
 import { sortGoalTasks } from '../../features/goals/goalHelpers';
+import { TaskRecord } from '../../features/tasks/taskTypes';
+import {
+  GoalDatePicker,
+  buildGoalDateParts,
+  getGoalDateFromParts,
+  isTodayOrFutureDate,
+} from './GoalDatePicker';
 
 type MilestoneDetailModalProps = {
   goalTitle: string;
@@ -29,16 +36,18 @@ type MilestoneDetailModalProps = {
   /** @deprecated Milestone details no longer display linked events. */
   linkedEventsState?: MilestoneEventsUiState;
   locale?: string;
+  goalEstimatedCompletionDate?: Date;
   timeFormat?: TimeFormat;
   onClose: () => void;
   onSaveMilestone: (
     milestoneId: string,
-    fields: { title: string; description: string },
+    fields: { title: string; description: string; estimatedFinishDate?: Date | null },
   ) => Promise<void>;
   onDeleteMilestone: (milestone: GoalMilestoneWithTasks) => Promise<void>;
   /** @deprecated Milestone scheduling is no longer available from details. */
   onSchedule?: (milestone: GoalMilestoneWithTasks) => void;
   onAddTask: (milestone: GoalMilestoneWithTasks) => void;
+  onOpenTask?: (task: TaskRecord) => void;
   /** @deprecated Milestone completion is derived from tasks. */
   onToggleManualCompletion?: (
     milestone: GoalMilestoneWithTasks,
@@ -52,10 +61,12 @@ export function MilestoneDetailModal({
   milestone,
   visible,
   locale,
+  goalEstimatedCompletionDate,
   onClose,
   onSaveMilestone,
   onDeleteMilestone,
   onAddTask,
+  onOpenTask,
 }: MilestoneDetailModalProps) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
@@ -64,6 +75,7 @@ export function MilestoneDetailModal({
   const [deleteVisible, setDeleteVisible] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [expectedFinishDate, setExpectedFinishDate] = useState<Date | null>(null);
   const [saving, setSaving] = useState(false);
   const actionInFlight = useRef(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +86,7 @@ export function MilestoneDetailModal({
     setDeleteVisible(false);
     setTitle(milestone.title);
     setDescription(milestone.description);
+    setExpectedFinishDate(milestone.estimatedFinishDate);
     setSaving(false);
     setError(null);
   }, [milestone, visible]);
@@ -84,6 +97,7 @@ export function MilestoneDetailModal({
     if (editMode && milestone) {
       setTitle(milestone.title);
       setDescription(milestone.description);
+      setExpectedFinishDate(milestone.estimatedFinishDate);
       setEditMode(false);
       return;
     }
@@ -96,11 +110,31 @@ export function MilestoneDetailModal({
       setError('Milestone name is required.');
       return;
     }
+    const dateChanged =
+      expectedFinishDate?.toDateString() !== milestone.estimatedFinishDate?.toDateString();
+    if (dateChanged && expectedFinishDate) {
+      if (!isTodayOrFutureDate(expectedFinishDate, new Date())) {
+        setError('Expected completion date must be today or later.');
+        return;
+      }
+      if (
+        goalEstimatedCompletionDate &&
+        expectedFinishDate.getTime() >
+          getGoalDateFromParts(buildGoalDateParts(goalEstimatedCompletionDate)).getTime()
+      ) {
+        setError('Milestone must finish on or before the goal completion date.');
+        return;
+      }
+    }
     actionInFlight.current = true;
     setSaving(true);
     setError(null);
     try {
-      await onSaveMilestone(milestone.id, { title: title.trim(), description: description.trim() });
+      await onSaveMilestone(milestone.id, {
+        title: title.trim(),
+        description: description.trim(),
+        ...(dateChanged ? { estimatedFinishDate: expectedFinishDate } : {}),
+      });
       setEditMode(false);
     } catch (saveError) {
       setError(
@@ -207,11 +241,16 @@ export function MilestoneDetailModal({
                       ? 'In progress'
                       : 'Not started'}
                 </Text>
-                {milestone.estimatedFinishDate ? (
-                  <Text style={styles.infoValue}>
-                    Target date: {milestone.estimatedFinishDate.toLocaleDateString(locale)}
-                  </Text>
-                ) : null}
+                <Text style={styles.infoValue}>
+                  Expected completion date:{' '}
+                  {milestone.estimatedFinishDate
+                    ? milestone.estimatedFinishDate.toLocaleDateString(locale, {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })
+                    : 'Not set'}
+                </Text>
               </View>
             </>
           )}
@@ -230,6 +269,32 @@ export function MilestoneDetailModal({
                 onChangeText={setDescription}
                 multiline
               />
+              {expectedFinishDate ? (
+                <GoalDatePicker
+                  title="Expected completion date"
+                  accessibilityPrefix="edit milestone"
+                  dateParts={buildGoalDateParts(expectedFinishDate)}
+                  onSelectDate={(date) => {
+                    setExpectedFinishDate(date);
+                    setError(null);
+                  }}
+                />
+              ) : (
+                <View style={styles.summary}>
+                  <Text style={styles.infoValue}>Expected completion date: Not set</Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Set milestone expected completion date"
+                    onPress={() => {
+                      setExpectedFinishDate(getGoalDateFromParts(buildGoalDateParts(new Date())));
+                      setError(null);
+                    }}
+                    style={({ pressed }) => [styles.addTaskButton, pressed && styles.pressed]}
+                  >
+                    <Text style={styles.addTaskText}>+ Set expected completion date</Text>
+                  </Pressable>
+                </View>
+              )}
               <AppButton
                 label="Save Changes"
                 accessibilityLabel="Save milestone changes"
@@ -279,17 +344,18 @@ export function MilestoneDetailModal({
                     <Text style={styles.infoValue}>No tasks yet.</Text>
                   ) : (
                     sortGoalTasks(milestone.tasks).map((task) => (
-                      <View key={task.id}>
-                        <TaskListRow task={task} dateLabel={formatTaskDateLabel(task, locale)} />
-                        {task.starter ? (
-                          <Text style={styles.guidance}>Start here: {task.starter}</Text>
-                        ) : null}
-                      </View>
+                      <TaskListRow
+                        key={task.id}
+                        task={task}
+                        dateLabel={formatTaskDateLabel(task, locale)}
+                        onPress={onOpenTask ? () => onOpenTask(task) : undefined}
+                      />
                     ))
                   )}
                 </ScrollView>
               </View>
-              <Text style={styles.guidance}>
+              <Text style={styles.completionNote}>
+                {'* '}
                 {milestone.totalTaskCount === 0
                   ? 'Add a task to this milestone. It completes automatically when all its tasks are complete.'
                   : 'Completion updates automatically when tasks are completed or uncompleted.'}
@@ -339,7 +405,7 @@ const createStyles = (theme: Theme) =>
     statusLabel: { ...typography.helper, color: theme.colors.brand, fontWeight: '700' },
     infoLabel: { ...typography.label, color: theme.colors.textSecondary },
     infoValue: { ...typography.body, color: theme.colors.textPrimary },
-    guidance: { ...typography.helper, color: theme.colors.textSecondary },
+    completionNote: { ...typography.caption, color: theme.colors.textSecondary },
     sectionTitle: { ...typography.button, color: theme.colors.text },
     errorText: { ...typography.helper, color: theme.colors.dangerText },
   });

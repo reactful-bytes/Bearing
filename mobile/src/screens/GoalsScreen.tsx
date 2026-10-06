@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { NavigationProp, useIsFocused, useNavigation } from '@react-navigation/native';
 import { ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -58,6 +59,8 @@ type GoalsScreenProps = {
 
 export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   const styles = useThemedStyles(createStyles);
+  const taskNavigation = useNavigation<NavigationProp<PlanStackParamList>>();
+  const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
   const { authUser, isAnonymous, profile } = useUserProfile();
   const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
@@ -170,7 +173,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
 
   async function handleSaveMilestone(
     milestoneId: string,
-    fields: { title: string; description: string },
+    fields: { title: string; description: string; estimatedFinishDate?: Date | null },
   ): Promise<void> {
     await updateMilestone(milestoneId, fields);
   }
@@ -290,7 +293,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
 
       <GoalDetailsModal
         goal={selectedGoal}
-        visible={selectedGoal !== null && !addMilestoneVisible && !addTaskVisible}
+        visible={isFocused && selectedGoal !== null && !addMilestoneVisible && !addTaskVisible}
         onClose={closeGoalDetails}
         onSaveGoal={handleSaveGoal}
         onActivateDraft={activateGoalDraft ? handleActivateGoalDraft : undefined}
@@ -309,10 +312,12 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
       <MilestoneDetailModal
         goalTitle={selectedGoal?.title ?? 'Goal'}
         milestone={selectedMilestone}
-        visible={selectedMilestone !== null}
+        visible={selectedMilestone !== null && isFocused}
         locale={profile?.locale}
+        goalEstimatedCompletionDate={selectedGoal?.estimatedCompletionDate}
         onClose={() => setSelectedMilestoneId(null)}
         onSaveMilestone={handleSaveMilestone}
+        onOpenTask={(task) => taskNavigation.navigate('TaskDetail', { taskId: task.id })}
         onDeleteMilestone={handleDeleteMilestone}
         onAddTask={(milestone) => {
           setSelectedMilestoneId(null);

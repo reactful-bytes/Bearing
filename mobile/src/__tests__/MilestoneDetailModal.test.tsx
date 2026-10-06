@@ -70,6 +70,7 @@ function renderDetails(overrides: Partial<React.ComponentProps<typeof MilestoneD
     ),
     onSchedule: jest.fn(),
     onAddTask: jest.fn(),
+    onOpenTask: jest.fn<(task: TaskRecord) => void>(),
     ...overrides,
   };
   return { ...render(<MilestoneDetailModal {...props} />), props };
@@ -83,6 +84,7 @@ async function openAction(label: 'Edit milestone' | 'Delete milestone'): Promise
 describe('MilestoneDetailModal', () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 9, 6, 12));
     (useSafeAreaInsets as jest.MockedFunction<typeof useSafeAreaInsets>).mockReturnValue({
       top: 0,
       bottom: 0,
@@ -167,6 +169,134 @@ describe('MilestoneDetailModal', () => {
     });
     expect(screen.getByRole('button', { name: 'Milestone actions' })).toBeTruthy();
     expect(props.onClose).not.toHaveBeenCalled();
+  });
+
+  it('shows the expected completion date and a smaller asterisk-prefixed completion note', () => {
+    renderDetails({
+      locale: 'en-US',
+      milestone: {
+        ...milestone,
+        totalTaskCount: 2,
+      },
+    });
+    expect(screen.getByText('Expected completion date: Nov 1, 2026')).toBeTruthy();
+    const note = screen.getByText(
+      '* Completion updates automatically when tasks are completed or uncompleted.',
+    );
+    expect(StyleSheet.flatten(note.props.style).fontSize).toBe(12);
+    expect(StyleSheet.flatten(note.props.style).fontSize).toBeLessThan(
+      StyleSheet.flatten(screen.getByText(milestone.description).props.style).fontSize,
+    );
+  });
+
+  it('saves a changed finish date and displays the persisted date after a snapshot update', async () => {
+    const { props, rerender } = renderDetails({
+      goalEstimatedCompletionDate: new Date(2026, 10, 30),
+      locale: 'en-US',
+    });
+    await openAction('Edit milestone');
+    expect(screen.getByRole('button', { name: 'November 1, 2026', selected: true })).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'November 15, 2026' }));
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Save milestone changes'));
+    });
+    expect(props.onSaveMilestone).toHaveBeenCalledWith(milestone.id, {
+      title: milestone.title,
+      description: milestone.description,
+      estimatedFinishDate: new Date(2026, 10, 15),
+    });
+    rerender(
+      <MilestoneDetailModal
+        {...props}
+        milestone={{
+          ...milestone,
+          estimatedFinishDate: new Date(2026, 10, 15),
+        }}
+      />,
+    );
+    expect(screen.getByText('Expected completion date: Nov 15, 2026')).toBeTruthy();
+  });
+
+  it('discards date edits when the top-left back arrow returns to details', async () => {
+    const { props } = renderDetails();
+    await openAction('Edit milestone');
+    fireEvent.press(screen.getByRole('button', { name: 'November 15, 2026' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Back to milestone details' }));
+    expect(props.onSaveMilestone).not.toHaveBeenCalled();
+    await openAction('Edit milestone');
+    expect(screen.getByRole('button', { name: 'November 1, 2026', selected: true })).toBeTruthy();
+  });
+
+  it('preserves an unchanged past date when only editing text', async () => {
+    const { props } = renderDetails({
+      milestone: { ...milestone, estimatedFinishDate: new Date(2026, 7, 1) },
+      goalEstimatedCompletionDate: new Date(2026, 8, 1),
+    });
+    await openAction('Edit milestone');
+    fireEvent.changeText(screen.getByLabelText('Edit milestone name'), 'Updated milestone');
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Save milestone changes'));
+    });
+    expect(props.onSaveMilestone).toHaveBeenCalledWith(milestone.id, {
+      title: 'Updated milestone',
+      description: milestone.description,
+    });
+  });
+
+  it('preserves unset dates until the user explicitly sets and saves a date', async () => {
+    const { props } = renderDetails({ milestone: { ...milestone, estimatedFinishDate: null } });
+    expect(screen.getByText('Expected completion date: Not set')).toBeTruthy();
+    await openAction('Edit milestone');
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Save milestone changes'));
+    });
+    expect(props.onSaveMilestone).toHaveBeenLastCalledWith(milestone.id, {
+      title: milestone.title,
+      description: milestone.description,
+    });
+    await openAction('Edit milestone');
+    fireEvent.press(screen.getByLabelText('Set milestone expected completion date'));
+    fireEvent.press(screen.getByRole('button', { name: 'October 12, 2026' }));
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Save milestone changes'));
+    });
+    expect(props.onSaveMilestone).toHaveBeenLastCalledWith(milestone.id, {
+      title: milestone.title,
+      description: milestone.description,
+      estimatedFinishDate: new Date(2026, 9, 12),
+    });
+  });
+
+  it('rejects newly changed past dates and keeps editing open', async () => {
+    const { props } = renderDetails({
+      milestone: { ...milestone, estimatedFinishDate: new Date(2026, 7, 1) },
+    });
+    await openAction('Edit milestone');
+    fireEvent.press(screen.getByLabelText('Next month for edit milestone'));
+    fireEvent.press(screen.getByLabelText('Save milestone changes'));
+    expect(screen.getByText('Expected completion date must be today or later.')).toBeTruthy();
+    expect(props.onSaveMilestone).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Edit milestone name')).toBeTruthy();
+  });
+
+  it('rejects dates after the goal finish while accepting the goal finish day', async () => {
+    const { props } = renderDetails({ goalEstimatedCompletionDate: new Date(2026, 10, 15, 12) });
+    await openAction('Edit milestone');
+    fireEvent.press(screen.getByRole('button', { name: 'November 16, 2026' }));
+    fireEvent.press(screen.getByLabelText('Save milestone changes'));
+    expect(
+      screen.getByText('Milestone must finish on or before the goal completion date.'),
+    ).toBeTruthy();
+    expect(props.onSaveMilestone).not.toHaveBeenCalled();
+    fireEvent.press(screen.getByRole('button', { name: 'November 15, 2026' }));
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Save milestone changes'));
+    });
+    expect(props.onSaveMilestone).toHaveBeenCalledWith(milestone.id, {
+      title: milestone.title,
+      description: milestone.description,
+      estimatedFinishDate: new Date(2026, 10, 15),
+    });
   });
 
   it('rejects blank names and shows actionable save errors without leaving editing', async () => {
@@ -305,7 +435,7 @@ describe('MilestoneDetailModal', () => {
     expect(screen.getByText('100% complete · 2 of 2 tasks completed')).toBeTruthy();
   });
 
-  it('renders due-ordered informational task rows in a bounded independently scrollable list', () => {
+  it('renders clickable due-ordered task rows without starter cues in a bounded scrollable list', () => {
     (useSafeAreaInsets as jest.MockedFunction<typeof useSafeAreaInsets>).mockReturnValue({
       top: 24,
       bottom: 16,
@@ -321,7 +451,7 @@ describe('MilestoneDetailModal', () => {
     });
     const activeTask = makeTask();
     const unscheduledTask = makeTask({ id: 'unscheduled-task', title: 'Train', dueDate: null });
-    renderDetails({
+    const { props } = renderDetails({
       milestone: { ...milestone, tasks: [unscheduledTask, activeTask, completedTask] },
       locale: 'en-US',
     });
@@ -337,8 +467,12 @@ describe('MilestoneDetailModal', () => {
         .map((row) => row.props.task.id),
     ).toEqual([completedTask.id, activeTask.id, unscheduledTask.id]);
     expect(within(list).queryByText('+ Add Task')).toBeNull();
-    expect(within(list).queryByRole('button')).toBeNull();
-    expect(within(list).getByText('Start here: Compare local dates.')).toBeTruthy();
+    expect(within(list).getAllByRole('button')).toHaveLength(3);
+    expect(within(list).queryByText('Start here: Compare local dates.')).toBeNull();
+    for (const task of [completedTask, activeTask, unscheduledTask]) {
+      fireEvent.press(within(list).getByRole('button', { name: `Open task ${task.title}` }));
+      expect(props.onOpenTask).toHaveBeenLastCalledWith(task);
+    }
     expect(
       StyleSheet.flatten(within(list).getByText(completedTask.title).props.style)
         .textDecorationLine,

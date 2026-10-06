@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { NavigationProp, useNavigation } from '@react-navigation/native';
+import { NavigationProp, useIsFocused, useNavigation } from '@react-navigation/native';
 import {
   Alert,
   Pressable,
@@ -67,6 +67,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const navigation = useNavigation<NavigationProp<AppTabParamList>>();
+  const isFocused = useIsFocused();
   const { profile } = useUserProfile();
   const { publicationCalendarTitle, publishEvent } = useCalendarPublication();
   const {
@@ -264,7 +265,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
 
   async function handleSaveMilestone(
     milestoneId: string,
-    fields: { title: string; description: string },
+    fields: { title: string; description: string; estimatedFinishDate?: Date | null },
   ): Promise<void> {
     await updateMilestone(milestoneId, fields);
   }
@@ -429,18 +430,21 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
 
         {activeTab === 'tasks' ? (
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
+            <View testID="goal-next-up-header" style={styles.sectionHeader}>
               <Text accessibilityRole="header" style={styles.sectionTitle}>
                 Next Up
               </Text>
-              <AppButton
-                label="Add task"
-                variant="secondary"
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Add task"
                 onPress={() => {
                   setTaskMilestoneId(goal.nextMilestone?.id ?? null);
                   setAddTaskVisible(true);
                 }}
-              />
+                style={({ pressed }) => [styles.addItemButton, pressed && styles.textButtonPressed]}
+              >
+                <Text style={styles.addItemText}>+ Add Task</Text>
+              </Pressable>
             </View>
             {nextTask ? (
               <AppCard style={styles.nextTaskCard}>
@@ -490,13 +494,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
         ) : (
           <View style={styles.section}>
             <View testID="goal-overview-summary" style={styles.section}>
-              <Text accessibilityRole="header" style={styles.sectionTitle}>
-                Description
-              </Text>
-              <Text style={styles.stateDescription}>
-                {goal.description || 'No description yet.'}
-              </Text>
-              <Text style={styles.stateDescription}>
+              <Text testID="goal-finish-date" style={styles.overviewFinishDate}>
                 Finish date:{' '}
                 {goal.estimatedCompletionDate.toLocaleDateString(profile?.locale, {
                   month: 'short',
@@ -504,17 +502,26 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
                   year: 'numeric',
                 })}
               </Text>
+              <Text accessibilityRole="header" style={styles.sectionTitle}>
+                Description
+              </Text>
+              <Text style={styles.overviewDescription}>
+                {goal.description || 'No description yet.'}
+              </Text>
             </View>
             <View style={styles.sectionHeader}>
               <Text accessibilityRole="header" style={styles.sectionTitle}>
                 Milestones
               </Text>
-              <AppButton
-                label="Add milestone"
-                variant="secondary"
-                onPress={() => setAddMilestoneVisible(true)}
-              />
             </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Add milestone"
+              onPress={() => setAddMilestoneVisible(true)}
+              style={({ pressed }) => [styles.addItemButton, pressed && styles.textButtonPressed]}
+            >
+              <Text style={styles.addItemText}>+ Add Milestone</Text>
+            </Pressable>
             {goal.milestones.length === 0 ? (
               <Text style={styles.stateDescription}>
                 No milestones yet. Add one to break this goal into smaller steps.
@@ -535,12 +542,29 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
                       (task) => task.milestoneId === milestone.id,
                     );
                     return (
-                      <View style={styles.taskListContent}>
+                      <View
+                        testID={`milestone-tasks-${milestone.id}`}
+                        style={styles.taskListContent}
+                      >
                         {milestoneTasks.length === 0 ? (
                           <Text style={styles.stateDescription}>No tasks in this milestone.</Text>
                         ) : (
                           milestoneTasks.map(renderTaskListRow)
                         )}
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Add task to milestone ${milestone.title}`}
+                          onPress={() => {
+                            setTaskMilestoneId(milestone.id);
+                            setAddTaskVisible(true);
+                          }}
+                          style={({ pressed }) => [
+                            styles.addItemButton,
+                            pressed && styles.textButtonPressed,
+                          ]}
+                        >
+                          <Text style={styles.addItemText}>+ Add Task</Text>
+                        </Pressable>
                       </View>
                     );
                   }}
@@ -685,10 +709,14 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
       <MilestoneDetailModal
         goalTitle={goal.title}
         milestone={selectedMilestone}
-        visible={selectedMilestone !== null}
+        visible={selectedMilestone !== null && isFocused}
         locale={profile?.locale}
+        goalEstimatedCompletionDate={goal.estimatedCompletionDate}
         onClose={() => setSelectedMilestoneId(null)}
         onSaveMilestone={handleSaveMilestone}
+        onOpenTask={(task) =>
+          navigation.navigate('Plan', { screen: 'TaskDetail', params: { taskId: task.id } })
+        }
         onDeleteMilestone={async (milestone) => {
           await deleteMilestone(milestone.id);
           setSelectedMilestoneId(null);
@@ -716,6 +744,12 @@ const createStyles = (theme: Theme) =>
     stateCard: { margin: theme.layout.pagePaddingHorizontal, gap: theme.spacing.sm },
     stateTitle: { ...theme.typography.cardTitle, color: theme.colors.text },
     stateDescription: { ...theme.typography.body, color: theme.colors.textSecondary },
+    overviewDescription: { ...theme.typography.helper, color: theme.colors.textPrimary },
+    overviewFinishDate: {
+      ...theme.typography.helper,
+      color: theme.colors.textEmphasis,
+      fontWeight: '700',
+    },
     detailHeader: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
     detailHeaderCopy: { flex: 1, gap: theme.spacing.xs },
     detailTitle: { ...theme.typography.sectionTitle, color: theme.colors.text },
@@ -743,6 +777,15 @@ const createStyles = (theme: Theme) =>
     tabLabelActive: { color: theme.colors.brand, fontWeight: '700' },
     section: { gap: theme.spacing.sm },
     taskListContent: { gap: theme.spacing.sm },
+    addItemButton: {
+      minHeight: theme.layout.minimumTouchTarget,
+      alignSelf: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: theme.spacing.sm,
+      borderRadius: theme.radii.md,
+    },
+    addItemText: { ...theme.typography.label, color: theme.colors.brand, fontWeight: '700' },
+    textButtonPressed: { opacity: 0.68 },
     sectionHeader: {
       flexDirection: 'row',
       alignItems: 'center',
