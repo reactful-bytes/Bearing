@@ -236,10 +236,20 @@ describe('UI primitives', () => {
     }
 
     render(<ReopenableSheet />);
-    const gesture = jest.requireMock('react-native-gesture-handler').__getLatestPanGesture();
-    const sharedValue = jest.requireMock('react-native-reanimated').__getSharedValues().at(-1);
-    const animatedStyles = jest.requireMock('react-native-reanimated').__getAnimatedStyles();
-    const backdropStyle = () => animatedStyles.at(-1)();
+    const { __getLatestPanGesture } = jest.requireMock<{
+      __getLatestPanGesture: () => {
+        onUpdateCallback: (event: { translationY: number }) => void;
+        onEndCallback: (event: { translationY: number; velocityY: number }) => void;
+      };
+    }>('react-native-gesture-handler');
+    const gesture = __getLatestPanGesture();
+    const { __getSharedValues, __getAnimatedStyles } = jest.requireMock<{
+      __getSharedValues: () => { value: number }[];
+      __getAnimatedStyles: () => (() => { opacity: number })[];
+    }>('react-native-reanimated');
+    const sharedValue = __getSharedValues().at(-1)!;
+    const animatedStyles = __getAnimatedStyles();
+    const backdropStyle = animatedStyles.at(-1)!;
 
     fireEvent.press(screen.getByTestId('app-modal-drag-handle'));
     expect(screen.getByLabelText('View tasks modal')).toBeTruthy();
