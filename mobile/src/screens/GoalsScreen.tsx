@@ -9,11 +9,12 @@ import { CreateGoalModal } from '../components/goals/CreateGoalModal';
 import { GoalDetailsModal } from '../components/goals/GoalDetailsModal';
 import { MilestoneDetailModal } from '../components/goals/MilestoneDetailModal';
 import { GoalFilterModal } from '../components/goals/GoalFilterModal';
-import type { GoalFilterOption } from '../components/goals/GoalFilterModal';
+import type { GoalFilterOption, GoalTargetDateFilter } from '../components/goals/GoalFilterModal';
 import { AddTaskModal } from '../components/tasks/AddTaskModal';
 import { GoalCard } from '../components/presentation/GoalPresentation';
 import type { GoalFilter } from '../components/presentation/GoalPresentation';
 import { AppCard } from '../components/ui/AppCard';
+import { EmptyState } from '../components/ui/EmptyState';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { AppIcon } from '../components/ui/AppIcon';
@@ -45,6 +46,31 @@ function formatDate(date: Date): string {
   });
 }
 
+function matchesGoalTargetDate(goal: GoalWithMilestones, filter: GoalTargetDateFilter): boolean {
+  if (filter === 'any') return true;
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (filter === 'pastDue') {
+    return goal.status === 'active' && goal.estimatedCompletionDate < todayStart;
+  }
+
+  const rangeStart =
+    filter === 'thisWeek'
+      ? new Date(
+          todayStart.getFullYear(),
+          todayStart.getMonth(),
+          todayStart.getDate() - ((todayStart.getDay() + 6) % 7),
+        )
+      : new Date(todayStart.getFullYear(), todayStart.getMonth(), 1);
+  const rangeEnd =
+    filter === 'thisWeek'
+      ? new Date(rangeStart.getFullYear(), rangeStart.getMonth(), rangeStart.getDate() + 7)
+      : new Date(rangeStart.getFullYear(), rangeStart.getMonth() + 1, 1);
+
+  return goal.estimatedCompletionDate >= rangeStart && goal.estimatedCompletionDate < rangeEnd;
+}
+
 type GoalSortBy =
   | 'targetDate:asc'
   | 'targetDate:desc'
@@ -54,10 +80,30 @@ type GoalSortBy =
   | 'title:desc';
 
 const goalSortOptions = [
-  { value: 'targetDate:asc', label: 'Target date soonest', summary: 'Target date ↑', icon: 'dateAscending' },
-  { value: 'targetDate:desc', label: 'Target date latest', summary: 'Target date ↓', icon: 'dateDescending' },
-  { value: 'updatedAt:desc', label: 'Updated newest', summary: 'Updated ↓', icon: 'updatedDescending' },
-  { value: 'updatedAt:asc', label: 'Updated oldest', summary: 'Updated ↑', icon: 'updatedAscending' },
+  {
+    value: 'targetDate:asc',
+    label: 'Target date soonest',
+    summary: 'Target date ↑',
+    icon: 'dateAscending',
+  },
+  {
+    value: 'targetDate:desc',
+    label: 'Target date latest',
+    summary: 'Target date ↓',
+    icon: 'dateDescending',
+  },
+  {
+    value: 'updatedAt:desc',
+    label: 'Updated newest',
+    summary: 'Updated ↓',
+    icon: 'updatedDescending',
+  },
+  {
+    value: 'updatedAt:asc',
+    label: 'Updated oldest',
+    summary: 'Updated ↑',
+    icon: 'updatedAscending',
+  },
   { value: 'title:asc', label: 'Title A to Z', summary: 'Title A-Z', icon: 'textAscending' },
   { value: 'title:desc', label: 'Title Z to A', summary: 'Title Z-A', icon: 'textDescending' },
 ] as const;
@@ -109,6 +155,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
   const [taskMilestoneId, setTaskMilestoneId] = useState<string | null>(null);
   const [goalFilter, setGoalFilter] = useState<GoalFilter>('active');
+  const [goalTargetDateFilter, setGoalTargetDateFilter] = useState<GoalTargetDateFilter>('any');
   const [goalSearch, setGoalSearch] = useState('');
   const [goalSortBy, setGoalSortBy] = useState<GoalSortBy>('targetDate:asc');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -145,11 +192,12 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
     const normalizedQuery = goalSearch.trim().toLocaleLowerCase();
     const filtered = goals.filter((goal) => {
       const matchesStatus = goalFilter === 'all' || goal.status === goalFilter;
+      const matchesTargetDate = matchesGoalTargetDate(goal, goalTargetDateFilter);
       const matchesSearch =
         !normalizedQuery ||
         goal.title.toLocaleLowerCase().includes(normalizedQuery) ||
         goal.description.toLocaleLowerCase().includes(normalizedQuery);
-      return matchesStatus && matchesSearch;
+      return matchesStatus && matchesTargetDate && matchesSearch;
     });
     const [sortKey, direction] = goalSortBy.split(':') as [string, 'asc' | 'desc'];
     const multiplier = direction === 'asc' ? 1 : -1;
@@ -166,7 +214,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
           multiplier || left.title.localeCompare(right.title)
       );
     });
-  }, [goalFilter, goalSearch, goalSortBy, goals]);
+  }, [goalFilter, goalSearch, goalSortBy, goalTargetDateFilter, goals]);
 
   const selectedGoal = useMemo(
     () => goals.find((goal) => goal.id === selectedGoalId) ?? null,
@@ -175,6 +223,17 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   const selectedMilestone =
     selectedGoal?.milestones.find((milestone) => milestone.id === selectedMilestoneId) ?? null;
   const selectedGoalFilter = goalFilterOptions.find((option) => option.value === goalFilter)!;
+  const targetDateFilterLabel =
+    goalTargetDateFilter === 'pastDue'
+      ? 'Past due'
+      : goalTargetDateFilter === 'thisWeek'
+        ? 'This week'
+        : goalTargetDateFilter === 'thisMonth'
+          ? 'This month'
+          : null;
+  const goalFilterSummary = [selectedGoalFilter.label, targetDateFilterLabel]
+    .filter(Boolean)
+    .join(' · ');
   const selectedGoalSort = goalSortOptions.find((option) => option.value === goalSortBy)!;
 
   async function handleCreateGoal(input: CreateGoalInput): Promise<void> {
@@ -286,7 +345,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
         </View>
         <FilterSortToolbar
           testID="goal-filter-sort-toolbar"
-          filterSummary={selectedGoalFilter.label}
+          filterSummary={goalFilterSummary}
           sortSummary={selectedGoalSort.summary}
           filterAccessibilityLabel="Filter goals"
           sortAccessibilityLabel="Sort goals"
@@ -320,34 +379,36 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
         ) : null}
 
         {(uiState === 'empty' || uiState === 'ready') && visibleGoals.length === 0 ? (
-          <AppCard>
-            <Text style={styles.stateTitle}>
-              {goalSearch.trim()
+          <EmptyState
+            icon="goals"
+            presentation="screen"
+            title={
+              goalSearch.trim() || goalTargetDateFilter !== 'any'
                 ? 'No matching goals.'
                 : goalFilter === 'draft'
-                ? 'No goal drafts.'
-                : goalFilter === 'active'
-                  ? 'No active goals.'
-                  : goalFilter === 'completed'
-                    ? 'No completed goals.'
-                    : goalFilter === 'archived'
-                      ? 'No archived goals.'
-                      : 'No goals yet.'}
-            </Text>
-            <Text style={styles.stateDescription}>
-              {goalSearch.trim()
+                  ? 'No goal drafts.'
+                  : goalFilter === 'active'
+                    ? 'No active goals.'
+                    : goalFilter === 'completed'
+                      ? 'No completed goals.'
+                      : goalFilter === 'archived'
+                        ? 'No archived goals.'
+                        : 'No goals yet.'
+            }
+            description={
+              goalSearch.trim() || goalTargetDateFilter !== 'any'
                 ? 'Try a different search or filter.'
                 : goalFilter === 'draft'
-                ? 'Goals saved for later will appear here.'
-                : goalFilter === 'active'
-                  ? 'Create a goal to start building a step-by-step plan.'
-                  : goalFilter === 'completed'
-                    ? 'Goals you finish will stay available here.'
-                    : goalFilter === 'archived'
-                      ? 'Archived goals will stay available here for reference.'
-                      : 'Create your first goal to start building a step-by-step plan.'}
-            </Text>
-          </AppCard>
+                  ? 'Goals saved for later will appear here.'
+                  : goalFilter === 'active'
+                    ? 'Create a goal to start building a step-by-step plan.'
+                    : goalFilter === 'completed'
+                      ? 'Goals you finish will stay available here.'
+                      : goalFilter === 'archived'
+                        ? 'Archived goals will stay available here for reference.'
+                        : 'Create your first goal to start building a step-by-step plan.'
+            }
+          />
         ) : null}
 
         {uiState === 'ready' || uiState === 'empty'
@@ -438,10 +499,12 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
       <GoalFilterModal
         visible={filterModalVisible}
         selectedFilter={goalFilter}
+        selectedTargetDateFilter={goalTargetDateFilter}
         options={goalFilterOptions}
         onClose={() => setFilterModalVisible(false)}
-        onApply={(filter) => {
+        onApply={(filter, targetDateFilter) => {
           setGoalFilter(filter);
+          setGoalTargetDateFilter(targetDateFilter);
           setFilterModalVisible(false);
         }}
       />

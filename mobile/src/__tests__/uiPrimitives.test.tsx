@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
 import { useState } from 'react';
-import { Dimensions, Pressable, Text } from 'react-native';
+import { Dimensions, Pressable, StyleSheet, Text } from 'react-native';
 
 import { CreateFabProvider } from '../components/presentation/CreateFabContext';
 import { AppCard } from '../components/ui/AppCard';
@@ -243,6 +243,9 @@ describe('UI primitives', () => {
     }
 
     render(<ReopenableSheet />);
+    expect(
+      StyleSheet.flatten(screen.getByTestId('app-modal-drag-handle').props.style).marginBottom,
+    ).toBeLessThan(0);
     const gesture = (
       jest.requireMock('react-native-gesture-handler') as {
         __getLatestPanGesture: () => MockPanGesture;

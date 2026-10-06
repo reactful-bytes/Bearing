@@ -5,10 +5,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import type { Theme } from '../../design/tokens';
 import { spacing, typography } from '../../design/tokens';
+import { eventFormValueToDate, toEventDateString } from '../../features/calendar/eventEditor';
 import { GoalWithMilestones } from '../../features/goals/goalTypes';
+import { useUserProfile } from '../../features/profile/useUserProfile';
 import { TaskRecord, UpdateTaskInput } from '../../features/tasks/taskTypes';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
+import { EventDateTimePickerField } from '../calendar/EventDateTimePickerField';
 import { FormField } from '../ui/FormField';
 import { ScreenHeader } from '../ui/ScreenHeader';
 import { TaskAssociationSelector } from './TaskAssociationSelector';
@@ -32,9 +35,12 @@ export function EditTaskModal({
 }: EditTaskModalProps) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
+  const { profile } = useUserProfile();
+  const timezone = profile?.timezone ?? 'UTC';
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [starter, setStarter] = useState('');
+  const [dueDate, setDueDate] = useState('');
   const [goalId, setGoalId] = useState<string | null>(null);
   const [milestoneId, setMilestoneId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -45,11 +51,12 @@ export function EditTaskModal({
     setTitle(task.title);
     setDescription(task.description);
     setStarter(task.starter);
+    setDueDate(task.dueDate ? toEventDateString(task.dueDate, timezone) : '');
     setGoalId(task.goalId);
     setMilestoneId(task.milestoneId);
     setSaving(false);
     setError(null);
-  }, [task, visible]);
+  }, [task, timezone, visible]);
 
   async function handleSave(): Promise<void> {
     if (!task) return;
@@ -66,6 +73,7 @@ export function EditTaskModal({
         title: trimmedTitle,
         description: description.trim(),
         starter: starter.trim(),
+        dueDate: dueDate ? eventFormValueToDate(dueDate, '12:00', timezone) : null,
         goalId,
         milestoneId: goalId ? milestoneId : null,
       });
@@ -115,6 +123,20 @@ export function EditTaskModal({
             onChangeText={setStarter}
             multiline
             placeholder="A small first action to get started"
+          />
+          <EventDateTimePickerField
+            label="Due date"
+            accessibilityLabel="Edit task due date"
+            mode="date"
+            value={dueDate}
+            dateValue={dueDate}
+            timeValue="12:00"
+            timezone={timezone}
+            locale={profile?.locale}
+            timeFormat={profile?.timeFormat}
+            allowClear
+            compact
+            onChange={setDueDate}
           />
           <TaskAssociationSelector
             goals={goals}

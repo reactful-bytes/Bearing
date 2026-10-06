@@ -53,10 +53,7 @@ export function TaskFilterModal({
       centeredHeader
       hideCloseButton
       headerAccessory={
-        <ModalHeaderAction
-          accessibilityLabel="Apply task filters"
-          onPress={() => onApply(draft)}
-        />
+        <ModalHeaderAction accessibilityLabel="Apply task filters" onPress={() => onApply(draft)} />
       }
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -89,12 +86,14 @@ export function TaskFilterModal({
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Due date</Text>
           <View accessibilityLabel="Task due date filter" style={styles.dueDateGrid}>
-            {([
-              { value: 'any', label: 'Any', icon: 'date' },
-              { value: 'pastDue', label: 'Past due', icon: 'warning' },
-              { value: 'thisWeek', label: 'This week', icon: 'dayView' },
-              { value: 'thisMonth', label: 'This month', icon: 'monthView' },
-            ] as const).map((option) => {
+            {(
+              [
+                { value: 'any', label: 'Any', icon: 'date' },
+                { value: 'pastDue', label: 'Past due', icon: 'warning' },
+                { value: 'thisWeek', label: 'This week', icon: 'dayView' },
+                { value: 'thisMonth', label: 'This month', icon: 'monthView' },
+              ] as const
+            ).map((option) => {
               const selected = draft.dueDateFilter === option.value;
               return (
                 <Pressable
@@ -121,7 +120,11 @@ export function TaskFilterModal({
                     decorative
                   />
                   <Text
-                    style={[styles.dueDateOptionText, selected ? styles.dueDateOptionTextSelected : null]}
+                    numberOfLines={1}
+                    style={[
+                      styles.dueDateOptionText,
+                      selected ? styles.dueDateOptionTextSelected : null,
+                    ]}
                   >
                     {option.label}
                   </Text>
@@ -159,8 +162,10 @@ const createStyles = (theme: Theme) =>
       minHeight: 44,
       flexGrow: 1,
       flexBasis: '48%',
+      flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
+      gap: spacing.xs,
       borderWidth: 1,
       borderColor: theme.colors.border,
       borderRadius: theme.radii.sm,
@@ -170,7 +175,11 @@ const createStyles = (theme: Theme) =>
       borderColor: theme.colors.brand,
       backgroundColor: theme.colors.surfaceBrand,
     },
-    dueDateOptionText: { ...typography.helper, color: theme.colors.textSecondary, fontWeight: '600' },
+    dueDateOptionText: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      fontWeight: '600',
+    },
     dueDateOptionTextSelected: { color: theme.colors.brand },
     selectedIcon: { color: theme.colors.brand },
     optionIcon: { color: theme.colors.textSecondary },

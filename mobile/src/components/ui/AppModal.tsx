@@ -258,7 +258,7 @@ const createStyles = (theme: Theme) =>
   StyleSheet.create({
     gestureRoot: { flex: 1 },
     sheetMotion: { alignSelf: 'stretch' },
-    dragHandleContainer: { alignItems: 'center' },
+    dragHandleContainer: { alignItems: 'center', marginBottom: -spacing.lg },
     dragHandleTarget: {
       minWidth: 64,
       minHeight: 44,

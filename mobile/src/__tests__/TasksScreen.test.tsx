@@ -351,6 +351,10 @@ describe('TasksScreen', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Filter tasks' }));
     expect(screen.getByRole('header', { name: 'Filter tasks' })).toBeTruthy();
     expect(screen.getByTestId('app-modal-drag-handle')).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.getByRole('button', { name: 'Past due' }).props.style)
+        .flexDirection,
+    ).toBe('row');
 
     fireEvent.press(screen.getByRole('button', { name: 'Dismiss Filter tasks' }));
     fireEvent.press(screen.getByRole('button', { name: 'Sort tasks' }));
@@ -367,13 +371,25 @@ describe('TasksScreen', () => {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const mondayOffset = (todayStart.getDay() + 6) % 7;
-    const weekStart = new Date(todayStart.getFullYear(), todayStart.getMonth(), todayStart.getDate() - mondayOffset);
-    const nextWeek = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 7);
+    const weekStart = new Date(
+      todayStart.getFullYear(),
+      todayStart.getMonth(),
+      todayStart.getDate() - mondayOffset,
+    );
+    const nextWeek = new Date(
+      weekStart.getFullYear(),
+      weekStart.getMonth(),
+      weekStart.getDate() + 7,
+    );
     const monthStart = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1);
     const nextMonth = new Date(todayStart.getFullYear(), todayStart.getMonth() + 1, 1);
     (useTasks as jest.MockedFunction<typeof useTasks>).mockReturnValue({
       tasks: [
-        makeTask({ id: 'overdue', title: 'Focus overdue', dueDate: new Date(todayStart.getTime() - 86_400_000) }),
+        makeTask({
+          id: 'overdue',
+          title: 'Focus overdue',
+          dueDate: new Date(todayStart.getTime() - 86_400_000),
+        }),
         makeTask({ id: 'week', title: 'Focus week start', dueDate: weekStart }),
         makeTask({ id: 'next-week', title: 'Focus next week', dueDate: nextWeek }),
         makeTask({ id: 'month', title: 'Focus month start', dueDate: monthStart }),
@@ -394,7 +410,13 @@ describe('TasksScreen', () => {
       reactivateTask: async () => undefined,
       convertTaskToEvent: async () => ({
         eventId: 'event-1',
-        eventInput: { title: '', description: '', startAt: new Date(), endAt: new Date(), timezone: 'UTC' },
+        eventInput: {
+          title: '',
+          description: '',
+          startAt: new Date(),
+          endAt: new Date(),
+          timezone: 'UTC',
+        },
         created: true,
       }),
       deleteTask: async () => undefined,
@@ -674,7 +696,7 @@ describe('TasksScreen', () => {
     const deleteTask = jest.fn(async () => undefined);
     const reactivateTask = jest.fn(async () => undefined);
     (useTasks as jest.MockedFunction<typeof useTasks>).mockReturnValue({
-      tasks: [makeTask()],
+      tasks: [makeTask({ dueDate: new Date(2026, 7, 20) })],
       uiState: 'ready',
       createTask: async () => undefined,
       updateTask,
@@ -700,7 +722,12 @@ describe('TasksScreen', () => {
     fireEvent.press(screen.getByRole('menuitem', { name: 'Edit task' }));
     expect(screen.getByRole('header', { name: 'Edit Task' })).toBeTruthy();
     expect(screen.queryByRole('header', { name: 'Task Details' })).toBeNull();
-    fireEvent.press(screen.getByLabelText('Back to task details'));
+    expect(screen.getByLabelText('Edit task due date')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Clear due date'));
+    await act(async () => fireEvent.press(screen.getByLabelText('Save task changes')));
+    await waitFor(() =>
+      expect(updateTask).toHaveBeenCalledWith('task-1', expect.objectContaining({ dueDate: null })),
+    );
 
     fireEvent.press(screen.getByLabelText('Task actions'));
     fireEvent.press(screen.getByRole('menuitem', { name: 'Delete task' }));
