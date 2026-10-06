@@ -1273,7 +1273,7 @@ describe('GoalsScreen', () => {
       ),
     ).toBeTruthy();
     expect(screen.getByLabelText('Add task to milestone Buy running shoes')).toBeTruthy();
-    expect(screen.getByLabelText('Schedule milestone event')).toBeTruthy();
+    expect(screen.queryByLabelText('Schedule milestone event')).toBeNull();
     expect(setMilestoneManuallyCompleted).not.toHaveBeenCalled();
   });
 
@@ -1399,7 +1399,7 @@ describe('GoalsScreen', () => {
     });
   });
 
-  it('opens milestone scheduling with a prefilled event title and linked ids', async () => {
+  it('does not expose milestone scheduling or subscribe to linked events', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
     const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
       typeof useMilestoneEvents
@@ -1465,26 +1465,12 @@ describe('GoalsScreen', () => {
 
     fireEvent.press(screen.getByText('Run a 10k'));
     fireEvent.press(screen.getByText('Buy running shoes'));
-    expect(screen.getByText('Treadmill session')).toBeTruthy();
-
-    fireEvent.press(screen.getByLabelText('Schedule milestone event'));
-
-    expect(screen.getByDisplayValue('Buy running shoes')).toBeTruthy();
-
-    await act(async () => {
-      fireEvent.press(screen.getByLabelText('Save event'));
-    });
-
-    await waitFor(() => {
-      expect(createEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: 'Buy running shoes',
-          goalId: 'goal-1',
-          milestoneId: 'milestone-1',
-        }),
-        { publishToDevice: false },
-      );
-    });
+    expect(screen.queryByText('Treadmill session')).toBeNull();
+    expect(screen.queryByText('Linked Events')).toBeNull();
+    expect(screen.queryByText('No events scheduled.')).toBeNull();
+    expect(screen.queryByLabelText('Schedule milestone event')).toBeNull();
+    expect(mockedUseGoalStepEvents).not.toHaveBeenCalled();
+    expect(createEvent).not.toHaveBeenCalled();
   });
 
   it('moves a milestone down with the arrow controls', async () => {
@@ -1550,17 +1536,20 @@ describe('GoalsScreen', () => {
 
     fireEvent.press(screen.getByText('Run a 10k'));
     fireEvent.press(screen.getByText('Buy running shoes'));
+    fireEvent.press(screen.getByLabelText('Milestone actions'));
+    fireEvent.press(await screen.findByLabelText('Delete milestone'));
+    expect(deleteMilestoneMock).not.toHaveBeenCalled();
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('Delete milestone'));
+      fireEvent.press(screen.getByLabelText('Confirm delete milestone'));
     });
 
     await waitFor(() => {
       expect(deleteMilestoneMock).toHaveBeenCalledWith('milestone-1');
-      expect(screen.queryByText('Milestone Details')).toBeNull();
+      expect(screen.queryByLabelText('Milestone Details modal')).toBeNull();
     });
   });
 
-  it('shows no events scheduled when a milestone has no linked events', () => {
+  it('omits linked-event empty and error text from milestone details', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
     const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
       typeof useMilestoneEvents
@@ -1587,7 +1576,8 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByText('Run a 10k'));
     fireEvent.press(screen.getByText('Buy running shoes'));
 
-    expect(screen.getByText('No events scheduled.')).toBeTruthy();
+    expect(screen.queryByText('No events scheduled.')).toBeNull();
+    expect(screen.queryByText('Linked Events')).toBeNull();
     expect(screen.queryByText('Unable to load linked events.')).toBeNull();
   });
 
@@ -1618,12 +1608,13 @@ describe('GoalsScreen', () => {
 
     fireEvent.press(screen.getByText('Run a 10k'));
     fireEvent.press(screen.getByText('Buy running shoes'));
-    fireEvent.press(screen.getByLabelText('Edit Milestone'));
+    fireEvent.press(screen.getByLabelText('Milestone actions'));
+    fireEvent.press(await screen.findByLabelText('Edit milestone'));
     fireEvent.changeText(screen.getByLabelText('Edit milestone name'), 'Choose a local race');
     fireEvent.changeText(screen.getByLabelText('Edit milestone description'), 'Compare dates.');
 
     await act(async () => {
-      fireEvent.press(screen.getByRole('button', { name: 'Save Changes' }));
+      fireEvent.press(screen.getByRole('button', { name: 'Save milestone changes' }));
     });
 
     await waitFor(() => {

@@ -274,7 +274,11 @@ describe('GoalDetailScreen', () => {
     fireEvent.press(
       within(header).getByRole('button', { name: 'Open milestone Choose a race date' }),
     );
-    expect(screen.getByText('Milestone Details')).toBeTruthy();
+    expect(screen.getByLabelText('Milestone Details modal')).toBeTruthy();
+    expect(screen.queryByLabelText('Schedule milestone event')).toBeNull();
+    expect(screen.queryByText('Linked Events')).toBeNull();
+    expect(screen.queryByText('No events scheduled.')).toBeNull();
+    expect(useMilestoneEvents).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: 'Manually complete milestone' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Reopen milestone' })).toBeNull();
   });

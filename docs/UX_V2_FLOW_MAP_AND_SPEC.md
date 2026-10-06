@@ -737,6 +737,29 @@ Use different visual states:
 Tapping the left disclosure arrow expands its associated tasks; tapping the
 milestone title opens its details.
 
+Milestone details use the shared full-screen wrapper used by goal editing.
+The header matches goal details: a top-left back arrow, milestone title, and a
+top-right vertical-dot menu with Edit and Delete. Use a flat layout without cards
+for the parent goal, milestone status, target date, and description.
+
+Place the progress bar directly below the description, with percent complete
+and the completed/total task count directly underneath. Tasks use the shared
+task-list row presentation in a bounded, independently scrollable list. Keep
+these rows informational, with completed-task title/date strikethrough styling.
+Place a wizard-style "+ Add Task" text button above the list, outside its scroll
+area, so task creation stays visible. Do not show a Schedule Event action or
+linked-events section, and do not subscribe to milestone events from details.
+Existing calendar events remain unchanged.
+
+Edit opens a full-screen form with the same top-left back arrow. This arrow
+discards unsaved changes and returns to milestone details; saving a valid name
+and description also returns to details. Keep save errors visible in the form.
+
+Delete opens an "Are you sure?" confirmation. Cancel leaves the milestone
+unchanged; successful deletion closes details. Preserve tasks, calendar events,
+and notes while removing their milestone links. Block repeated submissions and
+back/cancel actions during deletion; surface failures in details and allow retry.
+
 ------------------------------------------------------------------------
 
 # 11. Calendar

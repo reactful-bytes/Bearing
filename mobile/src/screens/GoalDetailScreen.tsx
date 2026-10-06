@@ -29,7 +29,6 @@ import { spacing } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
-import { useMilestoneEvents } from '../features/goals/useMilestoneEvents';
 import { CreateGoalMilestoneInput, GoalWithMilestones } from '../features/goals/goalTypes';
 import { useGoals } from '../features/goals/useGoals';
 import { sortGoalTasks } from '../features/goals/goalHelpers';
@@ -42,7 +41,7 @@ import { AddTaskModal } from '../components/tasks/AddTaskModal';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { StartNowModal } from '../components/tasks/StartNowModal';
 import { TaskDetailsModal } from '../components/tasks/TaskDetailsModal';
-import { TaskListRow } from '../components/tasks/TaskListRow';
+import { TaskListRow, formatTaskDateLabel } from '../components/tasks/TaskListRow';
 import { ConfirmationModal } from '../components/ui/ConfirmationModal';
 
 const DETAIL_TABS = ['tasks', 'overview'] as const;
@@ -63,20 +62,13 @@ function formatTaskContext(task: TaskRecord, goal: GoalWithMilestones, locale?: 
   return milestone ? `${milestone.title} · ${dateText}` : dateText;
 }
 
-function formatTaskDateLabel(task: TaskRecord, locale?: string): string {
-  const date = task.dueDate ?? task.scheduledStart;
-  if (!date) return task.status === 'completed' ? 'Completed' : 'Unscheduled';
-  const formatted = date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
-  return task.dueDate ? `Due ${formatted}` : `Scheduled ${formatted}`;
-}
-
 export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const navigation = useNavigation<NavigationProp<AppTabParamList>>();
   const { profile } = useUserProfile();
-  const { createEvent, publicationCalendarTitle, publishEvent } = useCalendarPublication();
+  const { publicationCalendarTitle, publishEvent } = useCalendarPublication();
   const {
     goals,
     uiState,
@@ -114,7 +106,6 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
   const [goalActionWorking, setGoalActionWorking] = useState(false);
   const [addMilestoneVisible, setAddMilestoneVisible] = useState(false);
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
-  const [scheduleMilestoneId, setScheduleMilestoneId] = useState<string | null>(null);
   const [activatingDraft, setActivatingDraft] = useState(false);
   const [draftActionError, setDraftActionError] = useState<string | null>(null);
 
@@ -133,11 +124,6 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
   const startNowTask = goalTasks.find((task) => task.id === startNowTaskId) ?? null;
   const selectedMilestone =
     goal?.milestones.find((milestone) => milestone.id === selectedMilestoneId) ?? null;
-  const scheduleMilestone =
-    goal?.milestones.find((milestone) => milestone.id === scheduleMilestoneId) ?? null;
-  const { events: linkedEvents, uiState: linkedEventsState } = useMilestoneEvents(
-    selectedMilestone?.id ?? null,
-  );
   const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
 
   async function handleCreateTask(input: CreateTaskInput): Promise<void> {
@@ -281,17 +267,6 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
     fields: { title: string; description: string },
   ): Promise<void> {
     await updateMilestone(milestoneId, fields);
-  }
-
-  async function handleScheduleMilestoneEvent(
-    input: CreateEventInput,
-    options: CreateEventOptions,
-  ): Promise<void> {
-    if (goal?.status === 'draft')
-      throw new Error('Activate the goal before scheduling milestones.');
-    if (!scheduleMilestone) throw new Error('Milestone not found.');
-    await createEvent(input, options);
-    setScheduleMilestoneId(null);
   }
 
   function renderTaskListRow(task: TaskRecord) {
@@ -711,43 +686,18 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
         goalTitle={goal.title}
         milestone={selectedMilestone}
         visible={selectedMilestone !== null}
-        linkedEvents={linkedEvents}
-        linkedEventsState={linkedEventsState}
         locale={profile?.locale}
-        timeFormat={timeFormat}
         onClose={() => setSelectedMilestoneId(null)}
         onSaveMilestone={handleSaveMilestone}
         onDeleteMilestone={async (milestone) => {
           await deleteMilestone(milestone.id);
           setSelectedMilestoneId(null);
         }}
-        onSchedule={(milestone) => setScheduleMilestoneId(milestone.id)}
         onAddTask={(milestone) => {
           setSelectedMilestoneId(null);
           setTaskMilestoneId(milestone.id);
           setAddTaskVisible(true);
         }}
-        milestoneActionsEnabled={goal.status !== 'draft'}
-      />
-      <AddEventModal
-        visible={scheduleMilestone !== null}
-        modalTitle="Schedule Milestone Event"
-        initialDate={goal.estimatedCompletionDate}
-        initialValues={
-          scheduleMilestone
-            ? {
-                title: scheduleMilestone.title,
-                description: scheduleMilestone.description,
-                goalId: goal.id,
-                milestoneId: scheduleMilestone.id,
-              }
-            : undefined
-        }
-        publicationCalendarTitle={publicationCalendarTitle}
-        locale={profile?.locale}
-        timeFormat={timeFormat}
-        onClose={() => setScheduleMilestoneId(null)}
-        onSave={handleScheduleMilestoneEvent}
       />
     </View>
   );
