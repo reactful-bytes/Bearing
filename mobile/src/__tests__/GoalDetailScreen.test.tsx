@@ -585,6 +585,12 @@ describe('GoalDetailScreen', () => {
       const addTask = screen.getByLabelText(`Add task to milestone ${secondMilestone.title}`);
       expect(within(addTask).getByText('+ Add Task')).toBeTruthy();
       const expandedTasks = screen.getByTestId(`milestone-tasks-${secondMilestone.id}`);
+      expect(StyleSheet.flatten(expandedTasks.props.style)).toMatchObject({
+        marginLeft: darkTheme.spacing.md,
+        paddingLeft: darkTheme.spacing.sm,
+        borderLeftWidth: 2,
+        borderLeftColor: darkTheme.colors.border,
+      });
       const lastChild = expandedTasks.children[expandedTasks.children.length - 1];
       expect(typeof lastChild === 'object' ? lastChild.props.accessibilityLabel : null).toBe(
         `Add task to milestone ${secondMilestone.title}`,

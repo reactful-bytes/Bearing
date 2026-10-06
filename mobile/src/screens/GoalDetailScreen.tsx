@@ -544,7 +544,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
                     return (
                       <View
                         testID={`milestone-tasks-${milestone.id}`}
-                        style={styles.taskListContent}
+                        style={[styles.taskListContent, styles.milestoneTaskListContent]}
                       >
                         {milestoneTasks.length === 0 ? (
                           <Text style={styles.stateDescription}>No tasks in this milestone.</Text>
@@ -777,6 +777,12 @@ const createStyles = (theme: Theme) =>
     tabLabelActive: { color: theme.colors.brand, fontWeight: '700' },
     section: { gap: theme.spacing.sm },
     taskListContent: { gap: theme.spacing.sm },
+    milestoneTaskListContent: {
+      marginLeft: theme.spacing.md,
+      paddingLeft: theme.spacing.sm,
+      borderLeftWidth: 2,
+      borderLeftColor: theme.colors.border,
+    },
     addItemButton: {
       minHeight: theme.layout.minimumTouchTarget,
       alignSelf: 'center',
