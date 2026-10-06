@@ -24,6 +24,7 @@ import { MilestoneList } from './MilestoneList';
 type GoalDetailsModalProps = {
   goal: GoalWithMilestones | null;
   visible: boolean;
+  initialEditMode?: boolean;
   onClose: () => void;
   onSaveGoal: (
     goalId: string,
@@ -33,7 +34,8 @@ type GoalDetailsModalProps = {
   onToggleGoalManualCompletion: (goalId: string, completed: boolean) => Promise<void>;
   onAddMilestone: () => void;
   onOpenMilestone: (milestone: GoalMilestoneWithTasks) => void;
-  onToggleMilestoneCompletion: (
+  /** @deprecated Milestone completion is derived from tasks. */
+  onToggleMilestoneCompletion?: (
     milestone: GoalMilestoneWithTasks,
     completed: boolean,
   ) => Promise<void>;
@@ -51,18 +53,18 @@ function formatDateString(date: Date): string {
 export function GoalDetailsModal({
   goal,
   visible,
+  initialEditMode = false,
   onClose,
   onSaveGoal,
   onActivateDraft,
   onToggleGoalManualCompletion,
   onAddMilestone,
   onOpenMilestone,
-  onToggleMilestoneCompletion,
   onReorderMilestones,
 }: GoalDetailsModalProps) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
-  const [editMode, setEditMode] = useState(false);
+  const [editMode, setEditMode] = useState(initialEditMode);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dateParts, setDateParts] = useState<GoalDateParts>({ month: 1, day: 1, year: 2026 });
@@ -75,13 +77,13 @@ export function GoalDetailsModal({
       return;
     }
 
-    setEditMode(false);
+    setEditMode(initialEditMode);
     setTitle(goal.title);
     setDescription(goal.description);
     setDateParts(buildGoalDateParts(goal.estimatedCompletionDate));
     setSaving(false);
     setError(null);
-  }, [goal, visible]);
+  }, [goal, initialEditMode, visible]);
 
   function handleClose(): void {
     setEditMode(false);
@@ -170,6 +172,10 @@ export function GoalDetailsModal({
       variant="secondary"
       accessibilityLabel={editMode ? 'Cancel goal editing' : 'Edit goal'}
       onPress={() => {
+        if (initialEditMode && editMode) {
+          handleClose();
+          return;
+        }
         setError(null);
         setEditMode((current) => !current);
       }}
@@ -179,7 +185,13 @@ export function GoalDetailsModal({
   ) : null;
 
   return (
-    <AppModal visible={visible} title="Goal Details" onClose={handleClose} fullScreen hideHeader>
+    <AppModal
+      visible={visible}
+      title={initialEditMode && editMode ? 'Edit Goal' : 'Goal Details'}
+      onClose={handleClose}
+      fullScreen
+      hideHeader
+    >
       {goal ? (
         <ScrollView
           keyboardShouldPersistTaps="handled"
@@ -193,9 +205,11 @@ export function GoalDetailsModal({
           ]}
         >
           <ScreenHeader
-            title="Goal Details"
+            title={initialEditMode && editMode ? 'Edit Goal' : 'Goal Details'}
             onPressBack={handleClose}
-            backAccessibilityLabel="Close Goal Details"
+            backAccessibilityLabel={
+              initialEditMode && editMode ? 'Close goal editing' : 'Close Goal Details'
+            }
             trailing={headerAccessory}
           />
           {editMode ? (
@@ -309,13 +323,9 @@ export function GoalDetailsModal({
               <MilestoneList
                 milestones={goal.milestones}
                 onOpenMilestone={onOpenMilestone}
-                onToggleMilestoneCompletion={(milestone, completed) =>
-                  void onToggleMilestoneCompletion(milestone, completed)
-                }
                 onReorder={(orderedMilestoneIds) =>
                   onReorderMilestones(goal.id, orderedMilestoneIds)
                 }
-                completionEnabled={goal.status !== 'draft'}
               />
             )}
           </View>

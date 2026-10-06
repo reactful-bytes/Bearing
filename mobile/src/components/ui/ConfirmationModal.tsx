@@ -22,6 +22,7 @@ type ConfirmationModalProps = {
   iconTone?: ConfirmationIconTone;
   confirmAccessibilityLabel?: string;
   cancelAccessibilityLabel?: string;
+  loading?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 };
@@ -38,6 +39,7 @@ export function ConfirmationModal({
   iconTone = 'brand',
   confirmAccessibilityLabel = confirmLabel,
   cancelAccessibilityLabel = cancelLabel,
+  loading = false,
   onCancel,
   onConfirm,
 }: ConfirmationModalProps) {
@@ -64,13 +66,16 @@ export function ConfirmationModal({
       animationType="fade"
       statusBarTranslucent
       navigationBarTranslucent
-      onRequestClose={onCancel}
+      onRequestClose={() => {
+        if (!loading) onCancel();
+      }}
     >
       <View style={styles.overlay}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Dismiss ${title}`}
           onPress={onCancel}
+          disabled={loading}
           style={StyleSheet.absoluteFill}
         />
         <View
@@ -94,6 +99,7 @@ export function ConfirmationModal({
               variant={cancelVariant}
               accessibilityLabel={cancelAccessibilityLabel}
               onPress={onCancel}
+              disabled={loading}
               style={styles.actionButton}
               textStyle={styles.actionButtonText}
             />
@@ -102,6 +108,8 @@ export function ConfirmationModal({
               variant={confirmVariant}
               accessibilityLabel={confirmAccessibilityLabel}
               onPress={onConfirm}
+              loading={loading}
+              loadingLabel="Deleting..."
               style={styles.actionButton}
               textStyle={styles.actionButtonText}
             />

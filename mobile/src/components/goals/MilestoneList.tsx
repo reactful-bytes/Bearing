@@ -9,18 +9,14 @@ import { GoalMilestoneWithTasks } from '../../features/goals/goalTypes';
 type MilestoneListProps = {
   milestones: GoalMilestoneWithTasks[];
   onOpenMilestone: (milestone: GoalMilestoneWithTasks) => void;
-  onToggleMilestoneCompletion: (milestone: GoalMilestoneWithTasks, completed: boolean) => void;
+  /** @deprecated Milestone completion is derived from tasks. */
+  onToggleMilestoneCompletion?: (milestone: GoalMilestoneWithTasks, completed: boolean) => void;
   onReorder: (orderedMilestoneIds: string[]) => Promise<void> | void;
+  /** @deprecated Manual milestone completion controls are no longer rendered. */
   completionEnabled?: boolean;
 };
 
-export function MilestoneList({
-  milestones,
-  onOpenMilestone,
-  onToggleMilestoneCompletion,
-  onReorder,
-  completionEnabled = true,
-}: MilestoneListProps) {
+export function MilestoneList({ milestones, onOpenMilestone, onReorder }: MilestoneListProps) {
   const styles = useThemedStyles(createStyles);
   const orderedMilestones = useMemo(
     () => [...milestones].sort((left, right) => left.order - right.order),
@@ -41,17 +37,6 @@ export function MilestoneList({
     <View style={styles.container}>
       {orderedMilestones.map((milestone, index) => {
         const complete = milestone.status === 'completed';
-        const manuallyComplete = Boolean(milestone.manuallyCompletedAt);
-        const allTasksComplete =
-          milestone.totalTaskCount > 0 && milestone.completedTaskCount === milestone.totalTaskCount;
-        const canReopen = manuallyComplete && !allTasksComplete;
-        const actionLabel = complete
-          ? canReopen
-            ? 'Reopen'
-            : manuallyComplete && allTasksComplete
-              ? 'Add Task First'
-              : 'Completed'
-          : 'Mark Done';
 
         return (
           <View key={milestone.id} style={styles.rowCard}>
@@ -75,17 +60,6 @@ export function MilestoneList({
               </Text>
             </Pressable>
             <View style={styles.controls}>
-              {completionEnabled ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`${actionLabel} milestone ${milestone.title}`}
-                  disabled={complete && !canReopen}
-                  onPress={() => onToggleMilestoneCompletion(milestone, !complete)}
-                  style={[styles.statusButton, complete ? styles.completeButton : null]}
-                >
-                  <Text style={styles.statusText}>{actionLabel}</Text>
-                </Pressable>
-              ) : null}
               <View style={styles.reorderColumn}>
                 <Pressable
                   accessibilityRole="button"
@@ -134,15 +108,6 @@ const createStyles = (theme: Theme) =>
     rowDescription: { ...typography.helper, color: theme.colors.textSecondary },
     rowProgress: { ...typography.caption, color: theme.colors.brand },
     controls: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-    statusButton: {
-      minHeight: 44,
-      justifyContent: 'center',
-      borderRadius: radii.md,
-      backgroundColor: theme.colors.surfaceBrand,
-      paddingHorizontal: spacing.sm,
-    },
-    completeButton: { backgroundColor: theme.colors.surfaceMuted },
-    statusText: { ...typography.caption, color: theme.colors.brand, fontWeight: '700' },
     reorderColumn: { gap: spacing.xs },
     reorderButton: {
       width: 36,

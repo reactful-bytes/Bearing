@@ -661,7 +661,7 @@ creation date breaking ties.
 
 Each task row:
 
--   completion control
+-   no completion circle
 -   title
 -   due/scheduled date
 -   optional status
@@ -674,33 +674,58 @@ Allow:
 -   delete
 -   schedule
 
+Swipe right on an active task to complete it (80px minimum horizontal travel;
+initial vertical movement over 12px yields to scrolling). Short or leftward swipes do
+not complete tasks. Completed tasks cannot be completed again by swiping.
+Completed titles and due/scheduled date labels are crossed out; retain the
+task's due date rather than replacing it with its completion timestamp.
+
+Task overflow menus offer Complete for active tasks and Uncomplete for completed
+tasks, alongside Edit and Delete. Apply this to Next Up, goal and milestone task
+lists, standalone Tasks, and task detail menus. Draft-goal tasks remain editable
+but do not expose completion or reactivation actions. Failed completions show
+an actionable error and do not change the displayed saved status.
+
 ## Overview tab
 
 Show the goal description and locale-formatted finish date above the milestone
 list. The milestone list scrolls independently within a bounded area.
 
-Milestones start collapsed. A separate right-facing disclosure arrow expands
+Milestones have no circle or timeline connector. They start collapsed. A
+left-hand right-facing disclosure arrow expands
 the milestone's associated tasks beneath its header and points down while
 expanded. Multiple milestones may stay expanded. Tasks use ascending due-date
 order, undated tasks last, and open the existing task details when tapped.
 Tapping the milestone title still opens milestone details.
 
+Milestone completion is automatic and task-derived: at least one task and all
+tasks complete means completed; an uncompleted task or a new active task reopens
+the milestone. Empty milestones remain not started. Do not show manual milestone
+completion/reopen controls or honor legacy manual milestone overrides. Update
+milestone counts, next milestone, and derived goal progress as tasks change;
+goal-level manual completion remains independent.
+
 Empty milestones display an explicit no-tasks message. Keep the Add milestone
 action and current/completed/upcoming status indicators. The goal header's
-overflow action uses vertical dots and retains its existing edit behavior.
+overflow action uses vertical dots and offers Edit, Delete, and a status-dependent
+Complete or Uncomplete action. Edit opens the goal form directly; saving or
+cancelling closes that form. Draft and archived goals do not expose completion
+actions. Uncomplete preserves milestone/task status and explains when completed
+milestones require uncompleting a task or adding a new milestone first.
+
+Delete requires confirmation, removes the goal and its milestones, and returns
+to the goals list only after success. Preserve associated tasks, events, and
+notes while clearing their links to the deleted goal/milestones. Detach links
+before deleting milestones, delete the goal last, and surface failures so large
+multi-batch deletions can be retried.
 
 Recommended visual pattern:
 
 ``` text
-● Apr 15 — Research
-│
-● May 10 — Marketing Plan
-│
-◉ May 25 — Content Calendar
-│
-○ Jun 5 — Launch Campaign
-│
-○ Jun 20 — Review & Optimize
+> Research — Completed, 2 of 2 tasks
+v Marketing Plan — Current, 1 of 2 tasks
+  Finalize campaign — Due May 10
+> Content Calendar — Upcoming, 0 of 3 tasks
 ```
 
 Use different visual states:
@@ -709,7 +734,8 @@ Use different visual states:
 -   current/in-progress
 -   upcoming
 
-Tapping a milestone can expand its associated tasks.
+Tapping the left disclosure arrow expands its associated tasks; tapping the
+milestone title opens its details.
 
 ------------------------------------------------------------------------
 

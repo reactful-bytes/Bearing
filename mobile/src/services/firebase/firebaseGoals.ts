@@ -413,6 +413,90 @@ export async function activateGoalDraft(userId: string, goalId: string): Promise
   });
 }
 
+export async function deleteGoal(userId: string, goalId: string): Promise<void> {
+  const db = getFirebaseFirestore();
+  const goalRef = doc(db, 'goals', goalId);
+  await runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(goalRef);
+    if (!snapshot.exists() || snapshot.data().userId !== userId) {
+      throw new Error('Goal not found.');
+    }
+  });
+  const [milestoneSnapshots, goalTaskSnapshots, goalEventSnapshots] = await Promise.all([
+    getDocs(
+      query(
+        collection(db, 'milestones'),
+        where('userId', '==', userId),
+        where('goalId', '==', goalId),
+      ),
+    ),
+    getDocs(
+      query(collection(db, 'tasks'), where('userId', '==', userId), where('goalId', '==', goalId)),
+    ),
+    getDocs(
+      query(collection(db, 'events'), where('userId', '==', userId), where('goalId', '==', goalId)),
+    ),
+  ]);
+  const milestoneIds = milestoneSnapshots.docs.map((snapshot) => snapshot.id);
+  const linkedTasks = new Map(goalTaskSnapshots.docs.map((snapshot) => [snapshot.id, snapshot]));
+  const linkedEvents = new Map(goalEventSnapshots.docs.map((snapshot) => [snapshot.id, snapshot]));
+  const linkedNotes = new Map<string, QueryDocumentSnapshot<DocumentData>>();
+
+  for (let index = 0; index < milestoneIds.length; index += 30) {
+    const ids = milestoneIds.slice(index, index + 30);
+    const [taskSnapshots, eventSnapshots, noteSnapshots] = await Promise.all([
+      getDocs(
+        query(
+          collection(db, 'tasks'),
+          where('userId', '==', userId),
+          where('milestoneId', 'in', ids),
+        ),
+      ),
+      getDocs(
+        query(
+          collection(db, 'events'),
+          where('userId', '==', userId),
+          where('milestoneId', 'in', ids),
+        ),
+      ),
+      getDocs(
+        query(
+          collection(db, 'notes'),
+          where('userId', '==', userId),
+          where('sourceMilestoneId', 'in', ids),
+        ),
+      ),
+    ]);
+    taskSnapshots.docs.forEach((snapshot) => linkedTasks.set(snapshot.id, snapshot));
+    eventSnapshots.docs.forEach((snapshot) => linkedEvents.set(snapshot.id, snapshot));
+    noteSnapshots.docs.forEach((snapshot) => linkedNotes.set(snapshot.id, snapshot));
+  }
+
+  const now = Timestamp.now();
+  const writes: ((batch: ReturnType<typeof writeBatch>) => void)[] = [];
+  [...linkedTasks.values(), ...linkedEvents.values()].forEach((snapshot) =>
+    writes.push((batch) =>
+      batch.update(snapshot.ref, {
+        ...(snapshot.data().goalId === goalId ? { goalId: null } : {}),
+        milestoneId: null,
+        updatedAt: now,
+      }),
+    ),
+  );
+  linkedNotes.forEach((snapshot) =>
+    writes.push((batch) => batch.update(snapshot.ref, { sourceMilestoneId: null, updatedAt: now })),
+  );
+  milestoneSnapshots.docs.forEach((snapshot) => writes.push((batch) => batch.delete(snapshot.ref)));
+  writes.push((batch) => batch.delete(goalRef));
+
+  // Detach links first and delete the goal last so a failed batch can be retried.
+  for (let index = 0; index < writes.length; index += 450) {
+    const batch = writeBatch(db);
+    writes.slice(index, index + 450).forEach((write) => write(batch));
+    await batch.commit();
+  }
+}
+
 export async function setGoalManuallyCompleted(
   userId: string,
   goalId: string,
@@ -576,49 +660,13 @@ export async function deleteMilestone(userId: string, milestoneId: string): Prom
   }
 }
 
+/** @deprecated Milestone completion is derived from tasks. */
 export async function setMilestoneManuallyCompleted(
-  userId: string,
-  milestoneId: string,
-  completed: boolean,
+  _userId: string,
+  _milestoneId: string,
+  _completed: boolean,
 ): Promise<void> {
-  const db = getFirebaseFirestore();
-  const milestoneRef = doc(db, 'milestones', milestoneId);
-  const linkedTasks = await getDocs(
-    query(
-      collection(db, 'tasks'),
-      where('userId', '==', userId),
-      where('milestoneId', '==', milestoneId),
-    ),
-  );
-  await runTransaction(db, async (transaction) => {
-    const [milestoneSnapshot, ...taskSnapshots] = await Promise.all([
-      transaction.get(milestoneRef),
-      ...linkedTasks.docs.map((snapshot) => transaction.get(snapshot.ref)),
-    ]);
-    if (!milestoneSnapshot.exists() || milestoneSnapshot.data().userId !== userId) {
-      throw new Error('Milestone not found.');
-    }
-    if (!completed) {
-      if (!timestampToDate(milestoneSnapshot.data().manuallyCompletedAt)) {
-        throw new Error('This milestone is not manually completed.');
-      }
-      const currentTasks = taskSnapshots.filter(
-        (snapshot) => snapshot.exists() && snapshot.data().milestoneId === milestoneId,
-      );
-      if (
-        currentTasks.length > 0 &&
-        currentTasks.every(
-          (snapshot) => snapshot.exists() && snapshot.data().status === 'completed',
-        )
-      ) {
-        throw new Error('Add a new task before reopening this milestone.');
-      }
-    }
-    transaction.update(milestoneRef, {
-      manuallyCompletedAt: completed ? Timestamp.now() : null,
-      updatedAt: Timestamp.now(),
-    });
-  });
+  throw new Error('Milestone completion is automatic. Complete or uncomplete its tasks instead.');
 }
 
 export async function reorderMilestones(

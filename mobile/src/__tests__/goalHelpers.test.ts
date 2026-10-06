@@ -90,16 +90,34 @@ describe('goalHelpers', () => {
     );
   });
 
-  it('keeps manual milestone completion sticky while preserving task progress', () => {
-    const milestone = makeMilestone({ manuallyCompletedAt: new Date() });
-    const composed = composeGoalWithMilestones(makeGoal(), [milestone], [makeTask()]);
-    expect(composed.milestones[0].status).toBe('completed');
-    expect(composed.milestones[0].progressPercent).toBe(0);
-    expect(composed.milestones[0].progressText).toBe('0 of 1 tasks');
-  });
+  it.each([
+    { tasks: [], status: 'pending', progress: 0 },
+    { tasks: [makeTask()], status: 'pending', progress: 0 },
+    {
+      tasks: [makeTask({ status: 'completed' }), makeTask({ id: 'task-2' })],
+      status: 'in_progress',
+      progress: 50,
+    },
+    { tasks: [makeTask({ status: 'completed' })], status: 'completed', progress: 100 },
+  ])(
+    'ignores legacy manual markers for $status milestones and preserves task progress',
+    ({ tasks, status, progress }) => {
+      const legacyMarker = new Date(2026, 6, 20);
+      const milestone = makeMilestone({ manuallyCompletedAt: legacyMarker });
+      const composed = composeGoalWithMilestones(makeGoal(), [milestone], tasks);
+      expect(composed.milestones[0].status).toBe(status);
+      expect(composed.milestones[0].progressPercent).toBe(progress);
+      expect(composed.milestones[0].totalTaskCount).toBe(tasks.length);
+      expect(composed.milestones[0].completedTaskCount).toBe(
+        tasks.filter((task) => task.status === 'completed').length,
+      );
+      expect(composed.milestones[0].manuallyCompletedAt).toEqual(legacyMarker);
+      expect(composed.status).toBe(status === 'completed' ? 'completed' : 'active');
+    },
+  );
 
   it('completes a goal only when all milestones complete, and derived completion regresses', () => {
-    const first = makeMilestone({ id: 'one', order: 0 });
+    const first = makeMilestone({ id: 'one', order: 0, manuallyCompletedAt: new Date() });
     const second = makeMilestone({ id: 'two', order: 1 });
     const completedTasks = [
       makeTask({ id: 'task-one', milestoneId: 'one', status: 'completed' }),
@@ -115,6 +133,19 @@ describe('goalHelpers', () => {
       [...completedTasks, makeTask({ id: 'new-task', milestoneId: 'one', status: 'active' })],
     );
     expect(regressed.status).toBe('active');
+    expect(regressed.milestones[0].status).toBe('in_progress');
+    expect(regressed.milestones[0].progressPercent).toBe(50);
+    expect(regressed.completedMilestoneCount).toBe(1);
+    expect(regressed.nextMilestone?.id).toBe('one');
+    const reactivated = composeGoalWithMilestones(
+      makeGoal(),
+      [first, second],
+      [makeTask({ id: 'task-one', milestoneId: 'one' }), completedTasks[1]],
+    );
+    expect(reactivated.status).toBe('active');
+    expect(reactivated.milestones[0].status).toBe('pending');
+    expect(reactivated.completedMilestoneCount).toBe(1);
+    expect(reactivated.nextMilestone?.id).toBe('one');
   });
 
   it('preserves manual and archived goal completion', () => {
@@ -132,7 +163,23 @@ describe('goalHelpers', () => {
   });
 
   it('preserves draft status even when every milestone is complete', () => {
-    const milestone = makeMilestone({ manuallyCompletedAt: new Date() });
-    expect(deriveGoalStatus(makeGoal({ status: 'draft' }), [milestone], new Map())).toBe('draft');
+    const composed = composeGoalWithMilestones(
+      makeGoal({ status: 'draft' }),
+      [makeMilestone()],
+      [makeTask({ status: 'completed' })],
+    );
+    expect(composed.milestones[0].status).toBe('completed');
+    expect(composed.status).toBe('draft');
+  });
+
+  it('preserves manual goal completion while an unfinished milestone follows its tasks', () => {
+    const composed = composeGoalWithMilestones(
+      makeGoal({ manuallyCompletedAt: new Date() }),
+      [makeMilestone({ manuallyCompletedAt: new Date() })],
+      [makeTask()],
+    );
+    expect(composed.status).toBe('completed');
+    expect(composed.milestones[0].status).toBe('pending');
+    expect(composed.completedMilestoneCount).toBe(0);
   });
 });

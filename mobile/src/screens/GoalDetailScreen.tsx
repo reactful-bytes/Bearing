@@ -23,6 +23,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { IconButton } from '../components/ui/IconButton';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
+import { RowContextMenu } from '../components/ui/RowContextMenu';
 import { useThemedStyles } from '../design/useThemedStyles';
 import { spacing } from '../design/tokens';
 import type { Theme } from '../design/tokens';
@@ -63,11 +64,9 @@ function formatTaskContext(task: TaskRecord, goal: GoalWithMilestones, locale?: 
 }
 
 function formatTaskDateLabel(task: TaskRecord, locale?: string): string {
-  const date =
-    task.status === 'completed' ? task.completedAt : (task.dueDate ?? task.scheduledStart);
+  const date = task.dueDate ?? task.scheduledStart;
   if (!date) return task.status === 'completed' ? 'Completed' : 'Unscheduled';
   const formatted = date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
-  if (task.status === 'completed') return `Completed ${formatted}`;
   return task.dueDate ? `Due ${formatted}` : `Scheduled ${formatted}`;
 }
 
@@ -82,12 +81,12 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
     goals,
     uiState,
     updateGoal,
+    deleteGoal,
     activateGoalDraft,
     setGoalManuallyCompleted,
     createMilestone,
     deleteMilestone,
     updateMilestone,
-    setMilestoneManuallyCompleted,
     reorderMilestones,
     retry,
   } = useGoals();
@@ -111,6 +110,8 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
   const [scheduleTaskId, setScheduleTaskId] = useState<string | null>(null);
   const [startNowTaskId, setStartNowTaskId] = useState<string | null>(null);
   const [editGoalVisible, setEditGoalVisible] = useState(false);
+  const [deleteGoalVisible, setDeleteGoalVisible] = useState(false);
+  const [goalActionWorking, setGoalActionWorking] = useState(false);
   const [addMilestoneVisible, setAddMilestoneVisible] = useState(false);
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
   const [scheduleMilestoneId, setScheduleMilestoneId] = useState<string | null>(null);
@@ -160,6 +161,35 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
 
   async function handleUpdateTask(taskId: string, fields: UpdateTaskInput): Promise<void> {
     await updateTask(taskId, fields);
+  }
+
+  async function handleGoalCompletion(completed: boolean): Promise<void> {
+    if (!goal || goalActionWorking) return;
+    setGoalActionWorking(true);
+    try {
+      await setGoalManuallyCompleted(goal.id, completed);
+    } catch (error) {
+      Alert.alert(
+        'Unable to update goal',
+        error instanceof Error ? error.message : 'Please try again.',
+      );
+    } finally {
+      setGoalActionWorking(false);
+    }
+  }
+
+  async function handleDeleteGoal(): Promise<void> {
+    if (!goal || goalActionWorking) return;
+    setGoalActionWorking(true);
+    try {
+      await deleteGoal(goal.id);
+      setDeleteGoalVisible(false);
+      navigation.goBack();
+    } catch {
+      Alert.alert('Unable to delete goal', 'Please try again.');
+    } finally {
+      setGoalActionWorking(false);
+    }
   }
 
   async function handleDeleteTask(): Promise<void> {
@@ -271,7 +301,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
         task={task}
         dateLabel={formatTaskDateLabel(task, profile?.locale)}
         onPress={() => setSelectedTaskId(task.id)}
-        onComplete={goal?.status === 'draft' ? undefined : () => void handleToggleTask(task)}
+        onComplete={goal?.status === 'draft' ? undefined : () => handleToggleTask(task)}
         onReactivate={
           goal?.status === 'draft' || task.status !== 'completed'
             ? undefined
@@ -345,10 +375,44 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
             </Text>
             <Text style={styles.detailProgressText}>{getGoalProgressPercent(goal)}% complete</Text>
           </View>
-          <IconButton
-            name="moreVertical"
-            accessibilityLabel="Edit goal"
-            onPress={() => setEditGoalVisible(true)}
+          <RowContextMenu
+            accessibilityLabel="Goal actions"
+            menuAccessibilityLabel="Goal actions menu"
+            disabled={goalActionWorking}
+            items={[
+              {
+                label: 'Edit',
+                accessibilityLabel: 'Edit goal',
+                icon: 'edit',
+                onPress: () => setEditGoalVisible(true),
+              },
+              ...(goal.status === 'active'
+                ? [
+                    {
+                      label: 'Complete',
+                      accessibilityLabel: 'Complete goal',
+                      icon: 'complete' as const,
+                      onPress: () => void handleGoalCompletion(true),
+                    },
+                  ]
+                : goal.status === 'completed'
+                  ? [
+                      {
+                        label: 'Uncomplete',
+                        accessibilityLabel: 'Uncomplete goal',
+                        icon: 'refresh' as const,
+                        onPress: () => void handleGoalCompletion(false),
+                      },
+                    ]
+                  : []),
+              {
+                label: 'Delete',
+                accessibilityLabel: 'Delete goal',
+                icon: 'delete',
+                tone: 'danger',
+                onPress: () => setDeleteGoalVisible(true),
+              },
+            ]}
           />
         </View>
         <ProgressBar
@@ -410,12 +474,10 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
                   context={formatTaskContext(nextTask, goal, profile?.locale)}
                   onPress={() => setSelectedTaskId(nextTask.id)}
                   onToggleComplete={
-                    goal.status === 'draft'
-                      ? undefined
-                      : () => {
-                          void handleToggleTask(nextTask);
-                        }
+                    goal.status === 'draft' ? undefined : () => handleToggleTask(nextTask)
                   }
+                  onEdit={() => setEditingTaskId(nextTask.id)}
+                  onDelete={() => confirmDeleteTask(nextTask)}
                 />
               </AppCard>
             ) : (
@@ -609,8 +671,12 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
       <GoalDetailsModal
         goal={goal}
         visible={editGoalVisible}
+        initialEditMode
         onClose={() => setEditGoalVisible(false)}
-        onSaveGoal={updateGoal}
+        onSaveGoal={async (goalId, fields) => {
+          await updateGoal(goalId, fields);
+          setEditGoalVisible(false);
+        }}
         onActivateDraft={activateGoalDraft}
         onToggleGoalManualCompletion={setGoalManuallyCompleted}
         onAddMilestone={() => {
@@ -621,10 +687,20 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
           setEditGoalVisible(false);
           setSelectedMilestoneId(milestone.id);
         }}
-        onToggleMilestoneCompletion={(milestone, completed) =>
-          setMilestoneManuallyCompleted(milestone.id, completed)
-        }
         onReorderMilestones={reorderMilestones}
+      />
+      <ConfirmationModal
+        visible={deleteGoalVisible}
+        title="Delete goal?"
+        message={`"${goal.title}" and its milestones will be permanently deleted. Tasks, calendar events, and notes will be kept with their goal and milestone links removed.`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        confirmAccessibilityLabel="Confirm delete goal"
+        icon="delete"
+        iconTone="danger"
+        loading={goalActionWorking}
+        onCancel={() => setDeleteGoalVisible(false)}
+        onConfirm={() => void handleDeleteGoal()}
       />
       <AddMilestoneModal
         visible={addMilestoneVisible}
@@ -651,9 +727,6 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
           setTaskMilestoneId(milestone.id);
           setAddTaskVisible(true);
         }}
-        onToggleManualCompletion={(milestone, completed) =>
-          setMilestoneManuallyCompleted(milestone.id, completed)
-        }
         milestoneActionsEnabled={goal.status !== 'draft'}
       />
       <AddEventModal

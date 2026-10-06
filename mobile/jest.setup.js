@@ -41,28 +41,32 @@ jest.mock('react-native-reanimated', () => {
 jest.mock('react-native-gesture-handler', () => {
   const React = require('react');
   const { View } = require('react-native');
-  const gesture = { onUpdateCallback: undefined, onEndCallback: undefined };
-  const chain = () => gesture;
-
-  Object.assign(gesture, {
-    enabled: chain,
-    activeOffsetY: chain,
-    failOffsetX: chain,
-    onUpdate: (callback) => {
-      gesture.onUpdateCallback = callback;
+  let latestGesture;
+  const createPanGesture = () => {
+    const gesture = {};
+    const setOption = (name) => (value) => {
+      gesture[name] = value;
       return gesture;
-    },
-    onEnd: (callback) => {
-      gesture.onEndCallback = callback;
-      return gesture;
-    },
-  });
+    };
+    Object.assign(gesture, {
+      enabled: setOption('enabledValue'),
+      activeOffsetX: setOption('activeOffsetXValue'),
+      activeOffsetY: setOption('activeOffsetYValue'),
+      failOffsetX: setOption('failOffsetXValue'),
+      failOffsetY: setOption('failOffsetYValue'),
+      onUpdate: setOption('onUpdateCallback'),
+      onEnd: setOption('onEndCallback'),
+      onFinalize: setOption('onFinalizeCallback'),
+    });
+    latestGesture = gesture;
+    return gesture;
+  };
 
   return {
-    Gesture: { Pan: () => gesture },
+    Gesture: { Pan: createPanGesture },
     GestureDetector: ({ children }) => React.createElement(React.Fragment, null, children),
     GestureHandlerRootView: View,
-    __getLatestPanGesture: () => gesture,
+    __getLatestPanGesture: () => latestGesture,
   };
 });
 

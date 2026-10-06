@@ -304,49 +304,15 @@ export function GoalTimeline({
 
   return (
     <View accessibilityLabel="Goal milestone timeline" style={styles.timeline}>
-      {milestones.map((milestone, index) => {
+      {milestones.map((milestone) => {
         const isCompleted = milestone.status === 'completed';
         const isCurrent = !isCompleted && milestone.id === currentMilestoneId;
         const isExpanded = expandedMilestoneIds.has(milestone.id);
 
         return (
           <View key={milestone.id} style={styles.timelineItem}>
-            <View style={styles.timelineMarkerColumn}>
-              <View
-                style={[
-                  styles.timelineMarker,
-                  isCompleted
-                    ? styles.timelineMarkerComplete
-                    : isCurrent
-                      ? styles.timelineMarkerCurrent
-                      : styles.timelineMarkerUpcoming,
-                ]}
-              >
-                {isCompleted ? (
-                  <AppIcon name="complete" size={12} color={theme.colors.onBrand} decorative />
-                ) : null}
-              </View>
-              {index < milestones.length - 1 ? <View style={styles.timelineConnector} /> : null}
-            </View>
             <View style={styles.timelineBody}>
-              <View style={styles.timelineHeader}>
-                <Pressable
-                  accessibilityRole={onPressMilestone ? 'button' : undefined}
-                  accessibilityLabel={
-                    onPressMilestone ? `Open milestone ${milestone.title}` : undefined
-                  }
-                  disabled={!onPressMilestone}
-                  onPress={() => onPressMilestone?.(milestone)}
-                  style={styles.timelineCopy}
-                >
-                  <View style={styles.timelineTitleRow}>
-                    <Text style={styles.timelineTitle}>{milestone.title}</Text>
-                  </View>
-                  <Text style={styles.meta}>
-                    {isCompleted ? 'Completed' : isCurrent ? 'Current' : 'Upcoming'}
-                    {` · ${milestone.progressText}`}
-                  </Text>
-                </Pressable>
+              <View testID={`milestone-header-${milestone.id}`} style={styles.timelineHeader}>
                 {renderMilestoneTasks ? (
                   <Pressable
                     accessibilityRole="button"
@@ -366,8 +332,27 @@ export function GoalTimeline({
                     />
                   </Pressable>
                 ) : null}
+                <Pressable
+                  accessibilityRole={onPressMilestone ? 'button' : undefined}
+                  accessibilityLabel={
+                    onPressMilestone ? `Open milestone ${milestone.title}` : undefined
+                  }
+                  disabled={!onPressMilestone}
+                  onPress={() => onPressMilestone?.(milestone)}
+                  style={styles.timelineCopy}
+                >
+                  <View style={styles.timelineTitleRow}>
+                    <Text style={styles.timelineTitle}>{milestone.title}</Text>
+                  </View>
+                  <Text style={styles.meta}>
+                    {isCompleted ? 'Completed' : isCurrent ? 'Current' : 'Upcoming'}
+                    {` · ${milestone.progressText}`}
+                  </Text>
+                </Pressable>
               </View>
-              {renderMilestoneTasks && isExpanded ? renderMilestoneTasks(milestone) : null}
+              {renderMilestoneTasks && isExpanded ? (
+                <View style={styles.timelineTasks}>{renderMilestoneTasks(milestone)}</View>
+              ) : null}
             </View>
           </View>
         );
@@ -509,39 +494,10 @@ const createStyles = (theme: Theme) =>
       alignItems: 'stretch',
       gap: theme.spacing.md,
     },
-    timelineMarkerColumn: {
-      width: 20,
-      alignItems: 'center',
-    },
-    timelineMarker: {
-      width: 16,
-      height: 16,
-      borderRadius: 8,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.background,
-    },
-    timelineMarkerComplete: {
-      backgroundColor: theme.colors.success,
-      borderColor: theme.colors.success,
-    },
-    timelineMarkerCurrent: {
-      borderWidth: 2,
-      borderColor: theme.colors.brand,
-      backgroundColor: theme.colors.surfaceBrand,
-    },
-    timelineMarkerUpcoming: { borderColor: theme.colors.border },
-    timelineConnector: {
-      flex: 1,
-      width: 1,
-      backgroundColor: theme.colors.border,
-      marginVertical: theme.spacing.xs,
-    },
     timelineCopy: { flex: 1, gap: theme.spacing.xs, paddingBottom: theme.spacing.sm },
     timelineBody: { flex: 1, gap: theme.spacing.sm },
     timelineHeader: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
+    timelineTasks: { paddingLeft: theme.layout.minimumTouchTarget + theme.spacing.xs },
     timelineDisclosure: {
       width: theme.layout.minimumTouchTarget,
       height: theme.layout.minimumTouchTarget,

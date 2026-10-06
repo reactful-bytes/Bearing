@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { StyleSheet } from 'react-native';
 
 import { CreateEventInput } from '../features/calendar/calendarTypes';
@@ -88,6 +88,10 @@ function taskViewDraft(overrides: Partial<TaskViewDraft> = {}): TaskViewDraft {
 }
 
 describe('TasksScreen', () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockGoals();
@@ -547,7 +551,7 @@ describe('TasksScreen', () => {
     expect(screen.getAllByLabelText('Task actions menu')).toHaveLength(1);
     fireEvent.press(actionTriggers[1]);
     expect(screen.getAllByLabelText('Task actions menu')).toHaveLength(1);
-    expect(screen.getByRole('menuitem', { name: 'Mark task active' })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: 'Uncomplete task' })).toBeTruthy();
 
     fireEvent.press(screen.getByLabelText('Dismiss Task actions menu'), {
       stopPropagation: jest.fn(),
@@ -741,9 +745,77 @@ describe('TasksScreen', () => {
       />,
     );
     fireEvent.press(screen.getByLabelText('Task actions'));
-    fireEvent.press(screen.getByRole('menuitem', { name: 'Mark task active' }));
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Uncomplete task' }));
 
     await waitFor(() => expect(reactivateTask).toHaveBeenCalledWith('task-1'));
+  });
+
+  it('completes and uncompletes from the menu while preserving and crossing out the due date', async () => {
+    jest.useFakeTimers();
+    const completeTask = jest.fn(async () => undefined);
+    const reactivateTask = jest.fn(async () => undefined);
+    const activeTask = makeTask({ dueDate: new Date(2026, 8, 8) });
+    const taskState: ReturnType<typeof useTasks> = {
+      tasks: [activeTask],
+      uiState: 'ready',
+      createTask: async () => undefined,
+      updateTask: async () => undefined,
+      completeTask,
+      reactivateTask,
+      convertTaskToEvent: async () => ({
+        eventId: 'event-1',
+        eventInput: {
+          title: activeTask.title,
+          description: '',
+          startAt: new Date(),
+          endAt: new Date(),
+          timezone: 'UTC',
+        },
+        created: true,
+      }),
+      deleteTask: async () => undefined,
+      retry: jest.fn(),
+    };
+    const mockedUseTasks = useTasks as jest.MockedFunction<typeof useTasks>;
+    mockedUseTasks.mockReturnValue(taskState);
+    const renderTaskScreen = () => (
+      <TasksScreen route={{ params: { viewResult: taskViewDraft({ taskFilter: 'all' }) } }} />
+    );
+    const { rerender } = render(renderTaskScreen());
+    expect(screen.queryByRole('checkbox')).toBeNull();
+    fireEvent.press(screen.getByLabelText('Task actions'));
+    await act(async () => {
+      fireEvent.press(screen.getByRole('menuitem', { name: 'Complete task' }));
+      jest.advanceTimersByTime(200);
+    });
+    await waitFor(() =>
+      expect(completeTask).toHaveBeenCalledWith(activeTask.id, { completionSource: 'manual' }),
+    );
+    expect(screen.queryByRole('header', { name: 'Task Details' })).toBeNull();
+
+    mockedUseTasks.mockReturnValue({
+      ...taskState,
+      tasks: [{ ...activeTask, status: 'completed', completedAt: new Date(2026, 8, 10) }],
+    });
+    rerender(renderTaskScreen());
+    for (const text of [activeTask.title, 'Due Sep 8']) {
+      expect(StyleSheet.flatten(screen.getByText(text).props.style)).toEqual(
+        expect.objectContaining({ textDecorationLine: 'line-through' }),
+      );
+    }
+    fireEvent.press(screen.getByLabelText('Task actions'));
+    expect(screen.queryByRole('menuitem', { name: 'Complete task' })).toBeNull();
+    await act(async () => {
+      fireEvent.press(screen.getByRole('menuitem', { name: 'Uncomplete task' }));
+      jest.advanceTimersByTime(200);
+    });
+    await waitFor(() => expect(reactivateTask).toHaveBeenCalledWith(activeTask.id));
+
+    mockedUseTasks.mockReturnValue(taskState);
+    rerender(renderTaskScreen());
+    expect(StyleSheet.flatten(screen.getByText('Due Sep 8').props.style)).not.toHaveProperty(
+      'textDecorationLine',
+    );
   });
 
   it('shows filter-specific empty copy', () => {
