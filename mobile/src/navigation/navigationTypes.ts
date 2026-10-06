@@ -37,7 +37,7 @@ export type PlanStackParamList = {
   TaskGoalSelection: TaskViewParams;
   TaskSortSelection: TaskViewParams;
   TaskDetail: { taskId: string };
-  GoalDetail: { goalId: string; initialTab?: 'tasks' | 'timeline' };
+  GoalDetail: { goalId: string; initialTab?: 'tasks' | 'overview' | 'timeline' };
   FocusMode:
     | {
         eventId?: string;

@@ -139,6 +139,7 @@ describe('domain presentation', () => {
     expect(onGoalPress).toHaveBeenCalledTimes(1);
     expect(onFilterChange).toHaveBeenCalledWith('completed');
     expect(onMilestonePress).toHaveBeenCalledWith(milestone);
+    expect(screen.queryByRole('button', { name: 'Expand milestone Buy shoes' })).toBeNull();
     expect(screen.getByText('First 5k')).toBeTruthy();
   });
 

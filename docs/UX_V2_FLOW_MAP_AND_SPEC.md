@@ -125,7 +125,7 @@ Root Tabs
 │   ├── Goals List
 │   │   ├── Goal Detail
 │   │   │   ├── Tasks Tab
-│   │   │   └── Timeline Tab
+│   │   │   └── Overview Tab
 │   │   ├── Create Task
 │   │   └── Edit Goal
 │   ├── Focus Mode
@@ -642,16 +642,22 @@ Turn something important into a clear plan.
 Use two top tabs:
 
 ``` text
-Tasks | Timeline
+Tasks | Overview
 ```
 
 ## Tasks tab
 
 ### Next Up
 
-Highlight the next most actionable task.
+Highlight the active task with the earliest due date. Recompute it when tasks
+are added, edited, completed, or reactivated. Tasks without due dates follow
+dated tasks, with creation date breaking ties.
 
 ### Task list
+
+All tasks scroll independently in a bounded list within the page. Sort by due
+date ascending regardless of completion status, with undated tasks last and
+creation date breaking ties.
 
 Each task row:
 
@@ -668,16 +674,20 @@ Allow:
 -   delete
 -   schedule
 
-## Timeline tab
+## Overview tab
 
-The Timeline is chronological, not simply a task list.
+Show the goal description and locale-formatted finish date above the milestone
+list. The milestone list scrolls independently within a bounded area.
 
-Show:
+Milestones start collapsed. A separate right-facing disclosure arrow expands
+the milestone's associated tasks beneath its header and points down while
+expanded. Multiple milestones may stay expanded. Tasks use ascending due-date
+order, undated tasks last, and open the existing task details when tapped.
+Tapping the milestone title still opens milestone details.
 
--   goal start
--   milestones
--   key steps
--   target completion date
+Empty milestones display an explicit no-tasks message. Keep the Add milestone
+action and current/completed/upcoming status indicators. The goal header's
+overflow action uses vertical dots and retains its existing edit behavior.
 
 Recommended visual pattern:
 
@@ -1814,7 +1824,7 @@ The UI redesign is complete when:
 -   Navigation matches the recommended information architecture.
 -   The Plan screen functions as a daily command center.
 -   Goals support Current, Completed, and Archived states.
--   Goal Detail has Tasks and Timeline views.
+-   Goal Detail has Tasks and Overview views.
 -   Tasks can optionally belong to goals.
 -   Calendar supports daily and monthly views.
 -   Calendar visually distinguishes events, tasks, milestones, and

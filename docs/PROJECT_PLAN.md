@@ -485,6 +485,7 @@ Track implementation work for the Expo + Firebase day and life-goals app using s
 | M30.5   | completed | Render operational timeline      | Historical ordered operational steps; superseded by M39                         |
 | M30.6   | completed | Preserve standalone task access  | Keep unlinked task access from Plan and Create                                |
 | M30.7   | completed | Validate goals and tasks         | Cover filters, mutations, ordering, and navigation                            |
+| M30.8   | completed | Refine Goal Detail Tasks and Overview | Due-ordered tasks and automatic Next Up, bounded task/milestone scroll, description/finish date, right/down task disclosure, task details, and vertical overflow implemented; 28 focused tests and changed-file lint/format pass; owner confirmed manual checks on 2026-10-05; existing past-date draft test excluded and unrelated baseline type errors remain |
 
 ### M39 - Goal → Milestone → Task Hierarchy
 

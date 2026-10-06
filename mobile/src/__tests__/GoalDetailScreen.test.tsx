@@ -1,9 +1,10 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { StyleSheet } from 'react-native';
+import { Dimensions, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GoalDetailScreen } from '../screens/GoalDetailScreen';
+import { AppIcon } from '../components/ui/AppIcon';
 import { useGoals } from '../features/goals/useGoals';
 import { useTasks } from '../features/tasks/useTasks';
 import { useMilestoneEvents } from '../features/goals/useMilestoneEvents';
@@ -105,6 +106,7 @@ function mockHooks(
     goal?: GoalWithMilestones;
     activateGoalDraft?: (goalId: string) => Promise<void>;
     updateGoal?: (goalId: string, fields: UpdateGoalInput) => Promise<void>;
+    tasks?: TaskRecord[];
   } = {},
 ): void {
   (useUserProfile as jest.MockedFunction<typeof useUserProfile>).mockReturnValue({
@@ -134,7 +136,7 @@ function mockHooks(
     retry: jest.fn(),
   });
   (useTasks as jest.MockedFunction<typeof useTasks>).mockReturnValue({
-    tasks: [task],
+    tasks: overrides.tasks ?? [task],
     uiState: 'ready',
     createTask:
       overrides.createTask ?? jest.fn(async (_input: CreateTaskInput): Promise<void> => undefined),
@@ -225,12 +227,232 @@ describe('GoalDetailScreen', () => {
     });
   });
 
-  it('switches to the operational timeline and shows linked task counts', () => {
-    render(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'timeline' } }} />);
+  it('opens Overview and shows the milestone timeline and linked task counts', () => {
+    render(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
 
-    expect(screen.getAllByText('Timeline')).toHaveLength(2);
+    expect(screen.getByRole('tab', { name: 'Overview', selected: true })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Milestones' })).toBeTruthy();
     expect(screen.getByText('Current · 0 of 0 tasks')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Open milestone Choose a race date' })).toBeTruthy();
+  });
+
+  it('shows the goal description and finish date above a bounded milestone list', () => {
+    (useSafeAreaInsets as jest.MockedFunction<typeof useSafeAreaInsets>).mockReturnValue({
+      top: 24,
+      right: 0,
+      bottom: 16,
+      left: 0,
+    });
+    render(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
+
+    const summary = within(screen.getByTestId('goal-overview-summary'));
+    expect(summary.getByText(goal.description)).toBeTruthy();
+    expect(summary.getByText('Finish date: Oct 1, 2026')).toBeTruthy();
+    const list = screen.getByTestId('goal-detail-milestone-list');
+    expect(list.props.nestedScrollEnabled).toBe(true);
+    expect(StyleSheet.flatten(list.props.style)).toEqual({
+      maxHeight: (Dimensions.get('window').height - 40) * 0.45,
+    });
+    expect(within(list).queryByText(goal.description)).toBeNull();
+  });
+
+  it('expands due-ordered milestone tasks with a down arrow and opens task details', () => {
+    const earlierTask = {
+      ...task,
+      id: 'earlier',
+      title: 'Pick the race',
+      dueDate: new Date(2026, 8, 1),
+    };
+    mockHooks({
+      tasks: [
+        task,
+        { ...task, id: 'unlinked', title: 'Not in this milestone', milestoneId: null },
+        earlierTask,
+        { ...task, id: 'other-goal', title: 'Other goal task', goalId: 'goal-2' },
+      ],
+    });
+    render(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
+
+    const expand = screen.getByRole('button', {
+      name: 'Expand milestone Choose a race date',
+      expanded: false,
+    });
+    expect(within(expand).UNSAFE_getByType(AppIcon).props.name).toBe('forward');
+    expect(screen.queryByText(task.title)).toBeNull();
+    fireEvent.press(expand);
+
+    const collapse = screen.getByRole('button', {
+      name: 'Collapse milestone Choose a race date',
+      expanded: true,
+    });
+    expect(within(collapse).UNSAFE_getByType(AppIcon).props.name).toBe('expand');
+    expect(screen.queryByText('Milestone Details')).toBeNull();
+    const list = within(screen.getByTestId('goal-detail-milestone-list'));
+    expect(
+      list
+        .getAllByRole('button', { name: /^Open task / })
+        .map((row) => row.props.accessibilityLabel),
+    ).toEqual(['Open task Pick the race', 'Open task Book the race']);
+    expect(screen.queryByText('Not in this milestone')).toBeNull();
+    expect(screen.queryByText('Other goal task')).toBeNull();
+    fireEvent.press(list.getByRole('button', { name: 'Open task Book the race' }));
+    expect(screen.getByText('Task Details')).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Close Task Details' }));
+    fireEvent.press(collapse);
+    expect(screen.queryByText(task.title)).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Expand milestone Choose a race date', expanded: false }),
+    ).toBeTruthy();
+  });
+
+  it('allows multiple expanded milestones and explicitly labels empty milestones', () => {
+    const secondMilestone = { ...milestone, id: 'milestone-2', title: 'Train for race', order: 1 };
+    mockHooks({ goal: { ...goal, milestones: [milestone, secondMilestone] } });
+    render(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
+
+    fireEvent.press(screen.getByRole('button', { name: 'Expand milestone Choose a race date' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Expand milestone Train for race' }));
+    expect(screen.getByText(task.title)).toBeTruthy();
+    expect(screen.getByText('No tasks in this milestone.')).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Collapse milestone Choose a race date', expanded: true }),
+    ).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Collapse milestone Train for race' }));
+    expect(screen.queryByText('No tasks in this milestone.')).toBeNull();
+    expect(screen.getByText(task.title)).toBeTruthy();
+  });
+
+  it('updates expanded tasks live and keeps completion separate from task navigation', async () => {
+    const completeTask = jest.fn(async () => undefined);
+    mockHooks({ completeTask });
+    const { rerender } = render(
+      <GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />,
+    );
+    fireEvent.press(screen.getByRole('button', { name: 'Expand milestone Choose a race date' }));
+    fireEvent.press(screen.getByRole('checkbox', { name: 'Mark Book the race complete' }));
+    await waitFor(() =>
+      expect(completeTask).toHaveBeenCalledWith(task.id, { completionSource: 'manual' }),
+    );
+    expect(screen.queryByText('Task Details')).toBeNull();
+
+    mockHooks({ tasks: [{ ...task, id: 'new-task', title: 'New milestone task' }] });
+    rerender(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
+    expect(screen.getByText('New milestone task')).toBeTruthy();
+    expect(screen.queryByText(task.title)).toBeNull();
+  });
+
+  it('shows missing description and milestone states and keeps Add milestone available', () => {
+    mockHooks({ goal: { ...goal, description: '', milestones: [] } });
+    render(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
+
+    expect(screen.getByText('No description yet.')).toBeTruthy();
+    expect(
+      screen.getByText('No milestones yet. Add one to break this goal into smaller steps.'),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add milestone' })).toBeTruthy();
+  });
+
+  it('uses vertical header dots and preserves goal editing', () => {
+    render(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
+
+    const edit = screen.getByRole('button', { name: 'Edit goal' });
+    expect(within(edit).UNSAFE_getByType(AppIcon).props.name).toBe('moreVertical');
+    fireEvent.press(edit);
+    expect(screen.getByText(goal.description)).toBeTruthy();
+  });
+
+  it('keeps completion disabled for draft milestone tasks', () => {
+    mockHooks({ goal: { ...goal, status: 'draft' } });
+    render(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
+
+    fireEvent.press(screen.getByRole('button', { name: 'Expand milestone Choose a race date' }));
+    expect(screen.getByRole('button', { name: 'Open task Book the race' })).toBeTruthy();
+    expect(screen.queryByRole('checkbox')).toBeNull();
+  });
+
+  it('preserves legacy timeline links and switches between Tasks and Overview', () => {
+    render(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'timeline' } }} />);
+
+    expect(screen.getByRole('tab', { name: 'Overview', selected: true })).toBeTruthy();
+    fireEvent.press(screen.getByRole('tab', { name: 'Tasks' }));
+    expect(screen.getByText('Next Up')).toBeTruthy();
+    fireEvent.press(screen.getByRole('tab', { name: 'Overview' }));
+    expect(screen.queryByText('Next Up')).toBeNull();
+  });
+
+  it('sorts all tasks by due date regardless of status, with undated tasks last', () => {
+    const earlierTask = {
+      ...task,
+      id: 'earlier',
+      title: 'Earlier completed task',
+      dueDate: new Date(2026, 8, 1),
+      status: 'completed' as const,
+      completedAt: new Date(2026, 8, 2),
+    };
+    const undatedTask = { ...task, id: 'undated', title: 'Undated task', dueDate: null };
+    const tiedTask = {
+      ...task,
+      id: 'tied',
+      title: 'Later created task',
+      createdAt: new Date(2026, 6, 21),
+    };
+    mockHooks({
+      tasks: [
+        undatedTask,
+        tiedTask,
+        task,
+        earlierTask,
+        { ...task, id: 'unlinked', title: 'Unlinked task', goalId: null },
+      ],
+    });
+
+    render(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
+
+    const rows = within(screen.getByTestId('goal-detail-task-list')).getAllByRole('button', {
+      name: /^Open task /,
+    });
+    expect(rows.map((row) => row.props.accessibilityLabel)).toEqual([
+      'Open task Earlier completed task',
+      'Open task Book the race',
+      'Open task Later created task',
+      'Open task Undated task',
+    ]);
+    expect(screen.queryByText('Unlinked task')).toBeNull();
+    expect(screen.getAllByText('Book the race')).toHaveLength(2);
+  });
+
+  it('replaces Next Up when an earlier-due task arrives and advances when it is completed', () => {
+    const earlierTask = {
+      ...task,
+      id: 'earlier',
+      title: 'New earlier task',
+      dueDate: new Date(2026, 8, 1),
+      createdAt: new Date(2026, 6, 21),
+      updatedAt: new Date(2026, 6, 21),
+    };
+    const { rerender } = render(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
+    expect(screen.getAllByText('Book the race')).toHaveLength(2);
+
+    mockHooks({ tasks: [task, earlierTask] });
+    rerender(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
+    expect(screen.getAllByText('New earlier task')).toHaveLength(2);
+    expect(screen.getAllByText('Book the race')).toHaveLength(1);
+
+    mockHooks({ tasks: [task, { ...earlierTask, status: 'completed' }] });
+    rerender(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
+    expect(screen.getAllByText('Book the race')).toHaveLength(2);
+    expect(screen.getAllByText('New earlier task')).toHaveLength(1);
+  });
+
+  it('bounds the independently scrollable task list to the available screen height', () => {
+    render(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
+
+    const list = screen.getByTestId('goal-detail-task-list');
+    expect(list.props.nestedScrollEnabled).toBe(true);
+    expect(StyleSheet.flatten(list.props.style)).toEqual({
+      maxHeight: Dimensions.get('window').height * 0.45,
+    });
+    expect(screen.getByTestId('goal-detail-scroll').props.nestedScrollEnabled).toBe(true);
   });
 
   it('keeps draft tasks editable but disables completion and scheduling until activation', async () => {
@@ -263,7 +485,7 @@ describe('GoalDetailScreen', () => {
     fireEvent.press(screen.getByLabelText('Back to task details'));
 
     fireEvent.press(screen.getByRole('button', { name: 'Close Task Details' }));
-    fireEvent.press(screen.getByRole('tab', { name: 'Timeline' }));
+    fireEvent.press(screen.getByRole('tab', { name: 'Overview' }));
     fireEvent.press(screen.getByRole('button', { name: 'Open milestone Choose a race date' }));
     expect(screen.queryByRole('button', { name: 'Schedule milestone event' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Manually complete milestone' })).toBeNull();
