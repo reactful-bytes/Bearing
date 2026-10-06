@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { NavigationProp, useIsFocused, useNavigation } from '@react-navigation/native';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
@@ -8,12 +8,17 @@ import { AddMilestoneModal } from '../components/goals/AddMilestoneModal';
 import { CreateGoalModal } from '../components/goals/CreateGoalModal';
 import { GoalDetailsModal } from '../components/goals/GoalDetailsModal';
 import { MilestoneDetailModal } from '../components/goals/MilestoneDetailModal';
+import { GoalFilterModal } from '../components/goals/GoalFilterModal';
+import type { GoalFilterOption } from '../components/goals/GoalFilterModal';
 import { AddTaskModal } from '../components/tasks/AddTaskModal';
-import { GoalCard, GoalListFilter } from '../components/presentation/GoalPresentation';
+import { GoalCard } from '../components/presentation/GoalPresentation';
 import type { GoalFilter } from '../components/presentation/GoalPresentation';
 import { AppCard } from '../components/ui/AppCard';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
+import { AppIcon } from '../components/ui/AppIcon';
+import { FilterSortToolbar } from '../components/ui/FilterSortToolbar';
+import { SortOptionsModal } from '../components/ui/SortOptionsModal';
 import { layout, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import {
@@ -39,6 +44,23 @@ function formatDate(date: Date): string {
     year: 'numeric',
   });
 }
+
+type GoalSortBy =
+  | 'targetDate:asc'
+  | 'targetDate:desc'
+  | 'updatedAt:desc'
+  | 'updatedAt:asc'
+  | 'title:asc'
+  | 'title:desc';
+
+const goalSortOptions = [
+  { value: 'targetDate:asc', label: 'Target date soonest', summary: 'Target date ↑', icon: 'dateAscending' },
+  { value: 'targetDate:desc', label: 'Target date latest', summary: 'Target date ↓', icon: 'dateDescending' },
+  { value: 'updatedAt:desc', label: 'Updated newest', summary: 'Updated ↓', icon: 'updatedDescending' },
+  { value: 'updatedAt:asc', label: 'Updated oldest', summary: 'Updated ↑', icon: 'updatedAscending' },
+  { value: 'title:asc', label: 'Title A to Z', summary: 'Title A-Z', icon: 'textAscending' },
+  { value: 'title:desc', label: 'Title Z to A', summary: 'Title Z-A', icon: 'textDescending' },
+] as const;
 
 type GoalsScreenProps = {
   route?: { params?: PlanStackParamList['Goals'] };
@@ -87,6 +109,10 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
   const [taskMilestoneId, setTaskMilestoneId] = useState<string | null>(null);
   const [goalFilter, setGoalFilter] = useState<GoalFilter>('active');
+  const [goalSearch, setGoalSearch] = useState('');
+  const [goalSortBy, setGoalSortBy] = useState<GoalSortBy>('targetDate:asc');
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [sortModalVisible, setSortModalVisible] = useState(false);
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status, entitlement?.periodEndAt);
 
   useEffect(() => {
@@ -105,22 +131,42 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   const draftGoalCount = goals.filter((goal) => goal.status === 'draft').length;
   const completedGoalCount = goals.filter((goal) => goal.status === 'completed').length;
   const archivedGoalCount = goals.filter((goal) => goal.status === 'archived').length;
-  const goalFilterOptions = useMemo(
+  const goalFilterOptions: GoalFilterOption[] = useMemo(
     () => [
+      { value: 'all', label: 'All goals', count: goals.length },
       { value: 'draft' as const, label: 'Draft', count: draftGoalCount },
       { value: 'active' as const, label: 'Current', count: activeGoalCount },
       { value: 'completed' as const, label: 'Completed', count: completedGoalCount },
       { value: 'archived' as const, label: 'Archived', count: archivedGoalCount },
     ],
-    [activeGoalCount, archivedGoalCount, completedGoalCount, draftGoalCount],
+    [activeGoalCount, archivedGoalCount, completedGoalCount, draftGoalCount, goals.length],
   );
   const visibleGoals = useMemo(() => {
-    if (goalFilter === 'all') {
-      return goals;
-    }
-
-    return goals.filter((goal) => goal.status === goalFilter);
-  }, [goalFilter, goals]);
+    const normalizedQuery = goalSearch.trim().toLocaleLowerCase();
+    const filtered = goals.filter((goal) => {
+      const matchesStatus = goalFilter === 'all' || goal.status === goalFilter;
+      const matchesSearch =
+        !normalizedQuery ||
+        goal.title.toLocaleLowerCase().includes(normalizedQuery) ||
+        goal.description.toLocaleLowerCase().includes(normalizedQuery);
+      return matchesStatus && matchesSearch;
+    });
+    const [sortKey, direction] = goalSortBy.split(':') as [string, 'asc' | 'desc'];
+    const multiplier = direction === 'asc' ? 1 : -1;
+    return filtered.sort((left, right) => {
+      if (sortKey === 'title') return left.title.localeCompare(right.title) * multiplier;
+      if (sortKey === 'updatedAt') {
+        return (
+          (left.updatedAt.getTime() - right.updatedAt.getTime()) * multiplier ||
+          left.title.localeCompare(right.title)
+        );
+      }
+      return (
+        (left.estimatedCompletionDate.getTime() - right.estimatedCompletionDate.getTime()) *
+          multiplier || left.title.localeCompare(right.title)
+      );
+    });
+  }, [goalFilter, goalSearch, goalSortBy, goals]);
 
   const selectedGoal = useMemo(
     () => goals.find((goal) => goal.id === selectedGoalId) ?? null,
@@ -128,6 +174,8 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   );
   const selectedMilestone =
     selectedGoal?.milestones.find((milestone) => milestone.id === selectedMilestoneId) ?? null;
+  const selectedGoalFilter = goalFilterOptions.find((option) => option.value === goalFilter)!;
+  const selectedGoalSort = goalSortOptions.find((option) => option.value === goalSortBy)!;
 
   async function handleCreateGoal(input: CreateGoalInput): Promise<void> {
     await createGoal(input);
@@ -213,7 +261,46 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
             }
           }}
         />
-        <GoalListFilter options={goalFilterOptions} value={goalFilter} onChange={setGoalFilter} />
+        <View style={styles.goalSearchField}>
+          <AppIcon name="search" size={18} color={styles.searchIcon.color} decorative />
+          <TextInput
+            accessibilityLabel="Search goals by title or description"
+            autoCapitalize="none"
+            onChangeText={setGoalSearch}
+            placeholder="Search goals"
+            placeholderTextColor={styles.searchPlaceholder.color}
+            returnKeyType="search"
+            style={styles.goalSearchInput}
+            value={goalSearch}
+          />
+          {goalSearch.length > 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Clear goal search"
+              onPress={() => setGoalSearch('')}
+              style={styles.clearGoalSearch}
+            >
+              <AppIcon name="close" size={16} color={styles.searchIcon.color} decorative />
+            </Pressable>
+          ) : null}
+        </View>
+        <FilterSortToolbar
+          testID="goal-filter-sort-toolbar"
+          filterSummary={selectedGoalFilter.label}
+          sortSummary={selectedGoalSort.summary}
+          filterAccessibilityLabel="Filter goals"
+          sortAccessibilityLabel="Sort goals"
+          onPressFilter={() => setFilterModalVisible(true)}
+          onPressSort={() => setSortModalVisible(true)}
+        />
+        <View style={styles.goalsListHeader}>
+          <Text accessibilityRole="header" style={styles.goalsListTitle}>
+            {goalFilter === 'all' ? 'All goals' : `${selectedGoalFilter.label} goals`}
+          </Text>
+          <Text style={styles.goalsListCount}>
+            {visibleGoals.length} {visibleGoals.length === 1 ? 'goal' : 'goals'}
+          </Text>
+        </View>
 
         {uiState === 'loading' ? (
           <AppCard>
@@ -235,7 +322,9 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
         {(uiState === 'empty' || uiState === 'ready') && visibleGoals.length === 0 ? (
           <AppCard>
             <Text style={styles.stateTitle}>
-              {goalFilter === 'draft'
+              {goalSearch.trim()
+                ? 'No matching goals.'
+                : goalFilter === 'draft'
                 ? 'No goal drafts.'
                 : goalFilter === 'active'
                   ? 'No active goals.'
@@ -246,7 +335,9 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
                       : 'No goals yet.'}
             </Text>
             <Text style={styles.stateDescription}>
-              {goalFilter === 'draft'
+              {goalSearch.trim()
+                ? 'Try a different search or filter.'
+                : goalFilter === 'draft'
                 ? 'Goals saved for later will appear here.'
                 : goalFilter === 'active'
                   ? 'Create a goal to start building a step-by-step plan.'
@@ -344,6 +435,28 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
             : 'Linked to this goal'
         }
       />
+      <GoalFilterModal
+        visible={filterModalVisible}
+        selectedFilter={goalFilter}
+        options={goalFilterOptions}
+        onClose={() => setFilterModalVisible(false)}
+        onApply={(filter) => {
+          setGoalFilter(filter);
+          setFilterModalVisible(false);
+        }}
+      />
+      <SortOptionsModal
+        visible={sortModalVisible}
+        title="Sort goals"
+        accessibilityLabelPrefix="Sort goals by"
+        selectedValue={goalSortBy}
+        options={goalSortOptions}
+        onClose={() => setSortModalVisible(false)}
+        onApply={(value) => {
+          setGoalSortBy(value);
+          setSortModalVisible(false);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -369,4 +482,38 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.textPrimary,
       marginTop: spacing.sm,
     },
+    goalSearchField: {
+      minHeight: 48,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: theme.radii.md,
+      backgroundColor: theme.colors.surface,
+      paddingLeft: spacing.md,
+    },
+    searchIcon: { color: theme.colors.textSecondary },
+    searchPlaceholder: { color: theme.colors.textSecondary },
+    goalSearchInput: {
+      flex: 1,
+      minWidth: 0,
+      minHeight: 46,
+      color: theme.colors.text,
+      ...typography.helper,
+    },
+    clearGoalSearch: {
+      width: 44,
+      height: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    goalsListHeader: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+    },
+    goalsListTitle: { ...typography.button, color: theme.colors.text },
+    goalsListCount: { ...typography.caption, color: theme.colors.textSecondary },
   });

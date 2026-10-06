@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '../components/ui/AppButton';
-import { AppCard } from '../components/ui/AppCard';
 import { AppScreen } from '../components/ui/AppScreen';
 import { FormField } from '../components/ui/FormField';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
@@ -12,7 +10,9 @@ import { spacing } from '../design/tokens';
 import { useThemedStyles } from '../design/useThemedStyles';
 import type { Theme } from '../design/tokens';
 import { useNotes } from '../features/notes/useNotes';
+import { normalizeNoteLabels } from '../features/notes/noteLabels';
 import { NotesStackParamList } from '../navigation/navigationTypes';
+import { NoteLabelsField } from '../components/notes/NoteLabels';
 
 type NoteEditorScreenProps = {
   route?: { params?: NotesStackParamList['NoteEditor'] };
@@ -22,17 +22,14 @@ type NoteEditorScreenProps = {
 export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = {}) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
-  const stackNavigation = useNavigation<NavigationProp<NotesStackParamList>>();
-  const { notes, uiState, updateNote, pinNote, archiveNote, deleteNote } = useNotes();
+  const { notes, uiState, updateNote } = useNotes();
   const noteId = route?.params?.noteId ?? null;
   const note = useMemo(() => notes.find((item) => item.id === noteId) ?? null, [noteId, notes]);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
-  const [pinned, setPinned] = useState(false);
+  const [labels, setLabels] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-  const [pinning, setPinning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   useEffect(() => {
     if (!note) {
@@ -41,9 +38,8 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
 
     setTitle(note.title);
     setBody(note.body);
-    setPinned(note.pinned);
+    setLabels(note.labels);
     setError(null);
-    setConfirmingDelete(false);
   }, [note]);
 
   async function handleSave(): Promise<void> {
@@ -55,75 +51,20 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
 
     setSaving(true);
     setError(null);
-    setConfirmingDelete(false);
 
     try {
       if (!note) return;
-      await updateNote(note.id, { title: title.trim(), body: trimmedBody, pinned });
+      await updateNote(note.id, {
+        title: title.trim(),
+        body: trimmedBody,
+        labels: normalizeNoteLabels(labels),
+      });
       navigation?.goBack();
     } catch {
       setError('Failed to save note changes.');
     } finally {
       setSaving(false);
     }
-  }
-
-  async function handleArchive(): Promise<void> {
-    if (!note) return;
-
-    setSaving(true);
-    setError(null);
-    try {
-      await archiveNote(note.id, { title, body, pinned });
-      navigation?.goBack();
-    } catch {
-      setError('Failed to archive note.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleTogglePinned(): Promise<void> {
-    if (!note) {
-      setPinned((current) => !current);
-      return;
-    }
-
-    const nextPinned = !note.pinned;
-    setPinned(nextPinned);
-    setPinning(true);
-    setError(null);
-
-    try {
-      await pinNote(note.id, nextPinned);
-    } catch {
-      setPinned(note.pinned);
-      setError('Failed to update note pin.');
-    } finally {
-      setPinning(false);
-    }
-  }
-
-  async function handleDelete(): Promise<void> {
-    if (!note) return;
-
-    setSaving(true);
-    setError(null);
-    try {
-      await deleteNote(note.id);
-      navigation?.goBack();
-    } catch {
-      setError('Failed to delete note.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function openConversion(
-    screen: 'CreateGoalFromNote' | 'CreateTaskFromNote' | 'CreateEventFromNote',
-  ): void {
-    if (!note) return;
-    stackNavigation.navigate(screen, { noteId: note.id });
   }
 
   if (noteId && uiState === 'loading' && !note) {
@@ -202,15 +143,7 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
           error={error}
           inputStyle={styles.bodyInput}
         />
-        <AppButton
-          label={pinned ? 'Unpin note' : 'Pin note'}
-          variant="secondary"
-          accessibilityLabel={pinned ? 'Unpin note' : 'Pin note'}
-          onPress={handleTogglePinned}
-          loading={pinning}
-          loadingLabel="Updating..."
-          style={pinned ? styles.pinToggleActive : null}
-        />
+        <NoteLabelsField labels={labels} onChange={setLabels} />
         <AppButton
           label="Save Changes"
           accessibilityLabel="Save note changes"
@@ -219,74 +152,6 @@ export function NoteEditorScreen({ route, navigation }: NoteEditorScreenProps = 
           loadingLabel="Saving..."
         />
       </View>
-
-      {note ? (
-        <AppCard style={styles.actionsCard}>
-          <Text style={styles.sectionTitle}>Use this note</Text>
-          <Text style={styles.sectionDescription}>
-            Start a draft from this context, then edit it before committing.
-          </Text>
-          <View style={styles.actionRow}>
-            <AppButton
-              label="Create Task"
-              variant="secondary"
-              onPress={() => openConversion('CreateTaskFromNote')}
-              style={[styles.actionButton, styles.createTaskAccent]}
-            />
-            <AppButton
-              label="Create Goal"
-              variant="secondary"
-              onPress={() => openConversion('CreateGoalFromNote')}
-              style={[styles.actionButton, styles.createGoalAccent]}
-            />
-          </View>
-          <AppButton
-            label="Create Event"
-            variant="secondary"
-            onPress={() => openConversion('CreateEventFromNote')}
-            style={styles.createEventAccent}
-          />
-        </AppCard>
-      ) : null}
-
-      {note ? (
-        <View style={styles.dangerActions}>
-          <AppButton
-            label="Archive Note"
-            variant="secondary"
-            onPress={handleArchive}
-            loading={saving}
-          />
-          {!confirmingDelete ? (
-            <AppButton
-              label="Delete Note"
-              variant="danger"
-              onPress={() => setConfirmingDelete(true)}
-            />
-          ) : (
-            <View style={styles.confirmBlock}>
-              <Text style={styles.confirmText}>Delete this note permanently?</Text>
-              <View style={styles.actionRow}>
-                <AppButton
-                  label="Cancel"
-                  variant="secondary"
-                  onPress={() => setConfirmingDelete(false)}
-                  style={styles.actionButton}
-                />
-                <AppButton
-                  label="Yes, Delete"
-                  variant="danger"
-                  accessibilityLabel="Confirm note delete"
-                  onPress={handleDelete}
-                  loading={saving}
-                  loadingLabel="Deleting..."
-                  style={styles.actionButton}
-                />
-              </View>
-            </View>
-          )}
-        </View>
-      ) : null}
     </AppScreen>
   );
 }
@@ -307,21 +172,6 @@ const createStyles = (theme: Theme) =>
       borderRadius: theme.radii.md,
       paddingVertical: theme.spacing.md,
     },
-    pinToggleActive: {
-      backgroundColor: theme.colors.surfaceBrand,
-      borderColor: theme.colors.brand,
-    },
-    actionsCard: { gap: theme.spacing.md },
-    sectionTitle: { ...theme.typography.cardTitle, color: theme.colors.text },
-    sectionDescription: { ...theme.typography.body, color: theme.colors.textSecondary },
-    actionRow: { flexDirection: 'row', gap: theme.spacing.sm },
-    actionButton: { flex: 1 },
-    createTaskAccent: { borderWidth: 1, borderColor: theme.colors.brand },
-    createGoalAccent: { borderWidth: 1, borderColor: theme.colors.success },
-    createEventAccent: { borderColor: theme.colors.purple },
-    dangerActions: { gap: theme.spacing.sm },
-    confirmBlock: { gap: theme.spacing.sm },
-    confirmText: { ...theme.typography.body, color: theme.colors.text },
     stateTitle: { ...theme.typography.screenTitle, color: theme.colors.text },
     stateDescription: { ...theme.typography.body, color: theme.colors.textSecondary },
   });

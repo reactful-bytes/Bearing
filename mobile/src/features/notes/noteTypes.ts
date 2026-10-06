@@ -1,4 +1,14 @@
 export type NoteSource = 'manual' | 'idea_dump';
+export type NoteSortBy =
+  'updated:desc' | 'updated:asc' | 'created:desc' | 'created:asc' | 'title:asc' | 'title:desc';
+
+export type NoteViewDraft = {
+  archivedOnly: boolean;
+  pinnedOnly: boolean;
+  selectedLabels: string[];
+  sortBy: NoteSortBy;
+  noteSearch: string;
+};
 
 export type NoteUiState = 'loading' | 'error' | 'empty' | 'ready';
 
@@ -7,6 +17,7 @@ export type NoteRecord = {
   userId: string;
   title: string;
   body: string;
+  labels: string[];
   source: NoteSource;
   sourceEventId: string | null;
   sourceMilestoneId: string | null;
@@ -20,6 +31,7 @@ export type NoteRecord = {
 export type CreateNoteInput = {
   title?: string;
   body: string;
+  labels?: string[];
   source: NoteSource;
   sourceEventId?: string | null;
   sourceMilestoneId?: string | null;
@@ -29,6 +41,7 @@ export type CreateNoteInput = {
 export type UpdateNoteInput = {
   title: string;
   body: string;
+  labels?: string[];
   pinned?: boolean;
   archived?: boolean;
 };

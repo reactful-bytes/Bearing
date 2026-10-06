@@ -7,7 +7,7 @@ import { useTheme } from '../../design/ThemeProvider';
 import type { Theme } from '../../design/tokens';
 import { useThemedStyles } from '../../design/useThemedStyles';
 
-export type EmptyStatePresentation = 'compact' | 'screen';
+export type EmptyStatePresentation = 'compact' | 'horizontal' | 'screen';
 
 export type EmptyStateProps = {
   icon?: AppIconName;
@@ -33,23 +33,45 @@ export function EmptyState({
   const styles = useThemedStyles(createStyles);
   const { theme } = useTheme();
   const isCompact = presentation === 'compact';
+  const isHorizontal = presentation === 'horizontal';
 
   return (
-    <View style={[styles.container, isCompact ? styles.compact : styles.screen, style]}>
+    <View
+      style={[
+        styles.container,
+        isCompact ? styles.compact : null,
+        isHorizontal ? styles.horizontal : null,
+        presentation === 'screen' ? styles.screen : null,
+        style,
+      ]}
+    >
       {icon ? (
         <AppIcon
           name={icon}
-          size={isCompact ? 24 : 40}
+          size={isCompact ? 24 : isHorizontal ? 28 : 40}
           color={theme.colors.brand}
           accessibilityLabel={`${title} icon`}
         />
       ) : null}
-      <View style={styles.copy}>
-        <Text accessibilityRole="header" style={[styles.title, isCompact && styles.compactTitle]}>
+      <View style={[styles.copy, isHorizontal ? styles.horizontalCopy : null]}>
+        <Text
+          accessibilityRole="header"
+          style={[
+            styles.title,
+            isCompact && styles.compactTitle,
+            isHorizontal && styles.horizontalTitle,
+          ]}
+        >
           {title}
         </Text>
         {description ? (
-          <Text style={[styles.description, isCompact && styles.compactDescription]}>
+          <Text
+            style={[
+              styles.description,
+              isCompact && styles.compactDescription,
+              isHorizontal && styles.horizontalDescription,
+            ]}
+          >
             {description}
           </Text>
         ) : null}
@@ -76,10 +98,19 @@ const createStyles = (theme: Theme) =>
       alignItems: 'flex-start',
       paddingVertical: theme.spacing.md,
     },
+    horizontal: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      paddingVertical: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.md,
+    },
+    horizontalCopy: { flexShrink: 1, alignItems: 'flex-start' },
     copy: {
       alignItems: 'center',
       gap: theme.spacing.xs,
     },
+    horizontalTitle: { ...theme.typography.helper, fontWeight: '600', textAlign: 'left' },
+    horizontalDescription: { ...theme.typography.caption, textAlign: 'left' },
     title: {
       ...theme.typography.sectionTitle,
       color: theme.colors.text,

@@ -9,8 +9,9 @@ import { useGoals } from '../features/goals/useGoals';
 import { TaskRecord } from '../features/tasks/taskTypes';
 import { useTasks } from '../features/tasks/useTasks';
 import { TasksScreen } from '../screens/TasksScreen';
-import type { TaskViewDraft } from '../navigation/navigationTypes';
+import type { TaskFilter, TaskGroupBy, TaskSortBy } from '../navigation/navigationTypes';
 import { spacing } from '../design/tokens';
+import { TASK_SORT_OPTIONS } from '../screens/taskViewOptions';
 
 jest.mock('../features/profile/useUserProfile', () => ({
   useUserProfile: jest.fn(() => ({
@@ -76,15 +77,27 @@ function mockGoals(goals: GoalWithMilestones[] = []): void {
   } as ReturnType<typeof useGoals>);
 }
 
-function taskViewDraft(overrides: Partial<TaskViewDraft> = {}): TaskViewDraft {
-  return {
-    taskFilter: 'active',
-    groupBy: 'none',
-    sortBy: 'dueDate:asc',
-    selectedGoalIds: [],
-    taskSearch: '',
-    ...overrides,
-  };
+function applyTaskFilter(taskFilter: TaskFilter): void {
+  fireEvent.press(screen.getByRole('button', { name: 'Filter tasks' }));
+  const label = taskFilter === 'all' ? 'All' : taskFilter === 'active' ? 'Active' : 'Completed';
+  const options = screen.getAllByRole('button', { name: label });
+  fireEvent.press(options[0]);
+  fireEvent.press(screen.getByRole('button', { name: 'Apply task filters' }));
+}
+
+function applyTaskGroup(groupBy: TaskGroupBy): void {
+  fireEvent.press(screen.getByRole('button', { name: 'Filter tasks' }));
+  const label = groupBy === 'goal' ? 'Goal' : groupBy === 'unlinked' ? 'Unlinked' : 'All';
+  const options = screen.getAllByRole('button', { name: label });
+  fireEvent.press(label === 'All' ? options[1] : options[0]);
+  fireEvent.press(screen.getByRole('button', { name: 'Apply task filters' }));
+}
+
+function applyTaskSort(sortBy: TaskSortBy): void {
+  const option = TASK_SORT_OPTIONS.find((candidate) => candidate.value === sortBy)!;
+  fireEvent.press(screen.getByRole('button', { name: 'Sort tasks' }));
+  fireEvent.press(screen.getByRole('radio', { name: `Sort tasks by ${option.label}` }));
+  fireEvent.press(screen.getByRole('button', { name: 'Apply sort tasks' }));
 }
 
 describe('TasksScreen', () => {
@@ -133,7 +146,7 @@ describe('TasksScreen', () => {
     expect(retry).toHaveBeenCalledTimes(1);
   });
 
-  it('applies active, completed, and all task filters returned from the view screen', () => {
+  it('applies active, completed, and all task filters from the filter sheet', () => {
     const mockedUseTasks = useTasks as jest.MockedFunction<typeof useTasks>;
 
     mockedUseTasks.mockReturnValue({
@@ -167,27 +180,17 @@ describe('TasksScreen', () => {
       retry: jest.fn(),
     });
 
-    const renderWithFilter = (taskFilter: TaskViewDraft['taskFilter']) => (
-      <TasksScreen route={{ params: { viewResult: taskViewDraft({ taskFilter }) } }} />
-    );
-    const setParams = jest.fn();
-    const taskScreen = render(
-      <TasksScreen
-        route={{ params: { viewResult: taskViewDraft({ taskFilter: 'active' }) } }}
-        navigation={{ setParams }}
-      />,
-    );
-    expect(setParams).toHaveBeenCalledWith({ createTask: undefined, viewResult: undefined });
+    render(<TasksScreen />);
     expect(screen.getByText('Inbox zero')).toBeTruthy();
     expect(StyleSheet.flatten(screen.getByTestId('flat-task-list').props.style).gap).toBe(4);
     expect(screen.queryByText('Archived planning note')).toBeNull();
 
-    taskScreen.rerender(renderWithFilter('completed'));
+    applyTaskFilter('completed');
 
     expect(screen.getByText('Archived planning note')).toBeTruthy();
     expect(screen.queryByText('Inbox zero')).toBeNull();
 
-    taskScreen.rerender(renderWithFilter('all'));
+    applyTaskFilter('all');
 
     expect(screen.getByText('Inbox zero')).toBeTruthy();
     expect(screen.getByText('Archived planning note')).toBeTruthy();
@@ -224,12 +227,11 @@ describe('TasksScreen', () => {
 
     expect(screen.getByText('Active task')).toBeTruthy();
     expect(screen.queryByText('Draft-only task')).toBeNull();
-    expect(
-      screen.getByRole('button', { name: 'Task view: active, ungrouped, due date ascending' }),
-    ).toBeTruthy();
+    expect(screen.getByTestId('task-filter-sort-toolbar-filter')).toBeTruthy();
+    expect(screen.getByTestId('task-filter-sort-toolbar-sort')).toBeTruthy();
   });
 
-  it('groups each task once by milestone and keeps unlinked tasks together', () => {
+  it('defaults to unlinked tasks and groups all tasks by goal without milestone rows', () => {
     mockGoals([
       {
         id: 'goal-1',
@@ -277,45 +279,24 @@ describe('TasksScreen', () => {
       retry: jest.fn(),
     });
 
-    render(
-      <TasksScreen route={{ params: { viewResult: taskViewDraft({ groupBy: 'milestone' }) } }} />,
-    );
+    render(<TasksScreen />);
+    expect(screen.getByLabelText('Open task Buy a notebook')).toBeTruthy();
+    expect(screen.queryByLabelText('Open task Choose a day')).toBeNull();
+    fireEvent.press(screen.getByRole('button', { name: 'Filter tasks' }));
+    expect(screen.queryByLabelText(/^Filter tasks by /)).toBeNull();
+    fireEvent.press(screen.getByRole('button', { name: 'Apply task filters' }));
+    applyTaskGroup('goal');
 
     expect(screen.getByRole('button', { name: 'Build a routine, 2 tasks' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Plan the week, 1 task' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Review progress, 1 task' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Unlinked tasks, 1 task' })).toBeTruthy();
     expect(screen.getAllByLabelText('Open task Choose a day')).toHaveLength(1);
     expect(screen.getAllByLabelText('Open task Track habits')).toHaveLength(1);
     expect(screen.getAllByLabelText('Open task Buy a notebook')).toHaveLength(1);
-    expect(screen.getAllByRole('header', { name: 'TASKS' })).toHaveLength(2);
+    expect(screen.getAllByRole('header', { name: 'TASKS' })).toHaveLength(1);
     expect(screen.queryByLabelText('Page number')).toBeNull();
-    expect(
-      StyleSheet.flatten(screen.getByTestId('task-group-children-goal-1').props.style)
-        .borderLeftWidth,
-    ).toBe(0);
-    const milestoneGroupStyle = StyleSheet.flatten(
-      screen.getByTestId('task-group-children-goal-1').props.style,
-    );
-    expect(milestoneGroupStyle.marginLeft).toBe(0);
-    expect(milestoneGroupStyle.paddingLeft).toBe(0);
-    const milestoneTaskStyle = StyleSheet.flatten(
-      screen.getByTestId('milestone-task-children-milestone-1').props.style,
-    );
-    expect(milestoneTaskStyle.borderLeftWidth).toBe(2);
-    expect(milestoneTaskStyle.marginLeft).toBe(24);
-    const milestoneRowStyle = StyleSheet.flatten(
-      screen.getByRole('button', { name: 'Plan the week, 1 task' }).parent?.props.style,
-    );
-    expect(milestoneRowStyle.borderLeftWidth).toBeUndefined();
-    expect(milestoneRowStyle.borderBottomWidth).toBeUndefined();
-    const taskRowStyle = StyleSheet.flatten(screen.getByTestId('task-list-row-task-3').props.style);
-    expect(taskRowStyle.borderBottomWidth).toBeUndefined();
     const taskTitleStyle = StyleSheet.flatten(screen.getByText('Choose a day').props.style);
     expect(taskTitleStyle.fontSize).toBe(14);
     expect(taskTitleStyle.fontWeight).toBe('600');
-    expect(screen.queryByText('Build a routine / Plan the week')).toBeNull();
-    expect(screen.queryByText('1', { exact: true })).toBeNull();
 
     fireEvent.press(screen.getByLabelText('Collapse all groups'));
     expect(
@@ -326,14 +307,16 @@ describe('TasksScreen', () => {
     expect(
       screen.getByRole('button', { name: 'Build a routine, 2 tasks', expanded: true }),
     ).toBeTruthy();
-    expect(
-      screen.getByRole('button', { name: 'Plan the week, 1 task', expanded: true }),
-    ).toBeTruthy();
-
     expect(screen.getByLabelText('Open task Choose a day')).toBeTruthy();
+
+    applyTaskGroup('all');
+    expect(screen.getByTestId('flat-task-list')).toBeTruthy();
+    expect(screen.getByLabelText('Open task Choose a day')).toBeTruthy();
+    expect(screen.getByLabelText('Open task Track habits')).toBeTruthy();
+    expect(screen.getByLabelText('Open task Buy a notebook')).toBeTruthy();
   });
 
-  it('opens the full-screen view route with the current filters and available goals', () => {
+  it('opens separate draggable filter and sort sheets', () => {
     mockGoals([
       {
         id: 'goal-1',
@@ -365,34 +348,44 @@ describe('TasksScreen', () => {
     });
 
     render(<TasksScreen />);
-    fireEvent.press(screen.getByRole('button', { name: /^Task view:/ }));
+    fireEvent.press(screen.getByRole('button', { name: 'Filter tasks' }));
+    expect(screen.getByRole('header', { name: 'Filter tasks' })).toBeTruthy();
+    expect(screen.getByTestId('app-modal-drag-handle')).toBeTruthy();
 
-    expect(mockNavigate).toHaveBeenCalledWith('TaskView', {
-      draft: taskViewDraft(),
-      goals: [{ id: 'goal-1', title: 'Build a routine' }],
-    });
+    fireEvent.press(screen.getByRole('button', { name: 'Dismiss Filter tasks' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Sort tasks' }));
+    expect(screen.getByRole('header', { name: 'Sort tasks' })).toBeTruthy();
+    expect(screen.getByTestId('app-modal-drag-handle')).toBeTruthy();
+    fireEvent.press(screen.getByRole('radio', { name: 'Sort tasks by Title Z to A' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply sort tasks' }));
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(screen.getByText('Sort: Title Z-A')).toBeTruthy();
   });
 
-  it('filters tasks to selected goals and supports selecting multiple goals', () => {
-    mockGoals([
-      {
-        id: 'goal-1',
-        title: 'Build a routine',
-        status: 'active',
-        milestones: [],
-      } as unknown as GoalWithMilestones,
-      {
-        id: 'goal-2',
-        title: 'Learn Spanish',
-        status: 'active',
-        milestones: [],
-      } as unknown as GoalWithMilestones,
-    ]);
+  it('filters by local due-date ranges and keeps search and sort when filters reset', () => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const mondayOffset = (todayStart.getDay() + 6) % 7;
+    const weekStart = new Date(todayStart.getFullYear(), todayStart.getMonth(), todayStart.getDate() - mondayOffset);
+    const nextWeek = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 7);
+    const monthStart = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1);
+    const nextMonth = new Date(todayStart.getFullYear(), todayStart.getMonth() + 1, 1);
     (useTasks as jest.MockedFunction<typeof useTasks>).mockReturnValue({
       tasks: [
-        makeTask({ id: 'task-1', title: 'Plan mornings', goalId: 'goal-1' }),
-        makeTask({ id: 'task-2', title: 'Practice verbs', goalId: 'goal-2' }),
-        makeTask({ id: 'task-3', title: 'Buy a notebook' }),
+        makeTask({ id: 'overdue', title: 'Focus overdue', dueDate: new Date(todayStart.getTime() - 86_400_000) }),
+        makeTask({ id: 'week', title: 'Focus week start', dueDate: weekStart }),
+        makeTask({ id: 'next-week', title: 'Focus next week', dueDate: nextWeek }),
+        makeTask({ id: 'month', title: 'Focus month start', dueDate: monthStart }),
+        makeTask({ id: 'next-month', title: 'Focus next month', dueDate: nextMonth }),
+        makeTask({ id: 'scheduled', title: 'Focus scheduled only', scheduledStart: todayStart }),
+        makeTask({
+          id: 'completed-overdue',
+          title: 'Focus completed overdue',
+          status: 'completed',
+          dueDate: new Date(todayStart.getTime() - 86_400_000),
+        }),
+        makeTask({ id: 'other', title: 'Another item' }),
       ],
       uiState: 'ready',
       createTask: async () => undefined,
@@ -401,41 +394,54 @@ describe('TasksScreen', () => {
       reactivateTask: async () => undefined,
       convertTaskToEvent: async () => ({
         eventId: 'event-1',
-        eventInput: {
-          title: '',
-          description: '',
-          startAt: new Date(),
-          endAt: new Date(),
-          timezone: 'UTC',
-        },
+        eventInput: { title: '', description: '', startAt: new Date(), endAt: new Date(), timezone: 'UTC' },
         created: true,
       }),
       deleteTask: async () => undefined,
       retry: jest.fn(),
     });
 
-    const taskScreen = render(
-      <TasksScreen
-        route={{ params: { viewResult: taskViewDraft({ selectedGoalIds: ['goal-1'] }) } }}
-      />,
-    );
-    expect(screen.getByLabelText('Open task Plan mornings')).toBeTruthy();
-    expect(screen.queryByLabelText('Open task Practice verbs')).toBeNull();
-    expect(screen.queryByLabelText('Open task Buy a notebook')).toBeNull();
+    render(<TasksScreen />);
+    fireEvent.changeText(screen.getByLabelText('Search tasks by name or title'), 'Focus');
+    fireEvent.press(screen.getByRole('button', { name: 'Sort tasks' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Sort tasks by Title Z to A' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply sort tasks' }));
 
-    taskScreen.rerender(
-      <TasksScreen
-        route={{
-          params: { viewResult: taskViewDraft({ selectedGoalIds: ['goal-1', 'goal-2'] }) },
-        }}
-      />,
-    );
-    expect(screen.getByLabelText('Open task Plan mornings')).toBeTruthy();
-    expect(screen.getByLabelText('Open task Practice verbs')).toBeTruthy();
-    expect(screen.queryByLabelText('Open task Buy a notebook')).toBeNull();
+    fireEvent.press(screen.getByRole('button', { name: 'Filter tasks' }));
+    fireEvent.press(screen.getAllByRole('button', { name: 'All' })[0]);
+    fireEvent.press(screen.getByRole('button', { name: 'Past due' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply task filters' }));
+    expect(screen.getByLabelText('Open task Focus overdue')).toBeTruthy();
+    expect(screen.queryByLabelText('Open task Focus completed overdue')).toBeNull();
+    expect(screen.queryByLabelText('Open task Focus scheduled only')).toBeNull();
+    expect(screen.queryByLabelText('Open task Another item')).toBeNull();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Filter tasks' }));
+    fireEvent.press(screen.getByRole('button', { name: 'This week' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply task filters' }));
+    expect(screen.getByLabelText('Open task Focus week start')).toBeTruthy();
+    expect(screen.queryByLabelText('Open task Focus next week')).toBeNull();
+    expect(screen.queryByLabelText('Open task Focus scheduled only')).toBeNull();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Filter tasks' }));
+    fireEvent.press(screen.getByRole('button', { name: 'This month' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply task filters' }));
+    expect(screen.getByLabelText('Open task Focus month start')).toBeTruthy();
+    expect(screen.queryByLabelText('Open task Focus next month')).toBeNull();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Filter tasks' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Reset task filters' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply task filters' }));
+    expect(screen.getByLabelText('Open task Focus overdue')).toBeTruthy();
+    expect(screen.queryByLabelText('Open task Another item')).toBeNull();
+    expect(screen.getByText('Sort: Title Z-A')).toBeTruthy();
+    const renderedTitles = screen
+      .getAllByLabelText(/^Open task Focus/)
+      .map((row) => row.props.accessibilityLabel);
+    expect(renderedTitles[0]).toBe('Open task Focus week start');
   });
 
-  it('searches task titles and retains all tasks under matching goal or milestone rows', () => {
+  it('searches task titles and matching goal titles only when grouped by goal', () => {
     mockGoals([
       {
         id: 'goal-1',
@@ -490,23 +496,20 @@ describe('TasksScreen', () => {
       retry: jest.fn(),
     });
 
-    const taskScreen = render(
-      <TasksScreen route={{ params: { viewResult: taskViewDraft({ groupBy: 'goal' }) } }} />,
-    );
+    render(<TasksScreen />);
+    applyTaskGroup('goal');
     fireEvent.changeText(screen.getByLabelText('Search tasks by name or title'), 'Build a routine');
     expect(screen.getByLabelText('Open task Choose a day')).toBeTruthy();
     expect(screen.getByLabelText('Open task Gather materials')).toBeTruthy();
     expect(screen.getByLabelText('Open task Track progress')).toBeTruthy();
     expect(screen.queryByLabelText('Open task Practice verbs')).toBeNull();
 
-    taskScreen.rerender(
-      <TasksScreen route={{ params: { viewResult: taskViewDraft({ groupBy: 'milestone' }) } }} />,
-    );
-    fireEvent.changeText(screen.getByLabelText('Search tasks by name or title'), 'Plan the week');
+    applyTaskGroup('all');
+    fireEvent.changeText(screen.getByLabelText('Search tasks by name or title'), 'Build a routine');
+    expect(screen.queryByLabelText('Open task Choose a day')).toBeNull();
+    fireEvent.changeText(screen.getByLabelText('Search tasks by name or title'), 'Choose a day');
     expect(screen.getByLabelText('Open task Choose a day')).toBeTruthy();
-    expect(screen.getByLabelText('Open task Gather materials')).toBeTruthy();
-    expect(screen.queryByLabelText('Open task Track progress')).toBeNull();
-    expect(screen.queryByLabelText('Open task Practice verbs')).toBeNull();
+    expect(screen.queryByLabelText('Open task Gather materials')).toBeNull();
   });
 
   it('keeps one row action menu open at a time and dismisses it outside', () => {
@@ -541,9 +544,8 @@ describe('TasksScreen', () => {
       retry: jest.fn(),
     });
 
-    render(
-      <TasksScreen route={{ params: { viewResult: taskViewDraft({ taskFilter: 'all' }) } }} />,
-    );
+    render(<TasksScreen />);
+    applyTaskFilter('all');
     const actionTriggers = screen.getAllByLabelText('Task actions');
     expect(actionTriggers).toHaveLength(2);
 
@@ -644,29 +646,26 @@ describe('TasksScreen', () => {
       retry: jest.fn(),
     });
 
-    const renderWithSort = (sortBy: TaskViewDraft['sortBy']) => (
-      <TasksScreen route={{ params: { viewResult: taskViewDraft({ sortBy }) } }} />
-    );
-    const taskScreen = render(renderWithSort('dueDate:asc'));
+    render(<TasksScreen />);
     const taskOrder = () =>
       screen
         .getAllByRole('button', { name: /Open task/ })
         .map((row) => row.props.accessibilityLabel);
 
     expect(taskOrder()).toEqual(['Open task Beta', 'Open task Zeta', 'Open task Alpha']);
-    taskScreen.rerender(renderWithSort('title:asc'));
+    applyTaskSort('title:asc');
     expect(taskOrder()).toEqual(['Open task Alpha', 'Open task Beta', 'Open task Zeta']);
 
-    taskScreen.rerender(renderWithSort('title:desc'));
+    applyTaskSort('title:desc');
     expect(taskOrder()).toEqual(['Open task Zeta', 'Open task Beta', 'Open task Alpha']);
 
-    taskScreen.rerender(renderWithSort('dueDate:desc'));
+    applyTaskSort('dueDate:desc');
     expect(taskOrder()).toEqual(['Open task Zeta', 'Open task Beta', 'Open task Alpha']);
 
-    taskScreen.rerender(renderWithSort('updated:asc'));
+    applyTaskSort('updated:asc');
     expect(taskOrder()).toEqual(['Open task Alpha', 'Open task Beta', 'Open task Zeta']);
 
-    taskScreen.rerender(renderWithSort('updated:desc'));
+    applyTaskSort('updated:desc');
     expect(taskOrder()).toEqual(['Open task Zeta', 'Open task Beta', 'Open task Alpha']);
   });
 
@@ -739,11 +738,8 @@ describe('TasksScreen', () => {
       retry: jest.fn(),
     });
 
-    render(
-      <TasksScreen
-        route={{ params: { viewResult: taskViewDraft({ taskFilter: 'completed' }) } }}
-      />,
-    );
+    render(<TasksScreen />);
+    applyTaskFilter('completed');
     fireEvent.press(screen.getByLabelText('Task actions'));
     fireEvent.press(screen.getByRole('menuitem', { name: 'Uncomplete task' }));
 
@@ -843,14 +839,21 @@ describe('TasksScreen', () => {
       retry: jest.fn(),
     });
 
-    render(
-      <TasksScreen
-        route={{ params: { viewResult: taskViewDraft({ taskFilter: 'completed' }) } }}
-      />,
-    );
+    render(<TasksScreen />);
+    applyTaskFilter('completed');
 
     expect(screen.getByText('No completed tasks.')).toBeTruthy();
     expect(screen.getByText('Tasks you mark complete will appear here.')).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.getByRole('header', { name: 'No completed tasks.' }).props.style)
+        .textAlign,
+    ).toBe('left');
+
+    applyTaskFilter('active');
+    fireEvent.press(screen.getByRole('button', { name: 'Filter tasks' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Past due' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply task filters' }));
+    expect(screen.getByText('No matching tasks.')).toBeTruthy();
   });
 
   it('creates a task from the route-driven modal without a screen FAB', async () => {

@@ -21,6 +21,7 @@ function makeNote(overrides: Partial<NoteRecord> = {}): NoteRecord {
     userId: 'user-1',
     title: 'Captured thought',
     body: 'Keep this idea around for later.',
+    labels: [],
     source: 'idea_dump',
     sourceEventId: 'event-1',
     sourceMilestoneId: null,
@@ -49,6 +50,13 @@ function makeUseNotesReturn(
   };
 }
 
+async function openNoteActions(): Promise<void> {
+  fireEvent.press(screen.getByLabelText('More note actions'));
+  await waitFor(() => {
+    expect(screen.getByRole('menuitem', { name: 'Edit note' })).toBeTruthy();
+  });
+}
+
 describe('NotesScreen', () => {
   it('retries after the notes subscription fails', () => {
     const retry = jest.fn();
@@ -71,13 +79,19 @@ describe('NotesScreen', () => {
     expect(screen.queryByRole('button', { name: 'New Note' })).toBeNull();
   });
 
-  it('renders saved notes with source metadata', () => {
+  it('renders saved notes with labels without treating origin as a category', () => {
     const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
     mockedUseNotes.mockReturnValue(
       makeUseNotesReturn({
         notes: [
-          makeNote(),
-          makeNote({ id: 'note-2', source: 'manual', title: 'Manual note', sourceEventId: null }),
+          makeNote({ labels: ['Focus'] }),
+          makeNote({
+            id: 'note-2',
+            source: 'manual',
+            title: 'Personal note',
+            sourceEventId: null,
+            labels: ['Personal'],
+          }),
         ],
         uiState: 'ready',
       }),
@@ -86,9 +100,22 @@ describe('NotesScreen', () => {
     render(<NotesScreen />);
 
     expect(screen.getByText('Captured thought')).toBeTruthy();
-    expect(screen.getByText('Manual note')).toBeTruthy();
-    expect(screen.getByText('Idea Dump')).toBeTruthy();
-    expect(screen.getByText('Manual Note')).toBeTruthy();
+    expect(
+      screen
+        .getByLabelText('Open note Captured thought')
+        .findAllByType(AppIcon)
+        .map((icon) => icon.props.name),
+    ).toEqual(['note', 'calendar']);
+    expect(screen.getByText('Personal note')).toBeTruthy();
+    expect(screen.getByText('Focus')).toBeTruthy();
+    expect(screen.getByText('Personal')).toBeTruthy();
+    expect(screen.getAllByText(/Updated .* · Created .*/)).toHaveLength(2);
+    expect(
+      StyleSheet.flatten(screen.getByLabelText('Open note Captured thought').props.style)
+        .borderBottomWidth,
+    ).toBeUndefined();
+    expect(screen.queryByText('Idea Dump')).toBeNull();
+    expect(screen.queryByText('Manual Note')).toBeNull();
   });
 
   it('clears search text and restores the unfiltered notes', () => {
@@ -106,6 +133,9 @@ describe('NotesScreen', () => {
 
     fireEvent.changeText(screen.getByLabelText('Search notes'), 'missing');
     expect(screen.getByText('No matching notes.')).toBeTruthy();
+    expect(StyleSheet.flatten(screen.getByText('No matching notes.').props.style).fontSize).toBe(
+      14,
+    );
     expect(
       StyleSheet.flatten(screen.getByTestId('note-search-field').props.style).paddingRight,
     ).toBe(0);
@@ -119,49 +149,29 @@ describe('NotesScreen', () => {
     ).toBeUndefined();
   });
 
-  it('shows filter choices before applying pinned only and can return to all notes', () => {
+  it('applies pinned filtering from the filter sheet and can restore all notes', () => {
     const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
     mockedUseNotes.mockReturnValue(
       makeUseNotesReturn({ notes: [makeNote({ title: 'Unpinned note' })], uiState: 'ready' }),
     );
 
     render(<NotesScreen />);
-    expect(screen.getByLabelText('Show note filters').findByType(AppIcon).props.name).toBe(
-      'pinned',
-    );
-    const offStyle = StyleSheet.flatten(screen.getByLabelText('Show note filters').props.style);
-    expect(offStyle.backgroundColor).toBeTruthy();
-    expect(offStyle.borderWidth).toBeUndefined();
-    fireEvent.press(screen.getByLabelText('Show note filters'));
-    const openButton = screen.getByLabelText('Hide note filters');
-    const openColor = StyleSheet.flatten(openButton.props.style).backgroundColor;
-    expect(openColor).not.toBe(offStyle.backgroundColor);
+    fireEvent.press(screen.getByLabelText('Open note filters'));
     expect(screen.getByText('Unpinned note')).toBeTruthy();
     expect(
       screen.getByRole('button', { name: 'All notes' }).props.accessibilityState.selected,
     ).toBe(true);
 
     fireEvent.press(screen.getByRole('button', { name: 'Pinned only' }));
+    expect(screen.getByText('Unpinned note')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Apply note filters'));
     expect(screen.queryByText('Unpinned note')).toBeNull();
     expect(screen.getByText('No matching pinned notes.')).toBeTruthy();
-    expect(
-      StyleSheet.flatten(screen.getByLabelText('Hide note filters').props.style).backgroundColor,
-    ).toBe(openColor);
 
-    fireEvent.press(screen.getByLabelText('Hide note filters'));
-    expect(
-      StyleSheet.flatten(screen.getByLabelText('Show note filters').props.style).backgroundColor,
-    ).toBe(offStyle.backgroundColor);
-    fireEvent.press(screen.getByLabelText('Show note filters'));
-    expect(
-      screen.getByRole('button', { name: 'Pinned only' }).props.accessibilityState.selected,
-    ).toBe(true);
-
+    fireEvent.press(screen.getByLabelText('Open note filters'));
     fireEvent.press(screen.getByRole('button', { name: 'All notes' }));
+    fireEvent.press(screen.getByLabelText('Apply note filters'));
     expect(screen.getByText('Unpinned note')).toBeTruthy();
-    expect(
-      StyleSheet.flatten(screen.getByLabelText('Hide note filters').props.style).backgroundColor,
-    ).toBe(openColor);
   });
 
   it('keeps archived notes hidden and separates pinned, recent, and all notes', () => {
@@ -203,6 +213,170 @@ describe('NotesScreen', () => {
     expect(screen.queryByText('Archived note')).toBeNull();
   });
 
+  it('shows archived notes on the archived view and opens their details', () => {
+    const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
+    mockedUseNotes.mockReturnValue(
+      makeUseNotesReturn({
+        notes: [
+          makeNote({ id: 'active', title: 'Active note' }),
+          makeNote({ id: 'archived', title: 'Archived note', archived: true }),
+        ],
+        uiState: 'ready',
+      }),
+    );
+    const navigation = { navigate: jest.fn(), setParams: jest.fn() };
+
+    render(<NotesScreen navigation={navigation} />);
+    fireEvent.press(screen.getByRole('button', { name: 'Open note filters' }));
+    expect(screen.getByTestId('app-modal-drag-handle')).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Archived' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply note filters' }));
+
+    expect(screen.getByText('Archived note')).toBeTruthy();
+    expect(screen.queryByText('Active note')).toBeNull();
+    expect(screen.getByText('Filters: Archived')).toBeTruthy();
+    expect(screen.getByText('Sort: Updated newest')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Open note Archived note'));
+    expect(navigation.navigate).toHaveBeenCalledWith('NoteDetail', { noteId: 'archived' });
+  });
+
+  it('returns to the active Notes view when resetView is requested', () => {
+    const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
+    mockedUseNotes.mockReturnValue(
+      makeUseNotesReturn({
+        notes: [
+          makeNote({ id: 'active', title: 'Active note' }),
+          makeNote({ id: 'archived', title: 'Archived note', archived: true }),
+        ],
+        uiState: 'ready',
+      }),
+    );
+    const setParams = jest.fn();
+    const notesScreen = render(<NotesScreen navigation={{ setParams }} />);
+
+    fireEvent.changeText(screen.getByLabelText('Search notes'), 'Archived');
+    fireEvent.press(screen.getByRole('button', { name: 'Open note filters' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Archived' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply note filters' }));
+    expect(screen.getByText('Archived note')).toBeTruthy();
+
+    notesScreen.rerender(
+      <NotesScreen route={{ params: { resetView: true } }} navigation={{ setParams }} />,
+    );
+
+    expect(screen.getByText('Active note')).toBeTruthy();
+    expect(screen.queryByText('Archived note')).toBeNull();
+    expect(screen.getByLabelText('Search notes').props.value).toBe('');
+    expect(setParams).toHaveBeenCalledWith({ resetView: undefined });
+  });
+
+  it('restores an archived note from the fallback detail modal', async () => {
+    const updateNote = jest.fn(async (_noteId: string, _fields: UpdateNoteInput) => undefined);
+    const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
+    mockedUseNotes.mockReturnValue(
+      makeUseNotesReturn({
+        notes: [makeNote({ title: 'Archived note', archived: true })],
+        uiState: 'ready',
+        updateNote,
+      }),
+    );
+
+    render(<NotesScreen />);
+    fireEvent.press(screen.getByRole('button', { name: 'Open note filters' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Archived' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply note filters' }));
+
+    fireEvent.press(screen.getByLabelText('Open note Archived note'));
+    await openNoteActions();
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Restore note' }));
+
+    await waitFor(() =>
+      expect(updateNote).toHaveBeenCalledWith('note-1', {
+        title: 'Archived note',
+        body: 'Keep this idea around for later.',
+        labels: [],
+        pinned: false,
+        archived: false,
+      }),
+    );
+  });
+
+  it('filters by any selected label and search while showing the active view summary', () => {
+    const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
+    mockedUseNotes.mockReturnValue(
+      makeUseNotesReturn({
+        notes: [
+          makeNote({ id: 'focus', title: 'Focus note', labels: ['Focus'] }),
+          makeNote({ id: 'home', title: 'Home note', labels: ['Home'] }),
+          makeNote({ id: 'other', title: 'Other note', labels: ['Other'] }),
+        ],
+        uiState: 'ready',
+      }),
+    );
+
+    render(<NotesScreen />);
+    fireEvent.changeText(screen.getByLabelText('Search notes'), 'note');
+    fireEvent.press(screen.getByRole('button', { name: 'Open note filters' }));
+    fireEvent.press(screen.getByRole('checkbox', { name: 'Filter notes by Focus' }));
+    fireEvent.press(screen.getByRole('checkbox', { name: 'Filter notes by Home' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply note filters' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Open note sort options' }));
+    expect(screen.getByTestId('app-modal-drag-handle')).toBeTruthy();
+    fireEvent.press(screen.getByRole('radio', { name: 'Sort notes by Title A to Z' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply sort notes' }));
+
+    expect(screen.getByText('Focus note')).toBeTruthy();
+    expect(screen.getByText('Home note')).toBeTruthy();
+    expect(screen.queryByText('Other note')).toBeNull();
+    expect(
+      screen.getByText('Filters: Active · 2 labels'),
+    ).toBeTruthy();
+    expect(screen.getByText('Sort: Title A-Z')).toBeTruthy();
+  });
+
+  it('combines pinned-only with any selected label', () => {
+    const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
+    mockedUseNotes.mockReturnValue(
+      makeUseNotesReturn({
+        notes: [
+          makeNote({ id: 'pinned', title: 'Pinned Focus', pinned: true, labels: ['Focus'] }),
+          makeNote({ id: 'unpinned', title: 'Unpinned Home', labels: ['Home'] }),
+          makeNote({ id: 'other', title: 'Pinned Other', pinned: true, labels: ['Other'] }),
+        ],
+        uiState: 'ready',
+      }),
+    );
+
+    render(<NotesScreen />);
+    fireEvent.press(screen.getByRole('button', { name: 'Open note filters' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Pinned only' }));
+    fireEvent.press(screen.getByRole('checkbox', { name: 'Filter notes by Focus' }));
+    fireEvent.press(screen.getByRole('checkbox', { name: 'Filter notes by Home' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply note filters' }));
+
+    expect(screen.getByText('Pinned Focus')).toBeTruthy();
+    expect(screen.queryByText('Unpinned Home')).toBeNull();
+    expect(screen.queryByText('Pinned Other')).toBeNull();
+  });
+
+  it('keeps search independent while opening filters and note details', () => {
+    const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
+    mockedUseNotes.mockReturnValue(
+      makeUseNotesReturn({ notes: [makeNote({ labels: ['Focus'] })], uiState: 'ready' }),
+    );
+    const navigation = { navigate: jest.fn(), setParams: jest.fn() };
+
+    render(<NotesScreen navigation={navigation} />);
+    fireEvent.changeText(screen.getByLabelText('Search notes'), 'capture');
+    fireEvent.press(screen.getByLabelText('Open note filters'));
+    expect(screen.getByLabelText('Filter notes by Focus')).toBeTruthy();
+    expect(screen.getByLabelText('Search notes').props.value).toBe('capture');
+    fireEvent.press(screen.getByLabelText('Apply note filters'));
+
+    fireEvent.press(screen.getByLabelText('Open note Captured thought'));
+    expect(navigation.navigate).toHaveBeenCalledWith('NoteDetail', { noteId: 'note-1' });
+  });
+
   it('opens the new note modal and saves a manual note', async () => {
     const createNote = jest.fn(async (_input: CreateNoteInput) => undefined);
     const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
@@ -212,6 +386,8 @@ describe('NotesScreen', () => {
 
     fireEvent.changeText(screen.getByLabelText('Note title'), 'Inbox thought');
     fireEvent.changeText(screen.getByLabelText('Note body'), 'Capture this before it disappears.');
+    fireEvent.changeText(screen.getByLabelText('New note label'), ' Focus ');
+    fireEvent.press(screen.getByLabelText('Add note label'));
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Save note'));
     });
@@ -220,6 +396,7 @@ describe('NotesScreen', () => {
       expect(createNote).toHaveBeenCalledWith({
         title: 'Inbox thought',
         body: 'Capture this before it disappears.',
+        labels: ['Focus'],
         source: 'manual',
         sourceEventId: null,
         sourceMilestoneId: null,
@@ -232,7 +409,7 @@ describe('NotesScreen', () => {
     const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
     mockedUseNotes.mockReturnValue(
       makeUseNotesReturn({
-        notes: [makeNote()],
+        notes: [makeNote({ labels: ['Existing'] })],
         uiState: 'ready',
         updateNote,
       }),
@@ -241,12 +418,16 @@ describe('NotesScreen', () => {
     render(<NotesScreen />);
 
     fireEvent.press(screen.getByLabelText('Open note Captured thought'));
-    fireEvent.press(screen.getByLabelText('Edit note'));
+    await openNoteActions();
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Edit note' }));
     fireEvent.changeText(screen.getByLabelText('Edit note title'), 'Sharper title');
     fireEvent.changeText(
       screen.getByLabelText('Edit note body'),
       'Rewritten body for a better saved note.',
     );
+    fireEvent.press(screen.getByLabelText('Remove label Existing'));
+    fireEvent.changeText(screen.getByLabelText('New note label'), ' Fresh ');
+    fireEvent.press(screen.getByLabelText('Add note label'));
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Save note changes'));
@@ -256,6 +437,7 @@ describe('NotesScreen', () => {
       expect(updateNote).toHaveBeenCalledWith('note-1', {
         title: 'Sharper title',
         body: 'Rewritten body for a better saved note.',
+        labels: ['Fresh'],
       });
     });
   });
@@ -274,7 +456,8 @@ describe('NotesScreen', () => {
     render(<NotesScreen />);
 
     fireEvent.press(screen.getByLabelText('Open note Captured thought'));
-    fireEvent.press(screen.getByLabelText('Delete note'));
+    await openNoteActions();
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Delete note' }));
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Confirm note delete'));

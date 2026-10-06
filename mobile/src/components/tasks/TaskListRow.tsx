@@ -114,7 +114,7 @@ const createStyles = (theme: Theme) =>
     },
     dateIcon: { color: theme.colors.textSecondary },
     dateText: {
-      ...typography.helper,
+      ...typography.caption,
       color: theme.colors.textSecondary,
       flex: 1,
       flexShrink: 1,

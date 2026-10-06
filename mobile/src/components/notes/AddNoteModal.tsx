@@ -10,6 +10,8 @@ import { radii, spacing, typography } from '../../design/tokens';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import type { Theme } from '../../design/tokens';
 import { CreateNoteInput } from '../../features/notes/noteTypes';
+import { normalizeNoteLabels } from '../../features/notes/noteLabels';
+import { NoteLabelsField } from './NoteLabels';
 
 type AddNoteModalProps = {
   visible: boolean;
@@ -32,12 +34,14 @@ export function AddNoteModal({
   const insets = useSafeAreaInsets();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [labels, setLabels] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   function resetForm(): void {
     setTitle('');
     setBody('');
+    setLabels([]);
     setError(null);
   }
 
@@ -61,6 +65,7 @@ export function AddNoteModal({
       await onSave({
         title: title.trim(),
         body: trimmedBody,
+        labels: normalizeNoteLabels(labels),
         source: 'manual',
         sourceEventId,
         sourceMilestoneId,
@@ -111,6 +116,8 @@ export function AddNoteModal({
           labelStyle={styles.fieldLabel}
           inputStyle={styles.textArea}
         />
+
+        <NoteLabelsField labels={labels} onChange={setLabels} />
 
         <AppButton
           label="Save Note"

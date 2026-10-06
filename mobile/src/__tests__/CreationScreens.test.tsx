@@ -106,15 +106,18 @@ jest.mock('../components/calendar/AddEventModal', () => {
       onClose,
       onSave,
       initialValues,
+      fullScreen,
     }: {
       onClose: () => void;
       onSave: (input: unknown, options: unknown) => void;
       initialValues?: { title?: string; description?: string };
+      fullScreen?: boolean;
     }) => (
       <>
         <Text testID="event-draft">
           {`${initialValues?.title ?? ''}:${initialValues?.description ?? ''}`}
         </Text>
+        <Text testID="event-full-screen">{String(fullScreen ?? false)}</Text>
         <Button title="Save event" onPress={() => void onSave({ title: 'Event' }, {})} />
         <Button title="Cancel event" onPress={onClose} />
       </>
@@ -266,5 +269,6 @@ describe('creation route screens', () => {
       />,
     );
     expect(event.getByTestId('event-draft').props.children).toBe('Note title:Note body');
+    expect(event.getByTestId('event-full-screen').props.children).toBe('true');
   });
 });

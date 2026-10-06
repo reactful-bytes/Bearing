@@ -2,56 +2,43 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
-import { AppCard } from '../ui/AppCard';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { FormField } from '../ui/FormField';
+import { IconButton } from '../ui/IconButton';
+import { RowContextMenu } from '../ui/RowContextMenu';
+import { NoteReadOnlyDetails } from './NoteReadOnlyDetails';
 import { radii, spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
 import { NoteRecord, UpdateNoteInput } from '../../features/notes/noteTypes';
-import {
-  DEFAULT_TIME_FORMAT,
-  TimeFormat,
-  timeFormatOptions,
-} from '../../features/profile/timeFormat';
-
+import { normalizeNoteLabels } from '../../features/notes/noteLabels';
+import { NoteLabelsField } from './NoteLabels';
 type NoteDetailModalProps = {
   visible: boolean;
   note: NoteRecord | null;
   locale?: string;
-  timeFormat?: TimeFormat;
   onClose: () => void;
   onSave: (noteId: string, fields: UpdateNoteInput) => Promise<void>;
+  onPin: (noteId: string, pinned: boolean) => Promise<void>;
+  onArchive: (noteId: string) => Promise<void>;
   onDelete: (noteId: string) => Promise<void>;
 };
-
-function formatDateTime(date: Date, timeFormat: TimeFormat, locale?: string): string {
-  return date.toLocaleString(locale, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    ...timeFormatOptions(timeFormat),
-  });
-}
-
-function noteSourceLabel(note: NoteRecord): string {
-  return note.source === 'idea_dump' ? 'Idea Dump' : 'Manual Note';
-}
 
 export function NoteDetailModal({
   visible,
   note,
   locale,
-  timeFormat = DEFAULT_TIME_FORMAT,
   onClose,
   onSave,
+  onPin,
+  onArchive,
   onDelete,
 }: NoteDetailModalProps) {
   const styles = useThemedStyles(createStyles);
   const [editMode, setEditMode] = useState(false);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [labels, setLabels] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +51,7 @@ export function NoteDetailModal({
     setEditMode(false);
     setTitle(note.title);
     setBody(note.body);
+    setLabels(note.labels);
     setSaving(false);
     setConfirmingDelete(false);
     setError(null);
@@ -96,6 +84,7 @@ export function NoteDetailModal({
       await onSave(note.id, {
         title: title.trim(),
         body: trimmedBody,
+        labels: normalizeNoteLabels(labels),
       });
       setEditMode(false);
       setConfirmingDelete(false);
@@ -124,19 +113,108 @@ export function NoteDetailModal({
     }
   }
 
+  async function handlePin(): Promise<void> {
+    if (!note) return;
+
+    setSaving(true);
+    setError(null);
+    try {
+      await onPin(note.id, !note.pinned);
+    } catch {
+      setError('Failed to update note pin.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleArchive(): Promise<void> {
+    if (!note) return;
+
+    setSaving(true);
+    setError(null);
+    try {
+      await onArchive(note.id);
+      handleClose();
+    } catch {
+      setError('Failed to archive note.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleRestore(): Promise<void> {
+    if (!note) return;
+
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave(note.id, {
+        title: note.title,
+        body: note.body,
+        labels: note.labels,
+        pinned: note.pinned,
+        archived: false,
+      });
+      handleClose();
+    } catch {
+      setError('Failed to restore note.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const headerAccessory = note ? (
-    <AppButton
-      label={editMode ? 'Cancel' : 'Edit'}
-      variant="secondary"
-      accessibilityLabel={editMode ? 'Cancel note editing' : 'Edit note'}
-      onPress={() => {
-        setError(null);
-        setConfirmingDelete(false);
-        setEditMode((current) => !current);
-      }}
-      style={styles.headerButton}
-      textStyle={styles.headerButtonText}
-    />
+    editMode ? (
+      <AppButton
+        label="Cancel"
+        variant="secondary"
+        accessibilityLabel="Cancel note editing"
+        onPress={() => {
+          setError(null);
+          setEditMode(false);
+        }}
+        style={styles.headerButton}
+        textStyle={styles.headerButtonText}
+      />
+    ) : (
+      <RowContextMenu
+        accessibilityLabel="More note actions"
+        menuAccessibilityLabel="Note actions menu"
+        items={[
+          {
+            label: 'Edit',
+            accessibilityLabel: 'Edit note',
+            icon: 'edit',
+            onPress: () => {
+              setError(null);
+              setEditMode(true);
+            },
+          },
+          {
+            label: note.pinned ? 'Unpin' : 'Pin',
+            accessibilityLabel: note.pinned ? 'Unpin note' : 'Pin note',
+            icon: note.pinned ? 'pinned' : 'pin',
+            onPress: () => void handlePin(),
+          },
+          {
+            label: note.archived ? 'Restore' : 'Archive',
+            accessibilityLabel: note.archived ? 'Restore note' : 'Archive note',
+            icon: note.archived ? 'refresh' : 'archive',
+            onPress: () => {
+              if (note.archived) void handleRestore();
+              else void handleArchive();
+            },
+          },
+          {
+            label: 'Delete',
+            accessibilityLabel: 'Delete note',
+            icon: 'delete',
+            tone: 'danger',
+            onPress: () => setConfirmingDelete(true),
+          },
+        ]}
+      />
+    )
   ) : null;
 
   return (
@@ -148,13 +226,6 @@ export function NoteDetailModal({
     >
       {note ? (
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-          <AppCard style={styles.summaryCard}>
-            <Text style={styles.noteSource}>{noteSourceLabel(note)}</Text>
-            <Text style={styles.noteDate}>
-              Updated {formatDateTime(note.updatedAt, timeFormat, locale)}
-            </Text>
-          </AppCard>
-
           {editMode ? (
             <View style={styles.section}>
               <FormField
@@ -173,12 +244,22 @@ export function NoteDetailModal({
                 multiline
                 error={error}
               />
+              <NoteLabelsField labels={labels} onChange={setLabels} />
             </View>
           ) : (
-            <AppCard style={styles.readOnlyCard}>
-              <Text style={styles.noteTitle}>{note.title}</Text>
-              <Text style={styles.noteBody}>{note.body}</Text>
-            </AppCard>
+            <NoteReadOnlyDetails
+              note={note}
+              locale={locale}
+              trailing={
+                <IconButton
+                  name={note.pinned ? 'pinned' : 'pin'}
+                  accessibilityLabel={note.pinned ? 'Unpin note' : 'Pin note'}
+                  onPress={() => void handlePin()}
+                  disabled={saving}
+                  color={note.pinned ? styles.activeActionIcon.color : styles.actionIcon.color}
+                />
+              }
+            />
           )}
 
           {!editMode && error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -193,14 +274,7 @@ export function NoteDetailModal({
             />
           ) : null}
 
-          {!confirmingDelete ? (
-            <AppButton
-              label="Delete Note"
-              variant="danger"
-              accessibilityLabel="Delete note"
-              onPress={() => setConfirmingDelete(true)}
-            />
-          ) : (
+          {!editMode && confirmingDelete ? (
             <View style={styles.confirmBlock}>
               <Text style={styles.confirmText}>Delete this note permanently?</Text>
               <View style={styles.confirmActions}>
@@ -222,7 +296,7 @@ export function NoteDetailModal({
                 />
               </View>
             </View>
-          )}
+          ) : null}
         </ScrollView>
       ) : null}
     </AppModal>
@@ -231,15 +305,7 @@ export function NoteDetailModal({
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
-    content: {
-      gap: spacing.lg,
-    },
-    summaryCard: {
-      gap: spacing.xs,
-    },
-    readOnlyCard: {
-      gap: spacing.md,
-    },
+    content: { gap: spacing.lg },
     section: {
       gap: spacing.md,
     },
@@ -262,23 +328,6 @@ const createStyles = (theme: Theme) =>
     textArea: {
       minHeight: 180,
     },
-    noteSource: {
-      ...typography.label,
-      color: theme.colors.brand,
-    },
-    noteDate: {
-      ...typography.helper,
-      color: theme.colors.textSecondary,
-    },
-    noteTitle: {
-      ...typography.button,
-      fontSize: 18,
-      color: theme.colors.text,
-    },
-    noteBody: {
-      ...typography.body,
-      color: theme.colors.textPrimary,
-    },
     errorText: {
       ...typography.helper,
       color: theme.colors.dangerText,
@@ -291,6 +340,8 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.textPrimary,
       fontWeight: '600',
     },
+    actionIcon: { color: theme.colors.textSecondary },
+    activeActionIcon: { color: theme.colors.brand },
     primaryButton: {
       borderRadius: radii.md,
       backgroundColor: theme.colors.brand,

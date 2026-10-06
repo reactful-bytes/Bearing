@@ -1,4 +1,5 @@
 import { NoteRecord } from './noteTypes';
+import { normalizeNoteLabels } from './noteLabels';
 
 type TimestampLike = { toDate: () => Date };
 
@@ -16,6 +17,7 @@ export function decodeNoteData(id: string, data: Record<string, unknown>): NoteR
     userId: data.userId as string,
     title: data.title as string,
     body: data.body as string,
+    labels: normalizeNoteLabels(data.labels),
     source: data.source as NoteRecord['source'],
     sourceEventId: (data.sourceEventId as string | null) ?? null,
     sourceMilestoneId: (data.sourceMilestoneId as string | null) ?? null,

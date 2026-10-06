@@ -40,6 +40,7 @@ type AppModalProps = {
   hideCreateFab?: boolean;
   safeAreaEdges?: Edge[];
   hideHeader?: boolean;
+  centeredHeader?: boolean;
   embedded?: boolean;
   fullScreenEdgeToEdge?: boolean;
   dragToClose?: boolean;
@@ -58,6 +59,7 @@ export function AppModal({
   hideCreateFab = false,
   safeAreaEdges,
   hideHeader = false,
+  centeredHeader = false,
   embedded = false,
   fullScreenEdgeToEdge = false,
   dragToClose = false,
@@ -175,7 +177,7 @@ export function AppModal({
                 </GestureDetector>
               ) : null}
               {!hideHeader ? (
-                <View style={styles.header}>
+                <View style={[styles.header, centeredHeader ? styles.centeredHeader : null]}>
                   {fullScreen ? (
                     <Pressable
                       accessibilityRole="button"
@@ -190,12 +192,21 @@ export function AppModal({
                     <Text
                       accessibilityRole="header"
                       accessibilityLabel={title}
-                      style={[styles.title, fullScreen && styles.fullScreenTitle]}
+                      style={[
+                        styles.title,
+                        fullScreen && styles.fullScreenTitle,
+                        centeredHeader ? styles.centeredHeaderTitle : null,
+                      ]}
                     >
                       {title}
                     </Text>
                   ) : null}
-                  <View style={styles.headerActions}>
+                  <View
+                    style={[
+                      styles.headerActions,
+                      centeredHeader ? styles.centeredHeaderActions : null,
+                    ]}
+                  >
                     {headerAccessory}
                     {!fullScreen && !hideCloseButton ? (
                       <AppButton
@@ -206,9 +217,9 @@ export function AppModal({
                         style={styles.closeButton}
                         textStyle={styles.closeButtonText}
                       />
-                    ) : (
+                    ) : !centeredHeader ? (
                       <View style={styles.headerPlaceholder} />
-                    )}
+                    ) : null}
                   </View>
                 </View>
               ) : null}
@@ -287,7 +298,7 @@ const createStyles = (theme: Theme) =>
     sheetWithDragHandle: {
       maxHeight: '100%',
       paddingTop: 0,
-      paddingHorizontal: 0,
+      paddingHorizontal: spacing['2xl'],
     },
     fullScreenMotion: { flex: 1 },
     header: {
@@ -296,10 +307,18 @@ const createStyles = (theme: Theme) =>
       justifyContent: 'space-between',
       gap: spacing.md,
     },
+    centeredHeader: { minHeight: 44, justifyContent: 'center', position: 'relative' },
     headerActions: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
+    },
+    centeredHeaderActions: {
+      position: 'absolute',
+      right: 0,
+      top: 0,
+      bottom: 0,
+      justifyContent: 'center',
     },
     title: {
       ...typography.screenTitle,
@@ -310,6 +329,13 @@ const createStyles = (theme: Theme) =>
       ...typography.label,
       color: theme.colors.brand,
       textAlign: 'center',
+    },
+    centeredHeaderTitle: {
+      ...typography.caption,
+      color: theme.colors.brand,
+      fontWeight: '700',
+      textAlign: 'center',
+      textTransform: 'uppercase',
     },
     closeIconButton: {
       width: 44,

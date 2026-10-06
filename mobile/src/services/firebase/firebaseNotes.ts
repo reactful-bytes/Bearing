@@ -19,6 +19,7 @@ import {
 import { getFirebaseApp } from './firebaseApp';
 import { CreateNoteInput, NoteRecord, UpdateNoteInput } from '../../features/notes/noteTypes';
 import { decodeNoteData } from '../../features/notes/noteDecoder';
+import { normalizeNoteLabels } from '../../features/notes/noteLabels';
 import { sortNotes } from '../../features/notes/noteSorting';
 import { shouldInjectNotesSubscriptionFailure } from '../../features/testing/e2eFaults';
 
@@ -97,6 +98,7 @@ export async function createNote(userId: string, input: CreateNoteInput): Promis
     userId,
     title: buildNoteTitle(input),
     body: input.body.trim(),
+    labels: normalizeNoteLabels(input.labels),
     source: input.source,
     sourceEventId: input.sourceEventId ?? null,
     sourceMilestoneId: input.sourceMilestoneId ?? null,
@@ -122,6 +124,7 @@ export async function updateNote(
     body: fields.body.trim(),
     updatedAt: Timestamp.now(),
   };
+  if (fields.labels !== undefined) updatePayload.labels = normalizeNoteLabels(fields.labels);
   if (fields.pinned !== undefined) updatePayload.pinned = fields.pinned;
   if (fields.archived !== undefined) updatePayload.archived = fields.archived;
 

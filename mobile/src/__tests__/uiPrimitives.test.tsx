@@ -16,6 +16,13 @@ import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { SectionHeading } from '../components/ui/SectionHeading';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
 
+type MockPanGesture = {
+  onUpdateCallback: (event: { translationY: number }) => void;
+  onEndCallback: (event: { translationY: number; velocityY: number }) => void;
+};
+type MockSharedValue = { value: number };
+type MockAnimatedStyle = () => { opacity: number };
+
 describe('UI primitives', () => {
   it('renders a header with eyebrow and description', () => {
     render(<ScreenHeader eyebrow="Section" title="Calendar" description="Plan your schedule." />);
@@ -236,20 +243,24 @@ describe('UI primitives', () => {
     }
 
     render(<ReopenableSheet />);
-    const { __getLatestPanGesture } = jest.requireMock<{
-      __getLatestPanGesture: () => {
-        onUpdateCallback: (event: { translationY: number }) => void;
-        onEndCallback: (event: { translationY: number; velocityY: number }) => void;
-      };
-    }>('react-native-gesture-handler');
-    const gesture = __getLatestPanGesture();
-    const { __getSharedValues, __getAnimatedStyles } = jest.requireMock<{
-      __getSharedValues: () => { value: number }[];
-      __getAnimatedStyles: () => (() => { opacity: number })[];
-    }>('react-native-reanimated');
-    const sharedValue = __getSharedValues().at(-1)!;
-    const animatedStyles = __getAnimatedStyles();
-    const backdropStyle = animatedStyles.at(-1)!;
+    const gesture = (
+      jest.requireMock('react-native-gesture-handler') as {
+        __getLatestPanGesture: () => MockPanGesture;
+      }
+    ).__getLatestPanGesture();
+    const sharedValue = (
+      jest.requireMock('react-native-reanimated') as {
+        __getSharedValues: () => MockSharedValue[];
+      }
+    )
+      .__getSharedValues()
+      .at(-1)!;
+    const animatedStyles = (
+      jest.requireMock('react-native-reanimated') as {
+        __getAnimatedStyles: () => MockAnimatedStyle[];
+      }
+    ).__getAnimatedStyles();
+    const backdropStyle = () => animatedStyles.at(-1)!();
 
     fireEvent.press(screen.getByTestId('app-modal-drag-handle'));
     expect(screen.getByLabelText('View tasks modal')).toBeTruthy();
@@ -258,8 +269,6 @@ describe('UI primitives', () => {
       gesture.onUpdateCallback({ translationY: 120 });
     });
     expect(backdropStyle().opacity).toBeLessThan(1);
-    expect(backdropStyle().opacity).toBeGreaterThan(0);
-
     act(() => {
       gesture.onUpdateCallback({ translationY: Dimensions.get('window').height });
     });

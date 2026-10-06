@@ -69,14 +69,12 @@ jest.mock('../screens/TasksScreen', () => ({
   TasksScreen: () => null,
 }));
 
-jest.mock('../screens/TaskViewScreens', () => ({
-  TaskGoalSelectionScreen: () => null,
-  TaskSortSelectionScreen: () => null,
-  TaskViewScreen: () => null,
-}));
-
 jest.mock('../screens/NoteEditorScreen', () => ({
   NoteEditorScreen: () => null,
+}));
+
+jest.mock('../screens/NoteDetailScreen', () => ({
+  NoteDetailScreen: () => null,
 }));
 
 jest.mock('../screens/CreationScreens', () => ({

@@ -5,33 +5,25 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useThemedStyles } from '../design/useThemedStyles';
 import { AddNoteModal } from '../components/notes/AddNoteModal';
 import { NoteDetailModal } from '../components/notes/NoteDetailModal';
+import { NoteLabelChips } from '../components/notes/NoteLabels';
+import { NoteFilterModal } from '../components/notes/NoteViewSheets';
 import { AppIcon } from '../components/ui/AppIcon';
 import { AppCard } from '../components/ui/AppCard';
 import { IconButton } from '../components/ui/IconButton';
+import { FilterSortToolbar } from '../components/ui/FilterSortToolbar';
+import { SortOptionsModal } from '../components/ui/SortOptionsModal';
+import { EmptyState } from '../components/ui/EmptyState';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
-import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { layout, radii, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import { useNotes } from '../features/notes/useNotes';
+import { normalizeNoteLabels } from '../features/notes/noteLabels';
+import { sortNotesForView } from '../features/notes/noteSorting';
 import { CreateNoteInput, NoteRecord, UpdateNoteInput } from '../features/notes/noteTypes';
 import { useUserProfile } from '../features/profile/useUserProfile';
-import { DEFAULT_TIME_FORMAT, TimeFormat, timeFormatOptions } from '../features/profile/timeFormat';
 import { NotesStackParamList } from '../navigation/navigationTypes';
-
-function formatDateTime(date: Date, timeFormat: TimeFormat, locale?: string): string {
-  return date.toLocaleString(locale, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    ...timeFormatOptions(timeFormat),
-  });
-}
-
-function noteSourceLabel(note: NoteRecord): string {
-  return note.source === 'idea_dump' ? 'Idea Dump' : 'Manual Note';
-}
+import { DEFAULT_NOTE_VIEW, NOTE_SORT_OPTIONS } from './noteViewOptions';
 
 type NotesScreenProps = {
   route?: { params?: NotesStackParamList['NotesHome'] };
@@ -39,8 +31,11 @@ type NotesScreenProps = {
     goBack?: () => void;
     setParams: (params: NotesStackParamList['NotesHome']) => void;
     navigate?: (
-      screen: 'NoteEditor' | 'CreateNote',
-      params?: NotesStackParamList['NoteEditor'] | NotesStackParamList['CreateNote'],
+      screen: 'NoteDetail' | 'NoteEditor' | 'CreateNote',
+      params?:
+        | NotesStackParamList['NoteDetail']
+        | NotesStackParamList['NoteEditor']
+        | NotesStackParamList['CreateNote'],
     ) => void;
     getParent?: () => { navigate?: (screen: string) => void } | undefined;
   };
@@ -48,17 +43,29 @@ type NotesScreenProps = {
 
 const RECENT_NOTE_LIMIT = 3;
 
+function formatDate(date: Date, locale?: string): string {
+  return date.toLocaleDateString(locale, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
 export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
-  const { notes, uiState, createNote, updateNote, deleteNote, retry } = useNotes();
+  const { notes, uiState, createNote, updateNote, pinNote, archiveNote, deleteNote, retry } =
+    useNotes();
   const { profile } = useUserProfile();
-  const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
   const [addNoteVisible, setAddNoteVisible] = useState(false);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showPinnedOnly, setShowPinnedOnly] = useState(false);
+  const [noteView, setNoteView] = useState({
+    ...DEFAULT_NOTE_VIEW,
+    selectedLabels: [] as string[],
+  });
   const [filtersVisible, setFiltersVisible] = useState(false);
+  const [sortVisible, setSortVisible] = useState(false);
 
   useEffect(() => {
     if (!route?.params?.createNote) {
@@ -73,26 +80,71 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
     navigation?.setParams({ createNote: undefined });
   }, [navigation, route?.params?.createNote]);
 
+  useEffect(() => {
+    if (!route?.params?.resetView) return;
+
+    setNoteView({ ...DEFAULT_NOTE_VIEW, selectedLabels: [] });
+    setSearchQuery('');
+    navigation?.setParams({ resetView: undefined });
+  }, [navigation, route?.params?.resetView]);
+
   const selectedNote = selectedNoteId
     ? (notes.find((note) => note.id === selectedNoteId) ?? null)
     : null;
-  const activeNotes = useMemo(() => notes.filter((note) => !note.archived), [notes]);
+  const availableLabels = useMemo(
+    () =>
+      normalizeNoteLabels(notes.flatMap((note) => note.labels)).sort((left, right) =>
+        left.localeCompare(right, undefined, { sensitivity: 'base' }),
+      ),
+    [notes],
+  );
+  const selectedSort = NOTE_SORT_OPTIONS.find((option) => option.value === noteView.sortBy)!;
+  const noteFilterSummary = [
+    noteView.archivedOnly ? 'Archived' : 'Active',
+    noteView.pinnedOnly ? 'Pinned' : null,
+    noteView.selectedLabels.length === 0
+      ? null
+      : noteView.selectedLabels.length === 1
+        ? noteView.selectedLabels[0]
+        : `${noteView.selectedLabels.length} labels`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
   const visibleNotes = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
-    return activeNotes.filter((note) => {
-      if (showPinnedOnly && !note.pinned) return false;
+    const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
+    const selectedLabels = new Set(
+      noteView.selectedLabels.map((label) => label.toLocaleLowerCase()),
+    );
+    return sortNotesForView(notes, noteView.sortBy).filter((note) => {
+      if (note.archived !== noteView.archivedOnly) return false;
+      if (noteView.pinnedOnly && !note.pinned) return false;
+      if (
+        selectedLabels.size > 0 &&
+        !note.labels.some((label) => selectedLabels.has(label.toLocaleLowerCase()))
+      ) {
+        return false;
+      }
       if (!normalizedQuery) return true;
-      return `${note.title} ${note.body}`.toLowerCase().includes(normalizedQuery);
+      return `${note.title} ${note.body} ${note.labels.join(' ')}`
+        .toLocaleLowerCase()
+        .includes(normalizedQuery);
     });
-  }, [activeNotes, searchQuery, showPinnedOnly]);
+  }, [
+    notes,
+    noteView.archivedOnly,
+    noteView.pinnedOnly,
+    noteView.selectedLabels,
+    noteView.sortBy,
+    searchQuery,
+  ]);
   const pinnedNotes = visibleNotes.filter((note) => note.pinned);
   const recentNotes = visibleNotes.filter((note) => !note.pinned).slice(0, RECENT_NOTE_LIMIT);
   const recentNoteIds = new Set(recentNotes.map((note) => note.id));
   const allNotes = visibleNotes.filter((note) => !note.pinned && !recentNoteIds.has(note.id));
 
-  function openNoteEditor(noteId?: string): void {
+  function openNote(noteId?: string): void {
     if (navigation?.navigate) {
-      navigation.navigate(noteId ? 'NoteEditor' : 'CreateNote', noteId ? { noteId } : undefined);
+      navigation.navigate(noteId ? 'NoteDetail' : 'CreateNote', noteId ? { noteId } : undefined);
       return;
     }
 
@@ -111,6 +163,70 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
   async function handleDeleteNote(noteId: string): Promise<void> {
     await deleteNote(noteId);
     setSelectedNoteId((current) => (current === noteId ? null : current));
+  }
+
+  async function handleArchiveNote(noteId: string): Promise<void> {
+    const note = notes.find((item) => item.id === noteId);
+    if (!note) return;
+    await archiveNote(noteId, {
+      title: note.title,
+      body: note.body,
+      labels: note.labels,
+      pinned: note.pinned,
+    });
+    setSelectedNoteId((current) => (current === noteId ? null : current));
+  }
+
+  function openNoteView(): void {
+    setFiltersVisible(true);
+  }
+
+  function openNoteSort(): void {
+    setSortVisible(true);
+  }
+
+  function renderNoteCard(note: NoteRecord) {
+    return (
+      <Pressable
+        key={note.id}
+        accessibilityRole="button"
+        accessibilityLabel={`Open note ${note.title}`}
+        onPress={() => openNote(note.id)}
+        style={({ pressed }) => [styles.noteRow, pressed ? styles.noteCardPressed : null]}
+      >
+        <View style={styles.noteIconSlot}>
+          <AppIcon
+            name="note"
+            size={20}
+            color={styles.noteIcon.color}
+            decorative
+            testID={`note-icon-${note.id}`}
+          />
+        </View>
+        <View style={styles.noteCopy}>
+          <Text numberOfLines={1} style={styles.noteTitle}>
+            {note.title}
+          </Text>
+          <Text numberOfLines={1} style={styles.noteBody}>
+            {note.body}
+          </Text>
+          <View style={styles.noteMetadata}>
+            <AppIcon
+              name="calendar"
+              size={14}
+              color={styles.noteMetadataIcon.color}
+              decorative
+              testID={`note-date-icon-${note.id}`}
+            />
+            <Text numberOfLines={2} style={styles.noteMetadataText}>
+              Updated {formatDate(note.updatedAt, profile?.locale)} · Created{' '}
+              {formatDate(note.createdAt, profile?.locale)}
+            </Text>
+          </View>
+          <NoteLabelChips labels={note.labels} />
+        </View>
+      </Pressable>
+    );
   }
 
   return (
@@ -158,25 +274,16 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
               />
             ) : null}
           </View>
-          <IconButton
-            name="pinned"
-            // color={filtersVisible ? styles.filterIconOpen.color : undefined}
-            accessibilityLabel={filtersVisible ? 'Hide note filters' : 'Show note filters'}
-            onPress={() => setFiltersVisible((current) => !current)}
-            style={[styles.filterButton, filtersVisible ? styles.filterOpen : null]}
-          />
         </View>
-        {filtersVisible ? (
-          <SegmentedControl
-            accessibilityLabel="Note filter"
-            options={[
-              { value: 'all', label: 'All notes' },
-              { value: 'pinned', label: 'Pinned only' },
-            ]}
-            value={showPinnedOnly ? 'pinned' : 'all'}
-            onChange={(value) => setShowPinnedOnly(value === 'pinned')}
-          />
-        ) : null}
+        <FilterSortToolbar
+          testID="note-filter-sort-toolbar"
+          filterSummary={noteFilterSummary}
+          sortSummary={selectedSort.summary}
+          filterAccessibilityLabel="Open note filters"
+          sortAccessibilityLabel="Open note sort options"
+          onPressFilter={openNoteView}
+          onPressSort={openNoteSort}
+        />
 
         {uiState === 'loading' ? (
           <AppCard>
@@ -197,99 +304,62 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
           <AppCard>
             <Text style={styles.stateTitle}>No notes yet.</Text>
             <Text style={styles.stateDescription}>
-              Create one here or save an Idea Dump from Focus Mode.
+              Create a note here or capture a thought during Focus Mode.
             </Text>
           </AppCard>
         ) : null}
 
         {uiState === 'ready' ? (
           <>
-            {pinnedNotes.length > 0 ? (
+            {noteView.archivedOnly ? (
+              visibleNotes.length > 0 ? (
+                <Text accessibilityRole="header" style={styles.sectionLabel}>
+                  Archived
+                </Text>
+              ) : null
+            ) : pinnedNotes.length > 0 ? (
               <Text accessibilityRole="header" style={styles.sectionLabel}>
                 Pinned
               </Text>
             ) : null}
-            {pinnedNotes.map((note) => (
-              <Pressable
-                key={note.id}
-                accessibilityRole="button"
-                accessibilityLabel={`Open note ${note.title}`}
-                onPress={() => openNoteEditor(note.id)}
-                style={({ pressed }) => [pressed ? styles.noteCardPressed : null]}
-              >
-                <AppCard style={[styles.noteCard, styles.pinnedNoteCard, styles.ideaNote]}>
-                  <View style={styles.noteMetaRow}>
-                    <Text style={styles.noteSource}>{noteSourceLabel(note)}</Text>
-                    <Text style={styles.noteDate}>
-                      {formatDateTime(note.updatedAt, timeFormat, profile?.locale)}
-                    </Text>
-                  </View>
-                  <Text style={styles.noteTitle}>{note.title}</Text>
-                  <Text style={styles.noteBody}>{note.body}</Text>
-                </AppCard>
-              </Pressable>
-            ))}
-            {recentNotes.length > 0 ? (
-              <Text accessibilityRole="header" style={styles.sectionLabel}>
-                Recent
-              </Text>
-            ) : null}
-            {recentNotes.map((note) => (
-              <Pressable
-                key={note.id}
-                accessibilityRole="button"
-                accessibilityLabel={`Open note ${note.title}`}
-                onPress={() => openNoteEditor(note.id)}
-                style={({ pressed }) => [pressed ? styles.noteCardPressed : null]}
-              >
-                <AppCard style={[styles.noteCard, styles.recentNoteCard, styles.ideaNote]}>
-                  <View style={styles.noteMetaRow}>
-                    <Text style={styles.noteSource}>{noteSourceLabel(note)}</Text>
-                    <Text style={styles.noteDate}>
-                      {formatDateTime(note.updatedAt, timeFormat, profile?.locale)}
-                    </Text>
-                  </View>
-                  <Text style={styles.noteTitle}>{note.title}</Text>
-                  <Text style={styles.noteBody}>{note.body}</Text>
-                </AppCard>
-              </Pressable>
-            ))}
-            {allNotes.length > 0 ? (
-              <Text accessibilityRole="header" style={styles.sectionLabel}>
-                All notes
-              </Text>
-            ) : null}
-            {allNotes.map((note) => (
-              <Pressable
-                key={note.id}
-                accessibilityRole="button"
-                accessibilityLabel={`Open note ${note.title}`}
-                onPress={() => openNoteEditor(note.id)}
-                style={({ pressed }) => [pressed ? styles.noteCardPressed : null]}
-              >
-                <AppCard style={[styles.noteCard, styles.allNoteCard, styles.manualNote]}>
-                  <View style={styles.noteMetaRow}>
-                    <Text style={styles.noteSource}>{noteSourceLabel(note)}</Text>
-                    <Text style={styles.noteDate}>
-                      {formatDateTime(note.updatedAt, timeFormat, profile?.locale)}
-                    </Text>
-                  </View>
-                  <Text style={styles.noteTitle}>{note.title}</Text>
-                  <Text style={styles.noteBody}>{note.body}</Text>
-                </AppCard>
-              </Pressable>
-            ))}
+            {noteView.archivedOnly ? (
+              visibleNotes.map(renderNoteCard)
+            ) : (
+              <>
+                {pinnedNotes.map(renderNoteCard)}
+                {recentNotes.length > 0 ? (
+                  <Text accessibilityRole="header" style={styles.sectionLabel}>
+                    Recent
+                  </Text>
+                ) : null}
+                {recentNotes.map(renderNoteCard)}
+                {allNotes.length > 0 ? (
+                  <Text accessibilityRole="header" style={styles.sectionLabel}>
+                    All notes
+                  </Text>
+                ) : null}
+                {allNotes.map(renderNoteCard)}
+              </>
+            )}
             {visibleNotes.length === 0 ? (
-              <AppCard>
-                <Text style={styles.stateTitle}>
-                  {showPinnedOnly ? 'No matching pinned notes.' : 'No matching notes.'}
-                </Text>
-                <Text style={styles.stateDescription}>
-                  {showPinnedOnly
-                    ? 'Select All notes to see your other notes.'
-                    : 'Try a different search.'}
-                </Text>
-              </AppCard>
+              <EmptyState
+                title={
+                  noteView.archivedOnly
+                    ? 'No archived notes.'
+                    : noteView.pinnedOnly
+                      ? 'No matching pinned notes.'
+                      : 'No matching notes.'
+                }
+                description={
+                  noteView.archivedOnly
+                    ? 'Archived notes will appear here.'
+                    : noteView.pinnedOnly
+                      ? 'Adjust your filters or search to see other notes.'
+                      : 'Try different filters or search terms.'
+                }
+                presentation="compact"
+                style={styles.noMatchingNotes}
+              />
             ) : null}
           </>
         ) : null}
@@ -305,10 +375,38 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
         visible={selectedNote !== null && !navigation?.navigate}
         note={selectedNote}
         locale={profile?.locale}
-        timeFormat={timeFormat}
         onClose={() => setSelectedNoteId(null)}
         onSave={handleUpdateNote}
+        onPin={pinNote}
+        onArchive={handleArchiveNote}
         onDelete={handleDeleteNote}
+      />
+      <NoteFilterModal
+        visible={filtersVisible}
+        draft={{ ...noteView, noteSearch: searchQuery }}
+        labels={availableLabels}
+        onClose={() => setFiltersVisible(false)}
+        onApply={(nextView) => {
+          setNoteView((current) => ({
+            ...current,
+            archivedOnly: nextView.archivedOnly,
+            pinnedOnly: nextView.pinnedOnly,
+            selectedLabels: [...nextView.selectedLabels],
+          }));
+          setFiltersVisible(false);
+        }}
+      />
+      <SortOptionsModal
+        visible={sortVisible}
+        title="Sort notes"
+        accessibilityLabelPrefix="Sort notes by"
+        selectedValue={noteView.sortBy}
+        options={NOTE_SORT_OPTIONS}
+        onClose={() => setSortVisible(false)}
+        onApply={(sortBy) => {
+          setNoteView((current) => ({ ...current, sortBy }));
+          setSortVisible(false);
+        }}
       />
     </SafeAreaView>
   );
@@ -336,23 +434,25 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.textPrimary,
       marginTop: spacing.sm,
     },
-    noteCard: {
+    noMatchingNotes: { alignSelf: 'stretch', alignItems: 'center' },
+    noteRow: {
+      minHeight: 64,
+      flexDirection: 'row',
+      alignItems: 'center',
       gap: spacing.sm,
-      borderLeftWidth: 2,
-      borderRadius: radii.md,
+      paddingVertical: spacing.sm,
     },
-    ideaNote: { borderLeftColor: theme.colors.warning },
-    manualNote: { borderLeftColor: theme.colors.brand },
-    pinnedNoteCard: {
-      backgroundColor: theme.colors.surfaceBrand,
-      borderColor: theme.colors.brand,
+    noteIconSlot: {
+      width: 36,
+      minHeight: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-    recentNoteCard: {
-      backgroundColor: theme.colors.surfaceRaised,
-    },
-    allNoteCard: {
-      backgroundColor: theme.colors.surfaceRaised,
-    },
+    noteIcon: { color: theme.colors.textSecondary },
+    noteCopy: { flex: 1, minWidth: 0, gap: spacing.xs },
+    noteMetadata: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    noteMetadataIcon: { color: theme.colors.textSecondary },
+    noteMetadataText: { ...typography.caption, color: theme.colors.textSecondary, flex: 1 },
     searchRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -380,12 +480,19 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.text,
       paddingVertical: 0,
     },
-    filterButton: {
+    viewControlsTrigger: {
+      minHeight: 48,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
       borderRadius: radii.md,
       backgroundColor: theme.colors.surfaceRaised,
     },
-    filterOpen: { backgroundColor: theme.colors.surfaceMuted },
-    filterIconOpen: { color: theme.colors.brand },
+    viewControlsSummary: { ...typography.helper, color: theme.colors.textPrimary, flex: 1 },
+    viewControlsIcon: { color: theme.colors.textSecondary },
     sectionLabel: {
       ...typography.label,
       color: theme.colors.brand,
@@ -394,26 +501,13 @@ const createStyles = (theme: Theme) =>
     noteCardPressed: {
       opacity: 0.92,
     },
-    noteMetaRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: spacing.md,
-    },
-    noteSource: {
-      ...typography.label,
-      color: theme.colors.textSecondary,
-    },
-    noteDate: {
-      ...typography.helper,
-      color: theme.colors.textSecondary,
-    },
     noteTitle: {
-      ...typography.button,
+      ...typography.helper,
       color: theme.colors.text,
+      fontWeight: '600',
     },
     noteBody: {
-      ...typography.body,
-      color: theme.colors.textPrimary,
+      ...typography.caption,
+      color: theme.colors.textSecondary,
     },
   });

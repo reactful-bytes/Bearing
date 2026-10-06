@@ -1,15 +1,9 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { NoteRecord, UpdateNoteInput } from '../features/notes/noteTypes';
 import { useNotes } from '../features/notes/useNotes';
 import { NoteEditorScreen } from '../screens/NoteEditorScreen';
-
-const mockNavigate = jest.fn();
-
-jest.mock('@react-navigation/native', () => ({
-  useNavigation: () => ({ navigate: mockNavigate }),
-}));
 
 jest.mock('../features/profile/useUserProfile', () => ({
   useUserProfile: jest.fn(() => ({ profile: { locale: 'en-US', timeFormat: '12-hour' } })),
@@ -25,6 +19,7 @@ function makeNote(): NoteRecord {
     userId: 'user-1',
     title: 'Captured thought',
     body: 'Turn this into something useful.',
+    labels: ['Focus'],
     source: 'manual',
     sourceEventId: null,
     sourceMilestoneId: null,
@@ -37,20 +32,17 @@ function makeNote(): NoteRecord {
 }
 
 describe('NoteEditorScreen', () => {
-  it('updates, archives, deletes with confirmation, and opens conversions', async () => {
+  it('updates note content and labels without exposing note management actions', async () => {
     const updateNote = jest.fn(async (_noteId: string, _fields: UpdateNoteInput) => undefined);
-    const pinNote = jest.fn(async (_noteId: string, _pinned: boolean) => undefined);
-    const archiveNote = jest.fn(async (_noteId: string, _fields: UpdateNoteInput) => undefined);
-    const deleteNote = jest.fn(async (_noteId: string) => undefined);
     const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
     mockedUseNotes.mockReturnValue({
       notes: [makeNote()],
       uiState: 'ready',
       createNote: jest.fn(async () => undefined),
       updateNote,
-      pinNote,
-      archiveNote,
-      deleteNote,
+      pinNote: jest.fn(async () => undefined),
+      archiveNote: jest.fn(async () => undefined),
+      deleteNote: jest.fn(async () => undefined),
       retry: jest.fn(),
     });
     const goBack = jest.fn();
@@ -59,50 +51,35 @@ describe('NoteEditorScreen', () => {
 
     expect(screen.getByRole('header', { name: 'Edit Note' })).toBeTruthy();
     fireEvent.changeText(screen.getByLabelText('Note body'), 'Updated note body.');
+    fireEvent.changeText(screen.getByLabelText('New note label'), ' Draft ');
+    fireEvent.press(screen.getByLabelText('Add note label'));
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Save note changes'));
     });
     expect(updateNote).toHaveBeenCalledWith('note-1', {
       title: 'Captured thought',
       body: 'Updated note body.',
-      pinned: false,
+      labels: ['Focus', 'Draft'],
     });
     expect(goBack).toHaveBeenCalledTimes(1);
-
-    fireEvent.press(screen.getByText('Archive Note'));
-    await waitFor(() =>
-      expect(archiveNote).toHaveBeenCalledWith('note-1', {
-        title: 'Captured thought',
-        body: 'Updated note body.',
-        pinned: false,
-      }),
-    );
-
-    fireEvent.press(screen.getByText('Delete Note'));
-    expect(screen.getByText('Delete this note permanently?')).toBeTruthy();
-    await act(async () => {
-      fireEvent.press(screen.getByLabelText('Confirm note delete'));
-    });
-    expect(deleteNote).toHaveBeenCalledWith('note-1');
-
-    fireEvent.press(screen.getByText('Create Task'));
-    expect(mockNavigate).toHaveBeenCalledWith('CreateTaskFromNote', { noteId: 'note-1' });
+    expect(screen.queryByText('Use this note')).toBeNull();
+    expect(screen.queryByLabelText('Pin note')).toBeNull();
+    expect(screen.queryByText('Archive Note')).toBeNull();
+    expect(screen.queryByText('Delete Note')).toBeNull();
   });
 
-  it('persists pinning immediately without saving the editor form', async () => {
-    const pinNote = jest.fn(async (_noteId: string, _pinned: boolean) => undefined);
+  it('keeps the editor focused on editable fields and save', () => {
     const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
     mockedUseNotes.mockReturnValue({
       notes: [makeNote()],
       uiState: 'ready',
       createNote: jest.fn(async () => undefined),
       updateNote: jest.fn(async () => undefined),
-      pinNote,
+      pinNote: jest.fn(async () => undefined),
       archiveNote: jest.fn(async () => undefined),
       deleteNote: jest.fn(async () => undefined),
       retry: jest.fn(),
     });
-
     render(
       <NoteEditorScreen
         route={{ params: { noteId: 'note-1' } }}
@@ -110,12 +87,12 @@ describe('NoteEditorScreen', () => {
       />,
     );
 
-    fireEvent.changeText(screen.getByLabelText('Note body'), 'Unsaved body stays local.');
-    await act(async () => {
-      fireEvent.press(screen.getByLabelText('Pin note'));
-    });
-
-    expect(pinNote).toHaveBeenCalledWith('note-1', true);
-    expect(screen.getByLabelText('Unpin note')).toBeTruthy();
+    expect(screen.getByLabelText('Note title')).toBeTruthy();
+    expect(screen.getByLabelText('Note body')).toBeTruthy();
+    expect(screen.getByLabelText('Save note changes')).toBeTruthy();
+    expect(screen.queryByText('Use this note')).toBeNull();
+    expect(screen.queryByLabelText('Pin note')).toBeNull();
+    expect(screen.queryByText('Archive Note')).toBeNull();
+    expect(screen.queryByText('Delete Note')).toBeNull();
   });
 });

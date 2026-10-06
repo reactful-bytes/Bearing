@@ -175,7 +175,7 @@ export function TaskDetailsModal({
           </View>
 
           <DetailSection
-            icon="goal"
+            icon={linkedMilestone ? 'milestone' : 'goal'}
             title={linkedMilestone ? 'MILESTONE' : linkedGoal ? 'GOAL' : 'NO GOAL LINKED'}
           >
             <Text style={styles.bodyText}>
@@ -267,7 +267,7 @@ function DetailSection({
   title,
   children,
 }: {
-  icon: 'goal' | 'document' | 'idea' | 'date';
+  icon: 'goal' | 'milestone' | 'document' | 'idea' | 'date';
   title: string;
   children: React.ReactNode;
 }) {
@@ -321,7 +321,7 @@ const createStyles = (theme: Theme) =>
     heroStatusCopy: { flex: 1, gap: 2 },
     statusLabel: { ...typography.caption, color: theme.colors.brand, fontWeight: '700' },
     completedLabel: { color: theme.colors.success },
-    title: { ...typography.title, color: theme.colors.text },
+    title: { ...typography.sectionTitle, color: theme.colors.text },
     heroDescription: { ...typography.body, color: theme.colors.textPrimary },
     updatedAt: { ...typography.helper, color: theme.colors.textSecondary },
     section: {

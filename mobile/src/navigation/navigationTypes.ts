@@ -2,7 +2,6 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 
 import type { LegalDocumentId } from '../features/profile/legalDocuments';
 import type { PremiumFeature } from '../features/premium/premiumAccess';
-
 export type CalendarFocusLaunch = {
   token: string;
   eventId: string;
@@ -14,28 +13,14 @@ export type CalendarFocusLaunch = {
 };
 
 export type TaskFilter = 'active' | 'completed' | 'all';
-export type TaskGroupBy = 'none' | 'goal' | 'milestone';
+export type TaskGroupBy = 'goal' | 'unlinked' | 'all';
 export type TaskSortBy =
   'dueDate:asc' | 'dueDate:desc' | 'updated:asc' | 'updated:desc' | 'title:asc' | 'title:desc';
-
-export type TaskViewDraft = {
-  taskFilter: TaskFilter;
-  groupBy: TaskGroupBy;
-  sortBy: TaskSortBy;
-  selectedGoalIds: string[];
-  taskSearch: string;
-};
-
-export type TaskViewGoal = { id: string; title: string };
-export type TaskViewParams = { draft: TaskViewDraft; goals: TaskViewGoal[] };
 
 export type PlanStackParamList = {
   PlanHome: undefined;
   Goals: { createGoal?: boolean } | undefined;
-  Tasks: { createTask?: boolean; viewResult?: TaskViewDraft } | undefined;
-  TaskView: TaskViewParams;
-  TaskGoalSelection: TaskViewParams;
-  TaskSortSelection: TaskViewParams;
+  Tasks: { createTask?: boolean } | undefined;
   TaskDetail: { taskId: string };
   GoalDetail: { goalId: string; initialTab?: 'tasks' | 'overview' | 'timeline' };
   FocusMode:
@@ -65,7 +50,8 @@ export type CalendarStackParamList = {
 };
 
 export type NotesStackParamList = {
-  NotesHome: { createNote?: boolean } | undefined;
+  NotesHome: { createNote?: boolean; resetView?: boolean } | undefined;
+  NoteDetail: { noteId: string };
   CreateNote: { sourceEventId?: string; sourceMilestoneId?: string } | undefined;
   NoteEditor: { noteId?: string; sourceEventId?: string; sourceMilestoneId?: string } | undefined;
   CreateGoalFromNote: { noteId: string };

@@ -142,6 +142,7 @@ function makeNote(): NoteRecord {
     userId: 'user-1',
     title: 'Idea',
     body: 'Try a smaller release.',
+    labels: [],
     source: 'idea_dump',
     sourceEventId: null,
     sourceMilestoneId: null,

@@ -45,17 +45,13 @@ import { GoalsScreen } from '../screens/GoalsScreen';
 import { GoalDetailScreen } from '../screens/GoalDetailScreen';
 import { FocusModeScreen } from '../screens/FocusModeScreen';
 import { NotesScreen } from '../screens/NotesScreen';
+import { NoteDetailScreen } from '../screens/NoteDetailScreen';
 import { PlanScreen } from '../screens/PlanScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { LegalDocumentScreen } from '../screens/LegalDocumentScreen';
 import { PremiumPaywallScreen } from '../screens/PremiumPaywallScreen';
 import type { ProfileNavigationTarget, ProfileSection } from '../screens/ProfileScreen';
 import { TasksScreen } from '../screens/TasksScreen';
-import {
-  TaskGoalSelectionScreen,
-  TaskSortSelectionScreen,
-  TaskViewScreen,
-} from '../screens/TaskViewScreens';
 import { TaskDetailScreen } from '../screens/TaskDetailScreen';
 import { NoteEditorScreen } from '../screens/NoteEditorScreen';
 import {
@@ -123,9 +119,6 @@ function PlanNavigator() {
       <PlanStack.Screen name="PlanHome" component={PlanScreen} />
       <PlanStack.Screen name="Goals" component={GoalsScreen} />
       <PlanStack.Screen name="Tasks" component={TasksScreen} />
-      <PlanStack.Screen name="TaskView" component={TaskViewScreen} />
-      <PlanStack.Screen name="TaskGoalSelection" component={TaskGoalSelectionScreen} />
-      <PlanStack.Screen name="TaskSortSelection" component={TaskSortSelectionScreen} />
       <PlanStack.Screen name="TaskDetail" component={TaskDetailScreen} />
       <PlanStack.Screen name="GoalDetail" component={GoalDetailScreen} />
       <PlanStack.Screen name="FocusMode" component={FocusModeScreen} />
@@ -152,6 +145,7 @@ function NotesNavigator() {
   return (
     <NotesStack.Navigator screenOptions={{ headerShown: false }}>
       <NotesStack.Screen name="NotesHome" component={NotesScreen} />
+      <NotesStack.Screen name="NoteDetail" component={NoteDetailScreen} />
       <NotesStack.Screen name="CreateNote" component={CreateNoteScreen} />
       <NotesStack.Screen name="NoteEditor" component={NoteEditorScreen} />
       <NotesStack.Screen name="CreateGoalFromNote" component={CreateGoalFromNoteScreen} />

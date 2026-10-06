@@ -3,11 +3,14 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { radii, spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
+import type { AppIconName } from '../../design/icons';
+import { AppIcon } from './AppIcon';
 
 export type SegmentedControlOption<Value extends string> = {
   value: Value;
   label: string;
   count?: number;
+  icon?: AppIconName;
 };
 
 type SegmentedControlProps<Value extends string> = {
@@ -44,6 +47,14 @@ export function SegmentedControl<Value extends string>({
               pressed ? styles.optionPressed : null,
             ]}
           >
+            {option.icon ? (
+              <AppIcon
+                name={option.icon}
+                size={16}
+                color={isSelected ? styles.selectedIcon.color : styles.icon.color}
+                decorative
+              />
+            ) : null}
             <Text
               numberOfLines={1}
               style={[styles.label, isSelected ? styles.labelSelected : null]}
@@ -86,7 +97,7 @@ const createStyles = (theme: Theme) =>
       justifyContent: 'center',
       gap: spacing.xs,
       borderRadius: radii.sm,
-      paddingHorizontal: spacing.sm,
+      paddingHorizontal: spacing.xs,
       paddingVertical: spacing.sm,
     },
     optionSelected: {
@@ -104,6 +115,8 @@ const createStyles = (theme: Theme) =>
     labelSelected: {
       color: theme.colors.onBrand,
     },
+    icon: { color: theme.colors.textSecondary },
+    selectedIcon: { color: theme.colors.onBrand },
     count: {
       ...typography.helper,
       color: theme.colors.textSecondary,

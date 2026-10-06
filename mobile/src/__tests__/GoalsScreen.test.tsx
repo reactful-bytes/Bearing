@@ -347,7 +347,8 @@ describe('GoalsScreen', () => {
     expect(screen.queryByText('New Goal')).toBeNull();
     expect(screen.getByRole('header', { name: 'Current goals' })).toBeTruthy();
     expect(screen.getByText('0 goals')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Browse other goal lists' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Filter goals' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Sort goals' })).toBeTruthy();
   });
 
   it('filters goals with counts, selected state, and filter-specific empty copy', () => {
@@ -401,30 +402,28 @@ describe('GoalsScreen', () => {
       text: '0 of 1 milestones complete',
     });
 
-    fireEvent.press(screen.getByRole('button', { name: 'Browse other goal lists' }));
-    expect(
-      screen.getByRole('button', { name: 'Browse other goal lists' }).props.accessibilityState
-        .expanded,
-    ).toBe(true);
-    expect(screen.getByRole('button', { name: 'Select completed goals, 1' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Select draft goals, 1' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Select archived goals, 0' })).toBeTruthy();
-    fireEvent.press(screen.getByRole('button', { name: 'Select completed goals, 1' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Filter goals' }));
+    expect(screen.getByTestId('app-modal-drag-handle')).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Show completed goals' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Show draft goals' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Show archived goals' })).toBeTruthy();
+    fireEvent.press(screen.getByRole('radio', { name: 'Show completed goals' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply goal filters' }));
 
     expect(screen.getByText('Read twelve books')).toBeTruthy();
     expect(screen.queryByText('Run a 10k')).toBeNull();
     expect(screen.getByRole('header', { name: 'Completed goals' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Show current goals' })).toBeTruthy();
-
-    fireEvent.press(screen.getByRole('button', { name: 'Browse other goal lists' }));
-    fireEvent.press(screen.getByRole('button', { name: 'Select draft goals, 1' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Filter goals' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Show draft goals' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply goal filters' }));
 
     expect(screen.getByText('Write a mystery novel')).toBeTruthy();
     expect(screen.queryByText('Run a 10k')).toBeNull();
     expect(screen.getByRole('header', { name: 'Draft goals' })).toBeTruthy();
 
-    fireEvent.press(screen.getByRole('button', { name: 'Browse other goal lists' }));
-    fireEvent.press(screen.getByRole('button', { name: 'Select archived goals, 0' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Filter goals' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Show archived goals' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply goal filters' }));
 
     expect(screen.queryByText('Run a 10k')).toBeNull();
     expect(screen.queryByText('Read twelve books')).toBeNull();
@@ -455,11 +454,77 @@ describe('GoalsScreen', () => {
     const navigate = jest.fn();
 
     render(<GoalsScreen navigation={{ navigate }} />);
-    fireEvent.press(screen.getByRole('button', { name: 'Browse other goal lists' }));
-    fireEvent.press(screen.getByRole('button', { name: 'Select completed goals, 0' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Filter goals' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Show completed goals' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply goal filters' }));
 
     expect(screen.getByText('No completed goals.')).toBeTruthy();
     expect(screen.getByText('Goals you finish will stay available here.')).toBeTruthy();
+  });
+
+  it('searches goal titles and descriptions and preserves search and sort when filters reset', () => {
+    const zuluGoal = makeGoal({
+      id: 'goal-zulu',
+      title: 'Zulu Goal',
+      description: 'A matching training plan.',
+      estimatedCompletionDate: new Date(2026, 8, 1),
+      updatedAt: new Date(2026, 6, 23),
+    });
+    const alphaGoal = makeGoal({
+      id: 'goal-alpha',
+      title: 'Alpha Goal',
+      description: 'A matching training plan.',
+      estimatedCompletionDate: new Date(2026, 9, 1),
+      updatedAt: new Date(2026, 6, 24),
+    });
+    const otherGoal = makeGoal({
+      id: 'goal-other',
+      title: 'Other Goal',
+      description: 'Different details.',
+      estimatedCompletionDate: new Date(2026, 7, 1),
+      updatedAt: new Date(2026, 6, 25),
+    });
+    mockGoals({ goals: [otherGoal, alphaGoal, zuluGoal], uiState: 'ready' });
+    (useMilestoneEvents as jest.MockedFunction<typeof useMilestoneEvents>).mockReturnValue({
+      events: [],
+      uiState: 'idle',
+    });
+
+    render(<GoalsScreen />);
+    fireEvent.changeText(screen.getByLabelText('Search goals by title or description'), 'MATCHING');
+    let goalLabels = screen.getAllByLabelText(/^Open goal/).map((goal) => goal.props.accessibilityLabel);
+    expect(goalLabels).toEqual(['Open goal Zulu Goal', 'Open goal Alpha Goal']);
+    expect(screen.queryByLabelText('Open goal Other Goal')).toBeNull();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Sort goals' }));
+    expect(screen.getByTestId('app-modal-drag-handle')).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Sort goals by Target date soonest' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Sort goals by Target date latest' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Sort goals by Updated newest' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Sort goals by Updated oldest' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Sort goals by Title A to Z' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'Sort goals by Title Z to A' })).toBeTruthy();
+    fireEvent.press(screen.getByRole('radio', { name: 'Sort goals by Updated newest' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply sort goals' }));
+    goalLabels = screen.getAllByLabelText(/^Open goal/).map((goal) => goal.props.accessibilityLabel);
+    expect(goalLabels).toEqual(['Open goal Alpha Goal', 'Open goal Zulu Goal']);
+
+    fireEvent.press(screen.getByRole('button', { name: 'Filter goals' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Show completed goals' }));
+    expect(screen.getByLabelText('Open goal Alpha Goal')).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Apply goal filters' }));
+    expect(screen.queryByLabelText('Open goal Alpha Goal')).toBeNull();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Filter goals' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Reset goal filters' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply goal filters' }));
+    goalLabels = screen.getAllByLabelText(/^Open goal/).map((goal) => goal.props.accessibilityLabel);
+    expect(goalLabels).toEqual(['Open goal Alpha Goal', 'Open goal Zulu Goal']);
+    expect(screen.queryByLabelText('Open goal Other Goal')).toBeNull();
+    expect(screen.getByText('Sort: Updated ↓')).toBeTruthy();
+
+    fireEvent.changeText(screen.getByLabelText('Search goals by title or description'), 'no match');
+    expect(screen.getByText('No matching goals.')).toBeTruthy();
   });
 
   it('walks the manual goal wizard and saves a goal', async () => {
@@ -705,7 +770,7 @@ describe('GoalsScreen', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('header', { name: 'Draft goals' })).toBeTruthy();
-      expect(screen.getByRole('button', { name: 'Show current goals' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Filter goals' })).toBeTruthy();
       expect(screen.getByText('Run a 10k')).toBeTruthy();
     });
   });

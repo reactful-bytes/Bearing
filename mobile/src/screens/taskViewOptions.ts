@@ -1,13 +1,5 @@
 import type { AppIconName } from '../design/icons';
-import type { TaskSortBy, TaskViewDraft } from '../navigation/navigationTypes';
-
-export const DEFAULT_TASK_VIEW: TaskViewDraft = {
-  taskFilter: 'active',
-  groupBy: 'none',
-  sortBy: 'dueDate:asc',
-  selectedGoalIds: [],
-  taskSearch: '',
-};
+import type { TaskSortBy } from '../navigation/navigationTypes';
 
 export const TASK_SORT_OPTIONS: {
   value: TaskSortBy;

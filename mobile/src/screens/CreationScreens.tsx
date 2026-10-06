@@ -275,6 +275,7 @@ export function CreateEventFromNoteScreen({ route, navigation }: NoteConversionP
       <AddEventModal
         visible
         initialDate={new Date()}
+        fullScreen
         initialValues={{ title: note.title, description: note.body }}
         publicationCalendarTitle={publicationCalendarTitle}
         locale={profile?.locale}
