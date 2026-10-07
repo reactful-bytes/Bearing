@@ -21,6 +21,7 @@ type EditTaskModalProps = {
   task: TaskRecord | null;
   goals: readonly GoalWithMilestones[];
   allowedDraftGoalId?: string | null;
+  backAccessibilityLabel?: string;
   onClose: () => void;
   onSave: (taskId: string, fields: UpdateTaskInput) => Promise<void>;
 };
@@ -30,6 +31,7 @@ export function EditTaskModal({
   task,
   goals,
   allowedDraftGoalId = null,
+  backAccessibilityLabel = 'Back to task details',
   onClose,
   onSave,
 }: EditTaskModalProps) {
@@ -98,7 +100,7 @@ export function EditTaskModal({
           <ScreenHeader
             title="Edit Task"
             onPressBack={onClose}
-            backAccessibilityLabel="Back to task details"
+            backAccessibilityLabel={backAccessibilityLabel}
           />
           <FormField
             label="Title"

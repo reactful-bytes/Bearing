@@ -3,6 +3,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { ScrollView, StyleSheet } from 'react-native';
 
 import { AppIcon } from '../components/ui/AppIcon';
+import { spacing } from '../design/tokens';
 import { CreateNoteInput, NoteRecord, UpdateNoteInput } from '../features/notes/noteTypes';
 import { useNotes } from '../features/notes/useNotes';
 import { NotesScreen } from '../screens/NotesScreen';
@@ -99,13 +100,39 @@ describe('NotesScreen', () => {
 
     render(<NotesScreen />);
 
+    expect(StyleSheet.flatten(screen.getByTestId('note-search-field').props.style)).toMatchObject({
+      minHeight: 48,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      borderWidth: 1,
+      paddingLeft: spacing.md,
+    });
+    expect(screen.getByLabelText('Search notes').props).toMatchObject({
+      autoCapitalize: 'none',
+      returnKeyType: 'search',
+    });
     expect(screen.getByText('Captured thought')).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.getByLabelText('Open note Captured thought').props.style),
+    ).toMatchObject({ minHeight: 56, paddingVertical: spacing.xs });
+    expect(
+      screen.getAllByTestId('note-rows').every(
+        (rows) => StyleSheet.flatten(rows.props.style).gap === spacing.xs,
+      ),
+    ).toBe(true);
     expect(
       screen
         .getByLabelText('Open note Captured thought')
         .findAllByType(AppIcon)
         .map((icon) => icon.props.name),
     ).toEqual(['note', 'calendar']);
+    expect(StyleSheet.flatten(screen.getByTestId('note-icon-frame-note-1').props.style)).toMatchObject({
+      width: 34,
+      height: 34,
+      alignItems: 'center',
+      justifyContent: 'center',
+    });
     expect(screen.getByText('Personal note')).toBeTruthy();
     expect(screen.getByText('Focus')).toBeTruthy();
     expect(screen.getByText('Personal')).toBeTruthy();
@@ -137,8 +164,8 @@ describe('NotesScreen', () => {
       14,
     );
     expect(
-      StyleSheet.flatten(screen.getByTestId('note-search-field').props.style).paddingRight,
-    ).toBe(0);
+      StyleSheet.flatten(screen.getByLabelText('Clear note search').props.style),
+    ).toMatchObject({ width: 44, height: 44 });
     fireEvent.press(screen.getByLabelText('Clear note search'));
 
     expect(screen.getByLabelText('Search notes').props.value).toBe('');

@@ -67,10 +67,18 @@ export function TaskListRow({
             onPress={onPress}
             style={({ pressed }) => [styles.copy, pressed ? styles.pressed : null]}
           >
-            {copy}
+            <View testID={`task-icon-${task.id}`} style={styles.taskIconFrame}>
+              <AppIcon name="task" size={18} color={styles.taskIcon.color} decorative />
+            </View>
+            <View style={styles.copyText}>{copy}</View>
           </Pressable>
         ) : (
-          <View style={styles.copy}>{copy}</View>
+          <View style={styles.copy}>
+            <View testID={`task-icon-${task.id}`} style={styles.taskIconFrame}>
+              <AppIcon name="task" size={18} color={styles.taskIcon.color} decorative />
+            </View>
+            <View style={styles.copyText}>{copy}</View>
+          </View>
         )}
 
         {onEdit && onDelete ? (
@@ -100,12 +108,22 @@ const createStyles = (theme: Theme) =>
       flex: 1,
       minWidth: 0,
       minHeight: 48,
-      flexDirection: 'column',
-      alignItems: 'stretch',
+      flexDirection: 'row',
+      alignItems: 'center',
       justifyContent: 'center',
-      gap: spacing.xs,
+      gap: spacing.md,
       paddingVertical: spacing.xs,
     },
+    copyText: { flex: 1, minWidth: 0, gap: spacing.xs },
+    taskIconFrame: {
+      width: 34,
+      height: 34,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.md,
+      backgroundColor: theme.colors.surfaceBrand,
+    },
+    taskIcon: { color: theme.colors.brand },
     dateRow: {
       flexDirection: 'row',
       alignItems: 'center',

@@ -9,7 +9,6 @@ import { NoteLabelChips } from '../components/notes/NoteLabels';
 import { NoteFilterModal } from '../components/notes/NoteViewSheets';
 import { AppIcon } from '../components/ui/AppIcon';
 import { AppCard } from '../components/ui/AppCard';
-import { IconButton } from '../components/ui/IconButton';
 import { FilterSortToolbar } from '../components/ui/FilterSortToolbar';
 import { SortOptionsModal } from '../components/ui/SortOptionsModal';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -194,10 +193,10 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
         onPress={() => openNote(note.id)}
         style={({ pressed }) => [styles.noteRow, pressed ? styles.noteCardPressed : null]}
       >
-        <View style={styles.noteIconSlot}>
+        <View testID={`note-icon-frame-${note.id}`} style={styles.noteIconFrame}>
           <AppIcon
             name="note"
-            size={20}
+            size={18}
             color={styles.noteIcon.color}
             decorative
             testID={`note-icon-${note.id}`}
@@ -229,6 +228,15 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
     );
   }
 
+  function renderNoteRows(rows: readonly NoteRecord[]) {
+    if (rows.length === 0) return null;
+    return (
+      <View testID="note-rows" style={styles.noteRows}>
+        {rows.map(renderNoteCard)}
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.screen} edges={['left', 'right']}>
       <ScrollView
@@ -250,30 +258,28 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
             navigation?.getParent?.()?.navigate?.('Plan');
           }}
         />
-        <View style={styles.searchRow}>
-          <View
-            testID="note-search-field"
-            style={[styles.searchField, searchQuery ? styles.searchFieldWithClear : null]}
-          >
-            <AppIcon name="search" size={18} color={styles.searchIcon.color} decorative />
-            <TextInput
-              accessibilityLabel="Search notes"
-              onChangeText={setSearchQuery}
-              placeholder="Search notes"
-              placeholderTextColor={styles.searchPlaceholder.color}
-              style={styles.searchInput}
-              value={searchQuery}
-            />
-            {searchQuery.length > 0 ? (
-              <IconButton
-                name="close"
-                size={18}
-                color={styles.searchIcon.color}
-                accessibilityLabel="Clear note search"
-                onPress={() => setSearchQuery('')}
-              />
-            ) : null}
-          </View>
+        <View testID="note-search-field" style={styles.searchField}>
+          <AppIcon name="search" size={18} color={styles.searchIcon.color} decorative />
+          <TextInput
+            accessibilityLabel="Search notes"
+            autoCapitalize="none"
+            onChangeText={setSearchQuery}
+            placeholder="Search notes"
+            placeholderTextColor={styles.searchPlaceholder.color}
+            returnKeyType="search"
+            style={styles.searchInput}
+            value={searchQuery}
+          />
+          {searchQuery.length > 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Clear note search"
+              onPress={() => setSearchQuery('')}
+              style={styles.clearSearch}
+            >
+              <AppIcon name="close" size={16} color={styles.searchIcon.color} decorative />
+            </Pressable>
+          ) : null}
         </View>
         <FilterSortToolbar
           testID="note-filter-sort-toolbar"
@@ -323,22 +329,22 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
               </Text>
             ) : null}
             {noteView.archivedOnly ? (
-              visibleNotes.map(renderNoteCard)
+              renderNoteRows(visibleNotes)
             ) : (
               <>
-                {pinnedNotes.map(renderNoteCard)}
+                {renderNoteRows(pinnedNotes)}
                 {recentNotes.length > 0 ? (
                   <Text accessibilityRole="header" style={styles.sectionLabel}>
                     Recent
                   </Text>
                 ) : null}
-                {recentNotes.map(renderNoteCard)}
+                {renderNoteRows(recentNotes)}
                 {allNotes.length > 0 ? (
                   <Text accessibilityRole="header" style={styles.sectionLabel}>
                     All notes
                   </Text>
                 ) : null}
-                {allNotes.map(renderNoteCard)}
+                {renderNoteRows(allNotes)}
               </>
             )}
             {visibleNotes.length === 0 ? (
@@ -436,49 +442,51 @@ const createStyles = (theme: Theme) =>
     },
     noMatchingNotes: { alignSelf: 'stretch', alignItems: 'center' },
     noteRow: {
-      minHeight: 64,
+      minHeight: 56,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.sm,
-      paddingVertical: spacing.sm,
+      gap: spacing.md,
+      paddingVertical: spacing.xs,
     },
-    noteIconSlot: {
-      width: 36,
-      minHeight: 44,
+    noteRows: { gap: spacing.xs },
+    noteIconFrame: {
+      width: 34,
+      height: 34,
       alignItems: 'center',
       justifyContent: 'center',
+      borderRadius: theme.radii.md,
+      backgroundColor: theme.colors.surfaceBrand,
     },
-    noteIcon: { color: theme.colors.textSecondary },
+    noteIcon: { color: theme.colors.brand },
     noteCopy: { flex: 1, minWidth: 0, gap: spacing.xs },
     noteMetadata: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     noteMetadataIcon: { color: theme.colors.textSecondary },
     noteMetadataText: { ...typography.caption, color: theme.colors.textSecondary, flex: 1 },
-    searchRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-    },
     searchField: {
-      flex: 1,
-      minHeight: layout.minimumTouchTarget,
+      minHeight: 48,
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
-      paddingHorizontal: spacing.md,
       borderWidth: 1,
-      borderColor: theme.colors.brand,
-      borderRadius: radii.md,
-      backgroundColor: theme.colors.surfaceRaised,
+      borderColor: theme.colors.border,
+      borderRadius: theme.radii.md,
+      backgroundColor: theme.colors.surface,
+      paddingLeft: spacing.md,
     },
-    searchFieldWithClear: { paddingRight: 0 },
     searchIcon: { color: theme.colors.textSecondary },
-    searchPlaceholder: { color: theme.colors.textMuted },
+    searchPlaceholder: { color: theme.colors.textSecondary },
     searchInput: {
       flex: 1,
-      minHeight: layout.minimumTouchTarget,
+      minWidth: 0,
+      minHeight: 46,
       ...typography.helper,
       color: theme.colors.text,
-      paddingVertical: 0,
+    },
+    clearSearch: {
+      width: 44,
+      height: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     viewControlsTrigger: {
       minHeight: 48,

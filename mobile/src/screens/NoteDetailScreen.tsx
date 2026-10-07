@@ -263,7 +263,7 @@ export function NoteDetailScreen({ route, navigation }: NoteDetailScreenProps) {
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
-    content: { gap: spacing.lg, flexGrow: 1 },
+    content: { gap: 0, flexGrow: 1 },
     headerActions: { flexDirection: 'row', alignItems: 'center' },
     actionIcon: { color: theme.colors.textSecondary },
     activeActionIcon: { color: theme.colors.brand },

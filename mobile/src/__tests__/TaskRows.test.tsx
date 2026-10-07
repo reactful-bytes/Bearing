@@ -5,6 +5,7 @@ import { Alert, StyleSheet } from 'react-native';
 import { TaskListRow } from '../components/tasks/TaskListRow';
 import { TaskRow } from '../components/presentation/TaskRow';
 import { AppIcon } from '../components/ui/AppIcon';
+import { darkTheme } from '../design/tokens';
 import type { TaskRecord } from '../features/tasks/taskTypes';
 
 type SwipeEvent = { translationX: number; translationY: number };
@@ -65,6 +66,30 @@ function renderListRow(
 describe('task row completion', () => {
   afterEach(() => {
     jest.restoreAllMocks();
+  });
+
+  it('renders a matching leading task icon in task-list and Next Up rows', () => {
+    const onPress = jest.fn();
+    const listRow = render(renderListRow(task, undefined, undefined, onPress));
+    const listIcon = screen.getByTestId(`task-icon-${task.id}`);
+    expect(StyleSheet.flatten(listIcon.props.style)).toMatchObject({
+      width: 34,
+      height: 34,
+      backgroundColor: darkTheme.colors.surfaceBrand,
+    });
+    expect(within(listIcon).UNSAFE_getByType(AppIcon).props.name).toBe('task');
+    fireEvent.press(screen.getByLabelText(`Open task ${task.title}`));
+    expect(onPress).toHaveBeenCalledTimes(1);
+    listRow.unmount();
+
+    render(<TaskRow task={task} onPress={onPress} context="Due Sep 8" />);
+    const nextUpIcon = screen.getByTestId(`next-up-task-icon-${task.id}`);
+    expect(within(nextUpIcon).UNSAFE_getByType(AppIcon).props.name).toBe('task');
+    expect(StyleSheet.flatten(nextUpIcon.props.style)).toMatchObject({
+      width: 34,
+      height: 34,
+      backgroundColor: darkTheme.colors.surfaceBrand,
+    });
   });
 
   it('removes circles and crosses out both the title and date only for completed tasks', () => {

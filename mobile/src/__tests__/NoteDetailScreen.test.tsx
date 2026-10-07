@@ -80,6 +80,10 @@ describe('NoteDetailScreen', () => {
     expect(screen.getByText('A useful thought to keep.')).toBeTruthy();
     expect(screen.getByText('Focus')).toBeTruthy();
     expect(screen.getByText(/^Updated .* · Created /)).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.getByTestId('note-detail-screen-scroll').props.contentContainerStyle)
+        .gap,
+    ).toBe(0);
     expect(screen.queryByText('DATES')).toBeNull();
     expect(screen.UNSAFE_queryAllByType(AppCard)).toHaveLength(0);
     const renderedIcons = screen.UNSAFE_getAllByType(AppIcon).map((icon) => icon.props.name);

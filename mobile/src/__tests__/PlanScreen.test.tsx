@@ -228,6 +228,11 @@ describe('PlanScreen', () => {
     expect(screen.getAllByText('Bearing · 30 min')).toHaveLength(3);
     expect(screen.queryByText('Plan block 3')).toBeNull();
     expect(screen.getByText('Ship the next release')).toBeTruthy();
+    expect(
+      StyleSheet.flatten(
+        screen.getByTestId('plan-goal-marker-Ship the next release').props.style,
+      ),
+    ).toMatchObject({ width: 12, height: 12, borderRadius: 6, borderWidth: 1.5 });
     expect(screen.getByText('50%')).toBeTruthy();
     expect(screen.getByText('Notes')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'View full day' })).toBeTruthy();

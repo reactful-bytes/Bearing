@@ -289,9 +289,20 @@ describe('TasksScreen', () => {
 
     expect(screen.getByRole('button', { name: 'Build a routine, 2 tasks' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Unlinked tasks, 1 task' })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Build a routine, 2 tasks', expanded: false }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Unlinked tasks, 1 task', expanded: false }),
+    ).toBeTruthy();
+    expect(screen.queryByLabelText('Open task Choose a day')).toBeNull();
+    expect(screen.queryByLabelText('Open task Track habits')).toBeNull();
+    expect(screen.queryByLabelText('Open task Buy a notebook')).toBeNull();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Build a routine, 2 tasks' }));
     expect(screen.getAllByLabelText('Open task Choose a day')).toHaveLength(1);
     expect(screen.getAllByLabelText('Open task Track habits')).toHaveLength(1);
-    expect(screen.getAllByLabelText('Open task Buy a notebook')).toHaveLength(1);
+    expect(screen.queryByLabelText('Open task Buy a notebook')).toBeNull();
     expect(screen.getAllByRole('header', { name: 'TASKS' })).toHaveLength(1);
     expect(screen.queryByLabelText('Page number')).toBeNull();
     const taskTitleStyle = StyleSheet.flatten(screen.getByText('Choose a day').props.style);
@@ -527,6 +538,7 @@ describe('TasksScreen', () => {
     render(<TasksScreen />);
     applyTaskGroup('goal');
     fireEvent.changeText(screen.getByLabelText('Search tasks by name or title'), 'Build a routine');
+    fireEvent.press(screen.getByRole('button', { name: 'Build a routine, 3 tasks' }));
     expect(screen.getByLabelText('Open task Choose a day')).toBeTruthy();
     expect(screen.getByLabelText('Open task Gather materials')).toBeTruthy();
     expect(screen.getByLabelText('Open task Track progress')).toBeTruthy();

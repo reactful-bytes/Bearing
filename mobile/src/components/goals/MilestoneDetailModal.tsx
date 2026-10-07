@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppButton } from '../ui/AppButton';
+import { AppIcon } from '../ui/AppIcon';
 import { AppModal } from '../ui/AppModal';
 import { FormField } from '../ui/FormField';
 import { IconButton } from '../ui/IconButton';
@@ -27,10 +28,13 @@ import {
   isTodayOrFutureDate,
 } from './GoalDatePicker';
 
+export type MilestoneDetailInitialAction = 'edit' | 'delete' | null;
+
 type MilestoneDetailModalProps = {
   goalTitle: string;
   milestone: GoalMilestoneWithTasks | null;
   visible: boolean;
+  initialAction?: MilestoneDetailInitialAction;
   /** @deprecated Milestone details no longer display linked events. */
   linkedEvents?: CalendarEvent[];
   /** @deprecated Milestone details no longer display linked events. */
@@ -60,6 +64,7 @@ export function MilestoneDetailModal({
   goalTitle,
   milestone,
   visible,
+  initialAction = null,
   locale,
   goalEstimatedCompletionDate,
   onClose,
@@ -77,24 +82,38 @@ export function MilestoneDetailModal({
   const [description, setDescription] = useState('');
   const [expectedFinishDate, setExpectedFinishDate] = useState<Date | null>(null);
   const [saving, setSaving] = useState(false);
+  const [closeOnEditBack, setCloseOnEditBack] = useState(false);
   const actionInFlight = useRef(false);
+  const initializedMilestoneId = useRef<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!milestone || !visible) return;
-    setEditMode(false);
-    setDeleteVisible(false);
+    if (!milestone || !visible) {
+      initializedMilestoneId.current = null;
+      setCloseOnEditBack(false);
+      return;
+    }
+    if (initializedMilestoneId.current === milestone.id) return;
+    initializedMilestoneId.current = milestone.id;
+    setEditMode(initialAction === 'edit');
+    setCloseOnEditBack(initialAction === 'edit');
+    setDeleteVisible(initialAction === 'delete');
     setTitle(milestone.title);
     setDescription(milestone.description);
     setExpectedFinishDate(milestone.estimatedFinishDate);
     setSaving(false);
     setError(null);
-  }, [milestone, visible]);
+  }, [initialAction, milestone, visible]);
 
   function handleBack(): void {
     if (actionInFlight.current) return;
     setError(null);
     if (editMode && milestone) {
+      if (closeOnEditBack) {
+        setCloseOnEditBack(false);
+        onClose();
+        return;
+      }
       setTitle(milestone.title);
       setDescription(milestone.description);
       setExpectedFinishDate(milestone.estimatedFinishDate);
@@ -135,6 +154,7 @@ export function MilestoneDetailModal({
         description: description.trim(),
         ...(dateChanged ? { estimatedFinishDate: expectedFinishDate } : {}),
       });
+      setCloseOnEditBack(false);
       setEditMode(false);
     } catch (saveError) {
       setError(
@@ -170,6 +190,7 @@ export function MilestoneDetailModal({
       title={editMode ? 'Edit Milestone' : 'Milestone Details'}
       onClose={handleBack}
       fullScreen
+      fullScreenEdgeToEdge
       hideHeader
     >
       {milestone ? (
@@ -179,7 +200,9 @@ export function MilestoneDetailModal({
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={[
             styles.content,
+            !editMode ? styles.detailsContent : null,
             {
+              paddingHorizontal: spacing.lg,
               paddingTop: spacing.sm + insets.top,
               paddingBottom: spacing['3xl'] + insets.bottom,
             },
@@ -189,68 +212,114 @@ export function MilestoneDetailModal({
             <ScreenHeader
               title="Edit Milestone"
               onPressBack={handleBack}
-              backAccessibilityLabel="Back to milestone details"
+              backAccessibilityLabel={closeOnEditBack ? 'Back to overview' : 'Back to milestone details'}
             />
           ) : (
             <>
-              <View style={styles.detailHeader}>
-                <IconButton
-                  name="back"
-                  accessibilityLabel="Back to goal details"
-                  onPress={handleBack}
-                  disabled={saving}
-                />
-                <View style={styles.detailHeaderCopy}>
-                  <Text numberOfLines={1} style={styles.milestoneTitle}>
+              <ScreenHeader
+                title="MILESTONE DETAILS"
+                onPressBack={handleBack}
+                backAccessibilityLabel="Back to goal details"
+                trailing={
+                  <RowContextMenu
+                    accessibilityLabel="Milestone actions"
+                    menuAccessibilityLabel="Milestone actions menu"
+                    disabled={saving}
+                    items={[
+                      {
+                        label: 'Edit',
+                        accessibilityLabel: 'Edit milestone',
+                        icon: 'edit',
+                        onPress: () => {
+                          setError(null);
+                          setCloseOnEditBack(false);
+                          setEditMode(true);
+                        },
+                      },
+                      {
+                        label: 'Delete',
+                        accessibilityLabel: 'Delete milestone',
+                        icon: 'delete',
+                        tone: 'danger',
+                        onPress: () => {
+                          setError(null);
+                          setDeleteVisible(true);
+                        },
+                      },
+                    ]}
+                  />
+                }
+              />
+              <View testID="milestone-overview" style={styles.overview}>
+                <View testID="milestone-hero" style={styles.milestoneSection}>
+                  <View testID="milestone-section-header" style={styles.milestoneSectionHeader}>
+                    <View
+                      testID="milestone-section-icon-frame"
+                      style={[styles.sectionIconFrame, styles.milestoneIconFrame]}
+                    >
+                      <AppIcon
+                        name="goalMilestone"
+                        size={17}
+                        color={styles.sectionIcon.color}
+                        decorative
+                      />
+                    </View>
+                    <View testID="milestone-section-copy" style={styles.milestoneSectionCopy}>
+                      <Text style={styles.milestoneLabel}>MILESTONE</Text>
+                      <Text testID="milestone-expected-date" style={styles.expectedDate}>
+                        Expected completion date:{' '}
+                        {milestone.estimatedFinishDate
+                          ? milestone.estimatedFinishDate.toLocaleDateString(locale, {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })
+                          : 'Not set'}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text accessibilityRole="header" style={styles.milestoneTitle}>
                     {milestone.title}
                   </Text>
+                  <Text testID="milestone-description" style={styles.infoValue}>
+                    {milestone.description || 'No description yet.'}
+                  </Text>
                 </View>
-                <RowContextMenu
-                  accessibilityLabel="Milestone actions"
-                  menuAccessibilityLabel="Milestone actions menu"
-                  disabled={saving}
-                  items={[
-                    {
-                      label: 'Edit',
-                      accessibilityLabel: 'Edit milestone',
-                      icon: 'edit',
-                      onPress: () => {
-                        setError(null);
-                        setEditMode(true);
-                      },
-                    },
-                    {
-                      label: 'Delete',
-                      accessibilityLabel: 'Delete milestone',
-                      icon: 'delete',
-                      tone: 'danger',
-                      onPress: () => {
-                        setError(null);
-                        setDeleteVisible(true);
-                      },
-                    },
-                  ]}
-                />
+                <View testID="milestone-goal-section" style={styles.detailSection}>
+                  <View style={styles.sectionIconFrame}>
+                    <AppIcon name="goal" size={17} color={styles.sectionIcon.color} decorative />
+                  </View>
+                  <View style={styles.sectionCopy}>
+                    <Text style={styles.sectionTitle}>GOAL</Text>
+                    <Text testID="milestone-goal-name" style={styles.infoValue}>
+                      {goalTitle}
+                    </Text>
+                  </View>
+                </View>
               </View>
-              <View style={styles.summary}>
-                <Text style={styles.goalLabel}>{goalTitle}</Text>
-                <Text style={styles.statusLabel}>
-                  {milestone.status === 'completed'
-                    ? 'Completed'
-                    : milestone.status === 'in_progress'
-                      ? 'In progress'
-                      : 'Not started'}
-                </Text>
-                <Text style={styles.infoValue}>
-                  Expected completion date:{' '}
-                  {milestone.estimatedFinishDate
-                    ? milestone.estimatedFinishDate.toLocaleDateString(locale, {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })
-                    : 'Not set'}
-                </Text>
+              <View testID="milestone-progress" style={styles.detailSection}>
+                <View style={styles.sectionIconFrame}>
+                  <AppIcon
+                    name="complete"
+                    size={17}
+                    color={styles.sectionIcon.color}
+                    decorative
+                  />
+                </View>
+                <View style={styles.sectionCopy}>
+                  <Text accessibilityRole="header" style={styles.sectionTitle}>
+                    PROGRESS
+                  </Text>
+                  <ProgressBar
+                    value={milestone.progressPercent}
+                    accessibilityLabel="Milestone progress"
+                    accessibilityValueText={`${milestone.progressPercent}% complete, ${milestone.completedTaskCount} of ${milestone.totalTaskCount} tasks completed`}
+                  />
+                  <Text style={styles.progressSummary}>
+                    {milestone.progressPercent}% complete · {milestone.completedTaskCount} of{' '}
+                    {milestone.totalTaskCount} tasks completed
+                  </Text>
+                </View>
               </View>
             </>
           )}
@@ -303,27 +372,13 @@ export function MilestoneDetailModal({
               />
             </View>
           ) : (
-            <View testID="milestone-overview" style={styles.section}>
-              <View testID="milestone-description" style={styles.summary}>
-                <Text style={styles.infoLabel}>Description</Text>
-                <Text style={styles.infoValue}>
-                  {milestone.description || 'No description yet.'}
-                </Text>
-              </View>
-              <View testID="milestone-progress" style={styles.summary}>
-                <ProgressBar
-                  value={milestone.progressPercent}
-                  accessibilityLabel="Milestone progress"
-                  accessibilityValueText={`${milestone.progressPercent}% complete, ${milestone.completedTaskCount} of ${milestone.totalTaskCount} tasks completed`}
-                />
-                <Text style={styles.statusLabel}>
-                  {milestone.progressPercent}% complete · {milestone.completedTaskCount} of{' '}
-                  {milestone.totalTaskCount} tasks completed
-                </Text>
-              </View>
-              <View style={styles.taskSection}>
+            <View style={styles.detailsTaskSection}>
+              <View testID="milestone-tasks-header" style={styles.taskSectionHeader}>
+                <View style={styles.sectionIconFrame}>
+                  <AppIcon name="tasks" size={17} color={styles.sectionIcon.color} decorative />
+                </View>
                 <Text accessibilityRole="header" style={styles.sectionTitle}>
-                  Tasks in this milestone
+                  TASKS
                 </Text>
                 <Pressable
                   accessibilityRole="button"
@@ -333,6 +388,8 @@ export function MilestoneDetailModal({
                 >
                   <Text style={styles.addTaskText}>+ Add Task</Text>
                 </Pressable>
+              </View>
+              <View style={styles.taskSection}>
                 <ScrollView
                   testID="milestone-detail-task-list"
                   accessibilityLabel="Milestone tasks"
@@ -384,28 +441,77 @@ export function MilestoneDetailModal({
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
-    content: { gap: spacing.lg, flexGrow: 1 },
-    detailHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-    detailHeaderCopy: { flex: 1, gap: spacing.xs },
-    summary: { gap: spacing.sm },
+    content: { flexGrow: 1 },
+    detailsContent: { gap: 0 },
+    overview: { gap: 0 },
+    milestoneSection: {
+      gap: spacing.xs,
+      paddingVertical: spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.border,
+    },
+    milestoneSectionHeader: {
+      minHeight: 40,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    milestoneSectionCopy: { flex: 1, minWidth: 0, gap: spacing.xs },
+    detailSection: {
+      minHeight: 60,
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.md,
+      paddingVertical: spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.border,
+    },
+    sectionIconFrame: {
+      width: 34,
+      height: 34,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.md,
+      backgroundColor: theme.colors.surfaceMuted,
+    },
+    milestoneIconFrame: {
+      width: 40,
+      height: 40,
+      backgroundColor: theme.colors.surface,
+    },
+    sectionIcon: { color: theme.colors.brand },
+    sectionCopy: { flex: 1, minWidth: 0, gap: spacing.xs },
+    expectedDate: { ...typography.caption, color: theme.colors.textSecondary },
     section: { gap: spacing.md },
+    detailsTaskSection: {
+      gap: spacing.sm,
+      paddingVertical: spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.border,
+    },
+    taskSectionHeader: {
+      minHeight: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
     taskSection: { gap: spacing.sm },
     taskListContent: { gap: spacing.sm },
     addTaskButton: {
       minHeight: 44,
-      alignSelf: 'center',
       justifyContent: 'center',
       paddingHorizontal: spacing.sm,
       borderRadius: theme.radii.md,
+      marginLeft: 'auto',
     },
     addTaskText: { ...typography.label, color: theme.colors.brand, fontWeight: '700' },
     pressed: { opacity: 0.68 },
-    goalLabel: { ...typography.label, color: theme.colors.textSecondary },
     milestoneTitle: { ...typography.sectionTitle, color: theme.colors.text },
+    milestoneLabel: { ...typography.caption, color: theme.colors.brand, fontWeight: '700' },
+    progressSummary: { ...typography.caption, color: theme.colors.textSecondary },
     statusLabel: { ...typography.helper, color: theme.colors.brand, fontWeight: '700' },
-    infoLabel: { ...typography.label, color: theme.colors.textSecondary },
     infoValue: { ...typography.body, color: theme.colors.textPrimary },
     completionNote: { ...typography.caption, color: theme.colors.textSecondary },
-    sectionTitle: { ...typography.button, color: theme.colors.text },
+    sectionTitle: { ...typography.caption, color: theme.colors.textSecondary, fontWeight: '700' },
     errorText: { ...typography.helper, color: theme.colors.dangerText },
   });

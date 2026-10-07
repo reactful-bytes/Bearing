@@ -3,10 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals
 import { Dimensions, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { darkTheme, spacing, typography } from '../design/tokens';
 import { MilestoneDetailModal } from '../components/goals/MilestoneDetailModal';
 import { AppModal } from '../components/ui/AppModal';
 import { AppIcon } from '../components/ui/AppIcon';
-import { AppCard } from '../components/ui/AppCard';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { TaskListRow } from '../components/tasks/TaskListRow';
 import { GoalMilestoneWithTasks } from '../features/goals/goalTypes';
@@ -109,17 +109,52 @@ describe('MilestoneDetailModal', () => {
     expect(screen.UNSAFE_getByType(AppModal).props).toMatchObject({
       fullScreen: true,
       hideHeader: true,
+      fullScreenEdgeToEdge: true,
     });
-    expect(screen.getByText(milestone.title)).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'MILESTONE DETAILS' })).toBeTruthy();
+    expect(screen.getByText('MILESTONE')).toBeTruthy();
+    const milestoneTitle = screen.getByRole('header', { name: milestone.title });
+    expect(StyleSheet.flatten(milestoneTitle.props.style).color).toBe(darkTheme.colors.text);
+    expect(screen.getByText('Expected completion date: Nov 1, 2026')).toBeTruthy();
+    const milestoneHeader = screen.getByTestId('milestone-section-header');
+    const milestoneCopy = within(milestoneHeader).getByTestId('milestone-section-copy');
+    expect(
+      StyleSheet.flatten(within(milestoneCopy).getByText('MILESTONE').props.style).color,
+    ).toBe(darkTheme.colors.brand);
+    expect(within(milestoneCopy).getByTestId('milestone-expected-date')).toBeTruthy();
+    expect(
+      StyleSheet.flatten(
+        within(milestoneHeader).getByTestId('milestone-section-icon-frame').props.style,
+      ),
+    ).toMatchObject({
+      width: 40,
+      height: 40,
+      backgroundColor: darkTheme.colors.surface,
+    });
+    expect(screen.getByText('Compare local events.')).toBeTruthy();
+    expect(screen.getByText('GOAL')).toBeTruthy();
+    expect(screen.getByText('Run a 10k')).toBeTruthy();
+    expect(screen.queryByText('DESCRIPTION')).toBeNull();
+    expect(screen.getByRole('header', { name: 'PROGRESS' })).toBeTruthy();
     expect(screen.getByText('0% complete · 0 of 0 tasks completed')).toBeTruthy();
-    expect(screen.UNSAFE_queryAllByType(AppCard)).toHaveLength(0);
+    expect(screen.UNSAFE_queryAllByType(ProgressBar)).toHaveLength(1);
+    expect(
+      StyleSheet.flatten(screen.getByLabelText(`Add task to milestone ${milestone.title}`).props.style)
+        .marginLeft,
+    ).toBe('auto');
     expect(screen.getByRole('button', { name: 'Milestone actions' })).toBeTruthy();
     const back = screen.getByRole('button', { name: 'Back to goal details' });
     expect(within(back).UNSAFE_getByType(AppIcon).props.name).toBe('back');
+    const detailContentStyle = StyleSheet.flatten(
+      screen.getByTestId('milestone-detail-scroll').props.contentContainerStyle,
+    );
+    expect(detailContentStyle.paddingBottom).toBeGreaterThan(0);
+    expect(detailContentStyle.gap).toBe(0);
+    expect(detailContentStyle.paddingHorizontal).toBe(spacing.lg);
+    expect(screen.getByTestId('milestone-hero')).toBeTruthy();
     expect(
-      StyleSheet.flatten(screen.getByTestId('milestone-detail-scroll').props.contentContainerStyle)
-        .paddingBottom,
-    ).toBeGreaterThan(0);
+      StyleSheet.flatten(screen.getByTestId('milestone-goal-name').props.style).fontWeight,
+    ).toBeUndefined();
     fireEvent.press(back);
     expect(props.onClose).toHaveBeenCalledTimes(1);
   });
@@ -404,22 +439,21 @@ describe('MilestoneDetailModal', () => {
     });
     const progress = screen.getByTestId('milestone-progress');
     const overview = screen.getByTestId('milestone-overview');
-    expect(
-      overview.children
-        .slice(0, 2)
-        .map((child) => (typeof child === 'object' ? child.props.testID : null)),
-    ).toEqual(['milestone-description', 'milestone-progress']);
-    const firstProgressChild = progress.children[0];
-    expect(typeof firstProgressChild === 'object' && firstProgressChild.type === ProgressBar).toBe(
-      true,
-    );
+    expect(screen.getByTestId('milestone-description')).toBeTruthy();
+    expect(within(overview).queryByText('PROGRESS')).toBeNull();
+    expect(within(progress).getByText('PROGRESS')).toBeTruthy();
+    expect(within(progress).UNSAFE_getByType(ProgressBar)).toBeTruthy();
     expect(
       within(progress).getByLabelText('Milestone progress').props.accessibilityValue,
     ).toMatchObject({
       now: 50,
       text: '50% complete, 1 of 2 tasks completed',
     });
-    expect(within(progress).getByText('50% complete · 1 of 2 tasks completed')).toBeTruthy();
+    const progressSummary = within(progress).getByText('50% complete · 1 of 2 tasks completed');
+    expect(StyleSheet.flatten(progressSummary.props.style)).toMatchObject(typography.caption);
+    expect(StyleSheet.flatten(progressSummary.props.style).color).toBe(
+      darkTheme.colors.textSecondary,
+    );
     rerender(
       <MilestoneDetailModal
         {...props}

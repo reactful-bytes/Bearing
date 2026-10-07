@@ -258,6 +258,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   async function handleCreateMilestone(input: {
     title: string;
     description: string;
+    estimatedFinishDate: Date | null;
   }): Promise<void> {
     if (!selectedGoal) {
       throw new Error('Goal not found.');
@@ -457,6 +458,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
 
       <AddMilestoneModal
         visible={addMilestoneVisible}
+        goalEstimatedCompletionDate={selectedGoal?.estimatedCompletionDate}
         onClose={() => setAddMilestoneVisible(false)}
         onSave={handleCreateMilestone}
       />

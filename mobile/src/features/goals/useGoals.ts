@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { composeGoalWithMilestones, sortGoalMilestones } from './goalHelpers';
 import {
   CreateGoalInput,
+  CreateGoalMilestoneInput,
   GoalDraftSaveInput,
   GoalDraftSaveResult,
   GoalMilestoneRecord,
@@ -66,7 +67,10 @@ export type UseGoalsReturn = {
   updateGoal: (goalId: string, fields: UpdateGoalInput) => Promise<void>;
   deleteGoal: (goalId: string) => Promise<void>;
   setGoalManuallyCompleted: (goalId: string, completed: boolean) => Promise<void>;
-  createMilestone: (goalId: string, input: { title: string; description: string }) => Promise<void>;
+  createMilestone: (
+    goalId: string,
+    input: Omit<CreateGoalMilestoneInput, 'tasks'>,
+  ) => Promise<void>;
   deleteMilestone: (milestoneId: string) => Promise<void>;
   updateMilestone: (milestoneId: string, fields: UpdateGoalMilestoneInput) => Promise<void>;
   /** @deprecated Milestone completion is derived from tasks. */
@@ -224,7 +228,10 @@ export function useGoals(): UseGoalsReturn {
   }, []);
 
   const createMilestone = useCallback(
-    async (goalId: string, input: { title: string; description: string }): Promise<void> => {
+    async (
+      goalId: string,
+      input: Omit<CreateGoalMilestoneInput, 'tasks'>,
+    ): Promise<void> => {
       const goal = goalMap.find((entry) => entry.id === goalId);
       if (!goal) throw new Error('Goal not found.');
       await createFirebaseMilestone(requireUserId(), goalId, input, goal.milestones.length);

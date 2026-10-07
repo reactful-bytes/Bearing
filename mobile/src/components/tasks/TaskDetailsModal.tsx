@@ -105,7 +105,7 @@ export function TaskDetailsModal({
     <AppModal visible={visible} onClose={onClose} fullScreen hideHeader embedded={embedded}>
       {task ? (
         <ScrollView
-          testID={embedded ? 'task-details-content' : undefined}
+          testID="task-details-content"
           style={embedded ? styles.embeddedScroll : undefined}
           contentContainerStyle={[
             styles.content,
@@ -121,11 +121,6 @@ export function TaskDetailsModal({
               <TaskActionMenu
                 onEdit={() => onEdit(task)}
                 onDelete={() => onDelete(task)}
-                onComplete={
-                  task.status === 'active' && taskActionsEnabled
-                    ? () => void handleMarkComplete()
-                    : undefined
-                }
                 onReactivate={
                   task.status === 'completed' && taskActionsEnabled
                     ? () => void handleReactivate()
@@ -161,7 +156,7 @@ export function TaskDetailsModal({
                 >
                   {task.status === 'active' ? 'ACTIVE TASK' : 'COMPLETED TASK'}
                 </Text>
-                <Text style={styles.updatedAt}>
+                <Text testID="task-details-updated-at" style={styles.heroUpdatedAt}>
                   Updated {formatDateTime(task.updatedAt, timeFormat, locale)}
                 </Text>
               </View>
@@ -178,6 +173,18 @@ export function TaskDetailsModal({
             icon={linkedMilestone ? 'milestone' : 'goal'}
             title={linkedMilestone ? 'MILESTONE' : linkedGoal ? 'GOAL' : 'NO GOAL LINKED'}
           >
+            {linkedMilestone ? (
+              <Text style={styles.expectedDate}>
+                Expected completion date:{' '}
+                {linkedMilestone.estimatedFinishDate
+                  ? linkedMilestone.estimatedFinishDate.toLocaleDateString(locale, {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })
+                  : 'Not set'}
+              </Text>
+            ) : null}
             <Text style={styles.bodyText}>
               {linkedMilestone?.title ?? linkedGoal?.title ?? 'Independent task'}
             </Text>
@@ -198,11 +205,15 @@ export function TaskDetailsModal({
             </Text>
           </DetailSection>
 
-          <DetailSection icon="date" title="TIMING">
+          <DetailSection icon="date" title="DUE">
             {task.dueDate ? (
               <InfoLine
                 icon="date"
-                text={`Due ${task.dueDate.toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric' })}`}
+                text={task.dueDate.toLocaleDateString(locale, {
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
               />
             ) : null}
             {task.scheduledStart ? (
@@ -274,8 +285,19 @@ function DetailSection({
   const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.section}>
-      <View style={styles.sectionIconFrame}>
-        <AppIcon name={icon} size={17} color={styles.sectionIcon.color} decorative />
+      <View
+        testID={icon === 'milestone' ? 'task-details-milestone-icon-frame' : undefined}
+        style={[
+          styles.sectionIconFrame,
+          icon === 'milestone' ? styles.milestoneIconFrame : null,
+        ]}
+      >
+        <AppIcon
+          name={icon}
+          size={icon === 'milestone' ? 20 : 17}
+          color={styles.sectionIcon.color}
+          decorative
+        />
       </View>
       <View style={styles.sectionCopy}>
         <Text style={styles.sectionTitle}>{title}</Text>
@@ -297,7 +319,7 @@ function InfoLine({ icon, text }: { icon: 'date' | 'calendar' | 'complete'; text
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
-    content: { flexGrow: 1, gap: spacing.lg },
+    content: { flexGrow: 1, gap: 0 },
     embeddedScroll: { flex: 1 },
     embeddedContent: { paddingHorizontal: spacing.lg },
     hero: {
@@ -323,6 +345,7 @@ const createStyles = (theme: Theme) =>
     completedLabel: { color: theme.colors.success },
     title: { ...typography.sectionTitle, color: theme.colors.text },
     heroDescription: { ...typography.body, color: theme.colors.textPrimary },
+    heroUpdatedAt: { ...typography.caption, color: theme.colors.textSecondary },
     updatedAt: { ...typography.helper, color: theme.colors.textSecondary },
     section: {
       minHeight: 60,
@@ -341,10 +364,16 @@ const createStyles = (theme: Theme) =>
       borderRadius: theme.radii.md,
       backgroundColor: theme.colors.surfaceMuted,
     },
+    milestoneIconFrame: {
+      width: 40,
+      height: 40,
+      backgroundColor: theme.colors.surface,
+    },
     sectionIcon: { color: theme.colors.brand },
     sectionCopy: { flex: 1, minWidth: 0, gap: spacing.xs },
     sectionTitle: { ...typography.caption, color: theme.colors.textSecondary, fontWeight: '700' },
     bodyText: { ...typography.body, color: theme.colors.textPrimary },
+    expectedDate: { ...typography.caption, color: theme.colors.textSecondary },
     actions: { gap: spacing.md },
     infoLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     infoIcon: { color: theme.colors.textSecondary },

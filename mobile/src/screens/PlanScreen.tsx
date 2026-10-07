@@ -289,6 +289,7 @@ function PlanGoalRow({ goal, onPress }: { goal: PlanScreenGoal; onPress: () => v
       style={({ pressed }) => [styles.goalRow, pressed ? styles.pressed : null]}
     >
       <View style={styles.goalTitleRow}>
+        <View testID={`plan-goal-marker-${goal.title}`} style={styles.taskMarker} />
         <Text numberOfLines={1} style={styles.goalTitle}>
           {goal.title}
         </Text>

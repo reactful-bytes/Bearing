@@ -735,7 +735,11 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
           setTaskFilter(draft.taskFilter);
           setGroupBy(draft.groupBy);
           setDueDateFilter(draft.dueDateFilter);
-          setCollapsedGroups(new Set());
+          setCollapsedGroups(
+            draft.groupBy === 'goal'
+              ? new Set(operationalTasks.map((task) => `goal:${task.goalId ?? 'unlinked'}`))
+              : new Set(),
+          );
           selectPage(1);
           setFilterModalVisible(false);
         }}

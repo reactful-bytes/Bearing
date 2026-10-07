@@ -519,7 +519,7 @@ export async function setGoalManuallyCompleted(
 export async function createMilestone(
   userId: string,
   goalId: string,
-  input: Omit<CreateGoalMilestoneInput, 'tasks' | 'estimatedFinishDate'>,
+  input: Omit<CreateGoalMilestoneInput, 'tasks'>,
   order: number,
 ): Promise<string> {
   const db = getFirebaseFirestore();
@@ -537,7 +537,9 @@ export async function createMilestone(
       title: input.title.trim(),
       description: input.description.trim(),
       order,
-      estimatedFinishDate: null,
+      estimatedFinishDate: input.estimatedFinishDate
+        ? Timestamp.fromDate(input.estimatedFinishDate)
+        : null,
       manuallyCompletedAt: null,
       createdAt: now,
       updatedAt: now,
