@@ -350,6 +350,12 @@ describe('TasksScreen', () => {
     render(<TasksScreen />);
     fireEvent.press(screen.getByRole('button', { name: 'Filter tasks' }));
     expect(screen.getByRole('header', { name: 'Filter tasks' })).toBeTruthy();
+    expect(
+      screen
+        .getAllByRole('button')
+        .filter((button) => ['Unlinked', 'Goal'].includes(button.props.accessibilityLabel ?? ''))
+        .map((button) => button.props.accessibilityLabel),
+    ).toEqual(['Unlinked', 'Goal']);
     expect(screen.getByTestId('app-modal-drag-handle')).toBeTruthy();
     expect(
       StyleSheet.flatten(screen.getByRole('button', { name: 'Past due' }).props.style)

@@ -75,8 +75,8 @@ export function TaskFilterModal({
           <SegmentedControl
             accessibilityLabel="Task grouping filter"
             options={[
-              { value: 'goal', label: 'Goal', icon: 'goal' },
               { value: 'unlinked', label: 'Unlinked', icon: 'unlink' },
+              { value: 'goal', label: 'Goal', icon: 'goal' },
               { value: 'all', label: 'All', icon: 'tasks' },
             ]}
             value={draft.groupBy}
