@@ -142,15 +142,17 @@ export function NoteFilterModal({
             <Text style={styles.helperText}>No labels yet</Text>
           )}
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Reset note filters"
-          onPress={reset}
-          style={({ pressed }) => [styles.resetButton, pressed ? styles.pressed : null]}
-        >
-          <AppIcon name="refresh" size={16} color={styles.optionIcon.color} decorative />
-          <Text style={styles.resetText}>Reset filters</Text>
-        </Pressable>
+        <View style={styles.resetSection}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Reset note filters"
+            onPress={reset}
+            style={({ pressed }) => [styles.resetButton, pressed ? styles.pressed : null]}
+          >
+            <AppIcon name="refresh" size={16} color={styles.optionIcon.color} decorative />
+            <Text style={styles.resetText}>Reset filters</Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </AppModal>
   );
@@ -180,13 +182,18 @@ const createStyles = (theme: Theme) =>
     selectedIcon: { color: theme.colors.brand },
     optionIcon: { color: theme.colors.textSecondary },
     helperText: { ...typography.helper, color: theme.colors.textSecondary },
+    resetSection: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.border,
+      paddingTop: spacing.xs,
+    },
     resetButton: {
       minHeight: 44,
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs,
       alignSelf: 'flex-start',
-      paddingHorizontal: spacing.sm,
+      paddingHorizontal: 0,
     },
     resetText: { ...typography.helper, color: theme.colors.textPrimary, fontWeight: '600' },
     pressed: { opacity: 0.72 },

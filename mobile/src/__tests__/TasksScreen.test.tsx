@@ -358,7 +358,7 @@ describe('TasksScreen', () => {
     ).toEqual(['Unlinked', 'Goal']);
     expect(screen.getByTestId('app-modal-drag-handle')).toBeTruthy();
     expect(
-      StyleSheet.flatten(screen.getByRole('button', { name: 'Past due' }).props.style)
+      StyleSheet.flatten(screen.getByRole('radio', { name: 'Past due' }).props.style)
         .flexDirection,
     ).toBe('row');
 
@@ -437,7 +437,7 @@ describe('TasksScreen', () => {
 
     fireEvent.press(screen.getByRole('button', { name: 'Filter tasks' }));
     fireEvent.press(screen.getAllByRole('button', { name: 'All' })[0]);
-    fireEvent.press(screen.getByRole('button', { name: 'Past due' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Past due' }));
     fireEvent.press(screen.getByRole('button', { name: 'Apply task filters' }));
     expect(screen.getByLabelText('Open task Focus overdue')).toBeTruthy();
     expect(screen.queryByLabelText('Open task Focus completed overdue')).toBeNull();
@@ -445,14 +445,14 @@ describe('TasksScreen', () => {
     expect(screen.queryByLabelText('Open task Another item')).toBeNull();
 
     fireEvent.press(screen.getByRole('button', { name: 'Filter tasks' }));
-    fireEvent.press(screen.getByRole('button', { name: 'This week' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'This week' }));
     fireEvent.press(screen.getByRole('button', { name: 'Apply task filters' }));
     expect(screen.getByLabelText('Open task Focus week start')).toBeTruthy();
     expect(screen.queryByLabelText('Open task Focus next week')).toBeNull();
     expect(screen.queryByLabelText('Open task Focus scheduled only')).toBeNull();
 
     fireEvent.press(screen.getByRole('button', { name: 'Filter tasks' }));
-    fireEvent.press(screen.getByRole('button', { name: 'This month' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'This month' }));
     fireEvent.press(screen.getByRole('button', { name: 'Apply task filters' }));
     expect(screen.getByLabelText('Open task Focus month start')).toBeTruthy();
     expect(screen.queryByLabelText('Open task Focus next month')).toBeNull();
@@ -893,7 +893,7 @@ describe('TasksScreen', () => {
 
     applyTaskFilter('active');
     fireEvent.press(screen.getByRole('button', { name: 'Filter tasks' }));
-    fireEvent.press(screen.getByRole('button', { name: 'Past due' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Past due' }));
     fireEvent.press(screen.getByRole('button', { name: 'Apply task filters' }));
     expect(screen.getByText('No matching tasks.')).toBeTruthy();
   });

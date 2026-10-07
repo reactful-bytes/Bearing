@@ -63,81 +63,94 @@ export function GoalFilterModal({
       }
     >
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.options}>
-          {options.map((option) => {
-            const selected = draftFilter === option.value;
-            const accessibleLabel =
-              option.value === 'all'
-                ? 'Show all goals'
-                : `Show ${option.label.toLowerCase()} goals`;
-            return (
-              <Pressable
-                key={option.value}
-                accessibilityRole="radio"
-                accessibilityLabel={accessibleLabel}
-                accessibilityState={{ selected }}
-                onPress={() => setDraftFilter(option.value)}
-                style={({ pressed }) => [styles.optionRow, pressed ? styles.pressed : null]}
-              >
-                <AppIcon
-                  name={option.value === 'all' ? 'goalsOutline' : 'archive'}
-                  size={18}
-                  color={selected ? styles.selectedIcon.color : styles.optionIcon.color}
-                  decorative
-                />
-                <Text style={styles.optionText}>{option.label}</Text>
-                <Text style={styles.optionCount}>{option.count}</Text>
-                {selected ? (
-                  <AppIcon name="complete" size={16} color={styles.selectedIcon.color} decorative />
-                ) : null}
-              </Pressable>
-            );
-          })}
-        </View>
-        <View style={styles.dateSection}>
-          <Text style={styles.sectionLabel}>Target date</Text>
-          <View style={styles.dateOptions}>
-            {TARGET_DATE_OPTIONS.map((option) => {
-              const selected = draftTargetDateFilter === option.value;
+        <View style={styles.statusSection}>
+          <Text style={styles.sectionLabel}>Status</Text>
+          <View style={styles.statusOptions}>
+            {options.map((option) => {
+              const selected = draftFilter === option.value;
+              const accessibleLabel =
+                option.value === 'all'
+                  ? 'Show all goals'
+                  : `Show ${option.label.toLowerCase()} goals`;
               return (
                 <Pressable
                   key={option.value}
-                  accessibilityRole="button"
-                  accessibilityLabel={option.label}
+                  accessibilityRole="radio"
+                  accessibilityLabel={accessibleLabel}
                   accessibilityState={{ selected }}
-                  onPress={() => setDraftTargetDateFilter(option.value)}
+                  onPress={() => setDraftFilter(option.value)}
                   style={({ pressed }) => [
-                    styles.dateOption,
-                    selected ? styles.dateOptionSelected : null,
+                    styles.optionRow,
+                    styles.statusOptionRow,
                     pressed ? styles.pressed : null,
                   ]}
                 >
                   <AppIcon
-                    name={option.icon}
-                    size={16}
+                    name={option.value === 'all' ? 'goalsOutline' : 'archive'}
+                    size={18}
                     color={selected ? styles.selectedIcon.color : styles.optionIcon.color}
                     decorative
                   />
-                  <Text numberOfLines={1} style={styles.dateOptionText}>
-                    {option.label}
-                  </Text>
+                  <Text style={styles.optionText}>{option.label}</Text>
+                  <Text style={styles.optionCount}>{option.count}</Text>
+                  {selected ? (
+                    <AppIcon name="complete" size={16} color={styles.selectedIcon.color} decorative />
+                  ) : null}
                 </Pressable>
               );
             })}
           </View>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Reset goal filters"
-          onPress={() => {
-            setDraftFilter('active');
-            setDraftTargetDateFilter('any');
-          }}
-          style={({ pressed }) => [styles.resetButton, pressed ? styles.pressed : null]}
-        >
-          <AppIcon name="refresh" size={16} color={styles.optionIcon.color} decorative />
-          <Text style={styles.resetText}>Reset filters</Text>
-        </Pressable>
+        <View style={styles.dateSection}>
+          <Text style={styles.sectionLabel}>Target date</Text>
+          <View accessibilityLabel="Goal target date filter" style={styles.dateOptions}>
+            {TARGET_DATE_OPTIONS.map((option) => {
+              const selected = draftTargetDateFilter === option.value;
+              return (
+                <Pressable
+                  key={option.value}
+                  accessibilityRole="radio"
+                  accessibilityLabel={option.label}
+                  accessibilityState={{ selected }}
+                  onPress={() => setDraftTargetDateFilter(option.value)}
+                  style={({ pressed }) => [
+                    styles.optionRow,
+                    styles.dateOptionRow,
+                    pressed ? styles.pressed : null,
+                  ]}
+                >
+                  <AppIcon
+                    name={option.icon}
+                    size={18}
+                    color={selected ? styles.selectedIcon.color : styles.optionIcon.color}
+                    decorative
+                  />
+                  <Text style={styles.optionText}>{option.label}</Text>
+                  <AppIcon
+                    name={selected ? 'active' : 'none'}
+                    size={18}
+                    color={selected ? styles.selectedIcon.color : styles.optionIcon.color}
+                    decorative
+                  />
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+        <View style={styles.resetSection}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Reset goal filters"
+            onPress={() => {
+              setDraftFilter('active');
+              setDraftTargetDateFilter('any');
+            }}
+            style={({ pressed }) => [styles.resetButton, pressed ? styles.pressed : null]}
+          >
+            <AppIcon name="refresh" size={16} color={styles.optionIcon.color} decorative />
+            <Text style={styles.resetText}>Reset filters</Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </AppModal>
   );
@@ -153,6 +166,9 @@ const createStyles = (theme: Theme) =>
       textTransform: 'uppercase',
     },
     options: { gap: spacing.xs },
+    statusSection: { gap: spacing.sm },
+    statusOptions: { gap: 0 },
+    dateOptions: { gap: 0 },
     optionRow: {
       minHeight: 48,
       flexDirection: 'row',
@@ -161,28 +177,16 @@ const createStyles = (theme: Theme) =>
       paddingHorizontal: spacing.sm,
       borderRadius: theme.radii.sm,
     },
+    statusOptionRow: { minHeight: 44, paddingHorizontal: 0 },
+    dateOptionRow: { minHeight: 44, paddingHorizontal: 0 },
     optionText: { ...typography.helper, color: theme.colors.textPrimary, flex: 1 },
     optionCount: { ...typography.caption, color: theme.colors.textSecondary },
     dateSection: { gap: spacing.sm },
-    dateOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-    dateOption: {
-      minHeight: 44,
-      flexGrow: 1,
-      flexBasis: '48%',
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: spacing.xs,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: theme.radii.sm,
-      paddingHorizontal: spacing.sm,
+    resetSection: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.border,
+      paddingTop: spacing.xs,
     },
-    dateOptionSelected: {
-      borderColor: theme.colors.brand,
-      backgroundColor: theme.colors.surfaceBrand,
-    },
-    dateOptionText: { ...typography.helper, color: theme.colors.textSecondary, fontWeight: '600' },
     selectedIcon: { color: theme.colors.brand },
     optionIcon: { color: theme.colors.textSecondary },
     resetButton: {
@@ -191,7 +195,7 @@ const createStyles = (theme: Theme) =>
       alignItems: 'center',
       gap: spacing.xs,
       alignSelf: 'flex-start',
-      paddingHorizontal: spacing.sm,
+      paddingHorizontal: 0,
     },
     resetText: { ...typography.helper, color: theme.colors.textPrimary, fontWeight: '600' },
     pressed: { opacity: 0.72 },

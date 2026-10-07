@@ -18,6 +18,13 @@ export type TaskFilterDraft = {
   dueDateFilter: TaskDueDateFilter;
 };
 
+const DUE_DATE_OPTIONS = [
+  { value: 'any', label: 'Any', icon: 'date' },
+  { value: 'pastDue', label: 'Past due', icon: 'warning' },
+  { value: 'thisWeek', label: 'This week', icon: 'dayView' },
+  { value: 'thisMonth', label: 'This month', icon: 'monthView' },
+] as const;
+
 type TaskFilterModalProps = {
   visible: boolean;
   draft: TaskFilterDraft;
@@ -85,63 +92,52 @@ export function TaskFilterModal({
         </View>
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Due date</Text>
-          <View accessibilityLabel="Task due date filter" style={styles.dueDateGrid}>
-            {(
-              [
-                { value: 'any', label: 'Any', icon: 'date' },
-                { value: 'pastDue', label: 'Past due', icon: 'warning' },
-                { value: 'thisWeek', label: 'This week', icon: 'dayView' },
-                { value: 'thisMonth', label: 'This month', icon: 'monthView' },
-              ] as const
-            ).map((option) => {
+          <View accessibilityLabel="Task due date filter" style={styles.dateOptions}>
+            {DUE_DATE_OPTIONS.map((option) => {
               const selected = draft.dueDateFilter === option.value;
               return (
                 <Pressable
                   key={option.value}
-                  accessibilityRole="button"
+                  accessibilityRole="radio"
                   accessibilityLabel={option.label}
                   accessibilityState={{ selected }}
                   onPress={() =>
-                    setDraft((current) => ({
-                      ...current,
-                      dueDateFilter: option.value as TaskDueDateFilter,
-                    }))
+                    setDraft((current) => ({ ...current, dueDateFilter: option.value }))
                   }
                   style={({ pressed }) => [
-                    styles.dueDateOption,
-                    selected ? styles.dueDateOptionSelected : null,
+                    styles.dateOption,
                     pressed ? styles.pressed : null,
                   ]}
                 >
                   <AppIcon
                     name={option.icon}
-                    size={16}
+                    size={18}
                     color={selected ? styles.selectedIcon.color : styles.optionIcon.color}
                     decorative
                   />
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      styles.dueDateOptionText,
-                      selected ? styles.dueDateOptionTextSelected : null,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
+                  <Text style={styles.dateOptionText}>{option.label}</Text>
+                  <AppIcon
+                    name={selected ? 'active' : 'none'}
+                    size={18}
+                    color={selected ? styles.selectedIcon.color : styles.optionIcon.color}
+                    decorative
+                  />
                 </Pressable>
               );
             })}
           </View>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Reset task filters"
-          onPress={() => setDraft(defaultFilters)}
-          style={({ pressed }) => [styles.resetButton, pressed ? styles.pressed : null]}
-        >
-          <AppIcon name="refresh" size={16} color={styles.optionIcon.color} decorative />
-          <Text style={styles.resetText}>Reset filters</Text>
-        </Pressable>
+        <View style={styles.resetSection}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Reset task filters"
+            onPress={() => setDraft(defaultFilters)}
+            style={({ pressed }) => [styles.resetButton, pressed ? styles.pressed : null]}
+          >
+            <AppIcon name="refresh" size={16} color={styles.optionIcon.color} decorative />
+            <Text style={styles.resetText}>Reset filters</Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </AppModal>
   );
@@ -157,39 +153,30 @@ const createStyles = (theme: Theme) =>
       fontWeight: '700',
       textTransform: 'uppercase',
     },
-    dueDateGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-    dueDateOption: {
+    dateOptions: { gap: 0 },
+    dateOption: {
       minHeight: 44,
-      flexGrow: 1,
-      flexBasis: '48%',
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      gap: spacing.xs,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
+      gap: spacing.sm,
+      paddingHorizontal: 0,
       borderRadius: theme.radii.sm,
-      paddingHorizontal: spacing.sm,
     },
-    dueDateOptionSelected: {
-      borderColor: theme.colors.brand,
-      backgroundColor: theme.colors.surfaceBrand,
-    },
-    dueDateOptionText: {
-      ...typography.helper,
-      color: theme.colors.textSecondary,
-      fontWeight: '600',
-    },
-    dueDateOptionTextSelected: { color: theme.colors.brand },
+    dateOptionText: { ...typography.helper, color: theme.colors.textPrimary, flex: 1 },
     selectedIcon: { color: theme.colors.brand },
     optionIcon: { color: theme.colors.textSecondary },
+    resetSection: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.border,
+      paddingTop: spacing.xs,
+    },
     resetButton: {
       minHeight: 44,
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs,
       alignSelf: 'flex-start',
-      paddingHorizontal: spacing.sm,
+      paddingHorizontal: 0,
     },
     resetText: { ...typography.helper, color: theme.colors.textPrimary, fontWeight: '600' },
     pressed: { opacity: 0.72 },

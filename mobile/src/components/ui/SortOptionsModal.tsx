@@ -76,9 +76,12 @@ export function SortOptionsModal<Value extends string>({
                   decorative
                 />
                 <Text style={styles.optionText}>{option.label}</Text>
-                {selected ? (
-                  <AppIcon name="complete" size={16} color={styles.selectedIcon.color} decorative />
-                ) : null}
+                <AppIcon
+                  name={selected ? 'active' : 'none'}
+                  size={18}
+                  color={selected ? styles.selectedIcon.color : styles.optionIcon.color}
+                  decorative
+                />
               </Pressable>
             );
           })}
@@ -91,13 +94,13 @@ export function SortOptionsModal<Value extends string>({
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
     content: { gap: spacing.lg, paddingBottom: spacing.sm },
-    options: { gap: spacing.xs },
+    options: { gap: 0 },
     optionRow: {
       minHeight: 44,
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
-      paddingHorizontal: spacing.sm,
+      paddingHorizontal: 0,
       borderRadius: theme.radii.sm,
     },
     optionText: { ...typography.helper, color: theme.colors.textPrimary, flex: 1 },

@@ -509,20 +509,20 @@ describe('GoalsScreen', () => {
 
     render(<GoalsScreen />);
     fireEvent.press(screen.getByRole('button', { name: 'Filter goals' }));
-    fireEvent.press(screen.getByRole('button', { name: 'Past due' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Past due' }));
     fireEvent.press(screen.getByRole('button', { name: 'Apply goal filters' }));
     expect(screen.getByLabelText('Open goal Overdue goal')).toBeTruthy();
     expect(screen.queryByLabelText('Open goal This week goal')).toBeNull();
 
     fireEvent.press(screen.getByRole('button', { name: 'Filter goals' }));
-    fireEvent.press(screen.getByRole('button', { name: 'This week' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'This week' }));
     fireEvent.press(screen.getByRole('button', { name: 'Apply goal filters' }));
     expect(screen.getByLabelText('Open goal This week goal')).toBeTruthy();
     expect(screen.queryByLabelText('Open goal Overdue goal')).toBeNull();
     expect(screen.queryByLabelText('Open goal This month goal')).toBeNull();
 
     fireEvent.press(screen.getByRole('button', { name: 'Filter goals' }));
-    fireEvent.press(screen.getByRole('button', { name: 'This month' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'This month' }));
     fireEvent.press(screen.getByRole('button', { name: 'Apply goal filters' }));
     expect(screen.getByLabelText('Open goal This week goal')).toBeTruthy();
     expect(screen.getByLabelText('Open goal This month goal')).toBeTruthy();
@@ -1352,6 +1352,8 @@ describe('GoalsScreen', () => {
   });
 
   it('creates a milestone from goal details and closes the modal stack', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 6, 20, 9));
     const createMilestoneMock = jest.fn(async () => undefined);
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
     const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
@@ -1385,6 +1387,7 @@ describe('GoalsScreen', () => {
       screen.getByLabelText('Milestone description'),
       'Pick sessions for the next eight weeks.',
     );
+    fireEvent.press(screen.getByLabelText('Set new milestone target date to today'));
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Save milestone'));
@@ -1394,6 +1397,7 @@ describe('GoalsScreen', () => {
       expect(createMilestoneMock).toHaveBeenCalledWith('goal-1', {
         title: 'Book a training block',
         description: 'Pick sessions for the next eight weeks.',
+        estimatedFinishDate: new Date(2026, 6, 20),
       });
       expect(screen.getByText('Goal Details')).toBeTruthy();
       expect(screen.queryByLabelText('Save milestone')).toBeNull();
