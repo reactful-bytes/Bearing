@@ -870,11 +870,20 @@ describe('TasksScreen', () => {
     applyTaskFilter('completed');
 
     expect(screen.getByText('No completed tasks.')).toBeTruthy();
+    expect(screen.queryByLabelText('No completed tasks. icon')).toBeNull();
+    expect(
+      StyleSheet.flatten(screen.getByRole('header', { name: 'No completed tasks.' }).props.style)
+        .fontSize,
+    ).toBe(14);
+    expect(
+      StyleSheet.flatten(screen.getByText('Tasks you mark complete will appear here.').props.style)
+        .fontSize,
+    ).toBe(12);
     expect(screen.getByText('Tasks you mark complete will appear here.')).toBeTruthy();
     expect(
       StyleSheet.flatten(screen.getByRole('header', { name: 'No completed tasks.' }).props.style)
         .textAlign,
-    ).toBe('left');
+    ).toBe('center');
 
     applyTaskFilter('active');
     fireEvent.press(screen.getByRole('button', { name: 'Filter tasks' }));

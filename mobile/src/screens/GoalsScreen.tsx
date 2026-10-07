@@ -380,8 +380,8 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
 
         {(uiState === 'empty' || uiState === 'ready') && visibleGoals.length === 0 ? (
           <EmptyState
-            icon="goals"
-            presentation="screen"
+            presentation="compact"
+            style={styles.emptyState}
             title={
               goalSearch.trim() || goalTargetDateFilter !== 'any'
                 ? 'No matching goals.'
@@ -545,6 +545,7 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.textPrimary,
       marginTop: spacing.sm,
     },
+    emptyState: { alignSelf: 'stretch', alignItems: 'center' },
     goalSearchField: {
       minHeight: 48,
       flexDirection: 'row',

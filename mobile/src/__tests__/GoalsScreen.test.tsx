@@ -344,7 +344,16 @@ describe('GoalsScreen', () => {
     render(<GoalsScreen />);
 
     expect(screen.getByText('No active goals.')).toBeTruthy();
-    expect(screen.getByLabelText('No active goals. icon')).toBeTruthy();
+    expect(screen.queryByLabelText('No active goals. icon')).toBeNull();
+    expect(
+      StyleSheet.flatten(screen.getByRole('header', { name: 'No active goals.' }).props.style)
+        .fontSize,
+    ).toBe(14);
+    expect(
+      StyleSheet.flatten(
+        screen.getByText('Create a goal to start building a step-by-step plan.').props.style,
+      ).fontSize,
+    ).toBe(12);
     expect(
       StyleSheet.flatten(screen.getByRole('header', { name: 'No active goals.' }).props.style)
         .textAlign,

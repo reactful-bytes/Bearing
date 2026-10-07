@@ -529,8 +529,8 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
 
         {(uiState === 'empty' || uiState === 'ready') && visibleTasks.length === 0 ? (
           <EmptyState
-            icon="tasks"
-            presentation="horizontal"
+            presentation="compact"
+            style={styles.emptyState}
             title={emptyStateTitle}
             description={emptyStateDescription}
           />
@@ -778,6 +778,7 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.textPrimary,
       marginTop: spacing.sm,
     },
+    emptyState: { alignSelf: 'stretch', alignItems: 'center' },
     viewControlsIcon: { color: theme.colors.brand },
     taskSearchField: {
       minHeight: 48,
