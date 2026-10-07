@@ -220,27 +220,43 @@ describe('GoalDetailScreen', () => {
     mockHooks({ tasks: [] });
     render(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
 
-    const emptyState = screen.UNSAFE_getByType(EmptyState);
-    expect(emptyState.props).toMatchObject({
+    const emptyStates = screen.UNSAFE_getAllByType(EmptyState);
+    expect(emptyStates.map((emptyState) => emptyState.props.title)).toEqual([
+      'No next task',
+      'No tasks yet',
+    ]);
+    const [nextTaskEmptyState, allTasksEmptyState] = emptyStates;
+    expect(nextTaskEmptyState.props).toMatchObject({
       title: 'No next task',
       presentation: 'compact',
     });
-    expect(emptyState.props).not.toHaveProperty('icon');
-    expect(emptyState.props).not.toHaveProperty('actionLabel');
-    expect(emptyState.props).not.toHaveProperty('onPressAction');
-    expect(StyleSheet.flatten(emptyState.props.style)).toMatchObject({ alignItems: 'center' });
+    expect(nextTaskEmptyState.props).not.toHaveProperty('icon');
+    expect(nextTaskEmptyState.props).not.toHaveProperty('actionLabel');
+    expect(nextTaskEmptyState.props).not.toHaveProperty('onPressAction');
+    expect(StyleSheet.flatten(nextTaskEmptyState.props.style)).toMatchObject({
+      alignItems: 'center',
+    });
+    expect(allTasksEmptyState.props).toMatchObject({
+      title: 'No tasks yet',
+      description: 'Tasks linked to this goal will appear here.',
+      presentation: 'compact',
+    });
+    expect(allTasksEmptyState.props).not.toHaveProperty('icon');
+    expect(allTasksEmptyState.props).not.toHaveProperty('actionLabel');
+    expect(allTasksEmptyState.props).not.toHaveProperty('onPressAction');
+    expect(StyleSheet.flatten(allTasksEmptyState.props.style)).toMatchObject({
+      alignItems: 'center',
+    });
     expect(screen.getAllByRole('button', { name: 'Add task' })).toHaveLength(1);
 
     const description = StyleSheet.flatten(
       screen.getByText('Tasks linked to this goal will appear here.').props.style,
     );
     expect(description).toMatchObject({
-      fontSize: 16,
-      color: darkTheme.colors.textPrimary,
+      fontSize: 12,
+      lineHeight: 16,
+      color: darkTheme.colors.textSecondary,
     });
-    expect(description.color).not.toBe(
-      StyleSheet.flatten(screen.getByRole('header', { name: 'All tasks' }).props.style).color,
-    );
   });
 
   it('keeps the detail header below the top safe area', () => {

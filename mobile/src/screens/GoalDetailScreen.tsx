@@ -471,9 +471,12 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
               All tasks
             </Text>
             {goalTasks.length === 0 ? (
-              <Text style={styles.taskEmptyDescription}>
-                Tasks linked to this goal will appear here.
-              </Text>
+              <EmptyState
+                title="No tasks yet"
+                description="Tasks linked to this goal will appear here."
+                presentation="compact"
+                style={styles.taskEmptyState}
+              />
             ) : (
               <ScrollView
                 testID="goal-detail-task-list"
@@ -740,7 +743,6 @@ const createStyles = (theme: Theme) =>
     stateTitle: { ...theme.typography.cardTitle, color: theme.colors.text },
     stateDescription: { ...theme.typography.body, color: theme.colors.textSecondary },
     taskEmptyState: { alignItems: 'center' },
-    taskEmptyDescription: { ...theme.typography.body, color: theme.colors.textPrimary },
     overviewDescription: { ...theme.typography.helper, color: theme.colors.textPrimary },
     overviewFinishDate: {
       ...theme.typography.helper,
