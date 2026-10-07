@@ -348,13 +348,7 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
       return;
     }
 
-    setCollapsedGroups(
-      new Set(
-        taskGroups.flatMap((group) => [
-          `goal:${group.id}`,
-        ]),
-      ),
-    );
+    setCollapsedGroups(new Set(taskGroups.flatMap((group) => [`goal:${group.id}`])));
   }
 
   function selectPage(page: number): void {
@@ -559,12 +553,7 @@ export function TasksScreen({ route, navigation: stackNavigation }: TasksScreenP
                     onToggleExpanded={() => toggleGroup(rootKey)}
                   />
                   {!rootCollapsed ? (
-                    <View
-                      testID={`task-group-children-${group.id}`}
-                      style={[
-                        styles.groupChildren,
-                      ]}
-                    >
+                    <View testID={`task-group-children-${group.id}`} style={[styles.groupChildren]}>
                       {group.tasks.length > 0 ? (
                         <>
                           {group.kind !== 'unlinked' ? (

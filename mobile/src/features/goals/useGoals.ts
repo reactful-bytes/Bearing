@@ -228,10 +228,7 @@ export function useGoals(): UseGoalsReturn {
   }, []);
 
   const createMilestone = useCallback(
-    async (
-      goalId: string,
-      input: Omit<CreateGoalMilestoneInput, 'tasks'>,
-    ): Promise<void> => {
+    async (goalId: string, input: Omit<CreateGoalMilestoneInput, 'tasks'>): Promise<void> => {
       const goal = goalMap.find((entry) => entry.id === goalId);
       if (!goal) throw new Error('Goal not found.');
       await createFirebaseMilestone(requireUserId(), goalId, input, goal.milestones.length);

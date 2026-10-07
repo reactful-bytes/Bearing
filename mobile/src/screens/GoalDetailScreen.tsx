@@ -1,13 +1,6 @@
 import { useMemo, useState } from 'react';
 import { NavigationProp, useIsFocused, useNavigation } from '@react-navigation/native';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AddEventModal } from '../components/calendar/AddEventModal';
@@ -492,10 +485,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
                 style={styles.taskEmptyState}
               />
             )}
-            <Text
-              accessibilityRole="header"
-              style={[styles.sectionTitle, styles.allTasksHeader]}
-            >
+            <Text accessibilityRole="header" style={[styles.sectionTitle, styles.allTasksHeader]}>
               All tasks
             </Text>
             {goalTasks.length === 0 ? (
@@ -544,10 +534,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
                 accessibilityRole="button"
                 accessibilityLabel="Add milestone"
                 onPress={() => setAddMilestoneVisible(true)}
-                style={({ pressed }) => [
-                  styles.addItemButton,
-                  pressed && styles.textButtonPressed,
-                ]}
+                style={({ pressed }) => [styles.addItemButton, pressed && styles.textButtonPressed]}
               >
                 <Text style={styles.addItemText}>+ Add Milestone</Text>
               </Pressable>

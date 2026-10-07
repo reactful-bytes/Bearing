@@ -104,10 +104,7 @@ export function TaskFilterModal({
                   onPress={() =>
                     setDraft((current) => ({ ...current, dueDateFilter: option.value }))
                   }
-                  style={({ pressed }) => [
-                    styles.dateOption,
-                    pressed ? styles.pressed : null,
-                  ]}
+                  style={({ pressed }) => [styles.dateOption, pressed ? styles.pressed : null]}
                 >
                   <AppIcon
                     name={option.icon}

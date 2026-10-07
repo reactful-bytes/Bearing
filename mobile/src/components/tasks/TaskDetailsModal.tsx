@@ -287,10 +287,7 @@ function DetailSection({
     <View style={styles.section}>
       <View
         testID={icon === 'milestone' ? 'task-details-milestone-icon-frame' : undefined}
-        style={[
-          styles.sectionIconFrame,
-          icon === 'milestone' ? styles.milestoneIconFrame : null,
-        ]}
+        style={[styles.sectionIconFrame, icon === 'milestone' ? styles.milestoneIconFrame : null]}
       >
         <AppIcon
           name={icon}

@@ -117,9 +117,9 @@ describe('NotesScreen', () => {
       StyleSheet.flatten(screen.getByLabelText('Open note Captured thought').props.style),
     ).toMatchObject({ minHeight: 56, paddingVertical: spacing.xs });
     expect(
-      screen.getAllByTestId('note-rows').every(
-        (rows) => StyleSheet.flatten(rows.props.style).gap === spacing.xs,
-      ),
+      screen
+        .getAllByTestId('note-rows')
+        .every((rows) => StyleSheet.flatten(rows.props.style).gap === spacing.xs),
     ).toBe(true);
     expect(
       screen
@@ -127,7 +127,9 @@ describe('NotesScreen', () => {
         .findAllByType(AppIcon)
         .map((icon) => icon.props.name),
     ).toEqual(['note', 'calendar']);
-    expect(StyleSheet.flatten(screen.getByTestId('note-icon-frame-note-1').props.style)).toMatchObject({
+    expect(
+      StyleSheet.flatten(screen.getByTestId('note-icon-frame-note-1').props.style),
+    ).toMatchObject({
       width: 34,
       height: 34,
       alignItems: 'center',
@@ -355,9 +357,7 @@ describe('NotesScreen', () => {
     expect(screen.getByText('Focus note')).toBeTruthy();
     expect(screen.getByText('Home note')).toBeTruthy();
     expect(screen.queryByText('Other note')).toBeNull();
-    expect(
-      screen.getByText('Filters: Active · 2 labels'),
-    ).toBeTruthy();
+    expect(screen.getByText('Filters: Active · 2 labels')).toBeTruthy();
     expect(screen.getByText('Sort: Title A-Z')).toBeTruthy();
   });
 

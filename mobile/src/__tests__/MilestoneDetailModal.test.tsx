@@ -118,9 +118,9 @@ describe('MilestoneDetailModal', () => {
     expect(screen.getByText('Expected completion date: Nov 1, 2026')).toBeTruthy();
     const milestoneHeader = screen.getByTestId('milestone-section-header');
     const milestoneCopy = within(milestoneHeader).getByTestId('milestone-section-copy');
-    expect(
-      StyleSheet.flatten(within(milestoneCopy).getByText('MILESTONE').props.style).color,
-    ).toBe(darkTheme.colors.brand);
+    expect(StyleSheet.flatten(within(milestoneCopy).getByText('MILESTONE').props.style).color).toBe(
+      darkTheme.colors.brand,
+    );
     expect(within(milestoneCopy).getByTestId('milestone-expected-date')).toBeTruthy();
     expect(
       StyleSheet.flatten(
@@ -139,8 +139,9 @@ describe('MilestoneDetailModal', () => {
     expect(screen.getByText('0% complete · 0 of 0 tasks completed')).toBeTruthy();
     expect(screen.UNSAFE_queryAllByType(ProgressBar)).toHaveLength(1);
     expect(
-      StyleSheet.flatten(screen.getByLabelText(`Add task to milestone ${milestone.title}`).props.style)
-        .marginLeft,
+      StyleSheet.flatten(
+        screen.getByLabelText(`Add task to milestone ${milestone.title}`).props.style,
+      ).marginLeft,
     ).toBe('auto');
     expect(screen.getByRole('button', { name: 'Milestone actions' })).toBeTruthy();
     const back = screen.getByRole('button', { name: 'Back to goal details' });

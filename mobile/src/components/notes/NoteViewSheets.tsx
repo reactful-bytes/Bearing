@@ -63,10 +63,7 @@ export function NoteFilterModal({
       centeredHeader
       hideCloseButton
       headerAccessory={
-        <ModalHeaderAction
-          accessibilityLabel="Apply note filters"
-          onPress={() => onApply(draft)}
-        />
+        <ModalHeaderAction accessibilityLabel="Apply note filters" onPress={() => onApply(draft)} />
       }
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">

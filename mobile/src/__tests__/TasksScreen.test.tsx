@@ -369,8 +369,7 @@ describe('TasksScreen', () => {
     ).toEqual(['Unlinked', 'Goal']);
     expect(screen.getByTestId('app-modal-drag-handle')).toBeTruthy();
     expect(
-      StyleSheet.flatten(screen.getByRole('radio', { name: 'Past due' }).props.style)
-        .flexDirection,
+      StyleSheet.flatten(screen.getByRole('radio', { name: 'Past due' }).props.style).flexDirection,
     ).toBe('row');
 
     fireEvent.press(screen.getByRole('button', { name: 'Dismiss Filter tasks' }));

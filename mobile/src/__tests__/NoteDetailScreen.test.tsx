@@ -81,8 +81,9 @@ describe('NoteDetailScreen', () => {
     expect(screen.getByText('Focus')).toBeTruthy();
     expect(screen.getByText(/^Updated .* · Created /)).toBeTruthy();
     expect(
-      StyleSheet.flatten(screen.getByTestId('note-detail-screen-scroll').props.contentContainerStyle)
-        .gap,
+      StyleSheet.flatten(
+        screen.getByTestId('note-detail-screen-scroll').props.contentContainerStyle,
+      ).gap,
     ).toBe(0);
     expect(screen.queryByText('DATES')).toBeNull();
     expect(screen.UNSAFE_queryAllByType(AppCard)).toHaveLength(0);

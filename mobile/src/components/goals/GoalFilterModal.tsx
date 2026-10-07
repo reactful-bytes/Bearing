@@ -94,7 +94,12 @@ export function GoalFilterModal({
                   <Text style={styles.optionText}>{option.label}</Text>
                   <Text style={styles.optionCount}>{option.count}</Text>
                   {selected ? (
-                    <AppIcon name="complete" size={16} color={styles.selectedIcon.color} decorative />
+                    <AppIcon
+                      name="complete"
+                      size={16}
+                      color={styles.selectedIcon.color}
+                      decorative
+                    />
                   ) : null}
                 </Pressable>
               );

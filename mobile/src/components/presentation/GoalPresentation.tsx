@@ -241,9 +241,7 @@ export function GoalTimeline({
                   />
                 ) : null}
               </View>
-              {renderMilestoneTasks && isExpanded ? (
-                renderMilestoneTasks(milestone)
-              ) : null}
+              {renderMilestoneTasks && isExpanded ? renderMilestoneTasks(milestone) : null}
             </View>
           </View>
         );

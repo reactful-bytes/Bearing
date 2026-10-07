@@ -229,9 +229,7 @@ describe('PlanScreen', () => {
     expect(screen.queryByText('Plan block 3')).toBeNull();
     expect(screen.getByText('Ship the next release')).toBeTruthy();
     expect(
-      StyleSheet.flatten(
-        screen.getByTestId('plan-goal-marker-Ship the next release').props.style,
-      ),
+      StyleSheet.flatten(screen.getByTestId('plan-goal-marker-Ship the next release').props.style),
     ).toMatchObject({ width: 12, height: 12, borderRadius: 6, borderWidth: 1.5 });
     expect(screen.getByText('50%')).toBeTruthy();
     expect(screen.getByText('Notes')).toBeTruthy();

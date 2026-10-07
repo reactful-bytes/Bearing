@@ -55,7 +55,10 @@ export function TaskRow({
             <AppIcon name="task" size={18} color={styles.taskIcon.color} decorative />
           </View>
           <View style={styles.copyText}>
-            <Text numberOfLines={1} style={[styles.title, completed ? styles.titleCompleted : null]}>
+            <Text
+              numberOfLines={1}
+              style={[styles.title, completed ? styles.titleCompleted : null]}
+            >
               {task.title}
             </Text>
             {context ? (

@@ -270,9 +270,9 @@ describe('GoalDetailScreen', () => {
 
     render(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
 
-    expect(
-      StyleSheet.flatten(screen.getByTestId('goal-detail-fixed-header').props.style),
-    ).toEqual(expect.objectContaining({ paddingTop: 32 }));
+    expect(StyleSheet.flatten(screen.getByTestId('goal-detail-fixed-header').props.style)).toEqual(
+      expect.objectContaining({ paddingTop: 32 }),
+    );
   });
 
   it('creates a task with the goal and milestone context', async () => {
@@ -385,7 +385,7 @@ describe('GoalDetailScreen', () => {
       within(header)
         .UNSAFE_getAllByType(AppIcon)
         .map((icon) => icon.props.name),
-      ).toEqual(['goalMilestone', 'collapse', 'moreVertical']);
+    ).toEqual(['goalMilestone', 'collapse', 'moreVertical']);
     fireEvent.press(
       within(header).getByRole('button', { name: 'Open milestone Choose a race date' }),
     );
@@ -402,7 +402,9 @@ describe('GoalDetailScreen', () => {
     mockHooks({ goal: composeGoalWithMilestones(goal, [milestone], []) });
     render(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
 
-    fireEvent.press(screen.getByRole('button', { name: 'Milestone actions for Choose a race date' }));
+    fireEvent.press(
+      screen.getByRole('button', { name: 'Milestone actions for Choose a race date' }),
+    );
     fireEvent.press(screen.getByRole('menuitem', { name: 'Edit milestone Choose a race date' }));
 
     expect(screen.getByRole('header', { name: 'Edit Milestone' })).toBeTruthy();
@@ -416,7 +418,9 @@ describe('GoalDetailScreen', () => {
     mockHooks({ goal: composeGoalWithMilestones(goal, [milestone], []) });
     render(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
 
-    fireEvent.press(screen.getByRole('button', { name: 'Milestone actions for Choose a race date' }));
+    fireEvent.press(
+      screen.getByRole('button', { name: 'Milestone actions for Choose a race date' }),
+    );
     fireEvent.press(screen.getByRole('menuitem', { name: 'Delete milestone Choose a race date' }));
 
     expect(screen.getByRole('button', { name: 'Confirm delete milestone' })).toBeTruthy();
@@ -503,9 +507,9 @@ describe('GoalDetailScreen', () => {
     expect(list.props).not.toHaveProperty('nestedScrollEnabled');
     const contentScroll = screen.getByTestId('goal-detail-scroll');
     expect(StyleSheet.flatten(contentScroll.props.style)).toMatchObject({ flex: 1 });
-    expect(
-      StyleSheet.flatten(contentScroll.props.contentContainerStyle).paddingBottom,
-    ).toBe(darkTheme.spacing.xl + 16);
+    expect(StyleSheet.flatten(contentScroll.props.contentContainerStyle).paddingBottom).toBe(
+      darkTheme.spacing.xl + 16,
+    );
     expect(within(list).queryByText(goal.description)).toBeNull();
   });
 

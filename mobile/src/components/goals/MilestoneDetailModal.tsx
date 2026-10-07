@@ -212,7 +212,9 @@ export function MilestoneDetailModal({
             <ScreenHeader
               title="Edit Milestone"
               onPressBack={handleBack}
-              backAccessibilityLabel={closeOnEditBack ? 'Back to overview' : 'Back to milestone details'}
+              backAccessibilityLabel={
+                closeOnEditBack ? 'Back to overview' : 'Back to milestone details'
+              }
             />
           ) : (
             <>
@@ -299,12 +301,7 @@ export function MilestoneDetailModal({
               </View>
               <View testID="milestone-progress" style={styles.detailSection}>
                 <View style={styles.sectionIconFrame}>
-                  <AppIcon
-                    name="complete"
-                    size={17}
-                    color={styles.sectionIcon.color}
-                    decorative
-                  />
+                  <AppIcon name="complete" size={17} color={styles.sectionIcon.color} decorative />
                 </View>
                 <View style={styles.sectionCopy}>
                   <Text accessibilityRole="header" style={styles.sectionTitle}>
