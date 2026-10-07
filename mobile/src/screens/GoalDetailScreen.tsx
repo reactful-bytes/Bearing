@@ -461,22 +461,17 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
               </AppCard>
             ) : (
               <EmptyState
-                icon="task"
                 title="No next task"
                 description="Add a task to give this goal a clear next move."
                 presentation="compact"
-                actionLabel="Add task"
-                onPressAction={() => {
-                  setTaskMilestoneId(goal.nextMilestone?.id ?? null);
-                  setAddTaskVisible(true);
-                }}
+                style={styles.taskEmptyState}
               />
             )}
             <Text accessibilityRole="header" style={styles.sectionTitle}>
               All tasks
             </Text>
             {goalTasks.length === 0 ? (
-              <Text style={styles.stateDescription}>
+              <Text style={styles.taskEmptyDescription}>
                 Tasks linked to this goal will appear here.
               </Text>
             ) : (
@@ -744,6 +739,8 @@ const createStyles = (theme: Theme) =>
     stateCard: { margin: theme.layout.pagePaddingHorizontal, gap: theme.spacing.sm },
     stateTitle: { ...theme.typography.cardTitle, color: theme.colors.text },
     stateDescription: { ...theme.typography.body, color: theme.colors.textSecondary },
+    taskEmptyState: { alignItems: 'center' },
+    taskEmptyDescription: { ...theme.typography.body, color: theme.colors.textPrimary },
     overviewDescription: { ...theme.typography.helper, color: theme.colors.textPrimary },
     overviewFinishDate: {
       ...theme.typography.helper,

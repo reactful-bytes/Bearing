@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { GoalDetailScreen } from '../screens/GoalDetailScreen';
 import { AppIcon } from '../components/ui/AppIcon';
+import { EmptyState } from '../components/ui/EmptyState';
 import { ThemeProvider } from '../design/ThemeProvider';
 import { darkTheme, lightTheme } from '../design/tokens';
 import { useGoals } from '../features/goals/useGoals';
@@ -213,6 +214,33 @@ describe('GoalDetailScreen', () => {
       expect(completeTask).toHaveBeenCalledWith('task-1', { completionSource: 'manual' });
     });
     expect(screen.getByText('Task Details')).toBeTruthy();
+  });
+
+  it('centers a compact task empty state and keeps the All tasks description readable', () => {
+    mockHooks({ tasks: [] });
+    render(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
+
+    const emptyState = screen.UNSAFE_getByType(EmptyState);
+    expect(emptyState.props).toMatchObject({
+      title: 'No next task',
+      presentation: 'compact',
+    });
+    expect(emptyState.props).not.toHaveProperty('icon');
+    expect(emptyState.props).not.toHaveProperty('actionLabel');
+    expect(emptyState.props).not.toHaveProperty('onPressAction');
+    expect(StyleSheet.flatten(emptyState.props.style)).toMatchObject({ alignItems: 'center' });
+    expect(screen.getAllByRole('button', { name: 'Add task' })).toHaveLength(1);
+
+    const description = StyleSheet.flatten(
+      screen.getByText('Tasks linked to this goal will appear here.').props.style,
+    );
+    expect(description).toMatchObject({
+      fontSize: 16,
+      color: darkTheme.colors.textPrimary,
+    });
+    expect(description.color).not.toBe(
+      StyleSheet.flatten(screen.getByRole('header', { name: 'All tasks' }).props.style).color,
+    );
   });
 
   it('keeps the detail header below the top safe area', () => {
