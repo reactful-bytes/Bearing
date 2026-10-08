@@ -1,4 +1,4 @@
-import { act, render } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import * as expoAudio from 'expo-audio';
 import { Alert } from 'react-native';
@@ -107,5 +107,34 @@ describe('FocusModeOverlay timer completion', () => {
     expect(mockTimerPlayer.loop).toBe(false);
     expect(mockTimerPlayer.pause).toHaveBeenCalledTimes(1);
     expect(mockTimerPlayer.seekTo).toHaveBeenCalledWith(0);
+  });
+
+  it('suppresses the end-of-session tone and dialog when the session alert is off', async () => {
+    const onClose = jest.fn();
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    const startAt = new Date('2026-08-25T11:59:00.000Z');
+    const endAt = new Date('2026-08-25T12:00:01.000Z');
+
+    render(
+      <FocusModeOverlay
+        visible
+        events={[makeActiveEvent(startAt, endAt)]}
+        timerSoundId="steady-bell"
+        onClose={onClose}
+        onSaveIdeaDump={jest.fn(async () => undefined)}
+      />,
+    );
+
+    fireEvent.press(screen.getByRole('button', { name: 'Focus Settings' }));
+    fireEvent(screen.getByTestId('focus-end-alert-toggle'), 'valueChange', false);
+
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+      await Promise.resolve();
+    });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(profileSounds.ensureProfileSoundPreviewUri).not.toHaveBeenCalled();
   });
 });

@@ -3,12 +3,14 @@ import { usePreventRemove } from '@react-navigation/native';
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { FocusDndStatus, FocusModeOverlay } from '../components/calendar/FocusModeOverlay';
+import { FocusModeOverlay } from '../components/calendar/FocusModeOverlay';
+import { focusModeColors } from '../components/calendar/focusModeColors';
 import { AppButton } from '../components/ui/AppButton';
 import { AppCard } from '../components/ui/AppCard';
 import { AppIcon } from '../components/ui/AppIcon';
 import { AppScreen } from '../components/ui/AppScreen';
-import { ScreenHeader } from '../components/ui/ScreenHeader';
+import { IconButton } from '../components/ui/IconButton';
+import { useTheme } from '../design/ThemeProvider';
 import { useThemedStyles } from '../design/useThemedStyles';
 import type { Theme } from '../design/tokens';
 import { useCalendarEvents } from '../features/calendar/useCalendarEvents';
@@ -112,17 +114,6 @@ function toLaunchFocusEvent(params: PlanStackParamList['FocusMode']): BearingEve
   };
 }
 
-function formatEndTime(event: CalendarDisplayEvent | null, locale?: string): string | null {
-  if (!event) {
-    return null;
-  }
-
-  return new Intl.DateTimeFormat(locale, {
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(event.endAt);
-}
-
 function formatDuration(durationMs: number): string {
   const totalMinutes = Math.max(0, Math.round(durationMs / 60_000));
   const hours = Math.floor(totalMinutes / 60);
@@ -131,19 +122,19 @@ function formatDuration(durationMs: number): string {
 }
 
 export function FocusModeScreen({ route, navigation }: FocusModeScreenProps) {
+  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
-  const { profile } = useUserProfile();
+  const { profile, updateProfile } = useUserProfile();
   const createNote = useCreateNote();
   const { tasks } = useTasks();
   const today = useMemo(() => new Date(), []);
   const todayRange = useMemo(() => getTodayRange(today), [today]);
-  const { events, uiState } = useCalendarEvents(today, undefined, todayRange);
+  const { events } = useCalendarEvents(today, undefined, todayRange);
   const [active, setActive] = useState(false);
   const [sessionStartedAt, setSessionStartedAt] = useState<Date | null>(null);
   const [sessionCompletedAt, setSessionCompletedAt] = useState<Date | null>(null);
   const [ideasCaptured, setIdeasCaptured] = useState(0);
-  const [dndStatus, setDndStatus] = useState<FocusDndStatus>('unavailable');
 
   const taskFocusEvent = useMemo(() => {
     const taskId = route.params?.taskId;
@@ -206,44 +197,51 @@ export function FocusModeScreen({ route, navigation }: FocusModeScreenProps) {
       <AppScreen
         mode="scroll"
         testID="focus-summary-screen"
-        contentContainerStyle={{ paddingTop: insets.top }}
+        contentContainerStyle={[styles.summaryContent, { paddingTop: insets.top }]}
       >
-        <ScreenHeader
-          title="Focus Mode"
-          backAccessibilityLabel="Back from Focus Mode"
-          onPressBack={navigation.goBack}
-        />
         <View style={styles.summaryScreen}>
-          <View style={styles.summaryIcon}>
-            <AppIcon name="complete" size={32} decorative />
-          </View>
-          <Text accessibilityRole="header" style={styles.summaryTitle}>
-            Focus Session Complete
-          </Text>
-          <Text style={styles.summarySubtitle}>
-            {focusEvent?.title ?? 'Focused work'} is complete.
-          </Text>
-          <AppCard style={styles.summaryCard}>
-            <View style={styles.summaryStatRow}>
-              <AppIcon name="timer" size={20} decorative />
-              <Text style={styles.summaryStatValue}>Duration: {sessionDuration}</Text>
-            </View>
-            <View style={styles.summaryStatDivider} />
-            <View style={styles.summaryStatRow}>
-              <AppIcon name="idea" size={20} decorative />
-              <Text style={styles.summaryStatValue}>Ideas captured: {ideasCaptured}</Text>
-            </View>
-            <View style={styles.summaryStatDivider} />
-            <View style={styles.summaryStatRow}>
-              <AppIcon name="security" size={20} decorative />
-              <Text style={styles.summaryStatValue}>
-                {dndStatus === 'blocked'
-                  ? 'Distractions blocked: Android priority mode'
-                  : 'Distractions blocked: unavailable'}
+          <View style={styles.summaryBody}>
+            <View style={styles.summaryIntro}>
+              <View style={styles.summaryIcon}>
+                <AppIcon name="complete" size={36} color={focusModeColors.green} decorative />
+              </View>
+              <Text accessibilityRole="header" style={styles.summaryTitle}>
+                Focus Session Complete
               </Text>
+              <Text style={styles.summarySubtitle}>Great work, Leader!</Text>
             </View>
-          </AppCard>
-          <AppButton label="Done" onPress={navigation.goBack} />
+            <AppCard style={styles.summaryCard}>
+              <View style={styles.summaryStatRow}>
+                <Text style={styles.summaryStatLabel}>Duration</Text>
+                <View style={styles.summaryStatValueGroup}>
+                  <Text style={styles.summaryStatValue}>{sessionDuration}</Text>
+                  <AppIcon name="timer" size={20} color={theme.colors.textSecondary} decorative />
+                </View>
+              </View>
+              <View style={styles.summaryStatDivider} />
+              <View style={styles.summaryStatRow}>
+                <Text style={styles.summaryStatLabel}>Ideas Captured</Text>
+                <View style={styles.summaryStatValueGroup}>
+                  <Text style={styles.summaryStatValue}>{ideasCaptured}</Text>
+                  <AppIcon name="idea" size={20} color={theme.colors.textSecondary} decorative />
+                </View>
+              </View>
+              <View style={styles.summaryStatDivider} />
+              <View style={styles.summaryStatRow}>
+                <Text style={styles.summaryStatLabel}>Distractions Blocked</Text>
+                <View style={styles.summaryStatValueGroup}>
+                  <Text style={styles.summaryStatValue}>0</Text>
+                  <AppIcon
+                    name="security"
+                    size={20}
+                    color={theme.colors.textSecondary}
+                    decorative
+                  />
+                </View>
+              </View>
+            </AppCard>
+          </View>
+          <AppButton label="Done" onPress={navigation.goBack} style={styles.summaryDoneButton} />
         </View>
       </AppScreen>
     );
@@ -253,46 +251,44 @@ export function FocusModeScreen({ route, navigation }: FocusModeScreenProps) {
     <AppScreen
       mode="scroll"
       testID="focus-start-screen"
-      contentContainerStyle={{ paddingTop: insets.top }}
+      style={styles.startAppScreen}
+      contentContainerStyle={[styles.startContent, { paddingTop: insets.top }]}
     >
       {!active ? (
-        <ScreenHeader
-          title="Focus Mode"
-          backAccessibilityLabel="Back from Focus Mode"
-          onPressBack={navigation.goBack}
-        />
+        <View style={styles.startHeader}>
+          <IconButton
+            name="back"
+            accessibilityLabel="Back from Focus Mode"
+            onPress={navigation.goBack}
+          />
+          <Text accessibilityRole="header" style={styles.startEyebrow}>
+            Focus Mode
+          </Text>
+          <View style={styles.startHeaderSpacer} />
+        </View>
       ) : null}
       <View style={styles.startScreen}>
-        <View style={styles.startIcon}>
-          <AppIcon name="focus" size={44} decorative />
+        <View style={styles.startVisualGroup}>
+          <AppIcon
+            testID="focus-start-icon"
+            name="focus"
+            size={112}
+            color={focusModeColors.green}
+            decorative
+          />
+          <Text style={styles.startDescription}>Start a focused{'\n'}work session</Text>
         </View>
-        <Text accessibilityRole="header" style={styles.startTitle}>
-          Focus on what matters next.
-        </Text>
-        <AppCard style={styles.contextCard}>
-          <Text style={styles.contextLabel}>Focus on</Text>
-          <Text style={styles.contextTitle}>{focusEvent?.title ?? 'Open focus session'}</Text>
-          <Text style={styles.contextDescription}>
-            {focusEvent
-              ? `Ends at ${formatEndTime(focusEvent, profile?.locale)}`
-              : uiState === 'loading'
-                ? "Checking today's schedule..."
-                : 'No scheduled block selected. Focus Mode remains available for unscheduled work.'}
-          </Text>
-        </AppCard>
-        <Text style={styles.startDescription}>
-          Focus Mode keeps the timer and Idea Dump visible while reducing distractions.
-        </Text>
-        <AppButton label="Start Focus Session" onPress={handleStart} />
+        <AppButton label="Start Focus Session" onPress={handleStart} style={styles.startButton} />
       </View>
       <FocusModeOverlay
         visible={active}
         events={focusEvents}
         preferredEventId={focusEvent?.id ?? null}
+        sessionStartedAt={sessionStartedAt}
         timerSoundId={profile?.alarmSoundId}
+        onUpdateTimerSound={(soundId) => updateProfile({ alarmSoundId: soundId })}
         onClose={handleCloseFocus}
         onSaveIdeaDump={handleSaveIdeaDump}
-        onDndStatusChange={setDndStatus}
       />
     </AppScreen>
   );
@@ -300,62 +296,66 @@ export function FocusModeScreen({ route, navigation }: FocusModeScreenProps) {
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
+    startAppScreen: { backgroundColor: focusModeColors.background },
+    startContent: { flexGrow: 1, gap: theme.spacing.md },
+    summaryContent: { flexGrow: 1 },
+    startHeader: {
+      minHeight: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    startHeaderSpacer: { width: 44, height: 44 },
+    startEyebrow: {
+      ...theme.typography.label,
+      color: focusModeColors.green,
+      textAlign: 'center',
+      flex: 1,
+    },
     startScreen: {
       flex: 1,
-      justifyContent: 'center',
-      gap: theme.spacing.lg,
+      justifyContent: 'space-between',
+      paddingTop: theme.spacing['2xl'],
+      paddingBottom: theme.spacing.sm,
       maxWidth: 360,
       alignSelf: 'center',
       width: '100%',
     },
-    startIcon: {
-      alignSelf: 'center',
-      width: 112,
-      height: 112,
-      alignItems: 'center',
+    startVisualGroup: {
+      flex: 1,
       justifyContent: 'center',
-      borderRadius: 56,
-      borderWidth: 2,
-      borderColor: theme.colors.focusGreen,
-      backgroundColor: theme.colors.surfaceBrand,
+      alignItems: 'center',
+      gap: theme.spacing['2xl'],
     },
-    startTitle: {
-      ...theme.typography.sectionTitle,
-      fontSize: 20,
-      lineHeight: 26,
-      color: theme.colors.text,
-      textAlign: 'center',
-    },
-    contextCard: {
-      gap: theme.spacing.sm,
-      borderColor: theme.colors.focusGreen,
-      borderWidth: 1,
-      backgroundColor: theme.colors.surfaceBrand,
-    },
-    contextLabel: {
-      ...theme.typography.label,
-      color: theme.colors.textSecondary,
-    },
-    contextTitle: {
-      ...theme.typography.cardTitle,
-      color: theme.colors.text,
-    },
-    contextDescription: {
-      ...theme.typography.body,
-      color: theme.colors.textPrimary,
+    startButton: {
+      width: '100%',
+      minHeight: 48,
+      borderRadius: theme.radii.lg,
+      backgroundColor: focusModeColors.greenStrong,
     },
     startDescription: {
       ...theme.typography.body,
-      color: theme.colors.textSecondary,
+      color: focusModeColors.textSecondary,
       textAlign: 'center',
     },
     summaryScreen: {
       flex: 1,
-      justifyContent: 'center',
-      gap: theme.spacing.lg,
+      justifyContent: 'space-between',
+      gap: theme.spacing.xl,
       maxWidth: 360,
       alignSelf: 'center',
       width: '100%',
+      paddingTop: theme.spacing['2xl'],
+      paddingBottom: theme.spacing.sm,
+    },
+    summaryBody: {
+      flex: 1,
+      justifyContent: 'center',
+      gap: theme.spacing.xl,
+    },
+    summaryIntro: {
+      alignItems: 'center',
+      gap: theme.spacing.sm,
     },
     summaryIcon: {
       alignSelf: 'center',
@@ -365,14 +365,12 @@ const createStyles = (theme: Theme) =>
       justifyContent: 'center',
       borderRadius: 36,
       borderWidth: 2,
-      borderColor: theme.colors.focusGreen,
-      backgroundColor: theme.colors.surfaceBrand,
+      borderColor: focusModeColors.green,
+      backgroundColor: 'transparent',
     },
     summaryTitle: {
-      ...theme.typography.sectionTitle,
-      fontSize: 20,
-      lineHeight: 26,
-      color: theme.colors.text,
+      ...theme.typography.cardTitle,
+      color: focusModeColors.green,
       textAlign: 'center',
     },
     summarySubtitle: {
@@ -382,13 +380,24 @@ const createStyles = (theme: Theme) =>
     },
     summaryCard: {
       gap: theme.spacing.md,
-      borderColor: theme.colors.focusGreen,
+      borderColor: theme.colors.border,
       borderWidth: 1,
+      backgroundColor: theme.colors.surface,
     },
     summaryStatRow: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: theme.spacing.md,
+    },
+    summaryStatValueGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
       gap: theme.spacing.sm,
+    },
+    summaryStatLabel: {
+      ...theme.typography.helper,
+      color: theme.colors.textSecondary,
     },
     summaryStatValue: {
       ...theme.typography.body,
@@ -399,4 +408,5 @@ const createStyles = (theme: Theme) =>
       height: StyleSheet.hairlineWidth,
       backgroundColor: theme.colors.border,
     },
+    summaryDoneButton: { minHeight: 48, width: '100%' },
   });

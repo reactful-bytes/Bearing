@@ -7,18 +7,27 @@ import {
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, {
+  cancelAnimation,
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
-import { AppButton } from '../ui/AppButton';
-import { AppIcon } from '../ui/AppIcon';
 import { FormField } from '../ui/FormField';
-import { useTheme } from '../../design/ThemeProvider';
+import { IconButton } from '../ui/IconButton';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import type { Theme } from '../../design/tokens';
+import { focusModeColors } from './focusModeColors';
+import { FocusModeUtilitySheet } from './FocusModeUtilitySheet';
+import type { FocusModeDndStatus, FocusModeUtilitySection } from './FocusModeUtilitySheet';
 import { CalendarDisplayEvent } from '../../features/calendar/calendarTypes';
 import { clearFocusSession, setFocusSession } from '../../features/focus/focusSession';
 import { CreateNoteInput } from '../../features/notes/noteTypes';
@@ -35,14 +44,16 @@ type FocusModeOverlayProps = {
   visible: boolean;
   events: CalendarDisplayEvent[];
   preferredEventId?: string | null;
+  sessionStartedAt?: Date | null;
   timerSoundId?: string;
+  onUpdateTimerSound?: (soundId: string) => Promise<void>;
   onClose: () => void;
   onSaveIdeaDump: (input: CreateNoteInput) => Promise<void>;
   dndService?: FocusDndService;
   onDndStatusChange?: (status: FocusDndStatus) => void;
 };
 
-export type FocusDndStatus = 'checking' | 'blocked' | 'not-granted' | 'unavailable';
+export type FocusDndStatus = FocusModeDndStatus;
 
 const HOLD_TO_EXIT_MS = 3000;
 
@@ -75,13 +86,14 @@ export function FocusModeOverlay({
   visible,
   events,
   preferredEventId = null,
+  sessionStartedAt = null,
   timerSoundId = DEFAULT_TIMER_SOUND_ID,
+  onUpdateTimerSound,
   onClose,
   onSaveIdeaDump,
   dndService = androidFocusDndService,
   onDndStatusChange,
 }: FocusModeOverlayProps) {
-  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const [now, setNow] = useState<Date>(new Date());
   const [ideaBody, setIdeaBody] = useState('');
@@ -89,19 +101,38 @@ export function FocusModeOverlay({
   const [saving, setSaving] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
   const [showSavedConfirmation, setShowSavedConfirmation] = useState(false);
+  const [utilitySection, setUtilitySection] = useState<FocusModeUtilitySection | null>(null);
+  const [fallbackSessionStartedAt, setFallbackSessionStartedAt] = useState<Date | null>(null);
+  const [dndEnabled, setDndEnabled] = useState(false);
+  const [dndError, setDndError] = useState<string | null>(null);
+  const [showDndSettingsAction, setShowDndSettingsAction] = useState(false);
+  const [endAlertEnabled, setEndAlertEnabled] = useState(true);
   const [dndStatus, setDndStatus] = useState<FocusDndStatus>(
     dndService.isAvailable ? 'checking' : 'unavailable',
   );
   const [holdProgress, setHoldProgress] = useState(0);
+  const [exitButtonWidth, setExitButtonWidth] = useState(0);
+  const holdProgressValue = useSharedValue(0);
   const timerPlayer = useAudioPlayer(null);
   const timerPlayerRef = useRef(timerPlayer);
   const timerPlayerDisposedRef = useRef(false);
+  const dndRequestedRef = useRef(true);
+  const dndPermissionRequestedRef = useRef(false);
 
-  const holdTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const holdExitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const holdStartedAtRef = useRef<number | null>(null);
+  const exitCompletedRef = useRef(false);
+  const exitHoldReachedRef = useRef(false);
   const savedConfirmationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const trackedEventRef = useRef<CalendarDisplayEvent | null>(null);
   const timerCompletionHandledRef = useRef(false);
+  const exitProgressAnimatedStyle = useAnimatedStyle(() => ({
+    width: `${holdProgressValue.value * 100}%`,
+  }));
+  const exitFilledLabelAnimatedStyle = useAnimatedStyle(() => ({
+    width: exitButtonWidth * holdProgressValue.value,
+  }));
 
   const stopTimerSound = useCallback((): void => {
     if (timerPlayerDisposedRef.current) {
@@ -120,68 +151,81 @@ export function FocusModeOverlay({
     onDndStatusChange?.(dndStatus);
   }, [dndStatus, onDndStatusChange]);
 
+  const syncDndMode = useCallback(
+    async (isCurrent: () => boolean = () => true): Promise<void> => {
+      if (!dndService.isAvailable) {
+        if (isCurrent()) {
+          setDndEnabled(false);
+          setDndStatus('unavailable');
+        }
+        return;
+      }
+
+      setDndError(null);
+      try {
+        const hasAccess = await dndService.hasPolicyAccess();
+        if (!isCurrent()) return;
+
+        if (!hasAccess) {
+          setDndEnabled(false);
+          setDndStatus(dndRequestedRef.current ? 'not-granted' : 'off');
+          setShowDndSettingsAction(dndPermissionRequestedRef.current);
+          return;
+        }
+
+        setShowDndSettingsAction(false);
+        if (!dndRequestedRef.current) {
+          setDndEnabled(false);
+          setDndStatus('off');
+          return;
+        }
+
+        const started = await dndService.beginPriorityMode();
+        if (!isCurrent()) return;
+        setDndEnabled(started);
+        setDndStatus(started ? 'blocked' : 'unavailable');
+        setShowDndSettingsAction(false);
+        if (!started) {
+          setDndError('Could not start Do Not Disturb. Please try again.');
+        }
+      } catch {
+        if (!isCurrent()) return;
+        setDndEnabled(false);
+        setDndStatus('unavailable');
+        setDndError('Could not update Do Not Disturb. Please try again.');
+        setShowDndSettingsAction(dndPermissionRequestedRef.current);
+      }
+    },
+    [dndService],
+  );
+
   useEffect(() => {
-    if (!visible || !dndService.isAvailable) {
+    if (!visible) {
+      dndRequestedRef.current = true;
+      dndPermissionRequestedRef.current = false;
+      return;
+    }
+
+    if (!dndService.isAvailable) {
+      setDndEnabled(false);
       setDndStatus('unavailable');
       return;
     }
 
     let disposed = false;
-
-    async function activatePriorityMode(showAccessPrompt: boolean): Promise<void> {
-      try {
-        const hasAccess = await dndService.hasPolicyAccess();
-        if (disposed) return;
-
-        if (hasAccess) {
-          const started = await dndService.beginPriorityMode();
-          if (!disposed) {
-            setDndStatus(started ? 'blocked' : 'not-granted');
-          }
-          return;
-        }
-
-        setDndStatus('not-granted');
-
-        if (showAccessPrompt) {
-          Alert.alert(
-            'Allow Do Not Disturb access?',
-            'Bearing can use Android priority-only Do Not Disturb during Focus Mode. Focus Mode will still work if you decline.',
-            [
-              { text: 'Not now', style: 'cancel' },
-              {
-                text: 'Open Settings',
-                onPress: () => {
-                  void dndService.openPolicyAccessSettings().catch(() => {
-                    Alert.alert(
-                      'Unable to open Settings',
-                      'Open Android Settings and allow Bearing under Do Not Disturb access.',
-                    );
-                  });
-                },
-              },
-            ],
-          );
-        }
-      } catch {
-        if (!disposed) {
-          setDndStatus('unavailable');
-          Alert.alert(
-            'Do Not Disturb unavailable',
-            'Focus Mode is still active, but Android priority-only Do Not Disturb could not be enabled.',
-          );
-        }
-      }
-    }
-
-    void activatePriorityMode(true);
+    void syncDndMode(() => !disposed);
     const appStateSubscription = AppState.addEventListener('change', (nextState) => {
       if (nextState !== 'active') {
         clearHoldTracking();
+        holdStartedAtRef.current = null;
+        exitHoldReachedRef.current = false;
+        exitCompletedRef.current = false;
         setHoldProgress(0);
+        cancelAnimation(holdProgressValue);
+        holdProgressValue.value = 0;
       }
       if (nextState === 'active') {
-        void activatePriorityMode(false);
+        void syncDndMode(() => !disposed);
       }
     });
 
@@ -189,13 +233,28 @@ export function FocusModeOverlay({
       disposed = true;
       appStateSubscription.remove();
       void dndService.endPriorityMode().catch(() => {
-        Alert.alert(
-          'Check Do Not Disturb',
-          'Bearing could not restore Android Do Not Disturb. Check the current setting before continuing.',
-        );
+        onDndStatusChange?.('unavailable');
       });
     };
-  }, [dndService, visible]);
+  }, [dndService, holdProgressValue, onDndStatusChange, syncDndMode, visible]);
+
+  useEffect(() => {
+    if (!visible) {
+      setUtilitySection(null);
+      setFallbackSessionStartedAt(null);
+      setEndAlertEnabled(true);
+      setShowDndSettingsAction(false);
+      setDndError(null);
+      return;
+    }
+
+    if (sessionStartedAt) {
+      setFallbackSessionStartedAt(null);
+      return;
+    }
+
+    setFallbackSessionStartedAt((current) => current ?? new Date());
+  }, [sessionStartedAt, visible]);
 
   useEffect(() => {
     if (!visible) {
@@ -223,11 +282,24 @@ export function FocusModeOverlay({
         clearTimeout(savedConfirmationTimeoutRef.current);
         savedConfirmationTimeoutRef.current = null;
       }
+      if (holdIntervalRef.current) {
+        clearInterval(holdIntervalRef.current);
+        holdIntervalRef.current = null;
+      }
+      if (holdExitTimeoutRef.current) {
+        clearTimeout(holdExitTimeoutRef.current);
+        holdExitTimeoutRef.current = null;
+      }
+      holdStartedAtRef.current = null;
+      exitCompletedRef.current = false;
+      exitHoldReachedRef.current = false;
       setHoldProgress(0);
+      cancelAnimation(holdProgressValue);
+      holdProgressValue.value = 0;
       trackedEventRef.current = null;
       timerCompletionHandledRef.current = false;
     }
-  }, [stopTimerSound, visible]);
+  }, [holdProgressValue, stopTimerSound, visible]);
 
   useEffect(() => {
     if (!visible) {
@@ -250,6 +322,10 @@ export function FocusModeOverlay({
 
     timerCompletionHandledRef.current = true;
     onClose();
+
+    if (!endAlertEnabled) {
+      return;
+    }
 
     let disposed = false;
 
@@ -291,7 +367,16 @@ export function FocusModeOverlay({
     return () => {
       disposed = true;
     };
-  }, [events, now, onClose, preferredEventId, stopTimerSound, timerSoundId, visible]);
+  }, [
+    endAlertEnabled,
+    events,
+    now,
+    onClose,
+    preferredEventId,
+    stopTimerSound,
+    timerSoundId,
+    visible,
+  ]);
 
   useEffect(() => {
     if (!visible || dndService.isAvailable) {
@@ -301,24 +386,34 @@ export function FocusModeOverlay({
     const appStateSubscription = AppState.addEventListener('change', (nextState) => {
       if (nextState !== 'active') {
         clearHoldTracking();
+        holdStartedAtRef.current = null;
+        exitHoldReachedRef.current = false;
+        exitCompletedRef.current = false;
         setHoldProgress(0);
+        cancelAnimation(holdProgressValue);
+        holdProgressValue.value = 0;
       }
     });
 
     return () => appStateSubscription.remove();
-  }, [dndService.isAvailable, visible]);
+  }, [dndService.isAvailable, holdProgressValue, visible]);
 
   useEffect(() => {
     timerPlayerDisposedRef.current = false;
 
     return () => {
       timerPlayerDisposedRef.current = true;
-      if (holdTimeoutRef.current) {
-        clearTimeout(holdTimeoutRef.current);
-      }
       if (holdIntervalRef.current) {
         clearInterval(holdIntervalRef.current);
+        holdIntervalRef.current = null;
       }
+      if (holdExitTimeoutRef.current) {
+        clearTimeout(holdExitTimeoutRef.current);
+        holdExitTimeoutRef.current = null;
+      }
+      holdStartedAtRef.current = null;
+      exitHoldReachedRef.current = false;
+      exitCompletedRef.current = false;
       if (savedConfirmationTimeoutRef.current) {
         clearTimeout(savedConfirmationTimeoutRef.current);
       }
@@ -332,29 +427,29 @@ export function FocusModeOverlay({
     if (activeEvent) {
       return {
         title: activeEvent.title,
-        subtitle: 'Current event',
         timerLabel: 'Time remaining',
         timerValue: formatDuration(activeEvent.endAt.getTime() - now.getTime()),
         event: activeEvent,
+        contextEvent: activeEvent,
       };
     }
 
     if (nextEvent) {
       return {
         title: nextEvent.title,
-        subtitle: 'Next event',
         timerLabel: 'Starts in',
         timerValue: formatDuration(nextEvent.startAt.getTime() - now.getTime()),
         event: null,
+        contextEvent: nextEvent,
       };
     }
 
     return {
-      title: 'No active event right now',
-      subtitle: 'Focus Mode still lets you capture thoughts without leaving the flow.',
-      timerLabel: 'Timer',
+      title: 'Deep Work',
+      timerLabel: 'Time remaining',
       timerValue: '--:--:--',
       event: null,
+      contextEvent: null,
     };
   }, [events, now, preferredEventId]);
 
@@ -374,42 +469,85 @@ export function FocusModeOverlay({
   }, [focusSummary.event, visible]);
 
   function clearHoldTracking(): void {
-    if (holdTimeoutRef.current) {
-      clearTimeout(holdTimeoutRef.current);
-      holdTimeoutRef.current = null;
-    }
     if (holdIntervalRef.current) {
       clearInterval(holdIntervalRef.current);
       holdIntervalRef.current = null;
     }
+    if (holdExitTimeoutRef.current) {
+      clearTimeout(holdExitTimeoutRef.current);
+      holdExitTimeoutRef.current = null;
+    }
   }
 
-  function handlePressInExit(): void {
-    if (holdTimeoutRef.current || holdIntervalRef.current) {
+  function completeExitHold(): void {
+    if (exitHoldReachedRef.current) {
       return;
     }
 
+    exitHoldReachedRef.current = true;
+    clearHoldTracking();
+    setHoldProgress(1);
+    cancelAnimation(holdProgressValue);
+    holdProgressValue.value = 1;
+  }
+
+  function handlePressInExit(): void {
+    if (holdStartedAtRef.current !== null) {
+      return;
+    }
+
+    exitCompletedRef.current = false;
+    exitHoldReachedRef.current = false;
     const startTime = Date.now();
+    holdStartedAtRef.current = startTime;
     setHoldProgress(0);
+    cancelAnimation(holdProgressValue);
+    holdProgressValue.value = withTiming(1, {
+      duration: HOLD_TO_EXIT_MS,
+      easing: Easing.linear,
+    });
 
     holdIntervalRef.current = setInterval(() => {
       const elapsed = Date.now() - startTime;
-      setHoldProgress(Math.min(1, elapsed / HOLD_TO_EXIT_MS));
+      const progress = Math.min(1, elapsed / HOLD_TO_EXIT_MS);
+      setHoldProgress(progress);
+      if (progress >= 1) {
+        completeExitHold();
+      }
     }, 100);
-
-    holdTimeoutRef.current = setTimeout(() => {
-      clearHoldTracking();
-      setHoldProgress(1);
-      onClose();
-    }, HOLD_TO_EXIT_MS);
+    holdExitTimeoutRef.current = setTimeout(completeExitHold, HOLD_TO_EXIT_MS);
   }
 
   function handlePressOutExit(): void {
+    if (exitCompletedRef.current) {
+      holdStartedAtRef.current = null;
+      return;
+    }
+
+    const heldDuration =
+      holdStartedAtRef.current === null ? 0 : Date.now() - holdStartedAtRef.current;
     clearHoldTracking();
+    holdStartedAtRef.current = null;
+    if (exitHoldReachedRef.current || heldDuration >= HOLD_TO_EXIT_MS) {
+      completeExitHold();
+      exitCompletedRef.current = true;
+      onClose();
+      return;
+    }
+
     setHoldProgress(0);
+    cancelAnimation(holdProgressValue);
+    holdProgressValue.value = withTiming(0, {
+      duration: 120,
+      easing: Easing.out(Easing.quad),
+    });
   }
 
   async function handleSaveIdeaDump(): Promise<void> {
+    if (saving) {
+      return;
+    }
+
     const trimmedBody = ideaBody.trim();
 
     if (!trimmedBody) {
@@ -445,7 +583,46 @@ export function FocusModeOverlay({
     }
   }
 
-  const holdSecondsRemaining = Math.max(0, Math.ceil((1 - holdProgress) * 3));
+  const distractionStatusText =
+    dndStatus === 'blocked'
+      ? 'Distractions blocked'
+      : dndStatus === 'not-granted'
+        ? 'Protection not granted'
+        : dndStatus === 'checking'
+          ? 'Checking protection...'
+          : dndStatus === 'off'
+            ? 'Protection off for this session'
+            : 'Protection unavailable on this device';
+  const exitButtonLabel = 'Hold for 3 seconds to exit';
+
+  async function handleDndEnabledChange(enabled: boolean): Promise<void> {
+    dndRequestedRef.current = enabled;
+    dndPermissionRequestedRef.current = enabled;
+    setDndError(null);
+
+    if (!enabled) {
+      setDndEnabled(false);
+      setDndStatus('off');
+      setShowDndSettingsAction(false);
+      try {
+        await dndService.endPriorityMode();
+      } catch {
+        setDndError('Could not turn off Do Not Disturb. Please try again.');
+      }
+      return;
+    }
+
+    setDndStatus('checking');
+    await syncDndMode();
+  }
+
+  async function handleOpenDndSettings(): Promise<void> {
+    try {
+      await dndService.openPolicyAccessSettings();
+    } catch {
+      setDndError('Could not open Android Do Not Disturb settings.');
+    }
+  }
 
   // Match AppModal: unmount the native Modal entirely while closed instead of
   // leaving a hidden window, which Android can render as a stray dark bar.
@@ -453,150 +630,168 @@ export function FocusModeOverlay({
     return null;
   }
 
-  return (
+  const activeSessionModal = (
     <Modal visible={visible} animationType="fade" onRequestClose={() => {}}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
         <SafeAreaView style={styles.screen}>
-          <View style={styles.heroBlock}>
-            <Text style={styles.eyebrow}>Focus Mode</Text>
-            <Text style={styles.eventTitle}>{focusSummary.title}</Text>
-            <Text style={styles.eventSubtitle}>{focusSummary.subtitle}</Text>
-          </View>
-
-          <View style={styles.timerCard}>
-            <Text style={styles.timerLabel}>{focusSummary.timerLabel}</Text>
-            <Text style={styles.timerValue}>{focusSummary.timerValue}</Text>
-            {focusSummary.event ? (
-              <Text style={styles.endTime}>
-                Ends at{' '}
-                {focusSummary.event.endAt.toLocaleTimeString([], {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                })}
-              </Text>
-            ) : null}
-          </View>
-
-          <View style={styles.ideaBlock}>
-            <FormField
-              label="Idea Dump"
-              helperText="Capture the thought now. It will be stored in Notes for later processing."
-              error={saveError}
-              accessibilityLabel="Idea dump input"
-              placeholder="Write the thought you do not want to lose..."
-              placeholderTextColor={styles.ideaInput.color}
-              value={ideaBody}
-              onChangeText={setIdeaBody}
-              multiline
-              containerStyle={styles.ideaField}
-              labelStyle={styles.ideaTitle}
-              inputStyle={styles.ideaInput}
-              helperStyle={styles.ideaDescription}
-              errorStyle={styles.errorText}
-            />
-            <AppButton
-              accessibilityLabel="Save idea dump"
-              onPress={handleSaveIdeaDump}
-              label="Save to Notes"
-              loading={saving}
-              loadingLabel="Saving..."
-            />
-            <View style={styles.ideaMeta}>
-              <Text style={styles.ideaCount}>Ideas captured: {savedCount}</Text>
-              {showSavedConfirmation ? <Text style={styles.savedText}>Saved</Text> : null}
+          <ScrollView
+            testID="focus-session-scroll"
+            style={styles.contentScroll}
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.heroBlock}>
+              <Text style={styles.eyebrow}>FOCUS MODE</Text>
+              <Text style={styles.eventTitle}>{focusSummary.title}</Text>
             </View>
-          </View>
 
-          <View style={styles.utilityBlock}>
-            <Text style={styles.distractionStatus}>
-              {dndStatus === 'blocked'
-                ? 'Distractions blocked'
-                : dndStatus === 'not-granted'
-                  ? 'Distraction protection not granted'
-                  : dndStatus === 'checking'
-                    ? 'Checking distraction protection...'
-                    : 'Distraction protection unavailable on this device'}
-            </Text>
-            <View style={styles.utilityButtons}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Session Details"
-                onPress={() =>
-                  Alert.alert(
-                    'Session Details',
-                    `${focusSummary.title}\n${
-                      focusSummary.event
-                        ? `Scheduled duration: ${formatDuration(
-                            focusSummary.event.endAt.getTime() -
-                              focusSummary.event.startAt.getTime(),
-                          )}`
-                        : 'No linked calendar event.'
-                    }`,
-                  )
-                }
-                style={({ pressed }) => [
-                  styles.utilityIconButton,
-                  pressed ? styles.utilityIconButtonPressed : null,
-                ]}
-              >
-                <AppIcon name="duration" size={20} color={theme.colors.textPrimary} decorative />
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Focus Settings"
-                onPress={() =>
-                  Alert.alert(
-                    'Focus Settings',
-                    dndStatus === 'not-granted'
-                      ? 'Allow Android Do Not Disturb access to enable distraction protection.'
-                      : 'Timer sound and distraction protection follow your current profile and device settings.',
-                    dndStatus === 'not-granted'
-                      ? [
-                          { text: 'Not now', style: 'cancel' },
-                          {
-                            text: 'Open Settings',
-                            onPress: () => void dndService.openPolicyAccessSettings(),
-                          },
-                        ]
-                      : [{ text: 'Done' }],
-                  )
-                }
-                style={({ pressed }) => [
-                  styles.utilityIconButton,
-                  pressed ? styles.utilityIconButtonPressed : null,
-                ]}
-              >
-                <AppIcon name="settings" size={20} color={theme.colors.textPrimary} decorative />
-              </Pressable>
+            <View style={styles.sessionContent}>
+              <View testID="focus-timer" style={styles.timerCard}>
+                <Text style={styles.timerValue}>{focusSummary.timerValue}</Text>
+                <Text style={styles.timerLabel}>{focusSummary.timerLabel}</Text>
+              </View>
+
+              <View style={styles.ideaBlock}>
+                <FormField
+                  label="Quick Idea Dump"
+                  helperText="Capture thoughts without breaking your focus."
+                  error={saveError}
+                  accessibilityLabel="Idea dump input"
+                  placeholder="Type your idea here..."
+                  placeholderTextColor={styles.ideaInput.color}
+                  value={ideaBody}
+                  onChangeText={setIdeaBody}
+                  containerStyle={styles.ideaField}
+                  inputContainerStyle={styles.ideaInputContainer}
+                  labelStyle={styles.ideaTitle}
+                  inputStyle={styles.ideaInput}
+                  helperStyle={styles.ideaDescription}
+                  errorStyle={styles.errorText}
+                  trailingIcon="create"
+                  trailingIconLabel="Add idea"
+                  onPressTrailingIcon={saving ? undefined : () => void handleSaveIdeaDump()}
+                />
+                <View style={styles.ideaMeta}>
+                  <Text style={styles.ideaCount}>Ideas captured: {savedCount}</Text>
+                  {showSavedConfirmation ? <Text style={styles.savedText}>Saved</Text> : null}
+                </View>
+              </View>
+
+              <View style={styles.utilityBlock}>
+                {focusSummary.event ? (
+                  <View style={styles.endTimeRow}>
+                    <Text style={styles.endTimeLabel}>End Time</Text>
+                    <Text style={styles.endTime}>
+                      {focusSummary.event.endAt.toLocaleTimeString([], {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })}
+                    </Text>
+                  </View>
+                ) : null}
+                <View style={styles.utilityDivider} />
+                <View style={styles.distractionBlock}>
+                  <Text style={styles.distractionHeading}>Distraction protection</Text>
+                  <Text style={styles.distractionStatus}>{distractionStatusText}</Text>
+                </View>
+                <View style={styles.utilityButtons}>
+                  <IconButton
+                    name="duration"
+                    accessibilityLabel="Session Details"
+                    onPress={() => setUtilitySection('details')}
+                    color={focusModeColors.text}
+                    style={styles.utilityAction}
+                  />
+                  <IconButton
+                    name="support"
+                    accessibilityLabel="Focus Environment"
+                    onPress={() => setUtilitySection('environment')}
+                    color={focusModeColors.text}
+                    style={styles.utilityAction}
+                  />
+                  <IconButton
+                    name="settings"
+                    accessibilityLabel="Focus Settings"
+                    onPress={() => setUtilitySection('settings')}
+                    color={focusModeColors.text}
+                    style={styles.utilityAction}
+                  />
+                </View>
+              </View>
             </View>
-          </View>
+          </ScrollView>
 
           <View style={styles.exitBlock}>
-            <Text style={styles.exitLabel}>Hold to exit Focus Mode</Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Hold to return to calendar"
+              accessibilityHint="Press and hold for 3 seconds to exit Focus Mode."
+              accessibilityValue={{ min: 0, max: 100, now: Math.round(holdProgress * 100) }}
               onPressIn={handlePressInExit}
               onPressOut={handlePressOutExit}
+              onLayout={(event) => setExitButtonWidth(event.nativeEvent.layout.width)}
               style={({ pressed }) => [
                 styles.exitButton,
                 pressed ? styles.exitButtonPressed : null,
               ]}
             >
-              <View style={styles.exitProgressTrack}>
-                <View style={[styles.exitProgressFill, { width: `${holdProgress * 100}%` }]} />
+              <View pointerEvents="none" style={styles.exitProgressTrack}>
+                <Animated.View
+                  testID="focus-exit-progress-fill"
+                  style={[styles.exitProgressFill, exitProgressAnimatedStyle]}
+                />
               </View>
-              <Text style={styles.exitButtonText}>
-                {holdProgress > 0 ? `Keep holding ${holdSecondsRemaining}s` : 'Hold for 3 seconds'}
-              </Text>
+              <View pointerEvents="none" style={styles.exitButtonLabel}>
+                <Text style={styles.exitButtonText}>{exitButtonLabel}</Text>
+                <Animated.View
+                  testID="focus-exit-filled-label"
+                  style={[styles.exitFilledLabelClip, exitFilledLabelAnimatedStyle]}
+                >
+                  <View style={[styles.exitFilledLabelWidth, { width: exitButtonWidth }]}>
+                    <Text style={[styles.exitButtonText, styles.exitFilledButtonText]}>
+                      {exitButtonLabel}
+                    </Text>
+                  </View>
+                </Animated.View>
+              </View>
             </Pressable>
           </View>
         </SafeAreaView>
       </KeyboardAvoidingView>
     </Modal>
+  );
+
+  return (
+    <>
+      {activeSessionModal}
+      {utilitySection ? (
+        <FocusModeUtilitySheet
+          section={utilitySection}
+          onDismiss={() => setUtilitySection(null)}
+          sessionTitle={focusSummary.title}
+          linkedEvent={focusSummary.contextEvent}
+          sessionStartedAt={sessionStartedAt ?? fallbackSessionStartedAt ?? now}
+          now={now}
+          timerLabel={focusSummary.timerLabel}
+          timerValue={focusSummary.timerValue}
+          ideasCaptured={savedCount}
+          dndAvailable={dndService.isAvailable}
+          dndEnabled={dndEnabled}
+          dndStatus={dndStatus}
+          dndError={dndError}
+          showDndSettingsAction={showDndSettingsAction}
+          onDndEnabledChange={(enabled) => void handleDndEnabledChange(enabled)}
+          onOpenDndSettings={() => void handleOpenDndSettings()}
+          timerSoundId={timerSoundId}
+          onUpdateTimerSound={onUpdateTimerSound}
+          endAlertEnabled={endAlertEnabled}
+          onEndAlertEnabledChange={setEndAlertEnabled}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -604,16 +799,26 @@ const createStyles = (theme: Theme) =>
   StyleSheet.create({
     keyboardView: {
       flex: 1,
-      backgroundColor: theme.colors.background,
+      backgroundColor: focusModeColors.background,
     },
     screen: {
       flex: 1,
-      backgroundColor: theme.colors.background,
-      paddingHorizontal: theme.spacing.lg,
+      backgroundColor: focusModeColors.background,
       paddingTop: theme.spacing.sm,
       paddingBottom: theme.spacing.lg,
-      justifyContent: 'space-between',
-      gap: theme.spacing.xl,
+      gap: theme.spacing.md,
+    },
+    contentScroll: { flex: 1 },
+    content: {
+      flexGrow: 1,
+      gap: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
+      paddingBottom: theme.spacing.sm,
+    },
+    sessionContent: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      gap: theme.spacing.md,
     },
     heroBlock: {
       gap: theme.spacing.sm,
@@ -622,71 +827,67 @@ const createStyles = (theme: Theme) =>
     },
     eyebrow: {
       ...theme.typography.label,
-      color: theme.colors.focusGreen,
+      color: focusModeColors.green,
     },
     eventTitle: {
-      ...theme.typography.sectionTitle,
-      fontSize: 20,
-      lineHeight: 26,
-      color: theme.colors.text,
-      textAlign: 'center',
-    },
-    eventSubtitle: {
-      ...theme.typography.body,
-      color: theme.colors.textSecondary,
+      ...theme.typography.cardTitle,
+      color: focusModeColors.text,
       textAlign: 'center',
     },
     timerCard: {
+      flexGrow: 1,
       alignItems: 'center',
-      paddingVertical: theme.spacing.xl,
+      justifyContent: 'center',
       gap: theme.spacing.xs,
-      borderRadius: theme.radii.lg,
-      borderWidth: 1,
-      borderColor: theme.colors.focusGreen,
-      backgroundColor: theme.colors.surfaceBrand,
+      paddingVertical: theme.spacing.sm,
     },
     timerLabel: {
-      ...theme.typography.label,
-      color: theme.colors.textSecondary,
+      ...theme.typography.body,
+      color: focusModeColors.textSecondary,
       textAlign: 'center',
     },
     timerValue: {
-      fontSize: 48,
-      lineHeight: 56,
-      fontWeight: '700',
-      color: theme.colors.focusGreen,
+      fontSize: 52,
+      lineHeight: 62,
+      fontWeight: '300',
+      fontVariant: ['tabular-nums'],
+      color: focusModeColors.text,
     },
     endTime: {
       ...theme.typography.body,
-      color: theme.colors.textSecondary,
+      color: focusModeColors.text,
       textAlign: 'center',
     },
     ideaBlock: {
-      gap: theme.spacing.md,
+      gap: theme.spacing.sm,
       borderRadius: theme.radii.md,
       borderWidth: 1,
-      borderColor: theme.colors.focusGreen,
-      backgroundColor: theme.colors.surface,
+      borderColor: focusModeColors.border,
+      backgroundColor: focusModeColors.surface,
       padding: theme.spacing.md,
     },
     ideaField: {},
+    ideaInputContainer: {
+      backgroundColor: focusModeColors.surfaceRaised,
+      borderColor: focusModeColors.border,
+    },
     ideaTitle: {
-      ...theme.typography.sectionTitle,
-      color: theme.colors.text,
+      ...theme.typography.cardTitle,
+      color: focusModeColors.text,
+      textTransform: 'none',
     },
     ideaDescription: {
       ...theme.typography.helper,
-      color: theme.colors.textSecondary,
+      color: focusModeColors.textSecondary,
     },
     ideaInput: {
-      height: 112,
+      minHeight: 44,
       borderRadius: theme.radii.md,
-      backgroundColor: 'transparent',
-      borderWidth: 1,
-      borderColor: theme.colors.borderStrong,
-      color: theme.colors.text,
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.lg,
+      backgroundColor: focusModeColors.surfaceRaised,
+      borderWidth: 0,
+      color: focusModeColors.text,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
     },
     errorText: {
       ...theme.typography.helper,
@@ -700,76 +901,119 @@ const createStyles = (theme: Theme) =>
     },
     ideaCount: {
       ...theme.typography.helper,
-      color: theme.colors.textSecondary,
+      color: focusModeColors.textSecondary,
     },
     savedText: {
       ...theme.typography.helper,
-      color: theme.colors.focusGreen,
+      color: focusModeColors.green,
     },
     utilityBlock: {
       gap: theme.spacing.sm,
     },
-    distractionStatus: {
+    endTimeRow: {
+      minHeight: 36,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.sm,
+    },
+    endTimeLabel: {
       ...theme.typography.body,
-      color: theme.colors.textSecondary,
+      color: focusModeColors.textSecondary,
+    },
+    utilityDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: focusModeColors.border,
+    },
+    distractionBlock: { alignItems: 'center', gap: theme.spacing.xs },
+    distractionHeading: {
+      ...theme.typography.helper,
+      color: focusModeColors.green,
+    },
+    distractionStatus: {
+      ...theme.typography.caption,
+      color: focusModeColors.textSecondary,
       textAlign: 'center',
-      borderRadius: theme.radii.sm,
-      backgroundColor: theme.colors.surfaceBrand,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
     },
     utilityButtons: {
       flexDirection: 'row',
-      gap: theme.spacing.sm,
+      alignItems: 'center',
+      gap: theme.spacing.lg,
       justifyContent: 'center',
+      paddingTop: theme.spacing.xs,
     },
-    utilityIconButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+    utilityAction: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: theme.colors.surface,
+      backgroundColor: focusModeColors.utilityButtonBackground,
       borderWidth: 1,
-      borderColor: theme.colors.border,
-    },
-    utilityIconButtonPressed: {
-      opacity: 0.75,
+      borderColor: focusModeColors.border,
     },
     exitBlock: {
       gap: theme.spacing.sm,
-    },
-    exitLabel: {
-      ...theme.typography.label,
-      color: theme.colors.textSecondary,
+      marginHorizontal: theme.spacing.lg,
     },
     exitButton: {
-      alignItems: 'stretch',
+      height: 56,
+      width: '100%',
+      justifyContent: 'center',
       borderRadius: 28,
       borderWidth: 1,
-      borderColor: theme.colors.focusGreen,
-      backgroundColor: theme.colors.surfaceRaised,
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.md,
-      gap: theme.spacing.md,
+      borderColor: focusModeColors.border,
+      backgroundColor: focusModeColors.surfaceRaised,
+      overflow: 'hidden',
     },
     exitButtonPressed: {
       opacity: 0.92,
     },
     exitProgressTrack: {
-      width: '100%',
-      height: 6,
-      borderRadius: 3,
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      borderRadius: 28,
       overflow: 'hidden',
-      backgroundColor: theme.colors.surfaceMuted,
     },
     exitProgressFill: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: 0,
+      backgroundColor: focusModeColors.greenLight,
+    },
+    exitButtonLabel: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    exitFilledLabelClip: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: 0,
+      overflow: 'hidden',
+      justifyContent: 'center',
+    },
+    exitFilledLabelWidth: {
       height: '100%',
-      backgroundColor: theme.colors.focusGreen,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     exitButtonText: {
       ...theme.typography.button,
-      color: theme.colors.text,
       textAlign: 'center',
+      color: focusModeColors.text,
+      width: '100%',
+    },
+    exitFilledButtonText: {
+      color: focusModeColors.greenDarkText,
     },
   });

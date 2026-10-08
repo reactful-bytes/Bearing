@@ -132,6 +132,10 @@ describe('M23 shared UI primitives', () => {
     );
 
     expect(result.getByLabelText('Create item').props.accessibilityViewIsModal).toBe(true);
+    expect(result.getByTestId('create-sheet-drag-handle')).toBeTruthy();
+    expect(StyleSheet.flatten(result.getByTestId('create-sheet').props.style).maxHeight).toBe(
+      '100%',
+    );
     fireEvent.press(result.UNSAFE_getByProps({ testID: 'create-sheet-backdrop' }));
     result.UNSAFE_getByType(Modal).props.onRequestClose();
     expect(onDismiss).toHaveBeenCalledTimes(2);

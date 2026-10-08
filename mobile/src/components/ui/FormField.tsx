@@ -23,6 +23,7 @@ type FormFieldProps = Omit<TextInputProps, 'style'> & {
   helperText?: string;
   error?: string | null;
   containerStyle?: StyleProp<ViewStyle>;
+  inputContainerStyle?: StyleProp<ViewStyle>;
   labelStyle?: StyleProp<TextStyle>;
   inputStyle?: StyleProp<TextStyle>;
   helperStyle?: StyleProp<TextStyle>;
@@ -37,6 +38,7 @@ export function FormField({
   helperText,
   error,
   containerStyle,
+  inputContainerStyle,
   labelStyle,
   inputStyle,
   helperStyle,
@@ -80,7 +82,7 @@ export function FormField({
         {label}
       </Text>
       {trailingIcon ? (
-        <View style={[styles.inputRow, multiline && styles.multilineRow]}>
+        <View style={[styles.inputRow, multiline && styles.multilineRow, inputContainerStyle]}>
           {input}
           <Pressable
             accessibilityRole="button"

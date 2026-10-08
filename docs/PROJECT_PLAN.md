@@ -547,7 +547,7 @@ exceptions, publication, and reconciliation behavior remain unchanged.
 | M33.3   | completed | Build active Focus hierarchy         | Full-screen active state prioritizes title, countdown, end time, Idea Dump, utilities, and truthful DND        |
 | M33.4   | completed | Remove bypass controls               | Modal dismissal is suppressed and active route removal is prevented while hold exit is active                  |
 | M33.5   | completed | Save Idea Dump in place              | Existing `idea_dump` notes save in place with clear, Saved confirmation, and session count                     |
-| M33.6   | completed | Add details and supported settings   | Session Details and Focus Settings expose only supported informational and DND behavior                        |
+| M33.6   | completed | Add Focus utility sheets             | Labeled Session Details, Focus Environment, and Focus Settings expose session context, Android DND controls, saved timer tones, and a session-only end alert |
 | M33.7   | completed | Implement hold-only exit and summary | Three-second hold cancellation/completion and a pre-dashboard summary are implemented                          |
 | M33.8   | completed | Validate Focus                       | 62 suites/432 tests, typecheck, lint, touched-file format, and diff checks pass                                |
 

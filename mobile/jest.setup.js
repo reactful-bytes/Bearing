@@ -10,6 +10,11 @@ jest.mock('react-native-reanimated', () => {
     __esModule: true,
     default: { View, createAnimatedComponent: (Component) => Component },
     cancelAnimation: jest.fn(),
+    Easing: {
+      linear: (value) => value,
+      quad: (value) => value,
+      out: (easing) => easing,
+    },
     runOnJS: (callback) => callback,
     useAnimatedStyle: (createStyle) => {
       animatedStyles.push(createStyle);

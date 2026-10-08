@@ -9,6 +9,7 @@ import { useCreateNote } from '../features/notes/useNotes';
 import { useTasks } from '../features/tasks/useTasks';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { FocusModeScreen } from '../screens/FocusModeScreen';
+import { focusModeColors } from '../components/calendar/focusModeColors';
 
 jest.mock('@react-navigation/native', () => ({
   usePreventRemove: jest.fn(),
@@ -91,7 +92,7 @@ function makeEvent(): CalendarDisplayEvent {
 }
 
 describe('FocusModeScreen', () => {
-  it('shows contextual start state and transitions to a summary after completion', () => {
+  it('shows the focus start state and transitions to a summary after completion', () => {
     jest.mocked(useSafeAreaInsets).mockReturnValue({ top: 24, bottom: 0, left: 0, right: 0 });
     const event = makeEvent();
     mockUseCalendarEvents.mockReturnValue({
@@ -107,9 +108,12 @@ describe('FocusModeScreen', () => {
     const goBack = jest.fn();
     render(<FocusModeScreen route={{ params: { eventId: event.id } }} navigation={{ goBack }} />);
 
-    expect(screen.getByText('Focus on')).toBeTruthy();
-    expect(screen.getByText('Write proposal')).toBeTruthy();
-    expect(screen.getByText(/Ends at/)).toBeTruthy();
+    expect(screen.getByText('Start a focused\nwork session')).toBeTruthy();
+    const focusIconStyle = StyleSheet.flatten(screen.getByTestId('focus-start-icon').props.style);
+    expect(focusIconStyle).toMatchObject({ width: 112, height: 112 });
+    expect(focusIconStyle.borderRadius).toBeUndefined();
+    expect(screen.queryByText('Focus on')).toBeNull();
+    expect(screen.queryByText('Write proposal')).toBeNull();
     expect(screen.getByRole('header', { name: 'Focus Mode' })).toBeTruthy();
     expect(
       StyleSheet.flatten(
@@ -127,16 +131,25 @@ describe('FocusModeScreen', () => {
 
     fireEvent.press(screen.getByRole('button', { name: 'Complete focus' }));
     expect(screen.getByTestId('focus-summary-screen')).toBeTruthy();
-    expect(screen.getByText('Focus Session Complete')).toBeTruthy();
-    expect(screen.getByText('Ideas captured: 0')).toBeTruthy();
-    expect(screen.getByRole('header', { name: 'Focus Mode' })).toBeTruthy();
+    const summaryTitle = screen.getByText('Focus Session Complete');
+    expect(summaryTitle).toBeTruthy();
+    expect(StyleSheet.flatten(summaryTitle.props.style).color).toBe(focusModeColors.green);
+    expect(
+      StyleSheet.flatten(screen.getByTestId('focus-summary-screen').props.style).backgroundColor,
+    ).not.toBe(focusModeColors.background);
+    expect(screen.getByText('Great work, Leader!')).toBeTruthy();
+    expect(screen.getByText('Duration')).toBeTruthy();
+    expect(screen.getByText('Ideas Captured')).toBeTruthy();
+    expect(screen.getByText('Distractions Blocked')).toBeTruthy();
+    expect(screen.getAllByText('0', { exact: true })).toHaveLength(2);
+    expect(screen.queryByText(/unavailable/i)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Back from Focus Mode' })).toBeNull();
     expect(
       StyleSheet.flatten(
         screen.getByTestId('focus-summary-screen-scroll').props.contentContainerStyle,
       ).paddingTop,
     ).toBe(24);
-    expect(screen.getAllByText('Focus Mode')).toHaveLength(1);
-    fireEvent.press(screen.getByRole('button', { name: 'Back from Focus Mode' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Done' }));
     expect(goBack).toHaveBeenCalledTimes(2);
   });
 });

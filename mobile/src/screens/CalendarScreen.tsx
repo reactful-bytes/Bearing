@@ -213,7 +213,7 @@ export function CalendarScreen({
     publicationCalendarTitle,
   } = useCalendarEvents(selectedDate, undefined, visibleRange);
   const createNote = useCreateNote();
-  const { profile } = useUserProfile();
+  const { profile, updateProfile } = useUserProfile();
   const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
 
   const uiState: CalendarUiState = stateOverride ?? realUiState;
@@ -691,6 +691,7 @@ export function CalendarScreen({
         events={mergedFocusEvents}
         preferredEventId={preferredFocusEventId}
         timerSoundId={profile?.alarmSoundId}
+        onUpdateTimerSound={(soundId) => updateProfile({ alarmSoundId: soundId })}
         onClose={handleCloseFocusMode}
         onSaveIdeaDump={handleSaveIdeaDump}
       />

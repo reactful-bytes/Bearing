@@ -235,7 +235,7 @@ auth, navigation, or feature-screen redesign begins before it passes.
 | M33.3  | completed   | Build active Focus hierarchy         | Full-screen active overlay shows countdown, end time, Idea Dump, utility actions, and truthful DND state                   |
 | M33.4  | completed   | Remove bypass controls               | Native modal dismissal is suppressed and active route removal is prevented; hold exit is the only in-app exit              |
 | M33.5  | completed   | Save Idea Dump in place              | Existing `idea_dump` note metadata is preserved; saves clear input and show Saved/count feedback in place                  |
-| M33.6  | completed   | Add details and supported settings   | Session Details and Focus Settings expose only informational/profile/Android DND behavior already supported                |
+| M33.6  | completed   | Add Focus utility sheets             | Labeled Session Details, Focus Environment, and Focus Settings expose session context, Android DND controls, saved timer tones, and a session-only end alert |
 | M33.7  | completed   | Implement hold-only exit and summary | Three-second hold progress cancels on release/interruption and completion shows duration, ideas, and applicable DND status |
 | M33.8  | completed   | Validate Focus                       | 62 mobile suites and 432 tests pass with typecheck, lint, touched-file Prettier, and diff checks                           |
 

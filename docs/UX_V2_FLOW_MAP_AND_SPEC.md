@@ -1301,7 +1301,7 @@ IDEA DUMP
 
 Distractions blocked
 
-[ Session Details ] [ Focus Settings ]
+[ Session Details ] [ Focus Environment ] [ Focus Settings ]
 
 ─────────────────────
 
@@ -1315,46 +1315,58 @@ menu before capturing a distracting thought.
 
 ## Focus utilities
 
-Expose no more than two optional utility buttons:
+Expose exactly three labeled utility actions: Clock for Session Details,
+Headphones for Focus Environment, and Gear for Focus Settings. Each action opens
+one mutually exclusive bottom sheet. Keep the session timer, Idea Dump, and hold
+to exit visible while a utility is closed.
+Each sheet uses a dark shared scrim and a draggable top handle for downward
+dismissal; do not add a close button. Keep scroll indicators at the far-right
+edge of the sheet viewport. Sheets extend to the bottom safe area; all controls
+remain in the inset, scrollable content beneath a fixed title.
 
 ### Session Details
 
 Show:
 
--   linked event information
--   original scheduled duration
+-   linked event or task information
+-   scheduled start and end, and original scheduled duration
 -   elapsed and remaining time
--   focus session statistics available during the current session
--   linked goal, step, or task context when present
+-   ideas captured during the current session
 
 Session Details is informational by default. Do not add timer editing or
 session mutation unless that behavior is separately specified and
 tested.
+For unscheduled sessions, state that there is no linked event or scheduled end.
+Use compact icon-led, divider-separated rows instead of cards. Keep related
+dates, times, durations, and counts in a single-column list.
+
+### Focus Environment
+
+Show the session's Do Not Disturb state and an in-session toggle. On Android,
+continue enabling priority mode automatically when access is already granted.
+When the user explicitly enables protection without access, explain the
+permission requirement and offer an Android Settings action. Recheck access
+when the app returns, and show unsupported or failed states inline. Restore only
+Do Not Disturb changes made by Bearing.
 
 ### Focus Settings
 
-Show only settings supported by the current platform and product:
-
--   notification or Do Not Disturb behavior
--   timer sound or ambient sound preferences, when available
--   screen or display behavior, when available
-
-Do not claim that notifications or distractions are blocked when the
-platform service is unavailable or permission has not been granted.
+Allow previewing and choosing the timer-end tone from the existing profile sound
+catalog. Save the selection to Focus Preferences for future sessions. A separate
+end-of-session alert toggle applies only to the current session. Do not add OS
+notification or ambient-audio settings.
+Present tones as a compact selector list with left-aligned blue uppercase names,
+divider-separated rows, left-aligned text, a circular dark preview control on
+the left, and the selection indicator on the right. Use compact row typography
+for the session-only alert label. Do not use cards for the tone options.
 
 ## Mockup icon interpretation
 
-The five mockup icons may be interpreted as Idea Dump, session timing,
-focus environment, settings, and session tools, but they should not be
-implemented as five separate icon buttons. Their useful behavior is
-consolidated into the visible Idea Dump area, Session Details, and Focus
-Settings.
+The utility actions use the mockup's clock, headphones, and gear concepts. Do not
+add a separate Panel action or treat status indicators as utility controls.
 
-Use the centralized `AppIcon` system for the two utility actions. Prefer
-the approved mockup-derived Focus icon for Focus Settings when it remains
-clear at button size; otherwise use the closest approved Material icon.
-Icons must have visible text labels and must not be the only indication
-of an action.
+Use the centralized `AppIcon` system. Icons must have visible text labels and
+must not be the only indication of an action.
 
 ------------------------------------------------------------------------
 
