@@ -902,13 +902,13 @@ const createStyles = (theme: Theme) =>
     },
     goalRow: {
       flex: 1,
-      paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.xs,
     },
     goalRowContent: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
     },
     goalCopy: { flex: 1, minWidth: 0, gap: theme.spacing.xs },
     goalTitle: { ...theme.typography.helper, color: theme.colors.text, flex: 1 },

@@ -232,7 +232,11 @@ describe('PlanScreen', () => {
       StyleSheet.flatten(
         screen.getByTestId('plan-goal-row-content-Ship the next release').props.style,
       ),
-    ).toMatchObject({ flexDirection: 'row', alignItems: 'center' });
+    ).toMatchObject({
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.xs,
+    });
     expect(
       StyleSheet.flatten(screen.getByTestId('plan-goal-marker-Ship the next release').props.style),
     ).toMatchObject({ width: 12, height: 12, borderRadius: 6, borderWidth: 1.5 });
