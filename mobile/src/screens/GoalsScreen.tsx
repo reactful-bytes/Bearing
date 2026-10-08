@@ -1,16 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { NavigationProp, useIsFocused, useNavigation } from '@react-navigation/native';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
-import { AddMilestoneModal } from '../components/goals/AddMilestoneModal';
 import { CreateGoalModal } from '../components/goals/CreateGoalModal';
-import { GoalDetailsModal } from '../components/goals/GoalDetailsModal';
-import { MilestoneDetailModal } from '../components/goals/MilestoneDetailModal';
 import { GoalFilterModal } from '../components/goals/GoalFilterModal';
 import type { GoalFilterOption, GoalTargetDateFilter } from '../components/goals/GoalFilterModal';
-import { AddTaskModal } from '../components/tasks/AddTaskModal';
 import { GoalCard } from '../components/presentation/GoalPresentation';
 import type { GoalFilter } from '../components/presentation/GoalPresentation';
 import { AppCard } from '../components/ui/AppCard';
@@ -23,16 +19,11 @@ import { FilterSortToolbar } from '../components/ui/FilterSortToolbar';
 import { SortOptionsModal } from '../components/ui/SortOptionsModal';
 import { layout, spacing, typography } from '../design/tokens';
 import type { Theme } from '../design/tokens';
-import {
-  CreateGoalInput,
-  GoalMilestoneWithTasks,
-  GoalWithMilestones,
-} from '../features/goals/goalTypes';
+import { CreateGoalInput, GoalWithMilestones } from '../features/goals/goalTypes';
 import { hasActivePremiumStatus } from '../features/premium/premiumAccess';
 import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { useGoals } from '../features/goals/useGoals';
-import { useTasks } from '../features/tasks/useTasks';
 import { PlanStackParamList, RootStackParamList } from '../navigation/navigationTypes';
 import {
   generateAiGoalPlanDraft,
@@ -114,8 +105,11 @@ type GoalsScreenProps = {
   navigation?: {
     setParams?: (params: PlanStackParamList['Goals']) => void;
     navigate?: (
-      screen: 'GoalDetail' | 'PremiumPaywall',
-      params: PlanStackParamList['GoalDetail'] | RootStackParamList['PremiumPaywall'],
+      screen: 'GoalDetail' | 'EditGoal' | 'PremiumPaywall',
+      params:
+        | PlanStackParamList['GoalDetail']
+        | PlanStackParamList['EditGoal']
+        | RootStackParamList['PremiumPaywall'],
     ) => void;
     goBack?: () => void;
     getParent?: () =>
@@ -128,10 +122,9 @@ type GoalsScreenProps = {
 
 export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   const styles = useThemedStyles(createStyles);
-  const taskNavigation = useNavigation<NavigationProp<PlanStackParamList>>();
-  const isFocused = useIsFocused();
+  const stackNavigation = useNavigation<NavigationProp<PlanStackParamList>>();
   const insets = useSafeAreaInsets();
-  const { authUser, isAnonymous, profile } = useUserProfile();
+  const { authUser, isAnonymous } = useUserProfile();
   const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
   const {
     goals,
@@ -140,25 +133,13 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
     createGoalDraft,
     saveGoalDraft,
     activateGoalDraft,
-    updateGoal,
     deleteGoal,
     setGoalManuallyCompleted,
-    createMilestone,
-    deleteMilestone,
-    updateMilestone,
-    reorderMilestones,
     retry,
   } = useGoals();
-  const { createTask } = useTasks();
   const [createGoalVisible, setCreateGoalVisible] = useState(false);
-  const [addMilestoneVisible, setAddMilestoneVisible] = useState(false);
-  const [addTaskVisible, setAddTaskVisible] = useState(false);
-  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
-  const [editSelectedGoal, setEditSelectedGoal] = useState(false);
   const [pendingDeleteGoal, setPendingDeleteGoal] = useState<GoalWithMilestones | null>(null);
   const [goalActionWorking, setGoalActionWorking] = useState(false);
-  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
-  const [taskMilestoneId, setTaskMilestoneId] = useState<string | null>(null);
   const [goalFilter, setGoalFilter] = useState<GoalFilter>('active');
   const [goalTargetDateFilter, setGoalTargetDateFilter] = useState<GoalTargetDateFilter>('any');
   const [goalSearch, setGoalSearch] = useState('');
@@ -221,12 +202,6 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
     });
   }, [goalFilter, goalSearch, goalSortBy, goalTargetDateFilter, goals]);
 
-  const selectedGoal = useMemo(
-    () => goals.find((goal) => goal.id === selectedGoalId) ?? null,
-    [goals, selectedGoalId],
-  );
-  const selectedMilestone =
-    selectedGoal?.milestones.find((milestone) => milestone.id === selectedMilestoneId) ?? null;
   const selectedGoalFilter = goalFilterOptions.find((option) => option.value === goalFilter)!;
   const targetDateFilterLabel =
     goalTargetDateFilter === 'pastDue'
@@ -260,30 +235,6 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
     setGoalFilter('active');
   }
 
-  async function handleCreateMilestone(input: {
-    title: string;
-    description: string;
-    estimatedFinishDate: Date | null;
-  }): Promise<void> {
-    if (!selectedGoal) {
-      throw new Error('Goal not found.');
-    }
-
-    await createMilestone(selectedGoal.id, input);
-  }
-
-  async function handleDeleteMilestone(milestone: GoalMilestoneWithTasks): Promise<void> {
-    await deleteMilestone(milestone.id);
-    setSelectedMilestoneId(null);
-  }
-
-  async function handleSaveGoal(
-    goalId: string,
-    fields: { title: string; description: string; estimatedCompletionDate: Date },
-  ): Promise<void> {
-    await updateGoal(goalId, fields);
-  }
-
   async function handleGoalCompletion(goal: GoalWithMilestones, completed: boolean): Promise<void> {
     if (goalActionWorking) return;
     setGoalActionWorking(true);
@@ -304,7 +255,6 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
     setGoalActionWorking(true);
     try {
       await deleteGoal(pendingDeleteGoal.id);
-      if (selectedGoalId === pendingDeleteGoal.id) closeGoalDetails();
       setPendingDeleteGoal(null);
     } catch {
       Alert.alert('Unable to delete goal', 'Please try again.');
@@ -313,32 +263,13 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
     }
   }
 
-  async function handleSaveMilestone(
-    milestoneId: string,
-    fields: { title: string; description: string; estimatedFinishDate?: Date | null },
-  ): Promise<void> {
-    await updateMilestone(milestoneId, fields);
-  }
-
   function openGoal(goal: GoalWithMilestones, initialAction?: 'edit'): void {
+    const screen = initialAction ? 'EditGoal' : 'GoalDetail';
     if (navigation?.navigate) {
-      navigation.navigate('GoalDetail', {
-        goalId: goal.id,
-        ...(initialAction ? { initialAction } : {}),
-      });
+      navigation.navigate(screen, { goalId: goal.id });
       return;
     }
-
-    setSelectedGoalId(goal.id);
-    setEditSelectedGoal(initialAction === 'edit');
-  }
-
-  function closeGoalDetails(): void {
-    setSelectedGoalId(null);
-    setEditSelectedGoal(false);
-    setSelectedMilestoneId(null);
-    setAddMilestoneVisible(false);
-    setAddTaskVisible(false);
+    stackNavigation.navigate(screen, { goalId: goal.id });
   }
 
   return (
@@ -496,19 +427,6 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
         creditPackUserId={!isAnonymous ? (authUser?.uid ?? null) : null}
       />
 
-      <GoalDetailsModal
-        goal={selectedGoal}
-        visible={isFocused && selectedGoal !== null && !addMilestoneVisible && !addTaskVisible}
-        initialEditMode={editSelectedGoal}
-        onClose={closeGoalDetails}
-        onSaveGoal={handleSaveGoal}
-        onActivateDraft={activateGoalDraft ? handleActivateGoalDraft : undefined}
-        onToggleGoalManualCompletion={setGoalManuallyCompleted}
-        onAddMilestone={() => setAddMilestoneVisible(true)}
-        onOpenMilestone={(milestone) => setSelectedMilestoneId(milestone.id)}
-        onReorderMilestones={reorderMilestones}
-      />
-
       <ConfirmationModal
         visible={pendingDeleteGoal !== null}
         title="Delete goal?"
@@ -527,48 +445,6 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
         onConfirm={() => void handleDeleteGoal()}
       />
 
-      <AddMilestoneModal
-        visible={addMilestoneVisible}
-        goalEstimatedCompletionDate={selectedGoal?.estimatedCompletionDate}
-        onClose={() => setAddMilestoneVisible(false)}
-        onSave={handleCreateMilestone}
-      />
-
-      <MilestoneDetailModal
-        goalTitle={selectedGoal?.title ?? 'Goal'}
-        milestone={selectedMilestone}
-        visible={selectedMilestone !== null && isFocused}
-        locale={profile?.locale}
-        goalEstimatedCompletionDate={selectedGoal?.estimatedCompletionDate}
-        onClose={() => setSelectedMilestoneId(null)}
-        onSaveMilestone={handleSaveMilestone}
-        onOpenTask={(task) => taskNavigation.navigate('TaskDetail', { taskId: task.id })}
-        onDeleteMilestone={handleDeleteMilestone}
-        onAddTask={(milestone) => {
-          setSelectedMilestoneId(null);
-          setTaskMilestoneId(milestone.id);
-          setAddTaskVisible(true);
-        }}
-      />
-
-      <AddTaskModal
-        visible={addTaskVisible}
-        onClose={() => {
-          setAddTaskVisible(false);
-          setTaskMilestoneId(null);
-        }}
-        onSave={createTask}
-        goals={goals}
-        goalsLoading={uiState === 'loading'}
-        allowedDraftGoalId={selectedGoal?.status === 'draft' ? selectedGoal.id : null}
-        initialGoalId={selectedGoal?.id ?? null}
-        initialMilestoneId={taskMilestoneId}
-        contextLabel={
-          selectedGoal?.milestones.find((milestone) => milestone.id === taskMilestoneId)
-            ? `Milestone: ${selectedGoal.milestones.find((milestone) => milestone.id === taskMilestoneId)?.title}`
-            : 'Linked to this goal'
-        }
-      />
       <GoalFilterModal
         visible={filterModalVisible}
         selectedFilter={goalFilter}

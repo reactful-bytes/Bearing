@@ -110,9 +110,6 @@ export function composeGoalWithMilestones(
     totalTaskCount: goalTasks.length,
     completedMilestoneCount,
     totalMilestoneCount,
-    progressText:
-      totalMilestoneCount === 0
-        ? 'No milestones yet'
-        : `${completedMilestoneCount} of ${totalMilestoneCount} milestones complete`,
+    progressText: `${completedTaskCount} of ${goalTasks.length} tasks completed`,
   };
 }

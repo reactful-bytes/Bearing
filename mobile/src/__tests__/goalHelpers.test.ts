@@ -126,6 +126,7 @@ describe('goalHelpers', () => {
     const complete = composeGoalWithMilestones(makeGoal(), [first, second], completedTasks);
     expect(complete.status).toBe('completed');
     expect(complete.completedMilestoneCount).toBe(2);
+    expect(complete.progressText).toBe('2 of 2 tasks completed');
     expect(complete.nextMilestone).toBeNull();
     const regressed = composeGoalWithMilestones(
       makeGoal(),
@@ -136,6 +137,7 @@ describe('goalHelpers', () => {
     expect(regressed.milestones[0].status).toBe('in_progress');
     expect(regressed.milestones[0].progressPercent).toBe(50);
     expect(regressed.completedMilestoneCount).toBe(1);
+    expect(regressed.progressText).toBe('2 of 3 tasks completed');
     expect(regressed.nextMilestone?.id).toBe('one');
     const reactivated = composeGoalWithMilestones(
       makeGoal(),
@@ -146,6 +148,17 @@ describe('goalHelpers', () => {
     expect(reactivated.milestones[0].status).toBe('pending');
     expect(reactivated.completedMilestoneCount).toBe(1);
     expect(reactivated.nextMilestone?.id).toBe('one');
+  });
+
+  it('summarizes goal progress from all goal tasks, including tasks without milestones', () => {
+    const composed = composeGoalWithMilestones(makeGoal(), [], [
+      makeTask({ status: 'completed', milestoneId: null }),
+      makeTask({ id: 'unassigned-active', milestoneId: null }),
+    ]);
+
+    expect(composed.completedTaskCount).toBe(1);
+    expect(composed.totalTaskCount).toBe(2);
+    expect(composed.progressText).toBe('1 of 2 tasks completed');
   });
 
   it('preserves manual and archived goal completion', () => {

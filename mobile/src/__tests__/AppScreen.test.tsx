@@ -47,4 +47,14 @@ describe('AppScreen', () => {
 
     expect(screen.getByTestId('screen-content').props.style).toBeUndefined();
   });
+
+  it('lets unmanaged route content fill the available screen height', () => {
+    render(
+      <AppScreen mode="unmanaged" testID="route" contentContainerStyle={{ flex: 1 }}>
+        <Text>Route content</Text>
+      </AppScreen>,
+    );
+
+    expect(screen.getByTestId('route-content').props.style).toEqual({ flex: 1 });
+  });
 });

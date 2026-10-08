@@ -37,12 +37,18 @@ import {
   CreateEventFromNoteScreen,
   CreateGoalScreen,
   CreateGoalFromNoteScreen,
+  CreateMilestoneScreen,
   CreateNoteScreen,
   CreateTaskScreen,
   CreateTaskFromNoteScreen,
 } from '../screens/CreationScreens';
 import { GoalsScreen } from '../screens/GoalsScreen';
 import { GoalDetailScreen } from '../screens/GoalDetailScreen';
+import {
+  EditGoalScreen,
+  EditMilestoneScreen,
+  MilestoneDetailScreen,
+} from '../screens/GoalRouteScreens';
 import { FocusModeScreen } from '../screens/FocusModeScreen';
 import { NotesScreen } from '../screens/NotesScreen';
 import { NoteDetailScreen } from '../screens/NoteDetailScreen';
@@ -52,7 +58,7 @@ import { LegalDocumentScreen } from '../screens/LegalDocumentScreen';
 import { PremiumPaywallScreen } from '../screens/PremiumPaywallScreen';
 import type { ProfileNavigationTarget, ProfileSection } from '../screens/ProfileScreen';
 import { TasksScreen } from '../screens/TasksScreen';
-import { TaskDetailScreen } from '../screens/TaskDetailScreen';
+import { EditTaskScreen, TaskDetailScreen } from '../screens/TaskDetailScreen';
 import { NoteEditorScreen } from '../screens/NoteEditorScreen';
 import {
   AppTabParamList,
@@ -120,10 +126,15 @@ function PlanNavigator() {
       <PlanStack.Screen name="Goals" component={GoalsScreen} />
       <PlanStack.Screen name="Tasks" component={TasksScreen} />
       <PlanStack.Screen name="TaskDetail" component={TaskDetailScreen} />
+      <PlanStack.Screen name="EditTask" component={EditTaskScreen} />
       <PlanStack.Screen name="GoalDetail" component={GoalDetailScreen} />
+      <PlanStack.Screen name="EditGoal" component={EditGoalScreen} />
+      <PlanStack.Screen name="MilestoneDetail" component={MilestoneDetailScreen} />
+      <PlanStack.Screen name="EditMilestone" component={EditMilestoneScreen} />
       <PlanStack.Screen name="FocusMode" component={FocusModeScreen} />
       <PlanStack.Screen name="CreateGoal" component={CreateGoalScreen} />
       <PlanStack.Screen name="CreateTask" component={CreateTaskScreen} />
+      <PlanStack.Screen name="CreateMilestone" component={CreateMilestoneScreen} />
     </PlanStack.Navigator>
   );
 }

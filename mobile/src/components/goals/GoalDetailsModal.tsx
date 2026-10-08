@@ -18,13 +18,14 @@ import {
 } from './GoalDatePicker';
 import { radii, spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
-import { GoalMilestoneWithTasks, GoalWithMilestones } from '../../features/goals/goalTypes';
-import { MilestoneList } from './MilestoneList';
+import { GoalWithMilestones } from '../../features/goals/goalTypes';
 
 type GoalDetailsModalProps = {
   goal: GoalWithMilestones | null;
   visible: boolean;
+  embedded?: boolean;
   initialEditMode?: boolean;
+  backAccessibilityLabel?: string;
   onClose: () => void;
   onSaveGoal: (
     goalId: string,
@@ -32,14 +33,6 @@ type GoalDetailsModalProps = {
   ) => Promise<void>;
   onActivateDraft?: (goalId: string) => Promise<void>;
   onToggleGoalManualCompletion: (goalId: string, completed: boolean) => Promise<void>;
-  onAddMilestone: () => void;
-  onOpenMilestone: (milestone: GoalMilestoneWithTasks) => void;
-  /** @deprecated Milestone completion is derived from tasks. */
-  onToggleMilestoneCompletion?: (
-    milestone: GoalMilestoneWithTasks,
-    completed: boolean,
-  ) => Promise<void>;
-  onReorderMilestones: (goalId: string, orderedMilestoneIds: string[]) => Promise<void>;
 };
 
 function formatDateString(date: Date): string {
@@ -53,14 +46,13 @@ function formatDateString(date: Date): string {
 export function GoalDetailsModal({
   goal,
   visible,
+  embedded = false,
   initialEditMode = false,
+  backAccessibilityLabel,
   onClose,
   onSaveGoal,
   onActivateDraft,
   onToggleGoalManualCompletion,
-  onAddMilestone,
-  onOpenMilestone,
-  onReorderMilestones,
 }: GoalDetailsModalProps) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
@@ -166,18 +158,14 @@ export function GoalDetailsModal({
     }
   }
 
-  const headerAccessory = goal ? (
+  const headerAccessory = goal && !editMode ? (
     <AppButton
-      label={editMode ? 'Cancel' : 'Edit'}
+      label="Edit"
       variant="secondary"
-      accessibilityLabel={editMode ? 'Cancel goal editing' : 'Edit goal'}
+      accessibilityLabel="Edit goal"
       onPress={() => {
-        if (initialEditMode && editMode) {
-          handleClose();
-          return;
-        }
         setError(null);
-        setEditMode((current) => !current);
+        setEditMode(true);
       }}
       style={styles.headerButton}
       textStyle={styles.headerButtonText}
@@ -190,17 +178,21 @@ export function GoalDetailsModal({
       title={initialEditMode && editMode ? 'Edit Goal' : 'Goal Details'}
       onClose={handleClose}
       fullScreen
+      fullScreenEdgeToEdge
       hideHeader
+      embedded={embedded}
     >
       {goal ? (
         <ScrollView
+          testID="goal-details-scroll"
+          style={styles.scrollView}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={[
             styles.content,
+            embedded ? { paddingHorizontal: spacing.lg } : null,
             {
               paddingTop: insets.top,
               paddingBottom: spacing['3xl'] + insets.bottom,
-              paddingHorizontal: 0,
             },
           ]}
         >
@@ -208,7 +200,8 @@ export function GoalDetailsModal({
             title={initialEditMode && editMode ? 'Edit Goal' : 'Goal Details'}
             onPressBack={handleClose}
             backAccessibilityLabel={
-              initialEditMode && editMode ? 'Close goal editing' : 'Close Goal Details'
+              backAccessibilityLabel ??
+              (initialEditMode && editMode ? 'Close goal editing' : 'Close Goal Details')
             }
             trailing={headerAccessory}
           />
@@ -300,36 +293,6 @@ export function GoalDetailsModal({
             </View>
           )}
 
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Milestones</Text>
-              <AppButton
-                label="Add Milestone"
-                variant="secondary"
-                accessibilityLabel="Add milestone"
-                onPress={onAddMilestone}
-                style={styles.headerButton}
-                textStyle={styles.headerButtonText}
-              />
-            </View>
-
-            {goal.milestones.length === 0 ? (
-              <AppCard style={styles.summaryCard}>
-                <Text style={styles.goalDescription}>
-                  No milestones yet. Add one to organize this goal’s tasks.
-                </Text>
-              </AppCard>
-            ) : (
-              <MilestoneList
-                milestones={goal.milestones}
-                onOpenMilestone={onOpenMilestone}
-                onReorder={(orderedMilestoneIds) =>
-                  onReorderMilestones(goal.id, orderedMilestoneIds)
-                }
-              />
-            )}
-          </View>
-
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </ScrollView>
       ) : null}
@@ -339,22 +302,14 @@ export function GoalDetailsModal({
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
+    scrollView: { flex: 1 },
     content: {
       gap: spacing.lg,
       paddingBottom: spacing['3xl'],
+      paddingHorizontal: spacing.lg,
     },
     section: {
       gap: spacing.md,
-    },
-    sectionHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: spacing.md,
-    },
-    sectionTitle: {
-      ...typography.button,
-      color: theme.colors.text,
     },
     summaryCard: {
       gap: spacing.sm,

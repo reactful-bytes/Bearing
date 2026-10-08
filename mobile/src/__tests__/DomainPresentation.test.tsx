@@ -7,6 +7,7 @@ import {
   GoalMilestones,
   GoalStatusTabs,
   GoalTimeline,
+  getGoalProgressPercent,
 } from '../components/presentation/GoalPresentation';
 import { TaskRow } from '../components/presentation/TaskRow';
 import { EventCard, EventRow, EventSourceChip } from '../components/presentation/EventPresentation';
@@ -57,7 +58,7 @@ const goal: GoalWithMilestones = {
   totalTaskCount: 0,
   completedMilestoneCount: 0,
   totalMilestoneCount: 1,
-  progressText: '0 of 1 milestones complete',
+  progressText: '0 of 0 tasks completed',
 };
 const task: TaskRecord = {
   id: 'task-1',
@@ -141,6 +142,24 @@ describe('domain presentation', () => {
     expect(onMilestonePress).toHaveBeenCalledWith(milestone);
     expect(screen.queryByRole('button', { name: 'Expand milestone Buy shoes' })).toBeNull();
     expect(screen.getByText('First 5k')).toBeTruthy();
+  });
+
+  it('calculates goal progress from completed tasks rather than milestone counts', () => {
+    const taskProgressWithIncompleteMilestones = {
+      ...goal,
+      completedTaskCount: 1,
+      totalTaskCount: 4,
+      completedMilestoneCount: 0,
+      totalMilestoneCount: 2,
+    };
+    const taskProgressWithCompleteMilestones = {
+      ...taskProgressWithIncompleteMilestones,
+      completedMilestoneCount: 2,
+    };
+
+    expect(getGoalProgressPercent(taskProgressWithIncompleteMilestones)).toBe(25);
+    expect(getGoalProgressPercent(taskProgressWithCompleteMilestones)).toBe(25);
+    expect(getGoalProgressPercent({ ...goal, completedTaskCount: 0, totalTaskCount: 0 })).toBe(0);
   });
 
   it('keeps task completion actions and row presses independent and renders optional context', async () => {

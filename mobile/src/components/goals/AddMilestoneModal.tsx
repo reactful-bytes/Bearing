@@ -22,6 +22,7 @@ import type { CreateGoalMilestoneInput } from '../../features/goals/goalTypes';
 
 type AddMilestoneModalProps = {
   visible: boolean;
+  embedded?: boolean;
   goalEstimatedCompletionDate?: Date;
   onClose: () => void;
   onSave: (input: Omit<CreateGoalMilestoneInput, 'tasks'>) => Promise<void>;
@@ -41,6 +42,7 @@ function getInitialTargetDateParts(goalTargetDate?: Date): GoalDateParts {
 
 export function AddMilestoneModal({
   visible,
+  embedded = false,
   goalEstimatedCompletionDate,
   onClose,
   onSave,
@@ -112,6 +114,7 @@ export function AddMilestoneModal({
       fullScreen
       fullScreenEdgeToEdge
       hideHeader
+      embedded={embedded}
     >
       <ScrollView
         style={styles.scrollView}

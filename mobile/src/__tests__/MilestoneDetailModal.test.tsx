@@ -4,6 +4,7 @@ import { Dimensions, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { darkTheme, spacing, typography } from '../design/tokens';
+import { EditMilestoneModal } from '../components/goals/EditMilestoneModal';
 import { MilestoneDetailModal } from '../components/goals/MilestoneDetailModal';
 import { AppModal } from '../components/ui/AppModal';
 import { AppIcon } from '../components/ui/AppIcon';
@@ -62,18 +63,32 @@ function renderDetails(overrides: Partial<React.ComponentProps<typeof MilestoneD
     linkedEvents: [],
     linkedEventsState: 'empty' as const,
     onClose: jest.fn(),
-    onSaveMilestone: jest.fn<
-      (id: string, fields: { title: string; description: string }) => Promise<void>
-    >(async () => undefined),
     onDeleteMilestone: jest.fn<(value: GoalMilestoneWithTasks) => Promise<void>>(
       async () => undefined,
     ),
+    onEdit: jest.fn<(value: GoalMilestoneWithTasks) => void>(),
     onSchedule: jest.fn(),
     onAddTask: jest.fn(),
     onOpenTask: jest.fn<(task: TaskRecord) => void>(),
     ...overrides,
   };
   return { ...render(<MilestoneDetailModal {...props} />), props };
+}
+
+function renderEditor(overrides: Partial<React.ComponentProps<typeof EditMilestoneModal>> = {}) {
+  const props = {
+    milestone,
+    visible: true,
+    onClose: jest.fn(),
+    onSaveMilestone: jest.fn<
+      (
+        id: string,
+        fields: { title: string; description: string; estimatedFinishDate?: Date | null },
+      ) => Promise<void>
+    >(async () => undefined),
+    ...overrides,
+  };
+  return { ...render(<EditMilestoneModal {...props} />), props };
 }
 
 async function openAction(label: 'Edit milestone' | 'Delete milestone'): Promise<void> {
@@ -105,6 +120,12 @@ describe('MilestoneDetailModal', () => {
   });
 
   it('uses the full-screen wrapper with a goal-style title, progress, back arrow and menu', () => {
+    (useSafeAreaInsets as jest.MockedFunction<typeof useSafeAreaInsets>).mockReturnValue({
+      top: 24,
+      bottom: 16,
+      left: 0,
+      right: 0,
+    });
     const { props } = renderDetails();
     expect(screen.UNSAFE_getByType(AppModal).props).toMatchObject({
       fullScreen: true,
@@ -150,6 +171,7 @@ describe('MilestoneDetailModal', () => {
       screen.getByTestId('milestone-detail-scroll').props.contentContainerStyle,
     );
     expect(detailContentStyle.paddingBottom).toBeGreaterThan(0);
+    expect(detailContentStyle.paddingTop).toBe(24);
     expect(detailContentStyle.gap).toBe(0);
     expect(detailContentStyle.paddingHorizontal).toBe(spacing.lg);
     expect(screen.getByTestId('milestone-hero')).toBeTruthy();
@@ -160,40 +182,34 @@ describe('MilestoneDetailModal', () => {
     expect(props.onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('opens full-screen editing and uses the same top-left arrow to discard changes', async () => {
-    const { props } = renderDetails();
-    const detailArrow = within(
-      screen.getByRole('button', { name: 'Back to goal details' }),
-    ).UNSAFE_getByType(AppIcon).props;
-    await openAction('Edit milestone');
+  it('renders milestone editing as a separate full-screen editor and discards unsaved changes', () => {
+    (useSafeAreaInsets as jest.MockedFunction<typeof useSafeAreaInsets>).mockReturnValue({
+      top: 24,
+      bottom: 16,
+      left: 0,
+      right: 0,
+    });
+    const { props } = renderEditor();
     expect(screen.UNSAFE_getByType(AppModal).props.fullScreen).toBe(true);
     expect(screen.getByRole('header', { name: 'Edit Milestone' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Milestone actions' })).toBeNull();
     expect(screen.queryByText('Linked Events')).toBeNull();
+    expect(
+      StyleSheet.flatten(screen.getByTestId('edit-milestone-scroll').props.contentContainerStyle)
+        .paddingTop,
+    ).toBe(24);
     fireEvent.changeText(screen.getByLabelText('Edit milestone name'), 'Unsaved title');
     fireEvent.changeText(
       screen.getByLabelText('Edit milestone description'),
       'Unsaved description',
     );
-    const back = screen.getByRole('button', { name: 'Back to milestone details' });
-    expect(within(back).UNSAFE_getByType(AppIcon).props).toMatchObject({
-      name: detailArrow.name,
-      size: detailArrow.size,
-    });
-    fireEvent.press(back);
-    expect(props.onClose).not.toHaveBeenCalled();
+    fireEvent.press(screen.getByRole('button', { name: 'Back to milestone details' }));
+    expect(props.onClose).toHaveBeenCalledTimes(1);
     expect(props.onSaveMilestone).not.toHaveBeenCalled();
-    expect(screen.getByText(milestone.title)).toBeTruthy();
-    await openAction('Edit milestone');
-    expect(screen.getByLabelText('Edit milestone name').props.value).toBe(milestone.title);
-    expect(screen.getByLabelText('Edit milestone description').props.value).toBe(
-      milestone.description,
-    );
   });
 
-  it('trims and saves edits, then returns to details', async () => {
-    const { props } = renderDetails();
-    await openAction('Edit milestone');
+  it('trims and saves edits, then returns to the previous route', async () => {
+    const { props } = renderEditor();
     fireEvent.changeText(screen.getByLabelText('Edit milestone name'), '  Updated race  ');
     fireEvent.changeText(screen.getByLabelText('Edit milestone description'), '  Updated plan  ');
     await act(async () => {
@@ -203,8 +219,7 @@ describe('MilestoneDetailModal', () => {
       title: 'Updated race',
       description: 'Updated plan',
     });
-    expect(screen.getByRole('button', { name: 'Milestone actions' })).toBeTruthy();
-    expect(props.onClose).not.toHaveBeenCalled();
+    expect(props.onClose).toHaveBeenCalledTimes(1);
   });
 
   it('shows the expected completion date and a smaller asterisk-prefixed completion note', () => {
@@ -226,11 +241,9 @@ describe('MilestoneDetailModal', () => {
   });
 
   it('saves a changed finish date and displays the persisted date after a snapshot update', async () => {
-    const { props, rerender } = renderDetails({
+    const { props } = renderEditor({
       goalEstimatedCompletionDate: new Date(2026, 10, 30),
-      locale: 'en-US',
     });
-    await openAction('Edit milestone');
     expect(screen.getByRole('button', { name: 'November 1, 2026', selected: true })).toBeTruthy();
     fireEvent.press(screen.getByRole('button', { name: 'November 15, 2026' }));
     await act(async () => {
@@ -241,34 +254,22 @@ describe('MilestoneDetailModal', () => {
       description: milestone.description,
       estimatedFinishDate: new Date(2026, 10, 15),
     });
-    rerender(
-      <MilestoneDetailModal
-        {...props}
-        milestone={{
-          ...milestone,
-          estimatedFinishDate: new Date(2026, 10, 15),
-        }}
-      />,
-    );
-    expect(screen.getByText('Expected completion date: Nov 15, 2026')).toBeTruthy();
+    expect(props.onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('discards date edits when the top-left back arrow returns to details', async () => {
-    const { props } = renderDetails();
-    await openAction('Edit milestone');
+  it('discards date edits when the top-left back arrow leaves the editor', () => {
+    const { props } = renderEditor();
     fireEvent.press(screen.getByRole('button', { name: 'November 15, 2026' }));
     fireEvent.press(screen.getByRole('button', { name: 'Back to milestone details' }));
     expect(props.onSaveMilestone).not.toHaveBeenCalled();
-    await openAction('Edit milestone');
-    expect(screen.getByRole('button', { name: 'November 1, 2026', selected: true })).toBeTruthy();
+    expect(props.onClose).toHaveBeenCalledTimes(1);
   });
 
   it('preserves an unchanged past date when only editing text', async () => {
-    const { props } = renderDetails({
+    const { props } = renderEditor({
       milestone: { ...milestone, estimatedFinishDate: new Date(2026, 7, 1) },
       goalEstimatedCompletionDate: new Date(2026, 8, 1),
     });
-    await openAction('Edit milestone');
     fireEvent.changeText(screen.getByLabelText('Edit milestone name'), 'Updated milestone');
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Save milestone changes'));
@@ -280,9 +281,8 @@ describe('MilestoneDetailModal', () => {
   });
 
   it('preserves unset dates until the user explicitly sets and saves a date', async () => {
-    const { props } = renderDetails({ milestone: { ...milestone, estimatedFinishDate: null } });
+    const { props } = renderEditor({ milestone: { ...milestone, estimatedFinishDate: null } });
     expect(screen.getByText('Expected completion date: Not set')).toBeTruthy();
-    await openAction('Edit milestone');
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Save milestone changes'));
     });
@@ -290,7 +290,6 @@ describe('MilestoneDetailModal', () => {
       title: milestone.title,
       description: milestone.description,
     });
-    await openAction('Edit milestone');
     fireEvent.press(screen.getByLabelText('Set milestone expected completion date'));
     fireEvent.press(screen.getByRole('button', { name: 'October 12, 2026' }));
     await act(async () => {
@@ -304,10 +303,9 @@ describe('MilestoneDetailModal', () => {
   });
 
   it('rejects newly changed past dates and keeps editing open', async () => {
-    const { props } = renderDetails({
+    const { props } = renderEditor({
       milestone: { ...milestone, estimatedFinishDate: new Date(2026, 7, 1) },
     });
-    await openAction('Edit milestone');
     fireEvent.press(screen.getByLabelText('Next month for edit milestone'));
     fireEvent.press(screen.getByLabelText('Save milestone changes'));
     expect(screen.getByText('Expected completion date must be today or later.')).toBeTruthy();
@@ -316,8 +314,7 @@ describe('MilestoneDetailModal', () => {
   });
 
   it('rejects dates after the goal finish while accepting the goal finish day', async () => {
-    const { props } = renderDetails({ goalEstimatedCompletionDate: new Date(2026, 10, 15, 12) });
-    await openAction('Edit milestone');
+    const { props } = renderEditor({ goalEstimatedCompletionDate: new Date(2026, 10, 15, 12) });
     fireEvent.press(screen.getByRole('button', { name: 'November 16, 2026' }));
     fireEvent.press(screen.getByLabelText('Save milestone changes'));
     expect(
@@ -339,8 +336,7 @@ describe('MilestoneDetailModal', () => {
     const onSaveMilestone = jest.fn(async () => {
       throw new Error('Connection unavailable.');
     });
-    renderDetails({ onSaveMilestone });
-    await openAction('Edit milestone');
+    renderEditor({ onSaveMilestone });
     fireEvent.changeText(screen.getByLabelText('Edit milestone name'), '  ');
     fireEvent.press(screen.getByLabelText('Save milestone changes'));
     expect(screen.getByText('Milestone name is required.')).toBeTruthy();

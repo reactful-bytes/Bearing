@@ -273,8 +273,8 @@ function PlanEventRow({
 type PlanScreenGoal = {
   title: string;
   status: 'draft' | 'active' | 'completed' | 'archived';
-  completedMilestoneCount: number;
-  totalMilestoneCount: number;
+  completedTaskCount: number;
+  totalTaskCount: number;
 };
 
 function PlanGoalRow({ goal, onPress }: { goal: PlanScreenGoal; onPress: () => void }) {

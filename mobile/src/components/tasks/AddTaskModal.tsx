@@ -29,6 +29,7 @@ type AddTaskModalProps = {
   goalsLoading?: boolean;
   allowedDraftGoalId?: string | null;
   fullScreen?: boolean;
+  embedded?: boolean;
 };
 
 export function AddTaskModal({
@@ -44,6 +45,7 @@ export function AddTaskModal({
   goalsLoading = false,
   allowedDraftGoalId = null,
   fullScreen = true,
+  embedded = false,
 }: AddTaskModalProps) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
@@ -118,11 +120,13 @@ export function AddTaskModal({
       onClose={handleClose}
       fullScreen={fullScreen}
       hideHeader={fullScreen}
+      embedded={embedded}
     >
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.content,
+          embedded ? { paddingHorizontal: spacing.lg } : null,
           fullScreen ? { paddingTop: insets.top, paddingBottom: spacing.sm + insets.bottom } : null,
         ]}
         keyboardShouldPersistTaps="handled"

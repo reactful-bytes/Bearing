@@ -2,15 +2,18 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Alert, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { GoalDetailScreen } from '../screens/GoalDetailScreen';
+import {
+  EditGoalScreen,
+  EditMilestoneScreen,
+  MilestoneDetailScreen,
+} from '../screens/GoalRouteScreens';
 import { AppIcon } from '../components/ui/AppIcon';
-import { AppModal } from '../components/ui/AppModal';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ThemeProvider } from '../design/ThemeProvider';
-import { darkTheme, lightTheme, spacing, typography } from '../design/tokens';
+import { darkTheme, lightTheme, spacing } from '../design/tokens';
 import { useGoals } from '../features/goals/useGoals';
 import { composeGoalWithMilestones } from '../features/goals/goalHelpers';
 import { useTasks } from '../features/tasks/useTasks';
@@ -30,7 +33,6 @@ const mockNavigate = jest.fn();
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(() => ({ goBack: mockGoBack, navigate: mockNavigate })),
-  useIsFocused: jest.fn(() => true),
 }));
 
 jest.mock('../features/goals/useGoals', () => ({ useGoals: jest.fn() }));
@@ -85,7 +87,7 @@ const goal: GoalWithMilestones = {
   totalTaskCount: 1,
   completedMilestoneCount: 0,
   totalMilestoneCount: 1,
-  progressText: '0 of 1 milestones complete',
+  progressText: '0 of 1 tasks completed',
 };
 
 const task: TaskRecord = {
@@ -119,6 +121,7 @@ function mockHooks(
     deleteGoal?: (goalId: string) => Promise<void>;
     setGoalManuallyCompleted?: (goalId: string, completed: boolean) => Promise<void>;
     updateMilestone?: (milestoneId: string, fields: UpdateGoalMilestoneInput) => Promise<void>;
+    reorderMilestones?: (goalId: string, orderedMilestoneIds: string[]) => Promise<void>;
     createMilestone?: (
       goalId: string,
       input: { title: string; description: string },
@@ -149,7 +152,7 @@ function mockHooks(
     createMilestone: overrides.createMilestone ?? jest.fn(async () => undefined),
     deleteMilestone: jest.fn(async () => undefined),
     updateMilestone: overrides.updateMilestone ?? jest.fn(async () => undefined),
-    reorderMilestones: jest.fn(async () => undefined),
+    reorderMilestones: overrides.reorderMilestones ?? jest.fn(async () => undefined),
     activateGoalDraft: overrides.activateGoalDraft ?? jest.fn(async () => undefined),
     retry: jest.fn(),
   });
@@ -188,7 +191,6 @@ describe('GoalDetailScreen', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();
-    (useIsFocused as jest.MockedFunction<typeof useIsFocused>).mockReturnValue(true);
     (useSafeAreaInsets as jest.MockedFunction<typeof useSafeAreaInsets>).mockReturnValue({
       top: 0,
       right: 0,
@@ -205,6 +207,9 @@ describe('GoalDetailScreen', () => {
     render(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
 
     expect(screen.getByText('Run a 10k')).toBeTruthy();
+    expect(StyleSheet.flatten(screen.getByTestId('goal-detail-title').props.style)).toMatchObject(
+      darkTheme.typography.sectionTitle,
+    );
     expect(screen.getAllByText('Book the race')).toHaveLength(2);
     expect(screen.queryByRole('checkbox')).toBeNull();
     fireEvent.press(screen.getAllByLabelText('Task actions')[0]);
@@ -214,7 +219,10 @@ describe('GoalDetailScreen', () => {
     await waitFor(() => {
       expect(completeTask).toHaveBeenCalledWith('task-1', { completionSource: 'manual' });
     });
-    expect(screen.getByText('Task Details')).toBeTruthy();
+    expect(mockNavigate).toHaveBeenCalledWith('Plan', {
+      screen: 'TaskDetail',
+      params: { taskId: task.id },
+    });
   });
 
   it('centers a compact task empty state and keeps the All tasks description readable', () => {
@@ -271,29 +279,39 @@ describe('GoalDetailScreen', () => {
     render(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
 
     expect(StyleSheet.flatten(screen.getByTestId('goal-detail-fixed-header').props.style)).toEqual(
-      expect.objectContaining({ paddingTop: 32 }),
+      expect.objectContaining({ paddingTop: 24 }),
     );
   });
 
-  it('creates a task with the goal and milestone context', async () => {
-    const createTask = jest.fn(async () => undefined);
-    mockHooks({ createTask });
+  it('keeps the goal identity row and details header consistent across tabs', () => {
+    render(<GoalDetailScreen route={{ params: { goalId: goal.id } }} />);
 
+    expect(screen.getByRole('header', { name: 'GOAL DETAILS' })).toBeTruthy();
+    const taskSummary = within(screen.getByTestId('goal-detail-summary'));
+    expect(taskSummary.getByText('GOAL')).toBeTruthy();
+    expect(taskSummary.getByText('Finish date: Oct 1, 2026')).toBeTruthy();
+    expect(taskSummary.UNSAFE_getAllByType(AppIcon).map((icon) => icon.props.name)).toEqual([
+      'goal',
+      'complete',
+    ]);
+
+    fireEvent.press(screen.getByRole('tab', { name: 'Overview' }));
+
+    const overviewSummary = within(screen.getByTestId('goal-detail-summary'));
+    expect(overviewSummary.getByText('GOAL')).toBeTruthy();
+    expect(overviewSummary.getByText('Finish date: Oct 1, 2026')).toBeTruthy();
+    expect(overviewSummary.UNSAFE_getAllByType(AppIcon).map((icon) => icon.props.name)).toEqual([
+      'goal',
+      'complete',
+    ]);
+  });
+
+  it('routes Add Task with the goal and next milestone context', () => {
     render(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
     fireEvent.press(screen.getByRole('button', { name: 'Add task' }));
-    fireEvent.changeText(screen.getByLabelText('Task title'), 'Register for the race');
-    await act(async () => {
-      fireEvent.press(screen.getByRole('button', { name: 'Save task' }));
-    });
-
-    await waitFor(() => {
-      expect(createTask).toHaveBeenCalledWith({
-        title: 'Register for the race',
-        description: '',
-        starter: '',
-        goalId: 'goal-1',
-        milestoneId: 'milestone-1',
-      });
+    expect(mockNavigate).toHaveBeenCalledWith('Plan', {
+      screen: 'CreateTask',
+      params: { goalId: 'goal-1', milestoneId: 'milestone-1' },
     });
   });
 
@@ -323,29 +341,42 @@ describe('GoalDetailScreen', () => {
     expect(screen.getByRole('button', { name: 'Open milestone Choose a race date' })).toBeTruthy();
   });
 
-  it('opens the selected milestone task route and restores details after returning', () => {
+  it('opens milestone and linked-task details through Plan stack routes', () => {
     const milestoneTask = { ...task, starter: 'Compare races.' };
     mockHooks({
       goal: { ...goal, milestones: [{ ...milestone, tasks: [milestoneTask] }] },
       tasks: [milestoneTask],
     });
-    const { rerender } = render(
+    render(
       <GoalDetailScreen route={{ params: { goalId: goal.id, initialTab: 'overview' } }} />,
     );
     fireEvent.press(screen.getByLabelText(`Open milestone ${milestone.title}`));
-    expect(screen.queryByText('Start here: Compare races.')).toBeNull();
-    fireEvent.press(screen.getByLabelText(`Open task ${task.title}`));
     expect(mockNavigate).toHaveBeenCalledWith('Plan', {
+      screen: 'MilestoneDetail',
+      params: { goalId: goal.id, milestoneId: milestone.id },
+    });
+    fireEvent.press(screen.getByLabelText(`Expand milestone ${milestone.title}`));
+    fireEvent.press(screen.getByLabelText(`Open task ${task.title}`));
+    expect(mockNavigate).toHaveBeenLastCalledWith('Plan', {
       screen: 'TaskDetail',
       params: { taskId: task.id },
     });
-    (useIsFocused as jest.MockedFunction<typeof useIsFocused>).mockReturnValue(false);
-    rerender(<GoalDetailScreen route={{ params: { goalId: goal.id, initialTab: 'overview' } }} />);
-    expect(screen.queryByLabelText('Milestone Details modal')).toBeNull();
-    (useIsFocused as jest.MockedFunction<typeof useIsFocused>).mockReturnValue(true);
-    rerender(<GoalDetailScreen route={{ params: { goalId: goal.id, initialTab: 'overview' } }} />);
-    expect(screen.getByLabelText('Milestone Details modal')).toBeTruthy();
-    expect(screen.getByLabelText(`Open task ${task.title}`)).toBeTruthy();
+  });
+
+  it('routes Add Task from a milestone detail to CreateTask with both associations', () => {
+    const navigation = { goBack: mockGoBack, navigate: mockNavigate };
+    render(
+      <MilestoneDetailScreen
+        route={{ params: { goalId: goal.id, milestoneId: milestone.id } }}
+        navigation={navigation as never}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText(`Add task to milestone ${milestone.title}`));
+    expect(mockNavigate).toHaveBeenCalledWith('CreateTask', {
+      goalId: goal.id,
+      milestoneId: milestone.id,
+    });
   });
 
   it('places the disclosure arrow right of the milestone title with no completion circle', () => {
@@ -389,13 +420,10 @@ describe('GoalDetailScreen', () => {
     fireEvent.press(
       within(header).getByRole('button', { name: 'Open milestone Choose a race date' }),
     );
-    expect(screen.getByLabelText('Milestone Details modal')).toBeTruthy();
-    expect(screen.queryByLabelText('Schedule milestone event')).toBeNull();
-    expect(screen.queryByText('Linked Events')).toBeNull();
-    expect(screen.queryByText('No events scheduled.')).toBeNull();
-    expect(useMilestoneEvents).not.toHaveBeenCalled();
-    expect(screen.queryByRole('button', { name: 'Manually complete milestone' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Reopen milestone' })).toBeNull();
+    expect(mockNavigate).toHaveBeenCalledWith('Plan', {
+      screen: 'MilestoneDetail',
+      params: { goalId: 'goal-1', milestoneId: milestone.id },
+    });
   });
 
   it('opens milestone editing from the Overview row context menu', () => {
@@ -407,11 +435,76 @@ describe('GoalDetailScreen', () => {
     );
     fireEvent.press(screen.getByRole('menuitem', { name: 'Edit milestone Choose a race date' }));
 
-    expect(screen.getByRole('header', { name: 'Edit Milestone' })).toBeTruthy();
-    expect(screen.getByLabelText('Edit milestone name').props.value).toBe('Choose a race date');
-    fireEvent.press(screen.getByRole('button', { name: 'Back to overview' }));
-    expect(screen.queryByLabelText('Milestone Details modal')).toBeNull();
-    expect(screen.getByTestId('goal-detail-milestone-list')).toBeTruthy();
+    expect(mockNavigate).toHaveBeenCalledWith('Plan', {
+      screen: 'EditMilestone',
+      params: { goalId: goal.id, milestoneId: milestone.id },
+    });
+  });
+
+  it('pushes a new milestone edit route from the milestone details menu', () => {
+    const push = jest.fn();
+    render(
+      <MilestoneDetailScreen
+        route={{ params: { goalId: goal.id, milestoneId: milestone.id } }}
+        navigation={{ goBack: mockGoBack, navigate: mockNavigate, push } as never}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText('Milestone actions'));
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Edit milestone' }));
+
+    expect(push).toHaveBeenCalledWith('EditMilestone', {
+      goalId: goal.id,
+      milestoneId: milestone.id,
+    });
+  });
+
+  it('uses the themed route background for goal editing and milestone detail/edit', () => {
+    mockHooks();
+    const goalEdit = render(
+      <EditGoalScreen
+        route={{ params: { goalId: goal.id } }}
+        navigation={{ goBack: mockGoBack } as never}
+      />,
+    );
+    expect(
+      StyleSheet.flatten(screen.getByTestId('edit-goal-route-screen').props.style).backgroundColor,
+    ).toBe(darkTheme.colors.background);
+    expect(
+      StyleSheet.flatten(screen.getByTestId('goal-details-scroll').props.contentContainerStyle)
+        .paddingHorizontal,
+    ).toBe(spacing.lg);
+    goalEdit.unmount();
+
+    const milestoneDetail = render(
+      <MilestoneDetailScreen
+        route={{ params: { goalId: goal.id, milestoneId: milestone.id } }}
+        navigation={{ goBack: mockGoBack, navigate: mockNavigate, push: jest.fn() } as never}
+      />,
+    );
+    expect(
+      StyleSheet.flatten(screen.getByTestId('milestone-route-screen').props.style).backgroundColor,
+    ).toBe(darkTheme.colors.background);
+    expect(
+      StyleSheet.flatten(screen.getByTestId('milestone-detail-scroll').props.contentContainerStyle)
+        .paddingHorizontal,
+    ).toBe(spacing.lg);
+    milestoneDetail.unmount();
+
+    render(
+      <EditMilestoneScreen
+        route={{ params: { goalId: goal.id, milestoneId: milestone.id } }}
+        navigation={{ goBack: mockGoBack } as never}
+      />,
+    );
+    expect(
+      StyleSheet.flatten(screen.getByTestId('edit-milestone-route-screen').props.style)
+        .backgroundColor,
+    ).toBe(darkTheme.colors.background);
+    expect(
+      StyleSheet.flatten(screen.getByTestId('edit-milestone-scroll').props.contentContainerStyle)
+        .paddingHorizontal,
+    ).toBe(spacing.lg);
   });
 
   it('opens milestone deletion confirmation from the Overview row context menu', () => {
@@ -423,7 +516,54 @@ describe('GoalDetailScreen', () => {
     );
     fireEvent.press(screen.getByRole('menuitem', { name: 'Delete milestone Choose a race date' }));
 
-    expect(screen.getByRole('button', { name: 'Confirm delete milestone' })).toBeTruthy();
+    expect(mockNavigate).toHaveBeenCalledWith('Plan', {
+      screen: 'MilestoneDetail',
+      params: { goalId: 'goal-1', milestoneId: milestone.id, initialAction: 'delete' },
+    });
+  });
+
+  it('offers bounded milestone Move actions and persists adjacent order changes', async () => {
+    const secondMilestone = {
+      ...milestone,
+      id: 'milestone-2',
+      title: 'Prepare for the race',
+      order: 1,
+    };
+    const reorderMilestones = jest.fn(async () => undefined);
+    mockHooks({
+      goal: { ...goal, milestones: [milestone, secondMilestone] },
+      reorderMilestones,
+    });
+    render(<GoalDetailScreen route={{ params: { goalId: goal.id, initialTab: 'overview' } }} />);
+
+    fireEvent.press(
+      screen.getByRole('button', { name: `Milestone actions for ${milestone.title}` }),
+    );
+    expect(
+      screen.queryByRole('menuitem', { name: `Move milestone ${milestone.title} up` }),
+    ).toBeNull();
+    fireEvent.press(
+      screen.getByRole('menuitem', { name: `Move milestone ${milestone.title} down` }),
+    );
+    await waitFor(() =>
+      expect(reorderMilestones).toHaveBeenCalledWith(goal.id, [secondMilestone.id, milestone.id]),
+    );
+
+    fireEvent.press(
+      screen.getByRole('button', { name: `Milestone actions for ${secondMilestone.title}` }),
+    );
+    expect(
+      screen.queryByRole('menuitem', { name: `Move milestone ${secondMilestone.title} down` }),
+    ).toBeNull();
+    fireEvent.press(
+      screen.getByRole('menuitem', { name: `Move milestone ${secondMilestone.title} up` }),
+    );
+    await waitFor(() =>
+      expect(reorderMilestones).toHaveBeenLastCalledWith(goal.id, [
+        secondMilestone.id,
+        milestone.id,
+      ]),
+    );
   });
 
   it('shows automatic milestone completion and reopening as task snapshots change', async () => {
@@ -451,7 +591,7 @@ describe('GoalDetailScreen', () => {
     setSnapshot([completedTask]);
     rerender(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
     expect(screen.getByText('Completed · 1 of 1 tasks')).toBeTruthy();
-    expect(screen.getByText('100% complete')).toBeTruthy();
+    expect(screen.getByText(/^100% complete ·/)).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Task actions'));
     await act(async () =>
       fireEvent.press(screen.getByRole('menuitem', { name: 'Uncomplete task' })),
@@ -461,7 +601,7 @@ describe('GoalDetailScreen', () => {
     setSnapshot([task]);
     rerender(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
     expect(screen.getByText('Current · 0 of 1 tasks')).toBeTruthy();
-    expect(screen.getByText('0% complete')).toBeTruthy();
+    expect(screen.getByText(/^0% complete ·/)).toBeTruthy();
     expect(
       screen.getByRole('button', { name: 'Collapse milestone Choose a race date', expanded: true }),
     ).toBeTruthy();
@@ -474,7 +614,7 @@ describe('GoalDetailScreen', () => {
     rerender(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
     expect(screen.getByText('Current · 0 of 0 tasks')).toBeTruthy();
     expect(screen.getByText('No tasks in this milestone.')).toBeTruthy();
-    expect(screen.getByText('0% complete')).toBeTruthy();
+    expect(screen.getByText(/^0% complete ·/)).toBeTruthy();
   });
 
   it('fills the overview scroll area and preserves the bottom safe-area inset', () => {
@@ -486,22 +626,28 @@ describe('GoalDetailScreen', () => {
     });
     render(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
 
-    const summary = within(screen.getByTestId('goal-overview-summary'));
-    expect(summary.getByText(goal.description)).toBeTruthy();
+    const fixedHeader = within(screen.getByTestId('goal-detail-fixed-header'));
+    const summary = within(screen.getByTestId('goal-detail-summary'));
+    expect(summary.getByRole('header', { name: 'Goal' })).toBeTruthy();
     expect(summary.getByText('Finish date: Oct 1, 2026')).toBeTruthy();
-    const firstSummaryChild = screen.getByTestId('goal-overview-summary').children[0];
-    expect(typeof firstSummaryChild === 'object' ? firstSummaryChild.props.testID : null).toBe(
-      'goal-finish-date',
-    );
-    expect(StyleSheet.flatten(summary.getByText(goal.description).props.style)).toMatchObject({
-      fontSize: 14,
+    expect(summary.getByTestId('goal-detail-title').props.children).toBe(goal.title);
+    expect(summary.getByRole('header', { name: 'PROGRESS' })).toBeTruthy();
+    expect(summary.getByText(`0% complete · ${goal.progressText}`)).toBeTruthy();
+    expect(fixedHeader.getByLabelText(`Goal progress ${goal.title}`)).toBeTruthy();
+    expect(
+      StyleSheet.flatten(summary.getByTestId('goal-detail-title').props.style).fontSize,
+    ).toBe(darkTheme.typography.sectionTitle.fontSize);
+    const descriptionSection = within(screen.getByTestId('goal-overview-description-section'));
+    expect(descriptionSection.getByRole('header', { name: 'Description' })).toBeTruthy();
+    expect(descriptionSection.getByText(goal.description)).toBeTruthy();
+    expect(
+      StyleSheet.flatten(descriptionSection.getByText(goal.description).props.style),
+    ).toMatchObject({
+      fontSize: 16,
       color: darkTheme.colors.textPrimary,
     });
     const finishDateStyle = StyleSheet.flatten(screen.getByTestId('goal-finish-date').props.style);
-    expect(finishDateStyle).toMatchObject({ color: '#FFFFFF', fontWeight: '700' });
-    expect(finishDateStyle.color).not.toBe(
-      StyleSheet.flatten(summary.getByRole('header', { name: 'Description' }).props.style).color,
-    );
+    expect(finishDateStyle).toMatchObject({ color: darkTheme.colors.textSecondary });
     const list = screen.getByTestId('goal-detail-milestone-list');
     expect(StyleSheet.flatten(list.props.style)).toMatchObject({ flexGrow: 1 });
     expect(list.props).not.toHaveProperty('nestedScrollEnabled');
@@ -513,7 +659,7 @@ describe('GoalDetailScreen', () => {
     expect(within(list).queryByText(goal.description)).toBeNull();
   });
 
-  it('keeps smaller overview copy and the emphasized finish date readable in light mode', async () => {
+  it('keeps overview copy and the finish date readable in light mode', async () => {
     await AsyncStorage.setItem('@bearing/theme-preference', 'light');
     render(
       <ThemeProvider>
@@ -522,18 +668,16 @@ describe('GoalDetailScreen', () => {
     );
     await waitFor(() => {
       expect(StyleSheet.flatten(screen.getByText(goal.description).props.style)).toMatchObject({
-        fontSize: 14,
+        fontSize: 16,
         color: lightTheme.colors.textPrimary,
       });
     });
     expect(StyleSheet.flatten(screen.getByTestId('goal-finish-date').props.style)).toMatchObject({
-      color: lightTheme.colors.textEmphasis,
-      fontWeight: '700',
+      color: lightTheme.colors.textSecondary,
     });
-    expect(lightTheme.colors.textEmphasis).not.toBe('#FFFFFF');
   });
 
-  it('expands due-ordered milestone tasks with a down arrow and opens task details', () => {
+  it('expands due-ordered milestone tasks and routes task selection to TaskDetail', () => {
     const earlierTask = {
       ...task,
       id: 'earlier',
@@ -573,42 +717,10 @@ describe('GoalDetailScreen', () => {
     expect(screen.queryByText('Not in this milestone')).toBeNull();
     expect(screen.queryByText('Other goal task')).toBeNull();
     fireEvent.press(list.getByRole('button', { name: 'Open task Book the race' }));
-    expect(screen.getByText('Task Details')).toBeTruthy();
-    expect(screen.getByText('DUE')).toBeTruthy();
-    expect(screen.getByText('September 8, 2026')).toBeTruthy();
-    const taskDetails = within(screen.getByTestId('task-details-content'));
-    expect(taskDetails.getByText(/^Expected completion date:/)).toBeTruthy();
-    expect(StyleSheet.flatten(taskDetails.getByText(milestone.title).props.style).color).toBe(
-      darkTheme.colors.textPrimary,
-    );
-    expect(
-      StyleSheet.flatten(taskDetails.getByTestId('task-details-milestone-icon-frame').props.style),
-    ).toMatchObject({
-      width: 40,
-      height: 40,
-      backgroundColor: darkTheme.colors.surface,
+    expect(mockNavigate).toHaveBeenCalledWith('Plan', {
+      screen: 'TaskDetail',
+      params: { taskId: task.id },
     });
-    expect(
-      StyleSheet.flatten(screen.getByTestId('task-details-content').props.contentContainerStyle)
-        .gap,
-    ).toBe(0);
-    expect(screen.queryByText('Due September 8, 2026')).toBeNull();
-    expect(
-      StyleSheet.flatten(screen.getByTestId('task-details-updated-at').props.style),
-    ).toMatchObject(typography.caption);
-    const taskMenus = screen.getAllByLabelText('Task actions');
-    fireEvent.press(taskMenus[taskMenus.length - 1]);
-    fireEvent.press(screen.getByRole('menuitem', { name: 'Edit task' }));
-    expect(screen.getByRole('header', { name: 'Edit Task' })).toBeTruthy();
-    expect(screen.getByLabelText('Back to overview')).toBeTruthy();
-    fireEvent.press(screen.getByLabelText('Back to overview'));
-    expect(screen.queryByRole('header', { name: 'Task Details' })).toBeNull();
-    expect(
-      screen.getByRole('button', {
-        name: 'Collapse milestone Choose a race date',
-        expanded: true,
-      }),
-    ).toBeTruthy();
     fireEvent.press(collapse);
     expect(screen.queryByText(task.title)).toBeNull();
     expect(
@@ -658,20 +770,14 @@ describe('GoalDetailScreen', () => {
     render(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
 
     expect(screen.getByText('No description yet.')).toBeTruthy();
-    expect(
-      screen.getByText('No milestones yet. Add one to break this goal into smaller steps.'),
-    ).toBeTruthy();
+    expect(screen.getByText('No milestones yet')).toBeTruthy();
+    expect(screen.getByText('Add one to break this goal into smaller steps.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Add milestone' })).toBeTruthy();
     expect(screen.getByText('+ Add Milestone')).toBeTruthy();
   });
 
-  it('creates milestones from the text action above the overview list', async () => {
-    jest.setSystemTime(new Date(2026, 9, 6, 12));
-    const createMilestone = jest.fn(async () => undefined);
-    mockHooks({
-      createMilestone,
-      goal: { ...goal, estimatedCompletionDate: new Date(2026, 10, 1) },
-    });
+  it('routes Add Milestone from the overview header to CreateMilestone', () => {
+    mockHooks({ goal: { ...goal, estimatedCompletionDate: new Date(2026, 10, 1) } });
     render(<GoalDetailScreen route={{ params: { goalId: goal.id, initialTab: 'overview' } }} />);
     const header = screen.getByTestId('goal-milestones-header');
     expect(StyleSheet.flatten(header.props.style)).toMatchObject({
@@ -679,35 +785,17 @@ describe('GoalDetailScreen', () => {
       justifyContent: 'space-between',
       marginTop: darkTheme.spacing.md,
     });
-    expect(
-      header.children.map((child) =>
-        typeof child === 'object' ? child.props.accessibilityRole : null,
-      ),
-    ).toEqual(['header', 'button']);
+    expect(within(header).getByRole('header', { name: 'Milestones' })).toBeTruthy();
+    expect(within(header).getByRole('button', { name: 'Add milestone' })).toBeTruthy();
     const button = screen.getByRole('button', { name: 'Add milestone' });
     expect(within(button).getByText('+ Add Milestone')).toBeTruthy();
     expect(
       within(screen.getByTestId('goal-detail-milestone-list')).queryByText('+ Add Milestone'),
     ).toBeNull();
     fireEvent.press(button);
-    const addMilestoneModal = screen
-      .UNSAFE_getAllByType(AppModal)
-      .find((modal) => modal.props.title === 'Add Milestone');
-    expect(addMilestoneModal?.props).toMatchObject({
-      fullScreen: true,
-      fullScreenEdgeToEdge: true,
-      hideHeader: true,
-    });
-    expect(screen.getByRole('header', { name: 'Add Milestone' })).toBeTruthy();
-    fireEvent.changeText(screen.getByLabelText('Milestone name'), 'Build endurance');
-    fireEvent.press(screen.getByLabelText('Set new milestone target date to today'));
-    await act(async () => {
-      fireEvent.press(screen.getByLabelText('Save milestone'));
-    });
-    expect(createMilestone).toHaveBeenCalledWith(goal.id, {
-      title: 'Build endurance',
-      description: '',
-      estimatedFinishDate: new Date(2026, 9, 6),
+    expect(mockNavigate).toHaveBeenCalledWith('Plan', {
+      screen: 'CreateMilestone',
+      params: { goalId: goal.id },
     });
   });
 
@@ -716,9 +804,8 @@ describe('GoalDetailScreen', () => {
     { status: 'active' as const, hasTasks: false },
     { status: 'draft' as const, hasTasks: false },
   ])(
-    'creates a task in the expanded milestone for $status goals (hasTasks=$hasTasks)',
-    async ({ status, hasTasks }) => {
-      const createTask = jest.fn(async () => undefined);
+    'routes Add Task from the expanded milestone for $status goals (hasTasks=$hasTasks)',
+    ({ status, hasTasks }) => {
       const secondMilestone = {
         ...milestone,
         id: 'milestone-2',
@@ -726,7 +813,6 @@ describe('GoalDetailScreen', () => {
         order: 1,
       };
       mockHooks({
-        createTask,
         goal: { ...goal, status, milestones: [milestone, secondMilestone] },
         tasks: hasTasks ? [{ ...task, milestoneId: secondMilestone.id }] : [],
       });
@@ -756,21 +842,14 @@ describe('GoalDetailScreen', () => {
       );
       if (!hasTasks) expect(screen.getByText('No tasks in this milestone.')).toBeTruthy();
       fireEvent.press(addTask);
-      fireEvent.changeText(screen.getByLabelText('Task title'), 'Run a training session');
-      await act(async () => {
-        fireEvent.press(screen.getByLabelText('Save task'));
-      });
-      expect(createTask).toHaveBeenCalledWith({
-        title: 'Run a training session',
-        description: '',
-        starter: '',
-        goalId: goal.id,
-        milestoneId: secondMilestone.id,
+      expect(mockNavigate).toHaveBeenCalledWith('Plan', {
+        screen: 'CreateTask',
+        params: { goalId: goal.id, milestoneId: secondMilestone.id },
       });
     },
   );
 
-  it('persists milestone date edits through goal details', async () => {
+  it('persists milestone date edits from the EditMilestone route', async () => {
     jest.setSystemTime(new Date(2026, 9, 6, 12));
     const updateMilestone = jest.fn(async () => undefined);
     const datedMilestone = { ...milestone, estimatedFinishDate: new Date(2026, 10, 1) };
@@ -782,10 +861,12 @@ describe('GoalDetailScreen', () => {
         milestones: [datedMilestone],
       },
     });
-    render(<GoalDetailScreen route={{ params: { goalId: goal.id, initialTab: 'overview' } }} />);
-    fireEvent.press(screen.getByLabelText(`Open milestone ${milestone.title}`));
-    fireEvent.press(screen.getByLabelText('Milestone actions'));
-    fireEvent.press(screen.getByRole('menuitem', { name: 'Edit milestone' }));
+    render(
+      <EditMilestoneScreen
+        route={{ params: { goalId: goal.id, milestoneId: datedMilestone.id } }}
+        navigation={{ goBack: mockGoBack } as never}
+      />,
+    );
     fireEvent.press(screen.getByRole('button', { name: 'November 15, 2026' }));
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Save milestone changes'));
@@ -795,19 +876,20 @@ describe('GoalDetailScreen', () => {
       description: milestone.description,
       estimatedFinishDate: new Date(2026, 10, 15),
     });
+    expect(mockGoBack).toHaveBeenCalledTimes(1);
   });
 
-  it('uses vertical header dots and opens goal editing directly from the menu', () => {
+  it('uses vertical header dots and routes goal editing from the menu', () => {
     render(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
 
     const edit = screen.getByRole('button', { name: 'Goal actions' });
     expect(within(edit).UNSAFE_getByType(AppIcon).props.name).toBe('moreVertical');
     fireEvent.press(edit);
     fireEvent.press(screen.getByRole('menuitem', { name: 'Edit goal' }));
-    expect(screen.getByRole('header', { name: 'Edit Goal' })).toBeTruthy();
-    expect(screen.getByLabelText('Edit goal description').props.value).toBe(goal.description);
-    expect(screen.getByLabelText('Edit goal name').props.value).toBe(goal.title);
-    expect(screen.queryByRole('header', { name: 'Goal Details' })).toBeNull();
+    expect(mockNavigate).toHaveBeenCalledWith('Plan', {
+      screen: 'EditGoal',
+      params: { goalId: goal.id },
+    });
   });
 
   it('keeps completion disabled for draft milestone tasks', () => {
@@ -990,29 +1072,10 @@ describe('GoalDetailScreen', () => {
     expect(screen.getByRole('button', { name: 'Make goal active' })).toBeTruthy();
     expect(screen.queryByRole('checkbox')).toBeNull();
     fireEvent.press(screen.getAllByRole('button', { name: 'Open task Book the race' })[0]);
-    expect(screen.getByText('Task Details')).toBeTruthy();
-    const taskHeroStyle = StyleSheet.flatten(screen.getByTestId('task-details-hero').props.style);
-    expect(taskHeroStyle).not.toHaveProperty('borderLeftWidth');
-    expect(taskHeroStyle).not.toHaveProperty('borderRadius');
-    expect(taskHeroStyle).not.toHaveProperty('backgroundColor');
-    expect(screen.queryByRole('button', { name: 'Schedule task' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Start task now' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Mark task complete' })).toBeNull();
-
-    const taskMenus = screen.getAllByLabelText('Task actions');
-    fireEvent.press(taskMenus[taskMenus.length - 1]);
-    fireEvent.press(screen.getByRole('menuitem', { name: 'Edit task' }));
-    expect(screen.getByRole('header', { name: 'Edit Task' })).toBeTruthy();
-    expect(
-      screen.getByLabelText('Task goal or milestone: Milestone · Choose a race date'),
-    ).toBeTruthy();
-    fireEvent.press(screen.getByLabelText('Back to task details'));
-
-    fireEvent.press(screen.getByRole('button', { name: 'Close Task Details' }));
-    fireEvent.press(screen.getByRole('tab', { name: 'Overview' }));
-    fireEvent.press(screen.getByRole('button', { name: 'Open milestone Choose a race date' }));
-    expect(screen.queryByRole('button', { name: 'Schedule milestone event' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Manually complete milestone' })).toBeNull();
+    expect(mockNavigate).toHaveBeenCalledWith('Plan', {
+      screen: 'TaskDetail',
+      params: { taskId: task.id },
+    });
 
     fireEvent.press(screen.getByRole('button', { name: 'Make goal active' }));
     await waitFor(() => expect(activateGoalDraft).toHaveBeenCalledWith('goal-1'));
@@ -1029,10 +1092,12 @@ describe('GoalDetailScreen', () => {
       updateGoal,
     });
 
-    render(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
-
-    fireEvent.press(screen.getByRole('button', { name: 'Goal actions' }));
-    fireEvent.press(screen.getByRole('menuitem', { name: 'Edit goal' }));
+    render(
+      <EditGoalScreen
+        route={{ params: { goalId: 'goal-1' } }}
+        navigation={{ goBack: mockGoBack } as never}
+      />,
+    );
     expect(screen.getByRole('button', { name: 'Save draft changes' })).toBeTruthy();
     fireEvent.changeText(screen.getByLabelText('Edit goal name'), 'Run a local 10k');
 
@@ -1044,17 +1109,23 @@ describe('GoalDetailScreen', () => {
       'goal-1',
       expect.objectContaining({ title: 'Run a local 10k' }),
     );
+    expect(mockGoBack).toHaveBeenCalledTimes(1);
   });
 
-  it('opens goal edit mode from the initial edit route action', () => {
+  it('renders EditGoal directly in edit mode with a stack back action', () => {
     mockHooks();
 
     render(
-      <GoalDetailScreen route={{ params: { goalId: 'goal-1', initialAction: 'edit' } }} />,
+      <EditGoalScreen
+        route={{ params: { goalId: 'goal-1' } }}
+        navigation={{ goBack: mockGoBack } as never}
+      />,
     );
 
     expect(screen.getByRole('header', { name: 'Edit Goal' })).toBeTruthy();
     expect(screen.getByLabelText('Edit goal name').props.value).toBe(goal.title);
+    fireEvent.press(screen.getByLabelText('Back to goal details'));
+    expect(mockGoBack).toHaveBeenCalledTimes(1);
   });
 
   it('offers Edit, Complete, and Delete for active goals and switches to Uncomplete after completion', async () => {
@@ -1073,7 +1144,7 @@ describe('GoalDetailScreen', () => {
       setGoalManuallyCompleted,
     });
     rerender(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
-    expect(screen.getByText('100% complete')).toBeTruthy();
+    expect(screen.getByText(/^0% complete ·/)).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Goal actions'));
     expect(screen.queryByRole('menuitem', { name: 'Complete goal' })).toBeNull();
     await act(async () =>
@@ -1097,20 +1168,30 @@ describe('GoalDetailScreen', () => {
 
   it('saves directly edited goal fields and closes the form, and discards cancelled edits', async () => {
     const updateGoal = jest.fn(async () => undefined);
+    const navigation = { goBack: mockGoBack };
     mockHooks({
       goal: { ...goal, estimatedCompletionDate: new Date(new Date().getFullYear() + 1, 9, 1) },
       updateGoal,
     });
-    render(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
-    fireEvent.press(screen.getByLabelText('Goal actions'));
-    fireEvent.press(screen.getByRole('menuitem', { name: 'Edit goal' }));
+    const firstEdit = render(
+      <EditGoalScreen
+        route={{ params: { goalId: 'goal-1' } }}
+        navigation={navigation as never}
+      />,
+    );
     fireEvent.changeText(screen.getByLabelText('Edit goal name'), 'Cancelled edit');
-    fireEvent.press(screen.getByRole('button', { name: 'Cancel goal editing' }));
-    expect(screen.queryByRole('header', { name: 'Edit Goal' })).toBeNull();
+    fireEvent.press(screen.getByLabelText('Back to goal details'));
+    expect(mockGoBack).toHaveBeenCalledTimes(1);
     expect(updateGoal).not.toHaveBeenCalled();
+    firstEdit.unmount();
+    mockGoBack.mockClear();
 
-    fireEvent.press(screen.getByLabelText('Goal actions'));
-    fireEvent.press(screen.getByRole('menuitem', { name: 'Edit goal' }));
+    render(
+      <EditGoalScreen
+        route={{ params: { goalId: 'goal-1' } }}
+        navigation={navigation as never}
+      />,
+    );
     expect(screen.getByLabelText('Edit goal name').props.value).toBe(goal.title);
     fireEvent.changeText(screen.getByLabelText('Edit goal name'), 'Run a local race');
     await act(async () =>
@@ -1120,7 +1201,7 @@ describe('GoalDetailScreen', () => {
       goal.id,
       expect.objectContaining({ title: 'Run a local race' }),
     );
-    expect(screen.queryByRole('header', { name: 'Edit Goal' })).toBeNull();
+    expect(mockGoBack).toHaveBeenCalledTimes(1);
   });
 
   it('requires confirmation for Delete and returns to goals only after success', async () => {
@@ -1150,9 +1231,12 @@ describe('GoalDetailScreen', () => {
         throw new Error('offline');
       }),
     });
-    render(<GoalDetailScreen route={{ params: { goalId: 'goal-1' } }} />);
-    fireEvent.press(screen.getByLabelText('Goal actions'));
-    fireEvent.press(screen.getByRole('menuitem', { name: 'Edit goal' }));
+    render(
+      <EditGoalScreen
+        route={{ params: { goalId: 'goal-1' } }}
+        navigation={{ goBack: mockGoBack } as never}
+      />,
+    );
     fireEvent.changeText(screen.getByLabelText('Edit goal name'), 'Retry this edit');
     await act(async () =>
       fireEvent.press(screen.getByRole('button', { name: 'Save goal changes' })),
@@ -1220,7 +1304,7 @@ describe('GoalDetailScreen', () => {
         fireEvent.press(screen.getByRole('menuitem', { name: 'Uncomplete goal' })),
       );
       expect(alert).toHaveBeenCalledWith('Unable to update goal', message);
-      expect(screen.getByText('100% complete')).toBeTruthy();
+      expect(screen.getByText(/^0% complete ·/)).toBeTruthy();
     } finally {
       alert.mockRestore();
     }

@@ -6,6 +6,7 @@ import { AddEventModal } from '../components/calendar/AddEventModal';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { StartNowModal } from '../components/tasks/StartNowModal';
 import { TaskDetailsModal } from '../components/tasks/TaskDetailsModal';
+import { AppScreen } from '../components/ui/AppScreen';
 import { AppCard } from '../components/ui/AppCard';
 import { ConfirmationModal } from '../components/ui/ConfirmationModal';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -17,7 +18,7 @@ import { CreateEventInput, CreateEventOptions } from '../features/calendar/calen
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { useGoals } from '../features/goals/useGoals';
 import { useTasks } from '../features/tasks/useTasks';
-import { TaskRecord, UpdateTaskInput } from '../features/tasks/taskTypes';
+import { TaskRecord } from '../features/tasks/taskTypes';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { DEFAULT_TIME_FORMAT } from '../features/profile/timeFormat';
 import { PlanStackParamList } from '../navigation/navigationTypes';
@@ -25,6 +26,11 @@ import { PlanStackParamList } from '../navigation/navigationTypes';
 type TaskDetailScreenProps = {
   route: { params: PlanStackParamList['TaskDetail'] };
   navigation: NavigationProp<PlanStackParamList, 'TaskDetail'>;
+};
+
+type EditTaskScreenProps = {
+  route: { params: PlanStackParamList['EditTask'] };
+  navigation: NavigationProp<PlanStackParamList, 'EditTask'>;
 };
 
 export function TaskDetailScreen({ route, navigation }: TaskDetailScreenProps) {
@@ -35,14 +41,12 @@ export function TaskDetailScreen({ route, navigation }: TaskDetailScreenProps) {
     tasks,
     uiState,
     retry,
-    updateTask,
     completeTask,
     reactivateTask,
     convertTaskToEvent,
     deleteTask,
   } = useTasks();
   const { publicationCalendarTitle, publishEvent } = useCalendarPublication();
-  const [editing, setEditing] = useState(false);
   const [scheduling, setScheduling] = useState(false);
   const [startingNow, setStartingNow] = useState(false);
   const [pendingDeleteTask, setPendingDeleteTask] = useState<TaskRecord | null>(null);
@@ -50,10 +54,6 @@ export function TaskDetailScreen({ route, navigation }: TaskDetailScreenProps) {
   const linkedGoal = goals.find((goal) => goal.id === task?.goalId) ?? null;
   const isDraftGoal = linkedGoal?.status === 'draft';
   const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
-
-  async function handleUpdateTask(taskId: string, fields: UpdateTaskInput): Promise<void> {
-    await updateTask(taskId, fields);
-  }
 
   async function handleDeleteTask(): Promise<void> {
     if (!pendingDeleteTask) return;
@@ -105,7 +105,7 @@ export function TaskDetailScreen({ route, navigation }: TaskDetailScreenProps) {
     });
   }
 
-  const showTaskDetails = task !== null && !editing && !scheduling && !startingNow;
+  const showTaskDetails = task !== null && !scheduling && !startingNow;
 
   if (uiState === 'loading') {
     return (
@@ -169,7 +169,9 @@ export function TaskDetailScreen({ route, navigation }: TaskDetailScreenProps) {
           taskActionsEnabled={!isDraftGoal}
           backAccessibilityLabel="Back to Plan"
           onClose={navigation.goBack}
-          onEdit={() => setEditing(true)}
+          onEdit={(selectedTask) =>
+            navigation.navigate('EditTask', { taskId: selectedTask.id })
+          }
           onDelete={setPendingDeleteTask}
           onSchedule={() => setScheduling(true)}
           onStartNow={() => setStartingNow(true)}
@@ -179,14 +181,6 @@ export function TaskDetailScreen({ route, navigation }: TaskDetailScreenProps) {
           onReactivate={(selectedTask) => reactivateTask(selectedTask.id)}
         />
       ) : null}
-      <EditTaskModal
-        visible={editing}
-        task={task}
-        goals={goals}
-        allowedDraftGoalId={isDraftGoal ? linkedGoal.id : null}
-        onClose={() => setEditing(false)}
-        onSave={handleUpdateTask}
-      />
       <AddEventModal
         visible={scheduling}
         modalTitle="Schedule Task"
@@ -222,6 +216,49 @@ export function TaskDetailScreen({ route, navigation }: TaskDetailScreenProps) {
         onConfirm={() => void handleDeleteTask()}
       />
     </View>
+  );
+}
+
+export function EditTaskScreen({ route, navigation }: EditTaskScreenProps) {
+  const styles = useThemedStyles(createStyles);
+  const { goals } = useGoals();
+  const { tasks, updateTask } = useTasks();
+  const task = tasks.find((candidate) => candidate.id === route.params.taskId) ?? null;
+  const linkedGoal = goals.find((goal) => goal.id === task?.goalId) ?? null;
+
+  if (!task) {
+    return (
+      <View style={[styles.screen, styles.stateScreen]}>
+        <ScreenHeader
+          title="Edit Task"
+          onPressBack={navigation.goBack}
+          backAccessibilityLabel="Back to task details"
+        />
+        <EmptyState
+          title="Task unavailable"
+          description="This task may have been removed."
+          presentation="compact"
+        />
+      </View>
+    );
+  }
+
+  return (
+    <AppScreen
+      mode="unmanaged"
+      testID="edit-task-screen"
+      contentContainerStyle={{ flex: 1 }}
+    >
+      <EditTaskModal
+        visible
+        embedded
+        task={task}
+        goals={goals}
+        allowedDraftGoalId={linkedGoal?.status === 'draft' ? linkedGoal.id : null}
+        onClose={navigation.goBack}
+        onSave={updateTask}
+      />
+    </AppScreen>
   );
 }
 

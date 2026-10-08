@@ -1,15 +1,18 @@
 import { Text } from 'react-native';
 
 import { AddEventModal } from '../components/calendar/AddEventModal';
+import { AddMilestoneModal } from '../components/goals/AddMilestoneModal';
 import { CreateGoalModal } from '../components/goals/CreateGoalModal';
 import { AddNoteModal } from '../components/notes/AddNoteModal';
 import { AddTaskModal } from '../components/tasks/AddTaskModal';
 import { AppScreen } from '../components/ui/AppScreen';
+import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { useCreateNote, useNotes } from '../features/notes/useNotes';
 import { hasActivePremiumStatus } from '../features/premium/premiumAccess';
 import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
 import { useGoals } from '../features/goals/useGoals';
+import { CreateGoalMilestoneInput } from '../features/goals/goalTypes';
 import { useTasks } from '../features/tasks/useTasks';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import {
@@ -39,6 +42,11 @@ type CreateGoalScreenProps = {
 
 type CreateTaskScreenProps = {
   route?: { params?: PlanStackParamList['CreateTask'] };
+  navigation?: CreationNavigation;
+};
+
+type CreateMilestoneScreenProps = {
+  route: { params: PlanStackParamList['CreateMilestone'] };
   navigation?: CreationNavigation;
 };
 
@@ -130,8 +138,40 @@ export function CreateTaskScreen({ route, navigation }: CreateTaskScreenProps) {
         onSave={createTask}
         goals={goals}
         fullScreen
+        embedded
         initialGoalId={params?.goalId ?? null}
         initialMilestoneId={params?.milestoneId ?? null}
+      />
+    </AppScreen>
+  );
+}
+
+export function CreateMilestoneScreen({ route, navigation }: CreateMilestoneScreenProps) {
+  const { goals, createMilestone, uiState } = useGoals();
+  const goal = goals.find((candidate) => candidate.id === route.params.goalId) ?? null;
+
+  if (!goal) {
+    return (
+      <AppScreen mode="unmanaged">
+        <ScreenHeader
+          title="Add Milestone"
+          onPressBack={() => dismissCreationScreen(navigation, 'PlanHome')}
+        />
+        <Text>{uiState === 'loading' ? 'Loading goal...' : 'Goal unavailable.'}</Text>
+      </AppScreen>
+    );
+  }
+
+  return (
+    <AppScreen mode="unmanaged">
+      <AddMilestoneModal
+        visible
+        embedded
+        goalEstimatedCompletionDate={goal.estimatedCompletionDate}
+        onClose={() => dismissCreationScreen(navigation, 'PlanHome')}
+        onSave={async (input: Omit<CreateGoalMilestoneInput, 'tasks'>) => {
+          await createMilestone(goal.id, input);
+        }}
       />
     </AppScreen>
   );

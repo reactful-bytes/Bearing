@@ -74,7 +74,7 @@ const fixtureGoal: GoalWithMilestones = {
   totalTaskCount: 0,
   completedMilestoneCount: 0,
   totalMilestoneCount: 1,
-  progressText: '0 of 1 milestones complete',
+  progressText: '0 of 0 tasks completed',
 };
 
 const fixtureEvent: CalendarDisplayEvent = {

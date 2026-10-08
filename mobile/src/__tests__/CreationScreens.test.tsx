@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
+import { ScrollView, StyleSheet } from 'react-native';
 import React from 'react';
 
 import {
@@ -7,16 +8,19 @@ import {
   CreateEventFromNoteScreen,
   CreateGoalScreen,
   CreateGoalFromNoteScreen,
+  CreateMilestoneScreen,
   CreateNoteScreen,
   CreateTaskScreen,
   CreateTaskFromNoteScreen,
 } from '../screens/CreationScreens';
+import { spacing } from '../design/tokens';
 
 const mockCreateGoal = jest.fn(async () => undefined);
 const mockCreateGoalDraft = jest.fn(async () => 'goal-draft-1');
 const mockSaveGoalDraft = jest.fn(async () => ({ milestones: [] }));
 const mockActivateGoalDraft = jest.fn(async () => undefined);
 const mockCreateTask = jest.fn(async () => undefined);
+const mockCreateMilestone = jest.fn(async () => undefined);
 const mockCreateNote = jest.fn(async () => undefined);
 const mockCreateEvent = jest.fn(async () => 'event-1');
 
@@ -49,6 +53,27 @@ jest.mock('../components/goals/CreateGoalModal', () => {
         <Button title="Save goal" onPress={() => void onSave({ title: 'Goal' })} />
         <Button title="Cancel goal" onPress={onClose} />
       </>
+    ),
+  };
+});
+
+jest.mock('../components/goals/AddMilestoneModal', () => {
+  const { Button } = jest.requireActual<typeof import('react-native')>('react-native');
+  return {
+    AddMilestoneModal: ({
+      onClose,
+      onSave,
+    }: {
+      onClose: () => void;
+      onSave: (input: unknown) => Promise<void>;
+    }) => (
+      <Button
+        title="Save milestone"
+        onPress={async () => {
+          await onSave({ title: 'Reach the trailhead' });
+          onClose();
+        }}
+      />
     ),
   };
 });
@@ -131,10 +156,13 @@ jest.mock('../components/premium/PremiumPaywallModal', () => ({
 
 jest.mock('../features/goals/useGoals', () => ({
   useGoals: () => ({
+    goals: [{ id: 'goal-1', estimatedCompletionDate: new Date(2026, 9, 15) }],
     createGoal: mockCreateGoal,
     createGoalDraft: mockCreateGoalDraft,
     saveGoalDraft: mockSaveGoalDraft,
     activateGoalDraft: mockActivateGoalDraft,
+    createMilestone: mockCreateMilestone,
+    uiState: 'ready',
   }),
 }));
 
@@ -174,6 +202,28 @@ jest.mock('../services/firebase/firebaseAiGoalPlans', () => ({
 }));
 
 describe('creation route screens', () => {
+  it('applies horizontal padding and safe-area spacing to embedded task creation', () => {
+    const { AddTaskModal: EmbeddedAddTaskModal } = jest.requireActual<
+      typeof import('../components/tasks/AddTaskModal')
+    >('../components/tasks/AddTaskModal');
+    render(
+      <EmbeddedAddTaskModal
+        visible
+        embedded
+        goals={[]}
+        onClose={jest.fn()}
+        onSave={mockCreateTask}
+      />,
+    );
+
+    const contentStyle = StyleSheet.flatten(
+      screen.UNSAFE_getByType(ScrollView).props.contentContainerStyle,
+    );
+    expect(contentStyle.paddingHorizontal).toBe(spacing.lg);
+    expect(contentStyle.paddingTop).toEqual(expect.any(Number));
+    expect(contentStyle.paddingBottom).toEqual(expect.any(Number));
+  });
+
   it('delegates goal save and cancel to the existing wizard and navigation', async () => {
     mockCreateGoalDraft.mockClear();
     mockActivateGoalDraft.mockClear();
@@ -210,6 +260,26 @@ describe('creation route screens', () => {
     fireEvent.press(screen.getByText('Save task'));
     await waitFor(() => expect(mockCreateTask).toHaveBeenCalledWith({ title: 'Task' }));
     expect(goBack).not.toHaveBeenCalled();
+  });
+
+  it('saves a milestone through its goal context and returns from the route', async () => {
+    mockCreateMilestone.mockClear();
+    const goBack = jest.fn();
+    render(
+      <CreateMilestoneScreen
+        route={{ params: { goalId: 'goal-1' } }}
+        navigation={{ canGoBack: () => true, goBack }}
+      />,
+    );
+
+    fireEvent.press(screen.getByText('Save milestone'));
+
+    await waitFor(() => {
+      expect(mockCreateMilestone).toHaveBeenCalledWith('goal-1', {
+        title: 'Reach the trailhead',
+      });
+      expect(goBack).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('forwards note source metadata and delegates cancellation', async () => {

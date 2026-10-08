@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, within } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 
 import { BearingEvent, CalendarDisplayEvent } from '../features/calendar/calendarTypes';
 import { GoalWithMilestones } from '../features/goals/goalTypes';
@@ -15,8 +15,7 @@ import { useNotes } from '../features/notes/useNotes';
 import { useTasks } from '../features/tasks/useTasks';
 import { useUserProfile } from '../features/profile/useUserProfile';
 import { PlanScreen } from '../screens/PlanScreen';
-import { TaskDetailScreen } from '../screens/TaskDetailScreen';
-import { EditTaskModal } from '../components/tasks/EditTaskModal';
+import { EditTaskScreen, TaskDetailScreen } from '../screens/TaskDetailScreen';
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(() => ({ navigate: mockRootNavigate })),
@@ -126,11 +125,11 @@ function makeGoal(): GoalWithMilestones {
     tasks: [],
     nextMilestone: null,
     nextTask: null,
-    completedTaskCount: 0,
-    totalTaskCount: 0,
+    completedTaskCount: 1,
+    totalTaskCount: 2,
     completedMilestoneCount: 1,
     totalMilestoneCount: 2,
-    progressText: '1 of 2 milestones complete',
+    progressText: '1 of 2 tasks completed',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -444,12 +443,13 @@ describe('PlanScreen', () => {
   it('keeps draft task details editable while disabling completion and calendar actions', () => {
     const draftGoal = { ...makeGoal(), status: 'draft' as const };
     const task = { ...makeTask(1), goalId: draftGoal.id, starter: 'Compare races.' };
+    const navigate = jest.fn();
     mockUseGoals.mockReturnValue({ ...mockUseGoals(), goals: [draftGoal] });
     mockUseTasks.mockReturnValue({ ...mockUseTasks(), tasks: [task] });
     render(
       <TaskDetailScreen
         route={{ params: { taskId: task.id } }}
-        navigation={{ goBack: jest.fn(), navigate: jest.fn() } as never}
+        navigation={{ goBack: jest.fn(), navigate } as never}
       />,
     );
     expect(screen.getByRole('header', { name: 'Task Details' })).toBeTruthy();
@@ -460,7 +460,40 @@ describe('PlanScreen', () => {
     fireEvent.press(screen.getByLabelText('Task actions'));
     expect(screen.queryByRole('menuitem', { name: 'Complete task' })).toBeNull();
     fireEvent.press(screen.getByRole('menuitem', { name: 'Edit task' }));
-    expect(screen.UNSAFE_getByType(EditTaskModal).props.allowedDraftGoalId).toBe(draftGoal.id);
+    expect(navigate).toHaveBeenCalledWith('EditTask', { taskId: task.id });
+  });
+
+  it('saves task edits through the EditTask route and returns to task details', async () => {
+    const task = makeTask(3);
+    const updateTask = jest.fn(async () => undefined);
+    const goBack = jest.fn();
+    mockUseGoals.mockReturnValue({ ...mockUseGoals(), goals: [] });
+    mockUseTasks.mockReturnValue({ ...mockUseTasks(), tasks: [task], updateTask });
+
+    render(
+      <EditTaskScreen
+        route={{ params: { taskId: task.id } }}
+        navigation={{ goBack } as never}
+      />,
+    );
+
+    expect(
+      StyleSheet.flatten(screen.getByTestId('edit-task-screen').props.style).backgroundColor,
+    ).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.UNSAFE_getByType(ScrollView).props.contentContainerStyle)
+        .paddingHorizontal,
+    ).toBe(spacing.lg);
+    fireEvent.changeText(screen.getByLabelText('Edit task title'), 'Run the shorter route');
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Save task changes'));
+    });
+
+    expect(updateTask).toHaveBeenCalledWith(
+      task.id,
+      expect.objectContaining({ title: 'Run the shorter route' }),
+    );
+    expect(goBack).toHaveBeenCalledTimes(1);
   });
 
   it('excludes draft-linked tasks from the Plan task surface', () => {

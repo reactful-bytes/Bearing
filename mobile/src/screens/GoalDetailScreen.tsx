@@ -1,45 +1,28 @@
 import { useMemo, useState } from 'react';
-import { NavigationProp, useIsFocused, useNavigation } from '@react-navigation/native';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AddEventModal } from '../components/calendar/AddEventModal';
-import { AddMilestoneModal } from '../components/goals/AddMilestoneModal';
-import { GoalDetailsModal } from '../components/goals/GoalDetailsModal';
-import {
-  MilestoneDetailInitialAction,
-  MilestoneDetailModal,
-} from '../components/goals/MilestoneDetailModal';
 import { GoalTimeline, getGoalProgressPercent } from '../components/presentation/GoalPresentation';
 import { TaskRow } from '../components/presentation/TaskRow';
 import { AppButton } from '../components/ui/AppButton';
 import { AppCard } from '../components/ui/AppCard';
 import { EmptyState } from '../components/ui/EmptyState';
-import { IconButton } from '../components/ui/IconButton';
+import { AppIcon } from '../components/ui/AppIcon';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { RowContextMenu } from '../components/ui/RowContextMenu';
+import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { useThemedStyles } from '../design/useThemedStyles';
 import { spacing } from '../design/tokens';
 import type { Theme } from '../design/tokens';
-import { CreateEventInput, CreateEventOptions } from '../features/calendar/calendarTypes';
-import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
-import {
-  CreateGoalMilestoneInput,
-  GoalMilestoneWithTasks,
-  GoalWithMilestones,
-} from '../features/goals/goalTypes';
+import { GoalMilestoneWithTasks, GoalWithMilestones } from '../features/goals/goalTypes';
 import { useGoals } from '../features/goals/useGoals';
 import { sortGoalTasks } from '../features/goals/goalHelpers';
 import { useTasks } from '../features/tasks/useTasks';
-import { CreateTaskInput, TaskRecord, UpdateTaskInput } from '../features/tasks/taskTypes';
+import { TaskRecord } from '../features/tasks/taskTypes';
 import { useUserProfile } from '../features/profile/useUserProfile';
-import { DEFAULT_TIME_FORMAT } from '../features/profile/timeFormat';
 import { AppTabParamList, PlanStackParamList } from '../navigation/navigationTypes';
-import { AddTaskModal } from '../components/tasks/AddTaskModal';
-import { EditTaskModal } from '../components/tasks/EditTaskModal';
-import { StartNowModal } from '../components/tasks/StartNowModal';
-import { TaskDetailsModal } from '../components/tasks/TaskDetailsModal';
 import { TaskListRow, formatTaskDateLabel } from '../components/tasks/TaskListRow';
 import { ConfirmationModal } from '../components/ui/ConfirmationModal';
 
@@ -65,48 +48,28 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp<AppTabParamList>>();
-  const isFocused = useIsFocused();
   const { profile } = useUserProfile();
-  const { publicationCalendarTitle, publishEvent } = useCalendarPublication();
   const {
     goals,
     uiState,
-    updateGoal,
     deleteGoal,
     activateGoalDraft,
     setGoalManuallyCompleted,
-    createMilestone,
-    deleteMilestone,
-    updateMilestone,
     reorderMilestones,
     retry,
   } = useGoals();
   const {
     tasks,
-    createTask,
-    updateTask,
     completeTask,
     reactivateTask,
-    convertTaskToEvent,
     deleteTask,
   } = useTasks();
   const [activeTab, setActiveTab] = useState<DetailTab>(
     route.params.initialTab === 'timeline' ? 'overview' : (route.params.initialTab ?? 'tasks'),
   );
-  const [addTaskVisible, setAddTaskVisible] = useState(false);
-  const [taskMilestoneId, setTaskMilestoneId] = useState<string | null>(null);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [pendingDeleteTask, setPendingDeleteTask] = useState<TaskRecord | null>(null);
-  const [scheduleTaskId, setScheduleTaskId] = useState<string | null>(null);
-  const [startNowTaskId, setStartNowTaskId] = useState<string | null>(null);
-  const [editGoalVisible, setEditGoalVisible] = useState(route.params.initialAction === 'edit');
   const [deleteGoalVisible, setDeleteGoalVisible] = useState(false);
   const [goalActionWorking, setGoalActionWorking] = useState(false);
-  const [addMilestoneVisible, setAddMilestoneVisible] = useState(false);
-  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
-  const [selectedMilestoneAction, setSelectedMilestoneAction] =
-    useState<MilestoneDetailInitialAction>(null);
   const [activatingDraft, setActivatingDraft] = useState(false);
   const [draftActionError, setDraftActionError] = useState<string | null>(null);
 
@@ -119,31 +82,27 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
     [goal?.id, tasks],
   );
   const nextTask = goalTasks.find((task) => task.status === 'active') ?? null;
-  const selectedTask = goalTasks.find((task) => task.id === selectedTaskId) ?? null;
-  const editingTask = goalTasks.find((task) => task.id === editingTaskId) ?? null;
-  const scheduleTask = goalTasks.find((task) => task.id === scheduleTaskId) ?? null;
-  const startNowTask = goalTasks.find((task) => task.id === startNowTaskId) ?? null;
-  const selectedMilestone =
-    goal?.milestones.find((milestone) => milestone.id === selectedMilestoneId) ?? null;
-  const timeFormat = profile?.timeFormat ?? DEFAULT_TIME_FORMAT;
 
-  function openMilestoneDetails(
+  function openMilestoneRoute(
     milestone: GoalMilestoneWithTasks,
-    initialAction: MilestoneDetailInitialAction = null,
+    initialAction?: 'edit' | 'delete',
   ): void {
-    setSelectedMilestoneAction(initialAction);
-    setSelectedMilestoneId(milestone.id);
-  }
-
-  function closeMilestoneDetails(): void {
-    setSelectedMilestoneId(null);
-    setSelectedMilestoneAction(null);
-  }
-
-  async function handleCreateTask(input: CreateTaskInput): Promise<void> {
-    await createTask(input);
-    setAddTaskVisible(false);
-    setTaskMilestoneId(null);
+    if (!goal) return;
+    if (initialAction === 'edit') {
+      navigation.navigate('Plan', {
+        screen: 'EditMilestone',
+        params: { goalId: goal.id, milestoneId: milestone.id },
+      });
+      return;
+    }
+    navigation.navigate('Plan', {
+      screen: 'MilestoneDetail',
+      params: {
+        goalId: goal.id,
+        milestoneId: milestone.id,
+        ...(initialAction === 'delete' ? { initialAction } : {}),
+      },
+    });
   }
 
   async function handleActivateDraft(): Promise<void> {
@@ -157,10 +116,6 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
     } finally {
       setActivatingDraft(false);
     }
-  }
-
-  async function handleUpdateTask(taskId: string, fields: UpdateTaskInput): Promise<void> {
-    await updateTask(taskId, fields);
   }
 
   async function handleGoalCompletion(completed: boolean): Promise<void> {
@@ -196,8 +151,6 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
     if (!pendingDeleteTask) return;
     try {
       await deleteTask(pendingDeleteTask.id);
-      setSelectedTaskId(null);
-      setEditingTaskId(null);
       setPendingDeleteTask(null);
     } catch {
       Alert.alert('Unable to delete task', 'Please try again.');
@@ -212,7 +165,6 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
     if (goal?.status === 'draft') return;
     try {
       await reactivateTask(task.id);
-      setSelectedTaskId(null);
     } catch {
       Alert.alert('Unable to reactivate task', 'Please try again.');
     }
@@ -222,81 +174,24 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
     await completeTask(task.id, { completionSource: 'manual' });
   }
 
-  async function handleScheduleTaskEvent(
-    input: CreateEventInput,
-    options: CreateEventOptions,
-  ): Promise<void> {
-    if (goal?.status === 'draft') throw new Error('Activate the goal before scheduling tasks.');
-    if (!scheduleTask) throw new Error('Task not found.');
-    const conversion = await convertTaskToEvent(scheduleTask.id, input);
-    if (options.publishToDevice) await publishEvent(conversion.eventId, conversion.eventInput);
-    setScheduleTaskId(null);
-    setSelectedTaskId(null);
-  }
-
-  async function handleStartNow(minutes: number, options: CreateEventOptions): Promise<void> {
-    if (goal?.status === 'draft') throw new Error('Activate the goal before starting tasks.');
-    if (!startNowTask) throw new Error('Task not found.');
-    const startAt = new Date();
-    const endAt = new Date(startAt.getTime() + minutes * 60_000);
-    const eventInput: CreateEventInput = {
-      title: startNowTask.title,
-      description: startNowTask.description,
-      startAt,
-      endAt,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      goalId: startNowTask.goalId,
-      milestoneId: startNowTask.milestoneId,
-    };
-    const conversion = await convertTaskToEvent(startNowTask.id, eventInput);
-    if (options.publishToDevice) await publishEvent(conversion.eventId, conversion.eventInput);
-    setStartNowTaskId(null);
-    setSelectedTaskId(null);
-    navigation.navigate('Calendar', {
-      screen: 'CalendarHome',
-      params: {
-        focusLaunch: {
-          token: `${conversion.eventId}-${Date.now()}`,
-          eventId: conversion.eventId,
-          title: conversion.eventInput.title,
-          description: conversion.eventInput.description,
-          startAtIso: conversion.eventInput.startAt.toISOString(),
-          endAtIso: conversion.eventInput.endAt.toISOString(),
-          timezone: conversion.eventInput.timezone,
-        },
-      },
-    });
-  }
-
-  async function handleCreateMilestone(
-    input: Omit<CreateGoalMilestoneInput, 'tasks'>,
-  ): Promise<void> {
-    if (!goal) throw new Error('Goal not found.');
-    await createMilestone(goal.id, input);
-    setAddMilestoneVisible(false);
-  }
-
-  async function handleSaveMilestone(
-    milestoneId: string,
-    fields: { title: string; description: string; estimatedFinishDate?: Date | null },
-  ): Promise<void> {
-    await updateMilestone(milestoneId, fields);
-  }
-
   function renderTaskListRow(task: TaskRecord) {
     return (
       <TaskListRow
         key={task.id}
         task={task}
         dateLabel={formatTaskDateLabel(task, profile?.locale)}
-        onPress={() => setSelectedTaskId(task.id)}
+        onPress={() =>
+          navigation.navigate('Plan', { screen: 'TaskDetail', params: { taskId: task.id } })
+        }
         onComplete={goal?.status === 'draft' ? undefined : () => handleToggleTask(task)}
         onReactivate={
           goal?.status === 'draft' || task.status !== 'completed'
             ? undefined
             : () => void handleReactivateTask(task)
         }
-        onEdit={() => setEditingTaskId(task.id)}
+        onEdit={() =>
+          navigation.navigate('Plan', { screen: 'EditTask', params: { taskId: task.id } })
+        }
         onDelete={() => confirmDeleteTask(task)}
       />
     );
@@ -343,67 +238,103 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
     <View style={styles.screen}>
       <View
         testID="goal-detail-fixed-header"
-        style={[styles.fixedHeader, { paddingTop: spacing.sm + insets.top }]}
+        style={[styles.fixedHeader, { paddingTop: insets.top }]}
       >
-        <View style={styles.detailHeader}>
-          <IconButton
-            name="back"
-            accessibilityLabel="Back to goals"
-            onPress={() => navigation.goBack()}
-          />
-          <View style={styles.detailHeaderCopy}>
-            <Text numberOfLines={1} style={styles.detailTitle}>
-              {goal.title}
-            </Text>
-            <Text style={styles.detailProgressText}>{getGoalProgressPercent(goal)}% complete</Text>
-          </View>
-          <RowContextMenu
-            accessibilityLabel="Goal actions"
-            menuAccessibilityLabel="Goal actions menu"
-            disabled={goalActionWorking}
-            items={[
-              {
-                label: 'Edit',
-                accessibilityLabel: 'Edit goal',
-                icon: 'edit',
-                onPress: () => setEditGoalVisible(true),
-              },
-              ...(goal.status === 'active'
-                ? [
-                    {
-                      label: 'Complete',
-                      accessibilityLabel: 'Complete goal',
-                      icon: 'complete' as const,
-                      onPress: () => void handleGoalCompletion(true),
-                    },
-                  ]
-                : goal.status === 'completed'
+        <ScreenHeader
+          title="GOAL DETAILS"
+          onPressBack={() => navigation.goBack()}
+          backAccessibilityLabel="Back to goals"
+          trailing={
+            <RowContextMenu
+              accessibilityLabel="Goal actions"
+              menuAccessibilityLabel="Goal actions menu"
+              disabled={goalActionWorking}
+              items={[
+                {
+                  label: 'Edit',
+                  accessibilityLabel: 'Edit goal',
+                  icon: 'edit',
+                  onPress: () =>
+                    navigation.navigate('Plan', {
+                      screen: 'EditGoal',
+                      params: { goalId: goal.id },
+                    }),
+                },
+                ...(goal.status === 'active'
                   ? [
                       {
-                        label: 'Uncomplete',
-                        accessibilityLabel: 'Uncomplete goal',
-                        icon: 'refresh' as const,
-                        onPress: () => void handleGoalCompletion(false),
+                        label: 'Complete',
+                        accessibilityLabel: 'Complete goal',
+                        icon: 'complete' as const,
+                        onPress: () => void handleGoalCompletion(true),
                       },
                     ]
-                  : []),
-              {
-                label: 'Delete',
-                accessibilityLabel: 'Delete goal',
-                icon: 'delete',
-                tone: 'danger',
-                onPress: () => setDeleteGoalVisible(true),
-              },
-            ]}
-          />
-        </View>
-        <ProgressBar
-          accessibilityLabel={`Goal progress ${goal.title}`}
-          value={getGoalProgressPercent(goal)}
-          max={100}
-          accent="brand"
-          accessibilityValueText={`${getGoalProgressPercent(goal)}% complete`}
+                  : goal.status === 'completed'
+                    ? [
+                        {
+                          label: 'Uncomplete',
+                          accessibilityLabel: 'Uncomplete goal',
+                          icon: 'refresh' as const,
+                          onPress: () => void handleGoalCompletion(false),
+                        },
+                      ]
+                    : []),
+                {
+                  label: 'Delete',
+                  accessibilityLabel: 'Delete goal',
+                  icon: 'delete',
+                  tone: 'danger',
+                  onPress: () => setDeleteGoalVisible(true),
+                },
+              ]}
+            />
+          }
         />
+        <View testID="goal-detail-summary" style={styles.detailSummary}>
+          <View style={styles.detailIdentityRow}>
+            <View style={styles.detailIdentityIconFrame}>
+              <AppIcon name="goal" size={20} color={styles.sectionIconColor.color} decorative />
+            </View>
+            <View style={styles.detailIdentityCopy}>
+              <Text
+                accessibilityRole="header"
+                accessibilityLabel="Goal"
+                style={styles.detailIdentityLabel}
+              >
+                GOAL
+              </Text>
+              <Text testID="goal-finish-date" style={styles.detailFinishDate}>
+                Finish date:{' '}
+                {goal.estimatedCompletionDate.toLocaleDateString(profile?.locale, {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              </Text>
+            </View>
+          </View>
+          <Text testID="goal-detail-title" style={styles.detailTitle}>
+            {goal.title}
+          </Text>
+          <View testID="goal-detail-progress" style={styles.goalProgressSection}>
+            <View style={styles.detailIdentityIconFrame}>
+              <AppIcon name="complete" size={17} color={styles.sectionIconColor.color} decorative />
+            </View>
+            <View style={styles.goalProgressCopy}>
+              <Text accessibilityRole="header" style={styles.progressSectionTitle}>
+                PROGRESS
+              </Text>
+              <ProgressBar
+                accessibilityLabel={`Goal progress ${goal.title}`}
+                value={getGoalProgressPercent(goal)}
+                accessibilityValueText={`${getGoalProgressPercent(goal)}% complete`}
+              />
+              <Text style={styles.progressSummary}>
+                {getGoalProgressPercent(goal)}% complete · {goal.progressText}
+              </Text>
+            </View>
+          </View>
+        </View>
         {goal.status === 'draft' ? (
           <View style={styles.section}>
             <AppButton
@@ -456,8 +387,13 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
                 accessibilityRole="button"
                 accessibilityLabel="Add task"
                 onPress={() => {
-                  setTaskMilestoneId(goal.nextMilestone?.id ?? null);
-                  setAddTaskVisible(true);
+                  navigation.navigate('Plan', {
+                    screen: 'CreateTask',
+                    params: {
+                      goalId: goal.id,
+                      ...(goal.nextMilestone?.id ? { milestoneId: goal.nextMilestone.id } : {}),
+                    },
+                  });
                 }}
                 style={({ pressed }) => [styles.addItemButton, pressed && styles.textButtonPressed]}
               >
@@ -469,11 +405,21 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
                 <TaskRow
                   task={nextTask}
                   context={formatTaskContext(nextTask, goal, profile?.locale)}
-                  onPress={() => setSelectedTaskId(nextTask.id)}
+                  onPress={() =>
+                    navigation.navigate('Plan', {
+                      screen: 'TaskDetail',
+                      params: { taskId: nextTask.id },
+                    })
+                  }
                   onToggleComplete={
                     goal.status === 'draft' ? undefined : () => handleToggleTask(nextTask)
                   }
-                  onEdit={() => setEditingTaskId(nextTask.id)}
+                  onEdit={() =>
+                    navigation.navigate('Plan', {
+                      screen: 'EditTask',
+                      params: { taskId: nextTask.id },
+                    })
+                  }
                   onDelete={() => confirmDeleteTask(nextTask)}
                 />
               </AppCard>
@@ -507,19 +453,24 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
           </View>
         ) : (
           <View style={[styles.section, styles.overviewContent]}>
-            <View testID="goal-overview-summary" style={styles.section}>
-              <Text testID="goal-finish-date" style={styles.overviewFinishDate}>
-                Finish date:{' '}
-                {goal.estimatedCompletionDate.toLocaleDateString(profile?.locale, {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
-              </Text>
-              <Text accessibilityRole="header" style={styles.sectionTitle}>
-                Description
-              </Text>
-              <Text style={styles.overviewDescription}>
+            <View
+              testID="goal-overview-description-section"
+              style={styles.overviewDescriptionSection}
+            >
+              <View style={styles.overviewDescriptionHeader}>
+                <View style={styles.overviewDescriptionIconFrame}>
+                  <AppIcon
+                    name="document"
+                    size={18}
+                    color={styles.sectionIconColor.color}
+                    decorative
+                  />
+                </View>
+                <Text accessibilityRole="header" style={styles.sectionTitle}>
+                  Description
+                </Text>
+              </View>
+              <Text testID="goal-overview-description" style={styles.overviewDescription}>
                 {goal.description || 'No description yet.'}
               </Text>
             </View>
@@ -527,22 +478,40 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
               testID="goal-milestones-header"
               style={[styles.sectionHeader, styles.overviewMilestonesHeader]}
             >
-              <Text accessibilityRole="header" style={styles.sectionTitle}>
-                Milestones
-              </Text>
+              <View testID="goal-milestones-title" style={styles.overviewMilestonesTitle}>
+                <View testID="goal-milestones-icon-frame" style={styles.overviewMilestoneIconFrame}>
+                  <AppIcon
+                    name="goalMilestone"
+                    size={18}
+                    color={styles.sectionIconColor.color}
+                    decorative
+                  />
+                </View>
+                <Text accessibilityRole="header" style={styles.sectionTitle}>
+                  Milestones
+                </Text>
+              </View>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Add milestone"
-                onPress={() => setAddMilestoneVisible(true)}
+                onPress={() =>
+                  navigation.navigate('Plan', {
+                    screen: 'CreateMilestone',
+                    params: { goalId: goal.id },
+                  })
+                }
                 style={({ pressed }) => [styles.addItemButton, pressed && styles.textButtonPressed]}
               >
                 <Text style={styles.addItemText}>+ Add Milestone</Text>
               </Pressable>
             </View>
             {goal.milestones.length === 0 ? (
-              <Text style={styles.stateDescription}>
-                No milestones yet. Add one to break this goal into smaller steps.
-              </Text>
+              <EmptyState
+                title="No milestones yet"
+                description="Add one to break this goal into smaller steps."
+                presentation="compact"
+                style={styles.taskEmptyState}
+              />
             ) : (
               <View
                 testID="goal-detail-milestone-list"
@@ -552,9 +521,12 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
                 <GoalTimeline
                   key={goal.id}
                   milestones={goal.milestones}
-                  onPressMilestone={(milestone) => openMilestoneDetails(milestone)}
-                  onEditMilestone={(milestone) => openMilestoneDetails(milestone, 'edit')}
-                  onDeleteMilestone={(milestone) => openMilestoneDetails(milestone, 'delete')}
+                  onPressMilestone={(milestone) => openMilestoneRoute(milestone)}
+                  onEditMilestone={(milestone) => openMilestoneRoute(milestone, 'edit')}
+                  onDeleteMilestone={(milestone) => openMilestoneRoute(milestone, 'delete')}
+                  onReorderMilestones={(orderedMilestoneIds) =>
+                    reorderMilestones(goal.id, orderedMilestoneIds)
+                  }
                   showMilestoneIcon
                   renderMilestoneTasks={(milestone) => {
                     const milestoneTasks = goalTasks.filter(
@@ -578,10 +550,12 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
                         <Pressable
                           accessibilityRole="button"
                           accessibilityLabel={`Add task to milestone ${milestone.title}`}
-                          onPress={() => {
-                            setTaskMilestoneId(milestone.id);
-                            setAddTaskVisible(true);
-                          }}
+                          onPress={() =>
+                            navigation.navigate('Plan', {
+                              screen: 'CreateTask',
+                              params: { goalId: goal.id, milestoneId: milestone.id },
+                            })
+                          }
                           style={({ pressed }) => [
                             styles.addItemButton,
                             pressed && styles.textButtonPressed,
@@ -599,61 +573,6 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
         )}
       </ScrollView>
 
-      <AddTaskModal
-        visible={addTaskVisible}
-        onClose={() => {
-          setAddTaskVisible(false);
-          setTaskMilestoneId(null);
-        }}
-        onSave={handleCreateTask}
-        goals={goals}
-        allowedDraftGoalId={goal.status === 'draft' ? goal.id : null}
-        initialGoalId={goal.id}
-        initialMilestoneId={taskMilestoneId}
-      />
-      <TaskDetailsModal
-        visible={
-          selectedTask !== null &&
-          editingTask === null &&
-          scheduleTask === null &&
-          startNowTask === null
-        }
-        task={selectedTask}
-        goals={goals}
-        locale={profile?.locale}
-        timeFormat={timeFormat}
-        onClose={() => setSelectedTaskId(null)}
-        onEdit={(task) => setEditingTaskId(task.id)}
-        onDelete={confirmDeleteTask}
-        onSchedule={(task) => {
-          setSelectedTaskId(null);
-          setScheduleTaskId(task.id);
-        }}
-        onStartNow={(task) => {
-          setSelectedTaskId(null);
-          setStartNowTaskId(task.id);
-        }}
-        onMarkComplete={async (task) => {
-          await handleToggleTask(task);
-          setSelectedTaskId(null);
-        }}
-        onReactivate={handleReactivateTask}
-        taskActionsEnabled={goal.status !== 'draft'}
-      />
-      <EditTaskModal
-        visible={editingTask !== null}
-        task={editingTask}
-        goals={goals}
-        allowedDraftGoalId={goal.status === 'draft' ? goal.id : null}
-        backAccessibilityLabel={
-          activeTab === 'overview' ? 'Back to overview' : 'Back to task details'
-        }
-        onClose={() => {
-          setEditingTaskId(null);
-          if (activeTab === 'overview') setSelectedTaskId(null);
-        }}
-        onSave={handleUpdateTask}
-      />
       <ConfirmationModal
         visible={pendingDeleteTask !== null}
         title="Delete task?"
@@ -668,56 +587,6 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
         onCancel={() => setPendingDeleteTask(null)}
         onConfirm={() => void handleDeleteTask()}
       />
-      <AddEventModal
-        visible={scheduleTask !== null}
-        modalTitle="Schedule Task"
-        initialDate={scheduleTask?.dueDate ?? new Date()}
-        initialValues={
-          scheduleTask
-            ? {
-                title: scheduleTask.title,
-                description: scheduleTask.description,
-                goalId: scheduleTask.goalId,
-                milestoneId: scheduleTask.milestoneId,
-              }
-            : undefined
-        }
-        publicationCalendarTitle={publicationCalendarTitle}
-        locale={profile?.locale}
-        timeFormat={timeFormat}
-        fullScreen
-        onClose={() => setScheduleTaskId(null)}
-        onSave={handleScheduleTaskEvent}
-      />
-      <StartNowModal
-        visible={startNowTask !== null}
-        task={startNowTask}
-        publicationCalendarTitle={publicationCalendarTitle}
-        fullScreen
-        onClose={() => setStartNowTaskId(null)}
-        onConfirm={handleStartNow}
-      />
-      <GoalDetailsModal
-        goal={goal}
-        visible={editGoalVisible}
-        initialEditMode
-        onClose={() => setEditGoalVisible(false)}
-        onSaveGoal={async (goalId, fields) => {
-          await updateGoal(goalId, fields);
-          setEditGoalVisible(false);
-        }}
-        onActivateDraft={activateGoalDraft}
-        onToggleGoalManualCompletion={setGoalManuallyCompleted}
-        onAddMilestone={() => {
-          setEditGoalVisible(false);
-          setAddMilestoneVisible(true);
-        }}
-        onOpenMilestone={(milestone) => {
-          setEditGoalVisible(false);
-          setSelectedMilestoneId(milestone.id);
-        }}
-        onReorderMilestones={reorderMilestones}
-      />
       <ConfirmationModal
         visible={deleteGoalVisible}
         title="Delete goal?"
@@ -731,34 +600,6 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
         onCancel={() => setDeleteGoalVisible(false)}
         onConfirm={() => void handleDeleteGoal()}
       />
-      <AddMilestoneModal
-        visible={addMilestoneVisible}
-        goalEstimatedCompletionDate={goal.estimatedCompletionDate}
-        onClose={() => setAddMilestoneVisible(false)}
-        onSave={handleCreateMilestone}
-      />
-      <MilestoneDetailModal
-        goalTitle={goal.title}
-        milestone={selectedMilestone}
-        visible={selectedMilestone !== null && isFocused}
-        initialAction={selectedMilestoneAction}
-        locale={profile?.locale}
-        goalEstimatedCompletionDate={goal.estimatedCompletionDate}
-        onClose={closeMilestoneDetails}
-        onSaveMilestone={handleSaveMilestone}
-        onOpenTask={(task) =>
-          navigation.navigate('Plan', { screen: 'TaskDetail', params: { taskId: task.id } })
-        }
-        onDeleteMilestone={async (milestone) => {
-          await deleteMilestone(milestone.id);
-          closeMilestoneDetails();
-        }}
-        onAddTask={(milestone) => {
-          closeMilestoneDetails();
-          setTaskMilestoneId(milestone.id);
-          setAddTaskVisible(true);
-        }}
-      />
     </View>
   );
 }
@@ -768,7 +609,7 @@ const createStyles = (theme: Theme) =>
     screen: { flex: 1, backgroundColor: theme.colors.background },
     fixedHeader: {
       paddingHorizontal: theme.layout.pagePaddingHorizontal,
-      gap: theme.spacing.lg,
+      gap: theme.spacing.md,
     },
     content: {
       flexGrow: 1,
@@ -782,20 +623,47 @@ const createStyles = (theme: Theme) =>
     stateTitle: { ...theme.typography.cardTitle, color: theme.colors.text },
     stateDescription: { ...theme.typography.body, color: theme.colors.textSecondary },
     taskEmptyState: { alignItems: 'center' },
-    overviewDescription: { ...theme.typography.helper, color: theme.colors.textPrimary },
-    overviewFinishDate: {
-      ...theme.typography.helper,
-      color: theme.colors.textEmphasis,
-      fontWeight: '700',
+    detailSummary: { gap: theme.spacing.sm },
+    detailIdentityRow: {
+      minHeight: 34,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
     },
-    detailHeader: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
-    detailHeaderCopy: { flex: 1, gap: theme.spacing.xs },
-    detailTitle: { ...theme.typography.sectionTitle, color: theme.colors.text },
-    detailProgressText: {
-      ...theme.typography.helper,
+    detailIdentityIconFrame: {
+      width: 34,
+      height: 34,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.md,
+      backgroundColor: theme.colors.surfaceMuted,
+    },
+    detailIdentityCopy: { flex: 1, minWidth: 0, gap: theme.spacing.xs },
+    detailIdentityLabel: {
+      ...theme.typography.caption,
       color: theme.colors.brand,
       fontWeight: '700',
     },
+    detailFinishDate: { ...theme.typography.caption, color: theme.colors.textSecondary },
+    sectionIconColor: { color: theme.colors.brand },
+    goalProgressSection: {
+      minHeight: 60,
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: theme.spacing.md,
+      paddingVertical: theme.spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.border,
+    },
+    goalProgressCopy: { flex: 1, minWidth: 0, gap: theme.spacing.xs },
+    progressSectionTitle: {
+      ...theme.typography.caption,
+      color: theme.colors.textSecondary,
+      fontWeight: '700',
+    },
+    progressSummary: { ...theme.typography.caption, color: theme.colors.textSecondary },
+    overviewDescription: { ...theme.typography.body, color: theme.colors.textPrimary },
+    detailTitle: { ...theme.typography.sectionTitle, color: theme.colors.text, flexShrink: 1 },
     tabRow: {
       flexDirection: 'row',
       padding: 4,
@@ -815,6 +683,25 @@ const createStyles = (theme: Theme) =>
     tabLabelActive: { color: theme.colors.brand, fontWeight: '700' },
     section: { gap: theme.spacing.sm },
     overviewContent: { flexGrow: 1 },
+    overviewDescriptionSection: {
+      gap: theme.spacing.sm,
+      paddingBottom: theme.spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.border,
+    },
+    overviewDescriptionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+    },
+    overviewDescriptionIconFrame: {
+      width: 34,
+      height: 34,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.md,
+      backgroundColor: theme.colors.surfaceMuted,
+    },
     milestoneTimeline: { flexGrow: 1 },
     taskListContent: { gap: theme.spacing.sm },
     milestoneTaskContent: { gap: theme.spacing.sm },
@@ -842,5 +729,19 @@ const createStyles = (theme: Theme) =>
     sectionTitle: { ...theme.typography.label, color: theme.colors.textSecondary, flex: 1 },
     allTasksHeader: { marginTop: theme.spacing.sm },
     overviewMilestonesHeader: { marginTop: theme.spacing.md },
+    overviewMilestonesTitle: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+    },
+    overviewMilestoneIconFrame: {
+      width: 34,
+      height: 34,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.md,
+      backgroundColor: theme.colors.surfaceMuted,
+    },
     nextTaskCard: { paddingVertical: theme.spacing.sm },
   });

@@ -22,11 +22,18 @@ export type PlanStackParamList = {
   Goals: { createGoal?: boolean } | undefined;
   Tasks: { createTask?: boolean } | undefined;
   TaskDetail: { taskId: string };
+  EditTask: { taskId: string };
   GoalDetail: {
     goalId: string;
     initialTab?: 'tasks' | 'overview' | 'timeline';
-    initialAction?: 'edit';
   };
+  EditGoal: { goalId: string };
+  MilestoneDetail: {
+    goalId: string;
+    milestoneId: string;
+    initialAction?: 'delete';
+  };
+  EditMilestone: { goalId: string; milestoneId: string };
   FocusMode:
     | {
         eventId?: string;
@@ -41,6 +48,7 @@ export type PlanStackParamList = {
     | undefined;
   CreateGoal: { sourceNoteId?: string } | undefined;
   CreateTask: { goalId?: string; milestoneId?: string } | undefined;
+  CreateMilestone: { goalId: string };
 };
 
 export type CalendarStackParamList = {

@@ -18,6 +18,7 @@ import { TaskAssociationSelector } from './TaskAssociationSelector';
 
 type EditTaskModalProps = {
   visible: boolean;
+  embedded?: boolean;
   task: TaskRecord | null;
   goals: readonly GoalWithMilestones[];
   allowedDraftGoalId?: string | null;
@@ -28,6 +29,7 @@ type EditTaskModalProps = {
 
 export function EditTaskModal({
   visible,
+  embedded = false,
   task,
   goals,
   allowedDraftGoalId = null,
@@ -88,11 +90,13 @@ export function EditTaskModal({
   }
 
   return (
-    <AppModal visible={visible} onClose={onClose} fullScreen hideHeader>
+    <AppModal visible={visible} onClose={onClose} fullScreen hideHeader embedded={embedded}>
       {task ? (
         <ScrollView
+          style={embedded ? styles.scrollView : undefined}
           contentContainerStyle={[
             styles.content,
+            embedded ? { paddingHorizontal: spacing.lg } : null,
             { paddingTop: insets.top, paddingBottom: spacing.xl + insets.bottom },
           ]}
           keyboardShouldPersistTaps="handled"
@@ -166,6 +170,7 @@ export function EditTaskModal({
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
+    scrollView: { flex: 1 },
     content: { flexGrow: 1, gap: spacing.lg },
     errorText: { ...typography.helper, color: theme.colors.dangerText },
   });

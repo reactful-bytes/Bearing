@@ -18,11 +18,10 @@ import { SegmentedControl, SegmentedControlOption } from '../ui/SegmentedControl
 export type GoalFilter = GoalStatus | 'all';
 
 export function getGoalProgressPercent(
-  goal: Pick<GoalWithMilestones, 'status' | 'completedMilestoneCount' | 'totalMilestoneCount'>,
+  goal: Pick<GoalWithMilestones, 'completedTaskCount' | 'totalTaskCount'>,
 ): number {
-  if (goal.status === 'completed') return 100;
-  if (goal.totalMilestoneCount === 0) return 0;
-  return Math.round((goal.completedMilestoneCount / goal.totalMilestoneCount) * 100);
+  if (goal.totalTaskCount === 0) return 0;
+  return Math.round((goal.completedTaskCount / goal.totalTaskCount) * 100);
 }
 
 type GoalCardProps = {
@@ -192,6 +191,7 @@ type GoalTimelineProps = {
   onPressMilestone?: (milestone: GoalMilestoneWithTasks) => void;
   onEditMilestone?: (milestone: GoalMilestoneWithTasks) => void;
   onDeleteMilestone?: (milestone: GoalMilestoneWithTasks) => void;
+  onReorderMilestones?: (orderedMilestoneIds: string[]) => void | Promise<void>;
   renderMilestoneTasks?: (milestone: GoalMilestoneWithTasks) => ReactNode;
   showMilestoneIcon?: boolean;
 };
@@ -206,11 +206,16 @@ export function GoalTimeline({
   onPressMilestone,
   onEditMilestone,
   onDeleteMilestone,
+  onReorderMilestones,
   renderMilestoneTasks,
   showMilestoneIcon = false,
 }: GoalTimelineProps) {
   const styles = useThemedStyles(createStyles);
   const { theme } = useTheme();
+  const orderedMilestones = useMemo(
+    () => [...milestones].sort((left, right) => left.order - right.order),
+    [milestones],
+  );
   const currentMilestoneId = useMemo(() => getCurrentMilestoneId(milestones), [milestones]);
   const [expandedMilestoneIds, setExpandedMilestoneIds] = useState<ReadonlySet<string>>(
     () => new Set(),
@@ -225,9 +230,23 @@ export function GoalTimeline({
     });
   }
 
+  function moveMilestone(milestoneId: string, direction: -1 | 1): void {
+    if (!onReorderMilestones) return;
+    const currentIndex = orderedMilestones.findIndex((milestone) => milestone.id === milestoneId);
+    const nextIndex = currentIndex + direction;
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= orderedMilestones.length) return;
+
+    const nextMilestones = [...orderedMilestones];
+    [nextMilestones[currentIndex], nextMilestones[nextIndex]] = [
+      nextMilestones[nextIndex],
+      nextMilestones[currentIndex],
+    ];
+    void onReorderMilestones(nextMilestones.map((milestone) => milestone.id));
+  }
+
   return (
     <View accessibilityLabel="Goal milestone timeline" style={styles.timeline}>
-      {milestones.map((milestone) => {
+      {orderedMilestones.map((milestone, index) => {
         const isCompleted = milestone.status === 'completed';
         const isCurrent = !isCompleted && milestone.id === currentMilestoneId;
         const isExpanded = expandedMilestoneIds.has(milestone.id);
@@ -271,7 +290,7 @@ export function GoalTimeline({
                     onPress={() => toggleMilestone(milestone.id)}
                     style={({ pressed }) => [
                       styles.timelineDisclosure,
-                      pressed ? styles.listFilterButtonPressed : null,
+                      pressed ? styles.timelineDisclosurePressed : null,
                     ]}
                   >
                     <AppIcon
@@ -293,6 +312,26 @@ export function GoalTimeline({
                         icon: 'edit',
                         onPress: () => onEditMilestone(milestone),
                       },
+                      ...(onReorderMilestones && index > 0
+                        ? [
+                            {
+                              label: 'Move up',
+                              accessibilityLabel: `Move milestone ${milestone.title} up`,
+                              icon: 'collapse' as const,
+                              onPress: () => moveMilestone(milestone.id, -1),
+                            },
+                          ]
+                        : []),
+                      ...(onReorderMilestones && index < orderedMilestones.length - 1
+                        ? [
+                            {
+                              label: 'Move down',
+                              accessibilityLabel: `Move milestone ${milestone.title} down`,
+                              icon: 'expand' as const,
+                              onPress: () => moveMilestone(milestone.id, 1),
+                            },
+                          ]
+                        : []),
                       {
                         label: 'Delete',
                         accessibilityLabel: `Delete milestone ${milestone.title}`,
@@ -407,6 +446,7 @@ const createStyles = (theme: Theme) =>
       justifyContent: 'center',
       borderRadius: theme.radii.md,
     },
+    timelineDisclosurePressed: { opacity: 0.74 },
     timelineTitleRow: {
       flexDirection: 'row',
       alignItems: 'baseline',
