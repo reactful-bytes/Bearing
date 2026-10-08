@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, within } from '@testing-library/react-native';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { StyleSheet } from 'react-native';
 
@@ -229,8 +229,24 @@ describe('PlanScreen', () => {
     expect(screen.queryByText('Plan block 3')).toBeNull();
     expect(screen.getByText('Ship the next release')).toBeTruthy();
     expect(
+      StyleSheet.flatten(
+        screen.getByTestId('plan-goal-row-content-Ship the next release').props.style,
+      ),
+    ).toMatchObject({ flexDirection: 'row', alignItems: 'center' });
+    expect(
       StyleSheet.flatten(screen.getByTestId('plan-goal-marker-Ship the next release').props.style),
     ).toMatchObject({ width: 12, height: 12, borderRadius: 6, borderWidth: 1.5 });
+    const goalProgressRow = screen.getByTestId('plan-goal-progress-row-Ship the next release');
+    expect(StyleSheet.flatten(goalProgressRow.props.style)).toMatchObject({
+      flexDirection: 'row',
+      alignItems: 'center',
+    });
+    expect(screen.getByTestId('plan-goal-progress-bar-Ship the next release').props).toMatchObject({
+      accessibilityRole: 'progressbar',
+      accessibilityLabel: 'Goal progress Ship the next release',
+      accessibilityValue: { now: 50, text: '50%' },
+    });
+    expect(within(goalProgressRow).getByText('50%')).toBeTruthy();
     expect(screen.getByText('50%')).toBeTruthy();
     expect(screen.getByText('Notes')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'View full day' })).toBeTruthy();

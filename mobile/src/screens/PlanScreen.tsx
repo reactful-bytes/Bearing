@@ -288,19 +288,24 @@ function PlanGoalRow({ goal, onPress }: { goal: PlanScreenGoal; onPress: () => v
       onPress={onPress}
       style={({ pressed }) => [styles.goalRow, pressed ? styles.pressed : null]}
     >
-      <View style={styles.goalTitleRow}>
+      <View testID={`plan-goal-row-content-${goal.title}`} style={styles.goalRowContent}>
         <View testID={`plan-goal-marker-${goal.title}`} style={styles.taskMarker} />
-        <Text numberOfLines={1} style={styles.goalTitle}>
-          {goal.title}
-        </Text>
-        <Text style={styles.goalProgressText}>{progressPercent}%</Text>
+        <View style={styles.goalCopy}>
+          <Text numberOfLines={1} style={styles.goalTitle}>
+            {goal.title}
+          </Text>
+          <View testID={`plan-goal-progress-row-${goal.title}`} style={styles.goalProgressRow}>
+            <ProgressBar
+              accessibilityLabel={`Goal progress ${goal.title}`}
+              accessibilityValueText={`${progressPercent}%`}
+              testID={`plan-goal-progress-bar-${goal.title}`}
+              value={progressPercent}
+              style={styles.goalProgress}
+            />
+            <Text style={styles.goalProgressText}>{progressPercent}%</Text>
+          </View>
+        </View>
       </View>
-      <ProgressBar
-        accessibilityLabel={`Goal progress ${goal.title}`}
-        accessibilityValueText={`${progressPercent}%`}
-        value={progressPercent}
-        style={styles.goalProgress}
-      />
     </Pressable>
   );
 }
@@ -897,19 +902,23 @@ const createStyles = (theme: Theme) =>
     },
     goalRow: {
       flex: 1,
-      justifyContent: 'flex-start',
-      gap: theme.spacing.xs,
       paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.xs,
     },
-    goalTitleRow: {
+    goalRowContent: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.sm,
     },
+    goalCopy: { flex: 1, minWidth: 0, gap: theme.spacing.xs },
     goalTitle: { ...theme.typography.helper, color: theme.colors.text, flex: 1 },
     goalProgressText: { ...theme.typography.caption, color: theme.colors.textSecondary },
-    goalProgress: { minHeight: 4 },
+    goalProgressRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    goalProgress: { flex: 1, minHeight: 4 },
     focusStatus: {
       ...theme.typography.label,
       color: theme.colors.focusGreen,
