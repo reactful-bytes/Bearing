@@ -58,6 +58,13 @@ async function openNoteActions(): Promise<void> {
   });
 }
 
+async function openNoteRowActions(title = 'Captured thought'): Promise<void> {
+  fireEvent.press(screen.getByLabelText(`Note actions for ${title}`));
+  await waitFor(() => {
+    expect(screen.getByRole('menuitem', { name: `Edit note ${title}` })).toBeTruthy();
+  });
+}
+
 describe('NotesScreen', () => {
   it('retries after the notes subscription fails', () => {
     const retry = jest.fn();
@@ -113,6 +120,9 @@ describe('NotesScreen', () => {
       returnKeyType: 'search',
     });
     expect(screen.getByText('Captured thought')).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.getByTestId('note-row-menu-anchor-note-1').props.style),
+    ).toMatchObject({ alignSelf: 'center', flexShrink: 0 });
     expect(
       StyleSheet.flatten(screen.getByLabelText('Open note Captured thought').props.style),
     ).toMatchObject({ minHeight: 56, paddingVertical: spacing.xs });
@@ -493,5 +503,54 @@ describe('NotesScreen', () => {
     await waitFor(() => {
       expect(deleteNote).toHaveBeenCalledWith('note-1');
     });
+  });
+
+  it('opens note editing directly from the row menu', async () => {
+    const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
+    mockedUseNotes.mockReturnValue(
+      makeUseNotesReturn({ notes: [makeNote()], uiState: 'ready' }),
+    );
+
+    render(<NotesScreen />);
+
+    await openNoteRowActions();
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Edit note Captured thought' }));
+
+    expect(screen.getByLabelText('Edit note title')).toBeTruthy();
+  });
+
+  it('pins, archives, and deletes notes from row menus with confirmation', async () => {
+    const pinNote = jest.fn(async (_noteId: string, _pinned: boolean) => undefined);
+    const archiveNote = jest.fn(async (_noteId: string, _fields: UpdateNoteInput) => undefined);
+    const deleteNote = jest.fn(async (_noteId: string) => undefined);
+    const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
+    mockedUseNotes.mockReturnValue(
+      makeUseNotesReturn({ notes: [makeNote()], uiState: 'ready', pinNote, archiveNote, deleteNote }),
+    );
+
+    render(<NotesScreen />);
+
+    await openNoteRowActions();
+    expect(screen.getByRole('menuitem', { name: 'Pin note Captured thought' })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: 'Archive note Captured thought' })).toBeTruthy();
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Pin note Captured thought' }));
+    await waitFor(() => expect(pinNote).toHaveBeenCalledWith('note-1', true));
+
+    await openNoteRowActions();
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Archive note Captured thought' }));
+    fireEvent.press(screen.getByLabelText('Confirm note archive'));
+    await waitFor(() =>
+      expect(archiveNote).toHaveBeenCalledWith('note-1', {
+        title: 'Captured thought',
+        body: 'Keep this idea around for later.',
+        labels: [],
+        pinned: false,
+      }),
+    );
+
+    await openNoteRowActions();
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Delete note Captured thought' }));
+    fireEvent.press(screen.getByLabelText('Confirm note delete'));
+    await waitFor(() => expect(deleteNote).toHaveBeenCalledWith('note-1'));
   });
 });

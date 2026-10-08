@@ -29,9 +29,23 @@ type GoalCardProps = {
   goal: GoalWithMilestones;
   formatDate: (date: Date) => string;
   onPress: () => void;
+  onEdit?: () => void;
+  onComplete?: () => void;
+  onUncomplete?: () => void;
+  onDelete?: () => void;
+  actionsDisabled?: boolean;
 };
 
-export function GoalCard({ goal, formatDate, onPress }: GoalCardProps) {
+export function GoalCard({
+  goal,
+  formatDate,
+  onPress,
+  onEdit,
+  onComplete,
+  onUncomplete,
+  onDelete,
+  actionsDisabled = false,
+}: GoalCardProps) {
   const styles = useThemedStyles(createStyles);
   const progressPercent = getGoalProgressPercent(goal);
   const nextMilestone =
@@ -61,12 +75,17 @@ export function GoalCard({ goal, formatDate, onPress }: GoalCardProps) {
   const statusColor = badgeTextStyle.color;
 
   return (
-    <Card accessibilityLabel={`Open goal ${goal.title}`} onPress={onPress} style={styles.card}>
-      <View style={styles.cardRow}>
-        <View style={[styles.iconContainer, { borderColor: statusColor }]}>
+    <View style={styles.goalRow}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Open goal ${goal.title}`}
+        onPress={onPress}
+        style={({ pressed }) => [styles.goalMain, pressed ? styles.goalRowPressed : null]}
+      >
+        <View style={styles.iconContainer}>
           <AppIcon name={statusIcon} size={22} color={statusColor} decorative />
         </View>
-        <View style={styles.cardCopy}>
+        <View style={styles.goalCopy}>
           <View style={styles.titleRow}>
             <Text numberOfLines={2} style={styles.title}>
               {goal.title}
@@ -96,8 +115,52 @@ export function GoalCard({ goal, formatDate, onPress }: GoalCardProps) {
             showPercentage
           />
         </View>
-      </View>
-    </Card>
+      </Pressable>
+      {onEdit && onDelete ? (
+        <View testID={`goal-row-menu-anchor-${goal.id}`} style={styles.goalMenuPosition}>
+          <RowContextMenu
+            accessibilityLabel={`Goal actions for ${goal.title}`}
+            menuAccessibilityLabel={`Goal actions menu for ${goal.title}`}
+            disabled={actionsDisabled}
+            items={[
+              {
+                label: 'Edit',
+                accessibilityLabel: `Edit goal ${goal.title}`,
+                icon: 'edit',
+                onPress: onEdit,
+              },
+              ...(onComplete
+                ? [
+                    {
+                      label: 'Complete',
+                      accessibilityLabel: `Complete goal ${goal.title}`,
+                      icon: 'complete' as const,
+                      onPress: onComplete,
+                    },
+                  ]
+                : []),
+              ...(onUncomplete
+                ? [
+                    {
+                      label: 'Uncomplete',
+                      accessibilityLabel: `Uncomplete goal ${goal.title}`,
+                      icon: 'refresh' as const,
+                      onPress: onUncomplete,
+                    },
+                  ]
+                : []),
+              {
+                label: 'Delete',
+                accessibilityLabel: `Delete goal ${goal.title}`,
+                icon: 'delete',
+                tone: 'danger' as const,
+                onPress: onDelete,
+              },
+            ]}
+          />
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -271,20 +334,39 @@ export function GoalMilestones({ milestones }: GoalMilestonesProps) {
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
-    card: { padding: theme.spacing.lg },
-    cardRow: { flexDirection: 'row', alignItems: 'flex-start', gap: theme.spacing.md },
+    goalRow: {
+      minHeight: 56,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+      paddingVertical: theme.spacing.xs,
+    },
+    goalMenuPosition: { alignSelf: 'center', flexShrink: 0 },
+    goalMain: {
+      flex: 1,
+      minWidth: 0,
+      minHeight: theme.layout.minimumTouchTarget,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+    },
+    goalRowPressed: { opacity: 0.74 },
     iconContainer: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+      width: 34,
+      height: 34,
+      borderRadius: theme.radii.md,
       alignItems: 'center',
       justifyContent: 'center',
-      borderWidth: 1,
       backgroundColor: theme.colors.surfaceBrand,
     },
-    cardCopy: { flex: 1, gap: theme.spacing.xs },
+    goalCopy: { flex: 1, minWidth: 0, gap: theme.spacing.xs },
     titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: theme.spacing.md },
-    title: { ...theme.typography.cardTitle, color: theme.colors.text, flex: 1 },
+    title: {
+      ...theme.typography.helper,
+      color: theme.colors.text,
+      fontWeight: '600',
+      flex: 1,
+    },
     badge: {
       paddingHorizontal: theme.spacing.sm,
       paddingVertical: 2,

@@ -16,6 +16,7 @@ import { NoteLabelsField } from './NoteLabels';
 type NoteDetailModalProps = {
   visible: boolean;
   note: NoteRecord | null;
+  initialEditMode?: boolean;
   locale?: string;
   onClose: () => void;
   onSave: (noteId: string, fields: UpdateNoteInput) => Promise<void>;
@@ -27,6 +28,7 @@ type NoteDetailModalProps = {
 export function NoteDetailModal({
   visible,
   note,
+  initialEditMode = false,
   locale,
   onClose,
   onSave,
@@ -48,14 +50,14 @@ export function NoteDetailModal({
       return;
     }
 
-    setEditMode(false);
+    setEditMode(initialEditMode);
     setTitle(note.title);
     setBody(note.body);
     setLabels(note.labels);
     setSaving(false);
     setConfirmingDelete(false);
     setError(null);
-  }, [note, visible]);
+  }, [initialEditMode, note, visible]);
 
   function handleClose(): void {
     setEditMode(false);

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { NavigationProp, useIsFocused, useNavigation } from '@react-navigation/native';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
@@ -14,6 +14,7 @@ import { AddTaskModal } from '../components/tasks/AddTaskModal';
 import { GoalCard } from '../components/presentation/GoalPresentation';
 import type { GoalFilter } from '../components/presentation/GoalPresentation';
 import { AppCard } from '../components/ui/AppCard';
+import { ConfirmationModal } from '../components/ui/ConfirmationModal';
 import { EmptyState } from '../components/ui/EmptyState';
 import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
@@ -140,6 +141,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
     saveGoalDraft,
     activateGoalDraft,
     updateGoal,
+    deleteGoal,
     setGoalManuallyCompleted,
     createMilestone,
     deleteMilestone,
@@ -152,6 +154,9 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   const [addMilestoneVisible, setAddMilestoneVisible] = useState(false);
   const [addTaskVisible, setAddTaskVisible] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
+  const [editSelectedGoal, setEditSelectedGoal] = useState(false);
+  const [pendingDeleteGoal, setPendingDeleteGoal] = useState<GoalWithMilestones | null>(null);
+  const [goalActionWorking, setGoalActionWorking] = useState(false);
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
   const [taskMilestoneId, setTaskMilestoneId] = useState<string | null>(null);
   const [goalFilter, setGoalFilter] = useState<GoalFilter>('active');
@@ -279,6 +284,35 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
     await updateGoal(goalId, fields);
   }
 
+  async function handleGoalCompletion(goal: GoalWithMilestones, completed: boolean): Promise<void> {
+    if (goalActionWorking) return;
+    setGoalActionWorking(true);
+    try {
+      await setGoalManuallyCompleted(goal.id, completed);
+    } catch (error) {
+      Alert.alert(
+        'Unable to update goal',
+        error instanceof Error ? error.message : 'Please try again.',
+      );
+    } finally {
+      setGoalActionWorking(false);
+    }
+  }
+
+  async function handleDeleteGoal(): Promise<void> {
+    if (!pendingDeleteGoal || goalActionWorking) return;
+    setGoalActionWorking(true);
+    try {
+      await deleteGoal(pendingDeleteGoal.id);
+      if (selectedGoalId === pendingDeleteGoal.id) closeGoalDetails();
+      setPendingDeleteGoal(null);
+    } catch {
+      Alert.alert('Unable to delete goal', 'Please try again.');
+    } finally {
+      setGoalActionWorking(false);
+    }
+  }
+
   async function handleSaveMilestone(
     milestoneId: string,
     fields: { title: string; description: string; estimatedFinishDate?: Date | null },
@@ -286,17 +320,22 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
     await updateMilestone(milestoneId, fields);
   }
 
-  function openGoal(goal: GoalWithMilestones): void {
+  function openGoal(goal: GoalWithMilestones, initialAction?: 'edit'): void {
     if (navigation?.navigate) {
-      navigation.navigate('GoalDetail', { goalId: goal.id });
+      navigation.navigate('GoalDetail', {
+        goalId: goal.id,
+        ...(initialAction ? { initialAction } : {}),
+      });
       return;
     }
 
     setSelectedGoalId(goal.id);
+    setEditSelectedGoal(initialAction === 'edit');
   }
 
   function closeGoalDetails(): void {
     setSelectedGoalId(null);
+    setEditSelectedGoal(false);
     setSelectedMilestoneId(null);
     setAddMilestoneVisible(false);
     setAddTaskVisible(false);
@@ -412,16 +451,29 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
           />
         ) : null}
 
-        {uiState === 'ready' || uiState === 'empty'
-          ? visibleGoals.map((goal) => (
+        {(uiState === 'ready' || uiState === 'empty') && visibleGoals.length > 0 ? (
+          <View style={styles.goalsRows}>
+            {visibleGoals.map((goal) => (
               <GoalCard
                 key={goal.id}
                 goal={goal}
                 formatDate={formatDate}
                 onPress={() => openGoal(goal)}
+                onEdit={() => openGoal(goal, 'edit')}
+                onComplete={
+                  goal.status === 'active' ? () => void handleGoalCompletion(goal, true) : undefined
+                }
+                onUncomplete={
+                  goal.status === 'completed'
+                    ? () => void handleGoalCompletion(goal, false)
+                    : undefined
+                }
+                onDelete={() => setPendingDeleteGoal(goal)}
+                actionsDisabled={goalActionWorking}
               />
-            ))
-          : null}
+            ))}
+          </View>
+        ) : null}
       </ScrollView>
 
       <CreateGoalModal
@@ -447,6 +499,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
       <GoalDetailsModal
         goal={selectedGoal}
         visible={isFocused && selectedGoal !== null && !addMilestoneVisible && !addTaskVisible}
+        initialEditMode={editSelectedGoal}
         onClose={closeGoalDetails}
         onSaveGoal={handleSaveGoal}
         onActivateDraft={activateGoalDraft ? handleActivateGoalDraft : undefined}
@@ -454,6 +507,24 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
         onAddMilestone={() => setAddMilestoneVisible(true)}
         onOpenMilestone={(milestone) => setSelectedMilestoneId(milestone.id)}
         onReorderMilestones={reorderMilestones}
+      />
+
+      <ConfirmationModal
+        visible={pendingDeleteGoal !== null}
+        title="Delete goal?"
+        message={
+          pendingDeleteGoal
+            ? `"${pendingDeleteGoal.title}" and its milestones will be permanently deleted. Tasks, calendar events, and notes will be kept with their goal and milestone links removed.`
+            : ''
+        }
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        confirmAccessibilityLabel="Confirm delete goal"
+        icon="delete"
+        iconTone="danger"
+        loading={goalActionWorking}
+        onCancel={() => setPendingDeleteGoal(null)}
+        onConfirm={() => void handleDeleteGoal()}
       />
 
       <AddMilestoneModal
@@ -582,4 +653,5 @@ const createStyles = (theme: Theme) =>
     },
     goalsListTitle: { ...typography.button, color: theme.colors.text },
     goalsListCount: { ...typography.caption, color: theme.colors.textSecondary },
+    goalsRows: { gap: spacing.xs },
   });

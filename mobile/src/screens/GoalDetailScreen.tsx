@@ -100,7 +100,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
   const [pendingDeleteTask, setPendingDeleteTask] = useState<TaskRecord | null>(null);
   const [scheduleTaskId, setScheduleTaskId] = useState<string | null>(null);
   const [startNowTaskId, setStartNowTaskId] = useState<string | null>(null);
-  const [editGoalVisible, setEditGoalVisible] = useState(false);
+  const [editGoalVisible, setEditGoalVisible] = useState(route.params.initialAction === 'edit');
   const [deleteGoalVisible, setDeleteGoalVisible] = useState(false);
   const [goalActionWorking, setGoalActionWorking] = useState(false);
   const [addMilestoneVisible, setAddMilestoneVisible] = useState(false);

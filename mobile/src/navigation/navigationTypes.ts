@@ -22,7 +22,11 @@ export type PlanStackParamList = {
   Goals: { createGoal?: boolean } | undefined;
   Tasks: { createTask?: boolean } | undefined;
   TaskDetail: { taskId: string };
-  GoalDetail: { goalId: string; initialTab?: 'tasks' | 'overview' | 'timeline' };
+  GoalDetail: {
+    goalId: string;
+    initialTab?: 'tasks' | 'overview' | 'timeline';
+    initialAction?: 'edit';
+  };
   FocusMode:
     | {
         eventId?: string;

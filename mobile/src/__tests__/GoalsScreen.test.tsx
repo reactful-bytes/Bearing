@@ -320,6 +320,66 @@ describe('GoalsScreen', () => {
     expect(retry).toHaveBeenCalledTimes(1);
   });
 
+  it('provides complete and confirmed delete actions on active goal rows', async () => {
+    const completeGoal = jest.fn(async (_goalId: string, _completed: boolean) => undefined);
+    const deleteGoal = jest.fn(async (_goalId: string) => undefined);
+    mockGoals({
+      goals: [makeGoal()],
+      uiState: 'ready',
+      setGoalManuallyCompleted: completeGoal,
+      deleteGoal,
+    });
+
+    render(<GoalsScreen />);
+
+    expect(
+      StyleSheet.flatten(screen.getByTestId('goal-row-menu-anchor-goal-1').props.style),
+    ).toMatchObject({ alignSelf: 'center', flexShrink: 0 });
+    fireEvent.press(screen.getByLabelText('Goal actions for Run a 10k'));
+    expect(screen.getByRole('menuitem', { name: 'Complete goal Run a 10k' })).toBeTruthy();
+    expect(screen.queryByRole('menuitem', { name: 'Uncomplete goal Run a 10k' })).toBeNull();
+    await act(async () => {
+      fireEvent.press(screen.getByRole('menuitem', { name: 'Complete goal Run a 10k' }));
+    });
+    expect(completeGoal).toHaveBeenCalledWith('goal-1', true);
+
+    fireEvent.press(screen.getByLabelText('Goal actions for Run a 10k'));
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Delete goal Run a 10k' }));
+    expect(screen.getByLabelText('Confirm delete goal')).toBeTruthy();
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Confirm delete goal'));
+    });
+    expect(deleteGoal).toHaveBeenCalledWith('goal-1');
+  });
+
+  it('opens goal editing directly from the row menu and offers uncomplete for completed goals', () => {
+    mockGoals({ goals: [makeGoal()], uiState: 'ready' });
+    const { unmount } = render(<GoalsScreen />);
+
+    fireEvent.press(screen.getByLabelText('Goal actions for Run a 10k'));
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Edit goal Run a 10k' }));
+    expect(screen.getByLabelText('Edit goal name')).toBeTruthy();
+    unmount();
+
+    mockGoals({
+      goals: [
+        makeGoal({
+          status: 'completed',
+          manuallyCompletedAt: new Date(2026, 7, 1),
+        }),
+      ],
+      uiState: 'ready',
+    });
+    render(<GoalsScreen />);
+
+    fireEvent.press(screen.getByRole('button', { name: 'Filter goals' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Show completed goals' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Apply goal filters' }));
+    fireEvent.press(screen.getByLabelText('Goal actions for Run a 10k'));
+    expect(screen.getByRole('menuitem', { name: 'Uncomplete goal Run a 10k' })).toBeTruthy();
+    expect(screen.queryByRole('menuitem', { name: 'Complete goal Run a 10k' })).toBeNull();
+  });
+
   it('renders the empty state', () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
     const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<

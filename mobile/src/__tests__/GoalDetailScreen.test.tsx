@@ -1046,6 +1046,17 @@ describe('GoalDetailScreen', () => {
     );
   });
 
+  it('opens goal edit mode from the initial edit route action', () => {
+    mockHooks();
+
+    render(
+      <GoalDetailScreen route={{ params: { goalId: 'goal-1', initialAction: 'edit' } }} />,
+    );
+
+    expect(screen.getByRole('header', { name: 'Edit Goal' })).toBeTruthy();
+    expect(screen.getByLabelText('Edit goal name').props.value).toBe(goal.title);
+  });
+
   it('offers Edit, Complete, and Delete for active goals and switches to Uncomplete after completion', async () => {
     const setGoalManuallyCompleted = jest.fn(async () => undefined);
     mockHooks({ setGoalManuallyCompleted });
