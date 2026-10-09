@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import type { AppIconName } from '../../design/icons';
 import { useTheme } from '../../design/ThemeProvider';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import { AppButton } from '../ui/AppButton';
-import { AppCard } from '../ui/AppCard';
+import { AppIcon } from '../ui/AppIcon';
 import { AppModal } from '../ui/AppModal';
-import { ListItem } from '../ui/ListItem';
+import { RowContextMenu } from '../ui/RowContextMenu';
 import { ScreenHeader } from '../ui/ScreenHeader';
 import { spacing, typography } from '../../design/tokens';
 import type { Theme } from '../../design/tokens';
@@ -96,6 +98,39 @@ function formatAlert(alarm: CalendarDisplayEvent['alarms'][number]): string {
   const minutes = Math.abs(alarm.relativeOffsetMinutes);
   const unit = `${minutes} minute${minutes === 1 ? '' : 's'}`;
   return `${unit} ${alarm.relativeOffsetMinutes < 0 ? 'before' : 'after'} event`;
+}
+
+function EventDetailSection({
+  icon,
+  title,
+  children,
+}: {
+  icon: AppIconName;
+  title: string;
+  children: ReactNode;
+}) {
+  const styles = useThemedStyles(createStyles);
+  return (
+    <View style={styles.detailSection}>
+      <View style={styles.detailIconFrame}>
+        <AppIcon name={icon} size={17} color={styles.detailIcon.color} decorative />
+      </View>
+      <View style={styles.detailCopy}>
+        <Text style={styles.detailTitle}>{title}</Text>
+        {children}
+      </View>
+    </View>
+  );
+}
+
+function DetailValue({ value, helper }: { value: string; helper?: string }) {
+  const styles = useThemedStyles(createStyles);
+  return (
+    <View style={styles.detailValueGroup}>
+      <Text style={styles.detailValue}>{value}</Text>
+      {helper ? <Text style={styles.detailHelper}>{helper}</Text> : null}
+    </View>
+  );
 }
 
 export function EventDetailModal({
@@ -265,104 +300,119 @@ export function EventDetailModal({
             title="Event Details"
             onPressBack={handleClose}
             backAccessibilityLabel="Back to calendar"
+            trailing={
+              mutable ? (
+                <RowContextMenu
+                  accessibilityLabel="More event actions"
+                  menuAccessibilityLabel="Event actions menu"
+                  items={[
+                    {
+                      label: 'Edit',
+                      accessibilityLabel: 'Edit event',
+                      icon: 'edit',
+                      onPress: () => (onEdit ? onEdit() : setEditing(true)),
+                    },
+                    {
+                      label: 'Delete',
+                      accessibilityLabel: 'Delete event',
+                      icon: 'delete',
+                      tone: 'danger',
+                      onPress: () => {
+                        setDeleteError(null);
+                        setSelectedDeleteScope(null);
+                        setConfirmingDelete(true);
+                      },
+                    },
+                  ]}
+                />
+              ) : undefined
+            }
           />
 
-          <View style={styles.section}>
-            <AppCard style={styles.eventCard}>
-              <Text style={styles.eventTitle}>{event.title}</Text>
-              {event.description ? (
-                <Text style={styles.description}>{event.description}</Text>
-              ) : null}
-            </AppCard>
+          <View style={styles.eventHero}>
+            <View style={styles.heroTopline}>
+              <View style={styles.eventIconFrame}>
+                <AppIcon name="event" size={20} color={styles.eventIcon.color} decorative />
+              </View>
+              <Text style={styles.eyebrow}>EVENT</Text>
+            </View>
+            <Text accessibilityRole="header" style={styles.eventTitle}>
+              {event.title}
+            </Text>
+            <Text style={event.description.trim() ? styles.description : styles.detailHelper}>
+              {event.description.trim() ? event.description : 'No description added.'}
+            </Text>
           </View>
 
-          <View style={styles.section}>
-            <AppCard style={styles.detailsCard}>
-              <Text style={styles.detailsHeading}>Details</Text>
-              <View style={styles.timelineRow}>
-                <View accessibilityLabel="Event time" style={styles.timeline}>
-                  <View style={styles.timelineConnector} />
-                  <View style={styles.timelinePoint}>
-                    <View style={styles.timelineMarker} />
-                    <Text style={styles.timelineLabel}>Start</Text>
-                    <Text style={styles.timelineTime}>
-                      {formatEventTime(event.startAt, event.allDay, timeFormat)}
-                    </Text>
-                    <Text style={styles.timelineDate}>{formatFullDate(event.startAt, locale)}</Text>
-                  </View>
-                  <View style={styles.timelinePoint}>
-                    <View style={styles.timelineMarker} />
-                    <Text style={styles.timelineLabel}>End</Text>
-                    <Text style={styles.timelineTime}>
-                      {formatEventTime(event.endAt, event.allDay, timeFormat)}
-                    </Text>
-                    <Text style={styles.timelineDate}>{formatFullDate(event.endAt, locale)}</Text>
-                  </View>
-                </View>
-                <Text style={styles.timezoneText}>{event.timezone}</Text>
+          <EventDetailSection icon="time" title="DATE & TIME">
+            <View style={styles.timeGrid}>
+              <View style={styles.timeEntry}>
+                <Text style={styles.timeEntryLabel}>Start</Text>
+                <Text style={styles.detailValue}>
+                  {formatEventTime(event.startAt, event.allDay, timeFormat)}
+                </Text>
+                <Text style={styles.detailHelper}>{formatFullDate(event.startAt, locale)}</Text>
               </View>
-              <ListItem
-                title="Calendar"
-                variant="row"
-                showDivider
-                trailingContent={
-                  <View style={styles.calendarValue}>
-                    <View
-                      style={[
-                        styles.sourceDot,
-                        {
-                          backgroundColor:
-                            event.ownership === 'device' && event.calendarColor
-                              ? event.calendarColor
-                              : theme.colors.brand,
-                        },
-                      ]}
-                    />
-                    <Text style={styles.calendarText}>
-                      {event.ownership === 'bearing' ? 'Bearing' : event.calendarTitle}
-                    </Text>
-                  </View>
-                }
+              <View style={styles.timeEntry}>
+                <Text style={styles.timeEntryLabel}>End</Text>
+                <Text style={styles.detailValue}>
+                  {formatEventTime(event.endAt, event.allDay, timeFormat)}
+                </Text>
+                <Text style={styles.detailHelper}>{formatFullDate(event.endAt, locale)}</Text>
+              </View>
+            </View>
+            <View style={styles.timezoneRow}>
+              <AppIcon name="time" size={14} color={styles.detailHelper.color} decorative />
+              <Text style={styles.detailHelper}>Timezone</Text>
+              <Text style={styles.detailValue}>{event.timezone}</Text>
+            </View>
+          </EventDetailSection>
+
+          <EventDetailSection icon="calendar" title="CALENDAR">
+            <View style={styles.calendarValue}>
+              <View
+                style={[
+                  styles.sourceDot,
+                  {
+                    backgroundColor:
+                      event.ownership === 'device' && event.calendarColor
+                        ? event.calendarColor
+                        : theme.colors.brand,
+                  },
+                ]}
               />
-              <ListItem
-                title="Location"
-                variant="row"
-                showDivider
-                trailingText={event.location || 'No location'}
-                trailingTextColor={theme.colors.textSecondary}
-              />
-              <ListItem
-                title="Repeats"
-                variant="row"
-                showDivider
-                trailingText={formatRecurrence(event)}
-                trailingTextColor={theme.colors.textSecondary}
-              />
-              <ListItem
-                title="Alerts"
-                variant="row"
-                showDivider
-                trailingText={
-                  event.alarms.length > 0 ? event.alarms.map(formatAlert).join(', ') : 'No alerts'
-                }
-                trailingTextColor={theme.colors.textSecondary}
-              />
-              <ListItem
-                title="Availability"
-                variant="row"
-                showDivider
-                trailingText={formatAvailability(event.availability)}
-                trailingTextColor={theme.colors.textSecondary}
-              />
-              <ListItem
-                title="URL"
-                variant="row"
-                showDivider={false}
-                trailingText={event.url || 'No URL'}
-                trailingTextColor={theme.colors.textSecondary}
-              />
-            </AppCard>
-          </View>
+              <Text style={styles.detailValue}>
+                {event.ownership === 'bearing' ? 'Bearing' : event.calendarTitle}
+              </Text>
+            </View>
+            <Text style={styles.detailHelper}>
+              {event.ownership === 'bearing' ? 'Bearing calendar' : event.sourceLabel}
+            </Text>
+          </EventDetailSection>
+
+          <EventDetailSection icon="location" title="LOCATION">
+            <DetailValue value={event.location || 'No location'} />
+          </EventDetailSection>
+
+          <EventDetailSection icon="timeline" title="REPEATS">
+            <DetailValue value={formatRecurrence(event)} />
+          </EventDetailSection>
+
+          <EventDetailSection icon="notifications" title="ALERTS">
+            <DetailValue
+              value={
+                event.alarms.length > 0 ? event.alarms.map(formatAlert).join(', ') : 'No alerts'
+              }
+            />
+          </EventDetailSection>
+
+          <EventDetailSection icon="info" title="AVAILABILITY">
+            <DetailValue value={formatAvailability(event.availability)} />
+          </EventDetailSection>
+
+          <EventDetailSection icon="externalLink" title="URL">
+            <DetailValue value={event.url || 'No URL'} />
+          </EventDetailSection>
 
           {event.ownership === 'bearing' && event.publication.lastError ? (
             <Text style={styles.errorText}>{event.publication.lastError}</Text>
@@ -385,27 +435,7 @@ export function EventDetailModal({
             <Text style={styles.readOnlyText}>This device calendar event is read-only.</Text>
           ) : null}
           {deleteError ? <Text style={styles.errorText}>{deleteError}</Text> : null}
-          {mutable && !confirmingDelete ? (
-            <View style={styles.actionRow}>
-              <AppButton
-                label="Edit"
-                variant="secondary"
-                accessibilityLabel="Edit event"
-                onPress={() => (onEdit ? onEdit() : setEditing(true))}
-                style={styles.flexButton}
-              />
-              <AppButton
-                label="Delete"
-                variant="danger"
-                accessibilityLabel="Delete event"
-                onPress={() => {
-                  setSelectedDeleteScope(null);
-                  setConfirmingDelete(true);
-                }}
-                style={styles.flexButton}
-              />
-            </View>
-          ) : mutable ? (
+          {mutable && confirmingDelete ? (
             <View style={styles.confirmRow}>
               <Text style={styles.confirmText}>
                 {event.recurrenceRule ? 'Delete which events?' : 'Delete this event permanently?'}
@@ -472,108 +502,86 @@ const createStyles = (theme: Theme) =>
       backgroundColor: theme.colors.background,
     },
     content: {
-      gap: spacing.xl,
+      flexGrow: 1,
       paddingBottom: spacing.xl,
     },
-    section: {
+    eventHero: {
       gap: spacing.md,
+      paddingVertical: spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.border,
     },
-    eventCard: {
-      gap: spacing.sm,
+    heroTopline: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    eventIconFrame: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.md,
+      backgroundColor: theme.colors.surfaceMuted,
     },
-    detailsCard: {
-      paddingHorizontal: 0,
-      paddingVertical: 0,
-      gap: 0,
-      overflow: 'hidden',
-    },
+    eventIcon: { color: theme.colors.brand },
+    eyebrow: { ...typography.caption, color: theme.colors.brand, fontWeight: '700' },
     eventTitle: {
       ...typography.sectionTitle,
       color: theme.colors.text,
     },
-    detailsHeading: {
-      ...typography.label,
-      color: theme.colors.textSecondary,
-      paddingHorizontal: spacing.md,
-      paddingTop: spacing.md,
+    description: { ...typography.body, color: theme.colors.textPrimary },
+    detailSection: {
+      minHeight: 60,
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.md,
+      paddingVertical: spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.border,
     },
-    description: {
+    detailIconFrame: {
+      width: 34,
+      height: 34,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.md,
+      backgroundColor: theme.colors.surfaceMuted,
+    },
+    detailIcon: { color: theme.colors.brand },
+    detailCopy: { flex: 1, minWidth: 0, gap: spacing.xs },
+    detailTitle: {
+      ...typography.caption,
+      color: theme.colors.textSecondary,
+      fontWeight: '700',
+    },
+    detailValueGroup: { gap: spacing.xs },
+    detailValue: {
       ...typography.body,
       color: theme.colors.textPrimary,
+      flexShrink: 1,
+    },
+    detailHelper: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      flexShrink: 1,
+    },
+    timeGrid: { flexDirection: 'row', gap: spacing.md },
+    timeEntry: { flex: 1, minWidth: 0, gap: spacing.xs },
+    timeEntryLabel: { ...typography.label, color: theme.colors.textSecondary },
+    timezoneRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: spacing.xs,
+      marginTop: spacing.sm,
     },
     calendarValue: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
-    },
-    calendarText: {
-      ...typography.helper,
-      color: theme.colors.textSecondary,
-      fontWeight: '600',
+      flexWrap: 'wrap',
     },
     sourceDot: {
       width: 10,
       height: 10,
       borderRadius: 5,
-    },
-    timelineRow: {
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.md,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
-      gap: spacing.sm,
-    },
-    timeline: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: spacing.sm,
-      position: 'relative',
-    },
-    timelinePoint: {
-      flex: 1,
-      minWidth: 0,
-      gap: spacing.xs,
-      alignItems: 'center',
-    },
-    timelineMarker: {
-      width: 12,
-      height: 12,
-      borderRadius: 6,
-      backgroundColor: theme.colors.brand,
-      marginBottom: spacing.xs,
-      zIndex: 1,
-    },
-    timelineConnector: {
-      position: 'absolute',
-      left: '27%',
-      right: '27%',
-      height: 2,
-      backgroundColor: theme.colors.borderStrong,
-      marginTop: 5,
-      zIndex: 0,
-    },
-    timelineLabel: {
-      ...typography.label,
-      color: theme.colors.textSecondary,
-      textAlign: 'center',
-    },
-    timelineTime: {
-      ...typography.button,
-      color: theme.colors.text,
-      textAlign: 'center',
-    },
-    timelineDate: {
-      ...typography.helper,
-      color: theme.colors.textSecondary,
-      textAlign: 'center',
-    },
-    timezoneText: {
-      ...typography.caption,
-      color: theme.colors.textMuted,
-    },
-    infoValue: {
-      ...typography.body,
-      color: theme.colors.text,
     },
     errorText: {
       ...typography.helper,

@@ -64,6 +64,10 @@ function makeDeviceEvent(allowsModifications: boolean): DeviceCalendarEvent {
 }
 
 describe('EventDetailModal', () => {
+  function openEventActions(): void {
+    fireEvent.press(screen.getByLabelText('More event actions'));
+  }
+
   it('edits Bearing events through the reusable event form', async () => {
     const event = makeBearingEvent();
     const onUpdate = jest.fn(async () => undefined);
@@ -76,6 +80,7 @@ describe('EventDetailModal', () => {
       />,
     );
 
+    openEventActions();
     fireEvent.press(screen.getByLabelText('Edit event'));
     fireEvent.changeText(screen.getByLabelText('Event title'), 'Updated planning');
     await act(async () => {
@@ -101,6 +106,7 @@ describe('EventDetailModal', () => {
       />,
     );
 
+    openEventActions();
     fireEvent.press(screen.getByLabelText('Edit event'));
     fireEvent.changeText(screen.getByLabelText('Event title'), 'Updated device event');
     await act(async () => {
@@ -119,6 +125,7 @@ describe('EventDetailModal', () => {
         onDelete={onDelete}
       />,
     );
+    openEventActions();
     fireEvent.press(screen.getByLabelText('Delete event'));
     expect(screen.getByText('Delete this event permanently?')).toBeTruthy();
     await act(async () => {
@@ -147,6 +154,7 @@ describe('EventDetailModal', () => {
       />,
     );
 
+    openEventActions();
     fireEvent.press(screen.getByLabelText('Delete event'));
     expect(screen.getByText('Delete which events?')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Delete this event only'));
@@ -178,6 +186,7 @@ describe('EventDetailModal', () => {
       />,
     );
 
+    openEventActions();
     fireEvent.press(screen.getByLabelText('Edit event'));
     fireEvent.changeText(screen.getByLabelText('Event title'), 'Updated planning');
     await act(async () => {
@@ -226,6 +235,7 @@ describe('EventDetailModal', () => {
       />,
     );
 
+    openEventActions();
     fireEvent.press(screen.getByLabelText('Delete event'));
     expect(screen.getByLabelText('Delete this and following (not supported here)')).toBeTruthy();
     expect(screen.getByLabelText('Delete all events')).toBeTruthy();
@@ -242,8 +252,28 @@ describe('EventDetailModal', () => {
     );
 
     expect(screen.getByText('This device calendar event is read-only.')).toBeTruthy();
+    expect(screen.queryByLabelText('More event actions')).toBeNull();
     expect(screen.queryByLabelText('Edit event')).toBeNull();
     expect(screen.queryByLabelText('Delete event')).toBeNull();
+  });
+
+  it('uses the external edit handler when provided', () => {
+    const onEdit = jest.fn();
+    render(
+      <EventDetailModal
+        event={makeBearingEvent()}
+        onClose={jest.fn()}
+        onUpdate={jest.fn(async () => undefined)}
+        onDelete={jest.fn(async () => undefined)}
+        onEdit={onEdit}
+      />,
+    );
+
+    openEventActions();
+    fireEvent.press(screen.getByLabelText('Edit event'));
+
+    expect(onEdit).toHaveBeenCalledTimes(1);
+    expect(screen.queryByLabelText('Event title')).toBeNull();
   });
 
   it('shows the event metadata fields', () => {
