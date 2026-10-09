@@ -507,9 +507,7 @@ describe('NotesScreen', () => {
 
   it('opens note editing directly from the row menu', async () => {
     const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
-    mockedUseNotes.mockReturnValue(
-      makeUseNotesReturn({ notes: [makeNote()], uiState: 'ready' }),
-    );
+    mockedUseNotes.mockReturnValue(makeUseNotesReturn({ notes: [makeNote()], uiState: 'ready' }));
 
     render(<NotesScreen />);
 
@@ -525,7 +523,13 @@ describe('NotesScreen', () => {
     const deleteNote = jest.fn(async (_noteId: string) => undefined);
     const mockedUseNotes = useNotes as jest.MockedFunction<typeof useNotes>;
     mockedUseNotes.mockReturnValue(
-      makeUseNotesReturn({ notes: [makeNote()], uiState: 'ready', pinNote, archiveNote, deleteNote }),
+      makeUseNotesReturn({
+        notes: [makeNote()],
+        uiState: 'ready',
+        pinNote,
+        archiveNote,
+        deleteNote,
+      }),
     );
 
     render(<NotesScreen />);

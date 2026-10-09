@@ -58,12 +58,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
     reorderMilestones,
     retry,
   } = useGoals();
-  const {
-    tasks,
-    completeTask,
-    reactivateTask,
-    deleteTask,
-  } = useTasks();
+  const { tasks, completeTask, reactivateTask, deleteTask } = useTasks();
   const [activeTab, setActiveTab] = useState<DetailTab>(
     route.params.initialTab === 'timeline' ? 'overview' : (route.params.initialTab ?? 'tasks'),
   );

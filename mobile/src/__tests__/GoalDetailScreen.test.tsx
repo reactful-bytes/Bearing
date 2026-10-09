@@ -347,9 +347,7 @@ describe('GoalDetailScreen', () => {
       goal: { ...goal, milestones: [{ ...milestone, tasks: [milestoneTask] }] },
       tasks: [milestoneTask],
     });
-    render(
-      <GoalDetailScreen route={{ params: { goalId: goal.id, initialTab: 'overview' } }} />,
-    );
+    render(<GoalDetailScreen route={{ params: { goalId: goal.id, initialTab: 'overview' } }} />);
     fireEvent.press(screen.getByLabelText(`Open milestone ${milestone.title}`));
     expect(mockNavigate).toHaveBeenCalledWith('Plan', {
       screen: 'MilestoneDetail',
@@ -634,9 +632,9 @@ describe('GoalDetailScreen', () => {
     expect(summary.getByRole('header', { name: 'PROGRESS' })).toBeTruthy();
     expect(summary.getByText(`0% complete · ${goal.progressText}`)).toBeTruthy();
     expect(fixedHeader.getByLabelText(`Goal progress ${goal.title}`)).toBeTruthy();
-    expect(
-      StyleSheet.flatten(summary.getByTestId('goal-detail-title').props.style).fontSize,
-    ).toBe(darkTheme.typography.sectionTitle.fontSize);
+    expect(StyleSheet.flatten(summary.getByTestId('goal-detail-title').props.style).fontSize).toBe(
+      darkTheme.typography.sectionTitle.fontSize,
+    );
     const descriptionSection = within(screen.getByTestId('goal-overview-description-section'));
     expect(descriptionSection.getByRole('header', { name: 'Description' })).toBeTruthy();
     expect(descriptionSection.getByText(goal.description)).toBeTruthy();
@@ -1174,10 +1172,7 @@ describe('GoalDetailScreen', () => {
       updateGoal,
     });
     const firstEdit = render(
-      <EditGoalScreen
-        route={{ params: { goalId: 'goal-1' } }}
-        navigation={navigation as never}
-      />,
+      <EditGoalScreen route={{ params: { goalId: 'goal-1' } }} navigation={navigation as never} />,
     );
     fireEvent.changeText(screen.getByLabelText('Edit goal name'), 'Cancelled edit');
     fireEvent.press(screen.getByLabelText('Back to goal details'));
@@ -1187,10 +1182,7 @@ describe('GoalDetailScreen', () => {
     mockGoBack.mockClear();
 
     render(
-      <EditGoalScreen
-        route={{ params: { goalId: 'goal-1' } }}
-        navigation={navigation as never}
-      />,
+      <EditGoalScreen route={{ params: { goalId: 'goal-1' } }} navigation={navigation as never} />,
     );
     expect(screen.getByLabelText('Edit goal name').props.value).toBe(goal.title);
     fireEvent.changeText(screen.getByLabelText('Edit goal name'), 'Run a local race');

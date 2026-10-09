@@ -158,19 +158,20 @@ export function GoalDetailsModal({
     }
   }
 
-  const headerAccessory = goal && !editMode ? (
-    <AppButton
-      label="Edit"
-      variant="secondary"
-      accessibilityLabel="Edit goal"
-      onPress={() => {
-        setError(null);
-        setEditMode(true);
-      }}
-      style={styles.headerButton}
-      textStyle={styles.headerButtonText}
-    />
-  ) : null;
+  const headerAccessory =
+    goal && !editMode ? (
+      <AppButton
+        label="Edit"
+        variant="secondary"
+        accessibilityLabel="Edit goal"
+        onPress={() => {
+          setError(null);
+          setEditMode(true);
+        }}
+        style={styles.headerButton}
+        textStyle={styles.headerButtonText}
+      />
+    ) : null;
 
   return (
     <AppModal

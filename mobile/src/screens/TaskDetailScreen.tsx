@@ -37,15 +37,8 @@ export function TaskDetailScreen({ route, navigation }: TaskDetailScreenProps) {
   const styles = useThemedStyles(createStyles);
   const { profile } = useUserProfile();
   const { goals } = useGoals();
-  const {
-    tasks,
-    uiState,
-    retry,
-    completeTask,
-    reactivateTask,
-    convertTaskToEvent,
-    deleteTask,
-  } = useTasks();
+  const { tasks, uiState, retry, completeTask, reactivateTask, convertTaskToEvent, deleteTask } =
+    useTasks();
   const { publicationCalendarTitle, publishEvent } = useCalendarPublication();
   const [scheduling, setScheduling] = useState(false);
   const [startingNow, setStartingNow] = useState(false);
@@ -169,9 +162,7 @@ export function TaskDetailScreen({ route, navigation }: TaskDetailScreenProps) {
           taskActionsEnabled={!isDraftGoal}
           backAccessibilityLabel="Back to Plan"
           onClose={navigation.goBack}
-          onEdit={(selectedTask) =>
-            navigation.navigate('EditTask', { taskId: selectedTask.id })
-          }
+          onEdit={(selectedTask) => navigation.navigate('EditTask', { taskId: selectedTask.id })}
           onDelete={setPendingDeleteTask}
           onSchedule={() => setScheduling(true)}
           onStartNow={() => setStartingNow(true)}
@@ -244,11 +235,7 @@ export function EditTaskScreen({ route, navigation }: EditTaskScreenProps) {
   }
 
   return (
-    <AppScreen
-      mode="unmanaged"
-      testID="edit-task-screen"
-      contentContainerStyle={{ flex: 1 }}
-    >
+    <AppScreen mode="unmanaged" testID="edit-task-screen" contentContainerStyle={{ flex: 1 }}>
       <EditTaskModal
         visible
         embedded

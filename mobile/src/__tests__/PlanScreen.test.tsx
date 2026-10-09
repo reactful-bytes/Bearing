@@ -471,10 +471,7 @@ describe('PlanScreen', () => {
     mockUseTasks.mockReturnValue({ ...mockUseTasks(), tasks: [task], updateTask });
 
     render(
-      <EditTaskScreen
-        route={{ params: { taskId: task.id } }}
-        navigation={{ goBack } as never}
-      />,
+      <EditTaskScreen route={{ params: { taskId: task.id } }} navigation={{ goBack } as never} />,
     );
 
     expect(

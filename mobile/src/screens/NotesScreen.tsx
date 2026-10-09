@@ -279,10 +279,7 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
             <NoteLabelChips labels={note.labels} />
           </View>
         </Pressable>
-        <View
-          testID={`note-row-menu-anchor-${note.id}`}
-          style={styles.noteMenuPosition}
-        >
+        <View testID={`note-row-menu-anchor-${note.id}`} style={styles.noteMenuPosition}>
           <RowContextMenu
             accessibilityLabel={`Note actions for ${note.title}`}
             menuAccessibilityLabel={`Note actions menu for ${note.title}`}

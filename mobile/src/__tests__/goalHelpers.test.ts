@@ -151,10 +151,14 @@ describe('goalHelpers', () => {
   });
 
   it('summarizes goal progress from all goal tasks, including tasks without milestones', () => {
-    const composed = composeGoalWithMilestones(makeGoal(), [], [
-      makeTask({ status: 'completed', milestoneId: null }),
-      makeTask({ id: 'unassigned-active', milestoneId: null }),
-    ]);
+    const composed = composeGoalWithMilestones(
+      makeGoal(),
+      [],
+      [
+        makeTask({ status: 'completed', milestoneId: null }),
+        makeTask({ id: 'unassigned-active', milestoneId: null }),
+      ],
+    );
 
     expect(composed.completedTaskCount).toBe(1);
     expect(composed.totalTaskCount).toBe(2);

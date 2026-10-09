@@ -1665,15 +1665,15 @@ describe('GoalsScreen', () => {
       retry: jest.fn(),
     });
 
-    render(
-      <GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />,
-    );
+    render(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
 
     fireEvent.press(
       screen.getByRole('button', { name: 'Milestone actions for Buy running shoes' }),
     );
     await act(async () => {
-      fireEvent.press(screen.getByRole('menuitem', { name: 'Move milestone Buy running shoes down' }));
+      fireEvent.press(
+        screen.getByRole('menuitem', { name: 'Move milestone Buy running shoes down' }),
+      );
     });
 
     await waitFor(() => {
