@@ -615,6 +615,23 @@ Second UI redesign pass driven by an updated mockup spec after M36 closed: premi
 | M38.6   | completed | Fix Goals back arrow no-op                | Goals is pushed inside the Plan stack, so `getParent().navigate('Plan')` re-focused the already-active tab and did nothing; the header now calls local stack `goBack()` |
 | M38.7   | completed | Remove duplicate Goals and Notes create buttons | The app-wide Create speed-dial is the single creation entry point; focused Goals and Notes screen tests pass |
 
+### M40 - Server-Sent Calendar and Goal Task Reminders
+
+| Task ID | Status | Description | Notes |
+| ------- | ------ | ----------- | ----- |
+| M40.1 | completed | Define reminder contracts and acceptance | Approved scope documented in model, mobile and backend runbooks |
+| M40.2 | manual-handoff | Add native push registration and permissions | Contextual consent, per-device timezone, token refresh/sign-out serialization, Android channels and five bundled sounds pass local checks and Android debug build; credentials/iOS/device acceptance pending |
+| M40.3 | completed | Wire calendar and scheduled task reminders | Two independent alerts and recurring overrides/exclusions verified; all-day day-offset reminders use morning time; native edits/publication preserve Bearing reminders without duplicate native alarms |
+| M40.4 | completed | Add Profile notification preferences | Opt-in due summaries, 0-28 days and editable 06:00 morning time; exact preference validation, opt-out and permission-denial UI tests pass |
+| M40.5 | completed | Implement durable backend delivery | Minute cron, durable identities/leases, bounded retries, live cancellation/expiry checks, receipts and token cleanup validated with stubbed Expo requests against Firestore emulator |
+| M40.6 | completed | Complete navigation, security and privacy | Cold/warm account-bound taps, owner-only device reads, server-only writes/outbox, token-redacted export, deletion tombstone/cleanup and deployable TTL definitions validated |
+| M40.7 | manual-handoff | Validate and document release setup | Local mobile/backend/rules/emulator gates and Android APK/web export pass; credentials, cloud deploy and iOS/physical-device acceptance pending (see validation log) |
+
+This approved scope supersedes the M6.10e reminder exclusion for Bearing-owned events only.
+Native-calendar-owned event reminder editing remains unchanged. Notification delivery respects OS
+permissions, silent mode and Do Not Disturb; it does not guarantee exact arrival times. Device timezone
+is refreshed on launch/resume, since a terminated app cannot report travel/timezone changes.
+
 ## Update Rules
 
 - Read this file before starting a task.
@@ -626,6 +643,15 @@ Second UI redesign pass driven by an updated mockup spec after M36 closed: premi
 - Do not rewrite unrelated plan sections.
 
 ## Validation Log
+
+**2026-10-07, M40.1-M40.7:** Mobile regression suite: 80 suites/670 tests; final targeted
+notification suite: 10 suites/98 tests, with 3 suites/25 tests after the final platform/sign-out
+guard changes. Mobile typecheck, lint and formatting pass. Functions quality: 141 unit tests plus
+strict types/lint/format/build; final delivery integration: 13 passing Firestore-emulator tests;
+Firestore rules: 20 passing tests. Android prebuild and `:app:assembleDebug` pass; all five WAV
+sounds exist in the APK, and merged notification/DND permissions are present. Web export passes.
+Expo requests were stubbed in tests. Real push delivery, cloud deployment, APNs/FCM credential
+provisioning and iOS/physical-device acceptance remain manual handoff; no production data was used.
 
 M16 entries below are preserved historical delivery evidence. Their local-ledger architecture was
 superseded by completed M19; they are not the active balance or grant contract.

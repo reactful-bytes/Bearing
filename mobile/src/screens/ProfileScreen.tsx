@@ -11,6 +11,8 @@ import { FormField } from '../components/ui/FormField';
 import { CreditPackPurchaseModal } from '../components/premium/CreditPackPurchaseModal';
 import { LocaleModal } from '../components/ui/LocaleModal';
 import { SoundPickerModal } from '../components/profile/SoundPickerModal';
+import { NotificationSettings } from '../components/profile/NotificationSettings';
+import { DEFAULT_NOTIFICATION_PREFERENCES } from '../features/notifications/notificationPreferences';
 import { ProfileIdentityCard } from '../components/profile/ProfileIdentityCard';
 import { ListItem } from '../components/ui/ListItem';
 import { SectionHeading } from '../components/ui/SectionHeading';
@@ -1211,6 +1213,10 @@ export function ProfileScreen({
             {profileSection === 'notifications' ? (
               <View style={styles.section}>
                 <SectionHeading title="Notifications" variant="uppercase-accent" />
+                <NotificationSettings
+                  preferences={profileForRender.notifications ?? DEFAULT_NOTIFICATION_PREFERENCES}
+                  onSave={async (notifications) => updateProfile({ notifications })}
+                />
                 <ListItem
                   variant="row"
                   showDivider={false}

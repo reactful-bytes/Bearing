@@ -1,4 +1,5 @@
 import { TimeFormat } from './timeFormat';
+import type { NotificationPreferences } from '../notifications/notificationPreferences';
 
 export type PremiumStatus = 'free' | 'premium' | 'grace_period' | 'canceled';
 
@@ -18,6 +19,7 @@ export type UserProfileRecord = {
   tipsEnabled: boolean;
   reminderSoundId: string;
   alarmSoundId: string;
+  notifications?: NotificationPreferences;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -32,6 +34,7 @@ export type UpdateUserProfileInput = Partial<
     | 'tipsEnabled'
     | 'reminderSoundId'
     | 'alarmSoundId'
+    | 'notifications'
   >
 >;
 

@@ -19,6 +19,11 @@ import {
 import { UpdateUserProfileInput, UserProfileRecord } from '../../features/profile/profileTypes';
 import { DEFAULT_TIME_FORMAT, isTimeFormat } from '../../features/profile/timeFormat';
 import { getFirebaseApp } from './firebaseApp';
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  validateNotificationPreferences,
+  readNotificationPreferences,
+} from '../../features/notifications/notificationPreferences';
 
 let cachedDb: Firestore | null = null;
 
@@ -67,6 +72,7 @@ function docToUserProfile(snapshot: DocumentSnapshot<DocumentData>): UserProfile
     tipsEnabled: data.tipsEnabled !== false,
     reminderSoundId: (data.reminderSoundId as string | undefined) ?? DEFAULT_REMINDER_SOUND_ID,
     alarmSoundId: (data.alarmSoundId as string | undefined) ?? DEFAULT_TIMER_SOUND_ID,
+    notifications: readNotificationPreferences(data.notifications),
     createdAt: timestampToDate(data.createdAt as Timestamp | undefined),
     updatedAt: timestampToDate(data.updatedAt as Timestamp | undefined),
   };
@@ -94,6 +100,7 @@ export async function ensureUserProfile(user: User): Promise<void> {
       tipsEnabled: true,
       reminderSoundId: DEFAULT_REMINDER_SOUND_ID,
       alarmSoundId: DEFAULT_TIMER_SOUND_ID,
+      notifications: DEFAULT_NOTIFICATION_PREFERENCES,
       createdAt: now,
       updatedAt: now,
     });
@@ -201,6 +208,11 @@ export async function updateUserProfile(
 
   if (fields.alarmSoundId !== undefined) {
     updates.alarmSoundId = fields.alarmSoundId;
+  }
+
+  if (fields.notifications !== undefined) {
+    validateNotificationPreferences(fields.notifications);
+    updates.notifications = fields.notifications;
   }
 
   await setDoc(doc(db, 'users', userId), updates, { merge: true });

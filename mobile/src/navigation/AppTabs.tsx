@@ -57,6 +57,7 @@ import {
   TaskViewScreen,
 } from '../screens/TaskViewScreens';
 import { TaskDetailScreen } from '../screens/TaskDetailScreen';
+import { usePushNotifications } from '../features/notifications/PushNotificationProvider';
 import { NoteEditorScreen } from '../screens/NoteEditorScreen';
 import {
   AppTabParamList,
@@ -241,6 +242,24 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
   const [activeRouteName, setActiveRouteName] = useState<keyof RootStackParamList>('Plan');
   const [activeScreenName, setActiveScreenName] = useState('PlanHome');
   const lastBackPressAt = useRef(0);
+  const { destination, consumeDestination } = usePushNotifications();
+  const [navigationReady, setNavigationReady] = useState(false);
+
+  useEffect(() => {
+    if (!navigationReady || !destination) return;
+    if (destination.kind === 'event') {
+      navigationRef.navigate('Calendar', {
+        screen: 'EventDetail',
+        params: { eventId: destination.eventId, dateIso: destination.dateIso },
+      });
+    } else if (destination.kind === 'task') {
+      navigationRef.navigate('Plan', {
+        screen: 'TaskDetail',
+        params: { taskId: destination.taskId },
+      });
+    } else navigationRef.navigate('Plan', { screen: 'Tasks' });
+    consumeDestination();
+  }, [destination, consumeDestination, navigationReady, navigationRef]);
 
   useEffect(() => {
     if (Platform.OS !== 'android') {
@@ -269,6 +288,7 @@ export function AppTabs({ onPressSignOut, isSignOutPending }: AppTabsProps) {
   return (
     <NavigationContainer
       ref={navigationRef}
+      onReady={() => setNavigationReady(true)}
       onStateChange={(state) => {
         const route = state?.routes?.[state.index ?? 0];
         const routeName = route?.name;

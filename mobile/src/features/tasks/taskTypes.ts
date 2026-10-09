@@ -29,6 +29,7 @@ export type CreateTaskInput = {
   goalId?: string | null;
   milestoneId?: string | null;
   dueDate?: Date | null;
+  dueDateKey?: string | null;
   scheduledStart?: Date | null;
   scheduledEnd?: Date | null;
   allDay?: boolean;
@@ -46,7 +47,7 @@ export type UpdateTaskInput = Partial<
     | 'scheduledStart'
     | 'scheduledEnd'
     | 'allDay'
-  >
+  > & { dueDateKey: string | null }
 >;
 
 export type CompleteTaskInput = {

@@ -28,6 +28,7 @@ import {
   UpdateGoalMilestoneInput,
 } from '../../features/goals/goalTypes';
 import { getFirebaseApp } from './firebaseApp';
+import { taskDueDateKey } from '../../features/tasks/taskDueDate';
 
 let cachedDb: Firestore | null = null;
 
@@ -135,6 +136,7 @@ function taskFields(
     goalId,
     milestoneId,
     dueDate: task.dueDate ? Timestamp.fromDate(task.dueDate) : null,
+    dueDateKey: taskDueDateKey(task.dueDate),
     scheduledStart: null,
     scheduledEnd: null,
     allDay: false,

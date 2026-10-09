@@ -3,8 +3,20 @@ import { fireEvent, render } from '@testing-library/react-native';
 import React from 'react';
 
 import { AppTabs, DESKTOP_NAVIGATION_WIDTH, usesDesktopNavigation } from '../navigation/AppTabs';
+import type { NotificationDestination } from '../features/notifications/notificationDestination';
 
 const mockNavigate = jest.fn();
+const mockDestination: { value: NotificationDestination | null } = { value: null };
+const mockConsumeDestination = jest.fn();
+jest.mock('../features/notifications/PushNotificationProvider', () => ({
+  usePushNotifications: () => ({
+    destination: mockDestination.value,
+    consumeDestination: () => {
+      mockDestination.value = null;
+      mockConsumeDestination();
+    },
+  }),
+}));
 const mockActiveTabName = { value: 'Plan' };
 const mockActiveScreenName = { value: 'PlanHome' };
 const mockNavigationRef = {
@@ -158,8 +170,10 @@ jest.mock('@react-navigation/native', () => ({
   NavigationContainer: ({
     children,
     onStateChange,
+    onReady,
   }: {
     children: React.ReactNode;
+    onReady?: () => void;
     onStateChange?: (state: {
       index: number;
       routes: { name: string; state: { index: number; routes: { name: string }[] } }[];
@@ -167,6 +181,7 @@ jest.mock('@react-navigation/native', () => ({
   }) => {
     const ReactModule = jest.requireActual<typeof import('react')>('react');
     ReactModule.useEffect(() => {
+      onReady?.();
       onStateChange?.({
         index: 0,
         routes: [
@@ -305,6 +320,37 @@ jest.mock('@react-navigation/native-stack', () => {
 });
 
 describe('AppTabs', () => {
+  it('opens an event notification after navigation becomes ready and consumes it once', () => {
+    mockNavigate.mockClear();
+    mockConsumeDestination.mockClear();
+    mockDestination.value = {
+      kind: 'event',
+      eventId: 'event-1',
+      dateIso: '2026-10-07T14:00:00Z',
+    };
+    render(<AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />);
+    expect(mockNavigate).toHaveBeenCalledWith('Calendar', {
+      screen: 'EventDetail',
+      params: { eventId: 'event-1', dateIso: '2026-10-07T14:00:00Z' },
+    });
+    expect(mockConsumeDestination).toHaveBeenCalledTimes(1);
+  });
+  it('opens a single task or the task list for due-date notifications', () => {
+    mockNavigate.mockClear();
+    mockDestination.value = { kind: 'task', taskId: 'task-1' };
+    const first = render(
+      <AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />,
+    );
+    expect(mockNavigate).toHaveBeenCalledWith('Plan', {
+      screen: 'TaskDetail',
+      params: { taskId: 'task-1' },
+    });
+    first.unmount();
+    mockNavigate.mockClear();
+    mockDestination.value = { kind: 'tasks' };
+    render(<AppTabs onPressSignOut={jest.fn<() => void>()} isSignOutPending={false} />);
+    expect(mockNavigate).toHaveBeenCalledWith('Plan', { screen: 'Tasks' });
+  });
   it('uses desktop navigation only for wide web viewports', () => {
     expect(usesDesktopNavigation('web', 1024)).toBe(true);
     expect(usesDesktopNavigation('web', 1023)).toBe(false);

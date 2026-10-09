@@ -37,6 +37,7 @@ import {
 import { DEFAULT_TIME_FORMAT, TimeFormat } from '../../features/profile/timeFormat';
 import { getSelectionLabel } from '../../features/options/selectionOptions';
 import { TIMEZONE_OPTIONS } from '../../features/timezone/timezoneOptions';
+import { usePushNotifications } from '../../features/notifications/PushNotificationProvider';
 
 export type EventFormProps = {
   active: boolean;
@@ -56,6 +57,7 @@ export type EventFormProps = {
   };
   saveDisabled?: boolean;
   saveAccessibilityLabel?: string;
+  bearingReminders?: boolean;
   onSave: (input: CreateEventInput, options: CreateEventOptions) => Promise<void>;
 };
 
@@ -97,6 +99,16 @@ const ALERT_TIMING_OPTIONS = [
   { label: '60 minutes before', value: '-60' },
 ] as const;
 
+const ALL_DAY_ALERT_TIMING_OPTIONS = [
+  { label: 'No alert', value: 'none' },
+  { label: 'On event day', value: '0' },
+  { label: '1 day before', value: '-1440' },
+  { label: '2 days before', value: '-2880' },
+  { label: '7 days before', value: '-10080' },
+  { label: '14 days before', value: '-20160' },
+  { label: '28 days before', value: '-40320' },
+] as const;
+
 function nextDate(dateValue: string): string | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateValue);
   if (!match) return null;
@@ -104,8 +116,10 @@ function nextDate(dateValue: string): string | null {
   return date.toISOString().slice(0, 10);
 }
 
-function formatAlertTiming(timing: string): string {
-  const option = ALERT_TIMING_OPTIONS.find((candidate) => candidate.value === timing);
+function formatAlertTiming(timing: string, allDay: boolean): string {
+  const option = (allDay ? ALL_DAY_ALERT_TIMING_OPTIONS : ALERT_TIMING_OPTIONS).find(
+    (candidate) => candidate.value === timing,
+  );
   if (option) return option.label;
 
   const offset = Number(timing);
@@ -163,9 +177,11 @@ export function EventForm({
   cancelSave,
   saveDisabled = false,
   saveAccessibilityLabel = 'Save event',
+  bearingReminders = true,
   onSave,
 }: EventFormProps) {
   const { theme } = useTheme();
+  const push = usePushNotifications();
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const [values, setValues] = useState<CalendarEventFormValues>(() =>
@@ -259,9 +275,26 @@ export function EventForm({
 
     setSaving(true);
     try {
+      if (bearingReminders && result.input.alarms?.length) {
+        if (
+          result.input.alarms.some(
+            (alarm) =>
+              alarm.relativeOffsetMinutes === null ||
+              alarm.relativeOffsetMinutes > 0 ||
+              (values.allDay && alarm.relativeOffsetMinutes % 1440 !== 0),
+          )
+        ) {
+          throw new Error(
+            values.allDay
+              ? 'Choose whole-day reminders for an all-day event.'
+              : 'Choose reminders at or before the scheduled start.',
+          );
+        }
+        if (!push.enabled) await push.enable();
+      }
       await onSave(result.input, { publishToDevice });
-    } catch {
-      setError('Failed to save event. Please try again.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Failed to save event. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -587,14 +620,19 @@ export function EventForm({
                     style={({ pressed }) => [styles.alertSelector, pressed ? styles.pressed : null]}
                   >
                     <Text style={styles.alertSelectorLabel}>{label}</Text>
-                    <Text style={styles.alertSelectorValue}>{formatAlertTiming(timing)}</Text>
+                    <Text style={styles.alertSelectorValue}>
+                      {formatAlertTiming(timing, bearingReminders && values.allDay)}
+                    </Text>
                   </Pressable>
                 ))}
               </View>
 
               {activeAlertSelector ? (
                 <View style={styles.alertOptions}>
-                  {ALERT_TIMING_OPTIONS.map((option) => {
+                  {(bearingReminders && values.allDay
+                    ? ALL_DAY_ALERT_TIMING_OPTIONS
+                    : ALERT_TIMING_OPTIONS
+                  ).map((option) => {
                     const activeTiming =
                       activeAlertSelector === 'first'
                         ? values.firstAlertTiming
@@ -635,6 +673,13 @@ export function EventForm({
                     );
                   })}
                 </View>
+              ) : null}
+              {bearingReminders ? (
+                <Text style={styles.helperText}>
+                  {values.allDay
+                    ? "All-day reminders use your Profile morning time in this device's timezone."
+                    : 'Bearing sends these push reminders before your scheduled start.'}
+                </Text>
               ) : null}
             </View>
 

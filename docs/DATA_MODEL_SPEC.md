@@ -38,6 +38,10 @@ Fields:
 - tipsEnabled: boolean
 - reminderSoundId: string
 - alarmSoundId: string
+- notifications: map (legacy default: due-date reminders off, one day before, 06:00)
+  - dueDateEnabled: boolean
+  - daysBeforeDueDate: integer, 0-28
+  - morningTime: 24-hour HH:mm string
 - createdAt: timestamp
 - updatedAt: timestamp
 
@@ -133,7 +137,11 @@ Fields:
   - endAt: timestamp | null
   - occurrenceCount: number | null
   - weekdays: array of enum (sunday through saturday); used only with weekly frequency
-- alarms: array
+- alarms: array of at most two reminder selections
+  - absoluteAt: timestamp | null (native-calendar compatibility)
+  - relativeOffsetMinutes: integer | null; Bearing reminders support -40320 through 0
+  - Timed Bearing events use offsets from the occurrence start. All-day Bearing events use
+    whole-day offsets and the user's morning time in each registered device's timezone.
 - availability: enum (busy, free, tentative, unavailable) | null
 - url: string | null
 - publicationStatus: enum (unpublished, publishing, published, diverged, delete_pending)
@@ -165,6 +173,7 @@ Fields:
 - goalId: string | null
 - milestoneId: string | null
 - dueDate: timestamp | null
+- dueDateKey: YYYY-MM-DD string | null; preserves the date-level target across device timezone changes
 - scheduledStart: timestamp | null
 - scheduledEnd: timestamp | null
 - allDay: boolean
@@ -182,10 +191,52 @@ false for legacy documents and indicates that the scheduled bounds represent
 an all-day task when true. Clients must preserve explicit nulls when clearing
 links or dates and must not infer missing legacy fields.
 
+New task writes preserve `dueDateKey` with the timestamp. For legacy tasks without a key, server
+reminders interpret the timestamp in the profile timezone; notification delivery time still uses
+the device timezone. Scheduled task reminders come from the canonical linked Bearing event, not a
+second independent task-start notification.
+
 Indexes (planned):
 
 - userId + status + updatedAt
 - userId + updatedAt
+
+### pushDevices
+
+Document ID: SHA-256 of the Expo push token; registration is authenticated and server-owned.
+
+- userId: string
+- token: Expo push token (never logged or included in account exports)
+- installationId: opaque installation identifier
+- timezone: last reported device IANA timezone
+- enabled: boolean (per-device opt-in)
+- enabledAt: timestamp; prevents backfilling reminders from before device enablement
+- updatedAt: timestamp
+- expireAt: timestamp; 90 days after last registration, with Firestore TTL
+
+Only the owner can read a device record. Register/disable callables perform writes; stale tokens
+are removed on rotation or `DeviceNotRegistered`. The timezone is refreshed on launch/resume and
+token changes. A terminated app cannot report a new timezone.
+
+### notificationDeliveries
+
+Document ID: deterministic SHA-256 of device, source, occurrence, alert offset and send time;
+due-date summaries use device plus local morning date, so a device gets one summary per morning.
+
+- userId, deviceId, kind (`event` or `due`), source navigation identifiers
+- sendAt, expiresAt: timestamps (at most 10 minutes of catch-up, never beyond timed-event start grace)
+- status: pending, sending, ticket, delivered, canceled, failed, unknown
+- attempts: integer; maximum three send attempts for definitive rate-limit failures
+- nextActionAt: timestamp while work remains; removed for terminal outcomes
+- ticketId, receiptPolls: receipt tracking, when accepted by Expo
+- expireAt: timestamp; 30-day retention, with Firestore TTL
+
+Server-only records are revalidated against live device, profile, event, task and goal data before
+sending. Receipts confirm provider acceptance, not that the user saw the notification. Ambiguous
+network/crash outcomes are marked `unknown` and not blindly resent. Account deletion disables devices
+before deleting all owned notification records. Device tokens are excluded from exports.
+
+`notificationSystem/scheduler` is a server-only coordination lease, not user data.
 
 ### notes
 

@@ -64,6 +64,7 @@ export function EventEditScreen({ route, navigation }: EventEditScreenProps) {
       active
       initialDate={selectedEvent.startAt}
       initialValues={selectedEvent}
+      bearingReminders={selectedEvent.ownership === 'bearing'}
       saveLabel={choosingUpdateScope ? 'Yes, update' : 'Update Event'}
       fullScreen
       locale={profile?.locale}

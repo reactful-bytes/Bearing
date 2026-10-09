@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase-admin/app";
-import { defineString } from "firebase-functions/params";
+import { defineSecret, defineString } from "firebase-functions/params";
+import { onSchedule } from "firebase-functions/v2/scheduler";
 import { logger } from "firebase-functions/logger";
 import { onCall, onRequest } from "firebase-functions/v2/https";
 import { setGlobalOptions } from "firebase-functions/v2/options";
@@ -36,13 +37,33 @@ import {
   getRevenueCatProductGrantCatalog as getRevenueCatProductGrantCatalogHandler,
 } from "./revenueCatCatalog";
 import { RevenueCatV2Config } from "./revenueCatV2";
+import {
+  registerPushDeviceHandler,
+  disablePushDeviceHandler,
+} from "./pushDevices";
+import { runNotificationScheduler } from "./notificationAdmin";
 
 initializeApp();
+
+const expoPushAccessToken = defineSecret("EXPO_ACCESS_TOKEN");
 
 setGlobalOptions({
   maxInstances: 10,
   region: "us-central1",
 });
+
+export const registerPushDevice = onCall(registerPushDeviceHandler);
+export const disablePushDevice = onCall(disablePushDeviceHandler);
+export const sendScheduledReminders = onSchedule(
+  {
+    schedule: "* * * * *",
+    timeZone: "UTC",
+    timeoutSeconds: 540,
+    maxInstances: 1,
+    secrets: [expoPushAccessToken],
+  },
+  () => runNotificationScheduler(expoPushAccessToken.value()),
+);
 
 const geminiApiKey = defineString("GEMINI_API_KEY");
 const openAiApiKey = defineString("OPENAI_API_KEY");

@@ -1,5 +1,6 @@
 import { TaskRecord } from './taskTypes';
 import { getLegacyTaskCompletionSource } from './taskCompletionRepair';
+import { taskDateFromKey } from './taskDueDate';
 
 type TimestampLike = { toDate: () => Date };
 
@@ -28,7 +29,8 @@ export function decodeTaskData(id: string, data: Record<string, unknown>): TaskR
     starter: typeof data.starter === 'string' ? data.starter : '',
     goalId: nullableString(data.goalId),
     milestoneId: nullableString(data.milestoneId),
-    dueDate: toDate(data.dueDate),
+    dueDate:
+      typeof data.dueDateKey === 'string' ? taskDateFromKey(data.dueDateKey) : toDate(data.dueDate),
     scheduledStart: toDate(data.scheduledStart),
     scheduledEnd: toDate(data.scheduledEnd),
     allDay: data.allDay === true,

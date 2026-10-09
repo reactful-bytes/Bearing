@@ -22,6 +22,19 @@ export const OWNED_COLLECTIONS = [
 ] as const;
 
 export const AI_CREDIT_QUERY_COLLECTIONS = ["aiCreditOperations"] as const;
+export const NOTIFICATION_QUERY_COLLECTIONS = [
+  "pushDevices",
+  "notificationDeliveries",
+] as const;
+
+export function redactPushDevice(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Invalid device export record.");
+  }
+  const portable: Record<string, unknown> = { ...value };
+  delete portable.token;
+  return portable;
+}
 
 function toPortableValue(value: unknown): unknown {
   if (value instanceof Timestamp) {
@@ -59,14 +72,18 @@ const readLocalUserDataAdmin = async (userId: string) => {
       db.doc(`users/${userId}`).get(),
       db.doc(`subscriptions/${userId}`).get(),
       db.doc(`aiCreditLocks/${getAiCreditLockId(userId)}`).get(),
-      ...[...OWNED_COLLECTIONS, ...AI_CREDIT_QUERY_COLLECTIONS].map(
-        (collectionName) =>
-          db.collection(collectionName).where("userId", "==", userId).get(),
+      ...[
+        ...OWNED_COLLECTIONS,
+        ...AI_CREDIT_QUERY_COLLECTIONS,
+        ...NOTIFICATION_QUERY_COLLECTIONS,
+      ].map((collectionName) =>
+        db.collection(collectionName).where("userId", "==", userId).get(),
       ),
     ]);
   const queryCollections = [
     ...OWNED_COLLECTIONS,
     ...AI_CREDIT_QUERY_COLLECTIONS,
+    ...NOTIFICATION_QUERY_COLLECTIONS,
   ];
   const records = Object.fromEntries(
     queryCollections.map((collectionName, index) => [
@@ -94,6 +111,8 @@ const readLocalUserDataAdmin = async (userId: string) => {
     milestones: records.milestones ?? [],
     notes: records.notes ?? [],
     tasks: records.tasks ?? [],
+    pushDevices: (records.pushDevices ?? []).map(redactPushDevice),
+    notificationDeliveries: records.notificationDeliveries ?? [],
   };
 };
 
@@ -113,11 +132,26 @@ export function createUserDataAdminReader(
 
 async function deleteLocalUserData(userId: string): Promise<void> {
   const db = getFirestore();
+  await db
+    .doc(`users/${userId}`)
+    .set({ notificationDeletionPending: true }, { merge: true });
+  const devices = await db
+    .collection("pushDevices")
+    .where("userId", "==", userId)
+    .get();
+  const deviceWriter = db.bulkWriter();
+  devices.docs.forEach((device) =>
+    deviceWriter.update(device.ref, { enabled: false }),
+  );
+  await deviceWriter.close();
   const writer = db.bulkWriter();
   const snapshots = await Promise.all(
-    [...OWNED_COLLECTIONS, ...AI_CREDIT_QUERY_COLLECTIONS].map(
-      (collectionName) =>
-        db.collection(collectionName).where("userId", "==", userId).get(),
+    [
+      ...OWNED_COLLECTIONS,
+      ...AI_CREDIT_QUERY_COLLECTIONS,
+      ...NOTIFICATION_QUERY_COLLECTIONS,
+    ].map((collectionName) =>
+      db.collection(collectionName).where("userId", "==", userId).get(),
     ),
   );
 

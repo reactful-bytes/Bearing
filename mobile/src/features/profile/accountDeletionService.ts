@@ -8,6 +8,7 @@ import {
   deviceCalendarAdapter,
 } from '../../services/calendar/deviceCalendarAdapter';
 import { purgeTelemetryConsent } from '../../services/telemetry/telemetry';
+import { purgePushAccountData } from '../../services/notifications/pushNotifications';
 
 export type LinkedCalendarCleanupResult = {
   removedCount: number;
@@ -18,6 +19,7 @@ export async function purgeLocalAccountData(userId: string): Promise<{ failedCou
   const results = await Promise.allSettled([
     purgeDeviceCalendarSettings(userId),
     purgeTelemetryConsent(userId),
+    purgePushAccountData(userId),
   ]);
   return { failedCount: results.filter((result) => result.status === 'rejected').length };
 }

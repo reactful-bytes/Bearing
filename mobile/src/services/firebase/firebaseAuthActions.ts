@@ -18,6 +18,7 @@ import {
 
 import { clearNativeGoogleSession, GoogleTokenResult } from '../../features/auth/googleNativeAuth';
 import { getFirebaseAuth } from './firebaseAuth';
+import { disableCurrentPushDevice } from '../notifications/pushNotifications';
 
 type GoogleTokens = Extract<GoogleTokenResult, { type: 'success' }>;
 
@@ -335,6 +336,14 @@ export async function updateCurrentUserDisplayName(displayName: string): Promise
 }
 
 export async function signOutCurrentUser(): Promise<void> {
+  try {
+    await disableCurrentPushDevice();
+  } catch (cause) {
+    throw new Error(
+      'Unable to disable push reminders before sign-out. Check your connection and try again.',
+      { cause },
+    );
+  }
   try {
     const auth = getFirebaseAuth();
     const hadGoogleProvider = Boolean(

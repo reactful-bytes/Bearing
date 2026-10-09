@@ -27,12 +27,27 @@ service cloud.firestore {
           && getAfter(/databases/$(database)/documents/milestones/$(data.milestoneId)).data.goalId == data.goalId);
     }
 
+    function validNotifications(data) {
+      return !data.keys().hasAny(['notifications'])
+        || (data.notifications is map
+          && data.notifications.keys().hasAll(['dueDateEnabled', 'daysBeforeDueDate', 'morningTime'])
+          && data.notifications.keys().hasOnly(['dueDateEnabled', 'daysBeforeDueDate', 'morningTime'])
+          && data.notifications.dueDateEnabled is bool
+          && data.notifications.daysBeforeDueDate is int
+          && data.notifications.daysBeforeDueDate >= 0
+          && data.notifications.daysBeforeDueDate <= 28
+          && data.notifications.morningTime is string
+          && data.notifications.morningTime.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$'));
+    }
+
     match /users/{userId} {
       allow read, delete: if isCurrentUser(userId);
       allow create: if isCurrentUser(userId)
+        && validNotifications(request.resource.data)
         && request.resource.data.premiumStatus == 'free'
         && request.resource.data.premiumSource == 'none';
       allow update: if isCurrentUser(userId)
+        && validNotifications(request.resource.data)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'displayName',
           'email',
@@ -42,8 +57,18 @@ service cloud.firestore {
           'tipsEnabled',
           'reminderSoundId',
           'alarmSoundId',
+          'notifications',
           'updatedAt'
         ]);
+    }
+
+    match /pushDevices/{deviceId} {
+      allow read: if ownsExistingDocument();
+      allow write: if false;
+    }
+
+    match /notificationDeliveries/{deliveryId} {
+      allow read, write: if false;
     }
 
     match /events/{eventId} {

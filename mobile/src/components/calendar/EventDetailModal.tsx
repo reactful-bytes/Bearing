@@ -217,6 +217,7 @@ export function EventDetailModal({
           active
           initialDate={event.startAt}
           initialValues={event}
+          bearingReminders={event.ownership === 'bearing'}
           saveLabel={choosingUpdateScope ? 'Yes, update' : 'Update Event'}
           locale={locale}
           timeFormat={timeFormat}

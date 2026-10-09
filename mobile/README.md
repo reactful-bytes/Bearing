@@ -30,6 +30,28 @@ Calendar access requires the Bearing development build and is unavailable in Exp
 [Development Builds](docs/DEVELOPMENT_BUILDS.md) for physical-device commands, native rebuilds, and
 the permission smoke test.
 
+## Push Reminders
+
+Bearing events and scheduled tasks support two optional reminders in the shared event editor.
+Profile -> Notifications controls this device's push opt-in, goal-task due-date summaries (off by
+default, one day before when enabled), and the editable morning time (06:00 by default).
+All-day reminders use whole-day lead times and that same morning time.
+
+Permissions are requested only when enabling push or saving selected reminders. Push requires
+a physical Android/iOS device and a newly built native app, not Expo Go or the browser. Native
+calendar-owned events do not participate. Bearing's published calendar copies omit native alarms
+to avoid duplicate reminders; the Bearing event retains both selections.
+
+Run `npm run notifications:sounds` before a native prebuild if changing profile sound sequences.
+Generated WAV assets are bundled through `expo-notifications`; EAS regenerates them after install.
+Delivery respects system silent mode/Do Not Disturb and foreground Focus Mode suppression.
+Timezone updates are reported on launch/resume, so reopen Bearing after travel to refresh server
+scheduling. Sign-out requires successful server device disablement when push is registered, to
+avoid reminders being sent to a signed-out account.
+
+Backend setup, limitations and physical-device acceptance are in
+[Firebase Functions push setup](../functions/README.md#push-reminder-setup-and-operations).
+
 ## Project Structure
 
 - app.config.ts: environment-aware Expo config and app extras

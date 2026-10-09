@@ -90,6 +90,10 @@ export function AddTaskModal({
 
     const timezone = profile?.timezone ?? 'UTC';
     const dueDateValue = dueDate ? eventFormValueToDate(dueDate, '12:00', timezone) : null;
+    if (dueDate && !dueDateValue) {
+      setError('Choose a valid task due date.');
+      return;
+    }
 
     setSaving(true);
     setError(null);
@@ -101,7 +105,7 @@ export function AddTaskModal({
         starter: starter.trim(),
         ...(goalId ? { goalId } : {}),
         ...(goalId && milestoneId ? { milestoneId } : {}),
-        ...(dueDateValue ? { dueDate: dueDateValue } : {}),
+        ...(dueDateValue ? { dueDate: dueDateValue, dueDateKey: dueDate } : {}),
       });
       handleClose();
     } catch {

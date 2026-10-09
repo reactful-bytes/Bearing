@@ -1,9 +1,97 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { EventForm } from '../components/calendar/EventForm';
+import { usePushNotifications } from '../features/notifications/PushNotificationProvider';
+
+const mockEnable = jest.fn(async () => undefined);
+jest.mock('../features/notifications/PushNotificationProvider', () => ({
+  usePushNotifications: jest.fn(() => ({ enabled: true })),
+}));
+beforeEach(() => {
+  mockEnable.mockReset().mockResolvedValue(undefined);
+  jest.mocked(usePushNotifications).mockReturnValue({
+    enabled: true,
+    permission: 'granted',
+    pending: false,
+    error: null,
+    enable: mockEnable,
+    disable: jest.fn(async () => undefined),
+    destination: null,
+    consumeDestination: jest.fn(),
+  });
+});
 
 describe('EventForm', () => {
+  it('requests push setup only when saving selected Bearing reminders', async () => {
+    jest.mocked(usePushNotifications).mockReturnValue({
+      ...usePushNotifications(),
+      enabled: false,
+    });
+    const onSave = jest.fn(async () => undefined);
+    render(
+      <EventForm
+        active
+        initialDate={new Date('2026-10-07T14:00:00Z')}
+        initialValues={{
+          timezone: 'UTC',
+          title: 'Planning',
+          alarms: [{ absoluteAt: null, relativeOffsetMinutes: -5 }],
+        }}
+        onSave={onSave}
+      />,
+    );
+    expect(mockEnable).not.toHaveBeenCalled();
+    await act(async () => fireEvent.press(screen.getByLabelText('Save event')));
+    expect(mockEnable).toHaveBeenCalledTimes(1);
+    expect(onSave).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not save false promises of reminders when push setup fails', async () => {
+    jest
+      .mocked(usePushNotifications)
+      .mockReturnValue({ ...usePushNotifications(), enabled: false });
+    mockEnable.mockRejectedValueOnce(new Error('Notifications are blocked.'));
+    const onSave = jest.fn(async () => undefined);
+    render(
+      <EventForm
+        active
+        initialDate={new Date('2026-10-07T14:00:00Z')}
+        initialValues={{
+          timezone: 'UTC',
+          title: 'Planning',
+          alarms: [{ absoluteAt: null, relativeOffsetMinutes: -5 }],
+        }}
+        onSave={onSave}
+      />,
+    );
+    await act(async () => fireEvent.press(screen.getByLabelText('Save event')));
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByText('Notifications are blocked.')).toBeTruthy();
+  });
+
+  it('does not enable Bearing push for native calendar event edits', async () => {
+    jest
+      .mocked(usePushNotifications)
+      .mockReturnValue({ ...usePushNotifications(), enabled: false });
+    const onSave = jest.fn(async () => undefined);
+    render(
+      <EventForm
+        active
+        bearingReminders={false}
+        initialDate={new Date('2026-10-07T14:00:00Z')}
+        initialValues={{
+          timezone: 'UTC',
+          title: 'Native event',
+          alarms: [{ absoluteAt: null, relativeOffsetMinutes: -5 }],
+        }}
+        onSave={onSave}
+      />,
+    );
+    await act(async () => fireEvent.press(screen.getByLabelText('Save event')));
+    expect(mockEnable).not.toHaveBeenCalled();
+    expect(onSave).toHaveBeenCalledTimes(1);
+  });
   it('selects a time zone through the searchable selector', async () => {
     const onSave = jest.fn(async () => undefined);
     render(
@@ -51,9 +139,9 @@ describe('EventForm', () => {
     fireEvent.press(screen.getByLabelText('Repeat ends After'));
     fireEvent.changeText(screen.getByLabelText('Recurrence count'), '3');
     fireEvent.press(screen.getByLabelText('Open first alert selector'));
-    fireEvent.press(screen.getByLabelText('Select first alert 60 minutes before'));
+    fireEvent.press(screen.getByLabelText('Select first alert 1 day before'));
     fireEvent.press(screen.getByLabelText('Open second alert selector'));
-    fireEvent.press(screen.getByLabelText('Select second alert 15 minutes before'));
+    fireEvent.press(screen.getByLabelText('Select second alert On event day'));
     fireEvent.press(screen.getByText('Free'));
     fireEvent.changeText(screen.getByLabelText('Event URL'), 'https://example.com/release');
 
@@ -74,8 +162,8 @@ describe('EventForm', () => {
           occurrenceCount: 3,
         }),
         alarms: [
-          { absoluteAt: null, relativeOffsetMinutes: -60 },
-          { absoluteAt: null, relativeOffsetMinutes: -15 },
+          { absoluteAt: null, relativeOffsetMinutes: -1440 },
+          { absoluteAt: null, relativeOffsetMinutes: 0 },
         ],
         availability: 'free',
         url: 'https://example.com/release',

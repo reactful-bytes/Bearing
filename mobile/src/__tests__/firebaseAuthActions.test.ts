@@ -20,6 +20,10 @@ import {
   unlinkGoogleFromCurrentUser,
 } from '../services/firebase/firebaseAuthActions';
 import { getFirebaseAuth } from '../services/firebase/firebaseAuth';
+import { disableCurrentPushDevice } from '../services/notifications/pushNotifications';
+jest.mock('../services/notifications/pushNotifications', () => ({
+  disableCurrentPushDevice: jest.fn(async () => undefined),
+}));
 
 jest.mock('firebase/auth', () => ({
   EmailAuthProvider: { credential: jest.fn(() => ({ providerId: 'password' })) },
@@ -72,6 +76,20 @@ function createUser(overrides: Record<string, unknown> = {}) {
 }
 
 describe('Firebase Google auth actions', () => {
+  it('disables this device before sign-out and surfaces cleanup failures', async () => {
+    (getFirebaseAuth as jest.Mock).mockReturnValue({ currentUser: createUser() });
+    await signOutCurrentUser();
+    expect(disableCurrentPushDevice).toHaveBeenCalledTimes(1);
+    expect(jest.mocked(disableCurrentPushDevice).mock.invocationCallOrder[0]).toBeLessThan(
+      mockedSignOut.mock.invocationCallOrder[0],
+    );
+    jest.mocked(disableCurrentPushDevice).mockRejectedValueOnce(new Error('Network unavailable'));
+    mockedSignOut.mockClear();
+    await expect(signOutCurrentUser()).rejects.toThrow(
+      'Unable to disable push reminders before sign-out.',
+    );
+    expect(mockedSignOut).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     jest.clearAllMocks();
     (GoogleAuthProvider.credential as jest.Mock).mockReturnValue(googleCredential);

@@ -86,7 +86,7 @@ function eventFields(input: CreateEventInput | BearingEvent) {
     allDay: input.allDay ?? false,
     location: input.location ?? '',
     recurrenceRule: input.recurrenceRule ?? null,
-    alarms: input.alarms ?? [],
+    alarms: [],
     availability: input.availability ?? 'busy',
     url: input.url ?? null,
   };
@@ -102,7 +102,7 @@ function deviceFields(record: DeviceCalendarEventRecord) {
     allDay: record.allDay,
     location: record.location,
     recurrenceRule: record.recurrenceRule,
-    alarms: record.alarms,
+    alarms: [],
     availability: record.availability,
     url: record.url,
   };
@@ -312,7 +312,8 @@ export function createCalendarPublicationService(
         decision.action === 'none' &&
         marker.commonHash === decision.winningHash &&
         event.publication.status === 'published' &&
-        !event.publication.lastError
+        !event.publication.lastError &&
+        deviceEvent.alarms.length === 0
       ) {
         return;
       }
@@ -324,16 +325,21 @@ export function createCalendarPublicationService(
             markedInput(event, marker.linkId, decision.winningHash),
           );
         } else if (decision.action === 'update-bearing') {
-          await dependencies.updateBearingEvent(userId, event.id, nativeFields);
+          await dependencies.updateBearingEvent(userId, event.id, {
+            ...nativeFields,
+            alarms: event.alarms,
+          });
           await dependencies.adapter.updateEvent(deviceEvent.id, {
+            alarms: [],
             description: replacePublicationMarker(deviceEvent.notes, {
               version: 1,
               linkId: marker.linkId,
               commonHash: decision.winningHash,
             }),
           });
-        } else if (marker.commonHash !== decision.winningHash) {
+        } else if (marker.commonHash !== decision.winningHash || deviceEvent.alarms.length > 0) {
           await dependencies.adapter.updateEvent(deviceEvent.id, {
+            alarms: [],
             description: replacePublicationMarker(deviceEvent.notes, {
               version: 1,
               linkId: marker.linkId,

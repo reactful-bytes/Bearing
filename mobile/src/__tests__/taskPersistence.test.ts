@@ -6,7 +6,7 @@ const timestampFactory = (date: Date): string => date.toISOString();
 
 describe('task persistence fields', () => {
   it('writes linked and scheduled fields with timestamp values', () => {
-    const dueDate = new Date('2026-09-07T00:00:00.000Z');
+    const dueDate = new Date(2026, 8, 7);
     const scheduledStart = new Date('2026-09-07T09:00:00.000Z');
     const scheduledEnd = new Date('2026-09-07T10:00:00.000Z');
 
@@ -27,6 +27,7 @@ describe('task persistence fields', () => {
       milestoneId: 'milestone-1',
       starter: '',
       dueDate: dueDate.toISOString(),
+      dueDateKey: '2026-09-07',
       scheduledStart: scheduledStart.toISOString(),
       scheduledEnd: scheduledEnd.toISOString(),
       allDay: true,
@@ -39,6 +40,7 @@ describe('task persistence fields', () => {
       milestoneId: null,
       starter: '',
       dueDate: null,
+      dueDateKey: null,
       scheduledStart: null,
       scheduledEnd: null,
       allDay: false,
@@ -60,6 +62,7 @@ describe('task persistence fields', () => {
       goalId: null,
       milestoneId: null,
       dueDate: null,
+      dueDateKey: null,
       scheduledStart: null,
       scheduledEnd: null,
       allDay: false,

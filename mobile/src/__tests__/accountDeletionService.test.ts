@@ -28,6 +28,18 @@ function makeAdapter(): jest.Mocked<DeviceCalendarAdapter> {
 }
 
 describe('cleanupLinkedCalendarCopies', () => {
+  it('purges only the deleted account notification preferences and registration', async () => {
+    await AsyncStorage.setItem(
+      'bearing.push.registration',
+      JSON.stringify({ userId: 'user-1', deviceId: 'device-1' }),
+    );
+    await AsyncStorage.setItem('bearing.push.enabled.user-1', 'true');
+    await AsyncStorage.setItem('bearing.push.enabled.user-2', 'true');
+    expect(await purgeLocalAccountData('user-1')).toEqual({ failedCount: 0 });
+    expect(await AsyncStorage.getItem('bearing.push.registration')).toBeNull();
+    expect(await AsyncStorage.getItem('bearing.push.enabled.user-1')).toBeNull();
+    expect(await AsyncStorage.getItem('bearing.push.enabled.user-2')).toBe('true');
+  });
   beforeEach(async () => {
     await AsyncStorage.clear();
   });

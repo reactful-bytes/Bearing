@@ -23,6 +23,7 @@ import { AppTabs } from './src/navigation/AppTabs';
 import { useAuthBootstrap } from './src/features/auth/useAuthBootstrap';
 import { signOutCurrentUser } from './src/services/firebase/firebaseAuthActions';
 import { ThemeProvider, useTheme } from './src/design/ThemeProvider';
+import { PushNotificationProvider } from './src/features/notifications/PushNotificationProvider';
 import { useThemedStyles } from './src/design/useThemedStyles';
 
 const topographicBackgrounds = {
@@ -103,7 +104,9 @@ function AppContent() {
           </View>
         ) : null}
         <View style={styles.tabsContainer}>
-          <AppTabs onPressSignOut={onPressSignOut} isSignOutPending={isAuthActionPending} />
+          <PushNotificationProvider key={user.uid} userId={user.uid}>
+            <AppTabs onPressSignOut={onPressSignOut} isSignOutPending={isAuthActionPending} />
+          </PushNotificationProvider>
         </View>
         <StatusBar style={preference === 'dark' ? 'light' : 'dark'} />
       </View>

@@ -21,6 +21,7 @@ import { useThemedStyles } from '../../design/useThemedStyles';
 import type { Theme } from '../../design/tokens';
 import { CalendarDisplayEvent } from '../../features/calendar/calendarTypes';
 import { clearFocusSession, setFocusSession } from '../../features/focus/focusSession';
+import { suppressForegroundReminders } from '../../features/notifications/foregroundNotificationPolicy';
 import { CreateNoteInput } from '../../features/notes/noteTypes';
 import {
   DEFAULT_TIMER_SOUND_ID,
@@ -102,6 +103,10 @@ export function FocusModeOverlay({
   const savedConfirmationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const trackedEventRef = useRef<CalendarDisplayEvent | null>(null);
   const timerCompletionHandledRef = useRef(false);
+
+  useEffect(() => {
+    if (visible) return suppressForegroundReminders();
+  }, [visible]);
 
   const stopTimerSound = useCallback((): void => {
     if (timerPlayerDisposedRef.current) {

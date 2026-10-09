@@ -16,7 +16,9 @@ Replace direct Google, Microsoft, and iCloud integrations with native iOS/Androi
 - System-only edits update the Bearing record. Simultaneous edits use the system-calendar version.
 - Confirmed deletion of a linked system copy marks the Bearing event unpublished; it does not delete Firestore data.
 - Writable ordinary and recurring device events are edited in Bearing when the native API supports the operation.
-- Invitations, attendees, RSVP/organizer actions, conference links, and reminders are excluded from v1.
+- Invitations, attendees, RSVP/organizer actions and conference links are excluded from v1.
+  M40 supersedes the reminder exclusion for Bearing-owned events and scheduled tasks only;
+  native-calendar-owned reminders are not part of the server push system.
 - ICS import is removed. Bearing-owned JSON and ICS export remain available generally and before account deletion.
 - Production web calendar support is excluded. `expo-calendar` requires native development builds and is unavailable in Expo Go.
 
@@ -88,7 +90,7 @@ Replace direct Google, Microsoft, and iCloud integrations with native iOS/Androi
 | M6.10b | Cross-platform validation | Invalid date, DST, recurrence, and alarm combinations are rejected before writes                                         |
 | M6.10c | Direct device mutations   | Only writable calendars expose update/delete; deletion always confirms                                                   |
 | M6.10d | Recurrence scope UI       | Occurrence, future, and entire-series options appear only when validated on that platform                                |
-| M6.10e | Explicit exclusions       | No attendee, invitation, RSVP, organizer, conference, or reminder controls ship                                          |
+| M6.10e | Explicit exclusions       | No attendee, invitation, RSVP, organizer or conference controls; Bearing reminder exclusion superseded by M40 |
 
 ## M6.11 Publication And Reconciliation
 
@@ -150,6 +152,7 @@ Replace direct Google, Microsoft, and iCloud integrations with native iOS/Androi
 - Direct Google Calendar API, Microsoft Graph, or iCloud API access.
 - OAuth, provider tokens, provider webhooks, polling, and background synchronization.
 - Firestore mirrors of device-originated events.
-- Invitations, attendees, RSVP, organizer actions, conference links, and reminders.
+- Invitations, attendees, RSVP, organizer actions and conference links. Native-calendar reminders
+  remain outside the M40 Bearing server-push scope.
 - ICS import and production web deployment.
 - Guaranteed cleanup of system copies unavailable on the current device.

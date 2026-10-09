@@ -124,6 +124,55 @@ function makeDependencies(adapter = makeAdapter()): CalendarPublicationDependenc
 }
 
 describe('calendarPublicationService', () => {
+  it('retains Bearing reminders while stripping native copy alerts', async () => {
+    const dependencies = makeDependencies();
+    const service = createCalendarPublicationService(dependencies);
+    const alarms = [{ absoluteAt: null, relativeOffsetMinutes: -5 }];
+    await service.createEvent('user-1', { ...input, alarms }, { publishToDevice: true });
+    expect(dependencies.createBearingEvent).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ alarms }),
+      expect.any(Object),
+    );
+    expect(dependencies.adapter.createEvent).toHaveBeenCalledWith(
+      'work',
+      expect.objectContaining({ alarms: [] }),
+    );
+  });
+
+  it('preserves Bearing reminders after native title edits and removes legacy duplicate native alerts', async () => {
+    const dependencies = makeDependencies();
+    const service = createCalendarPublicationService(dependencies);
+    const base = bearingEvent();
+    const commonHash = canonicalCalendarFieldHash(base);
+    const alarms = [{ absoluteAt: null, relativeOffsetMinutes: -5 }];
+    const event = bearingEvent({
+      alarms,
+      publication: {
+        ...createUnpublishedMetadata(),
+        status: 'published',
+        markerId: '0123456789abcdef0123456789abcdef',
+        commonHash,
+      },
+    });
+    const device = {
+      ...nativeEvent(
+        `Bring notes.\n\n[[bearing:v1:0123456789abcdef0123456789abcdef:${commonHash}]]`,
+      ),
+      title: 'Device edited',
+      alarms,
+    };
+    await service.reconcileEvent('user-1', event, device);
+    expect(dependencies.updateBearingEvent).toHaveBeenCalledWith(
+      'user-1',
+      event.id,
+      expect.objectContaining({ title: 'Device edited', alarms }),
+    );
+    expect(dependencies.adapter.updateEvent).toHaveBeenCalledWith(
+      'native-1',
+      expect.objectContaining({ alarms: [] }),
+    );
+  });
   beforeEach(() => {
     jest.clearAllMocks();
   });

@@ -161,6 +161,7 @@ export function createGoalPlanDraftAdminPersister(
             dueDate: Timestamp.fromDate(
               dateAtLocalNoon(task.targetDate, timezone),
             ),
+            dueDateKey: task.targetDate,
             scheduledStart: null,
             scheduledEnd: null,
             allDay: false,

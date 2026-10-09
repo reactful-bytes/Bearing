@@ -20,6 +20,18 @@ const config: ExpoConfig = {
     'expo-asset',
     'expo-audio',
     [
+      'expo-notifications',
+      {
+        sounds: [
+          './assets/notification-sounds/summit_chime.wav',
+          './assets/notification-sounds/signal_pulse.wav',
+          './assets/notification-sounds/steady_bell.wav',
+          './assets/notification-sounds/dawn_glow.wav',
+          './assets/notification-sounds/ember_drop.wav',
+        ],
+      },
+    ],
+    [
       'expo-navigation-bar',
       {
         enforceContrast: false,

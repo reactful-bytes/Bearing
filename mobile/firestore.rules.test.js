@@ -54,6 +54,46 @@ afterAll(async () => {
 });
 
 describe('Firestore ownership rules', () => {
+  it('validates notification preferences without allowing invalid time or day ranges', async () => {
+    const ref = doc(firestoreFor(OWNER_ID), 'users', OWNER_ID);
+    const defaults = { dueDateEnabled: false, daysBeforeDueDate: 1, morningTime: '06:00' };
+    await assertSucceeds(
+      setDoc(ref, { premiumStatus: 'free', premiumSource: 'none', notifications: defaults }),
+    );
+    await assertSucceeds(
+      updateDoc(ref, {
+        notifications: {
+          ...defaults,
+          dueDateEnabled: true,
+          daysBeforeDueDate: 0,
+          morningTime: '23:59',
+        },
+      }),
+    );
+    await assertFails(updateDoc(ref, { notifications: { ...defaults, daysBeforeDueDate: 29 } }));
+    await assertFails(updateDoc(ref, { notifications: { ...defaults, daysBeforeDueDate: 1.5 } }));
+    await assertFails(updateDoc(ref, { notifications: { ...defaults, morningTime: '24:00' } }));
+    await assertFails(updateDoc(ref, { notifications: { ...defaults, injected: true } }));
+  });
+
+  it('keeps device writes and delivery records server-only, with owner-only device reads', async () => {
+    await seedDocument('pushDevices', 'device-1', { userId: OWNER_ID, token: 'test' });
+    await seedDocument('notificationDeliveries', 'delivery-1', { userId: OWNER_ID });
+    await assertSucceeds(getDoc(doc(firestoreFor(OWNER_ID), 'pushDevices', 'device-1')));
+    await assertFails(getDoc(doc(firestoreFor(OTHER_ID), 'pushDevices', 'device-1')));
+    await assertFails(
+      updateDoc(doc(firestoreFor(OWNER_ID), 'pushDevices', 'device-1'), { enabled: true }),
+    );
+    await assertFails(
+      setDoc(doc(firestoreFor(OWNER_ID), 'pushDevices', 'device-2'), { userId: OWNER_ID }),
+    );
+    await assertFails(getDoc(doc(firestoreFor(OWNER_ID), 'notificationDeliveries', 'delivery-1')));
+    await assertFails(
+      setDoc(doc(firestoreFor(OWNER_ID), 'notificationDeliveries', 'delivery-2'), {
+        userId: OWNER_ID,
+      }),
+    );
+  });
   it.each(OWNED_COLLECTIONS)(
     'allows owner CRUD but rejects access by another user for %s',
     async (collectionName) => {
