@@ -12,11 +12,11 @@ type PremiumPaywallCopy = {
 const PREMIUM_PAYWALL_COPY: PremiumPaywallCopy = {
   badge: 'Bearing 360',
   headline: 'Unlock AI goal planning.',
-  body: 'Turn one goal into editable milestones and actionable tasks, while core device calendar access remains free.',
+  body: 'Turn goals into actionable milestones and tasks.',
   highlights: [
-    'Generate editable milestone and task drafts before saving a goal.',
-    'Keep device calendar access available on the free plan.',
-    'Use one Bearing 360 membership across iPhone and Android.',
+    'Use AI to refine your goal into a SMART goal: specific, measurable, achievable, relevant, and time-bound.',
+    'AI uses your goal description and planning context to create dated milestones and practical tasks for you.',
+    'Review and edit the AI-generated plan to fit your approach.',
   ],
 };
 

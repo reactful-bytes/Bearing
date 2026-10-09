@@ -76,6 +76,22 @@ describe('PremiumPaywallModal', () => {
     expect(screen.getByText('$7.99/mo')).toBeTruthy();
     expect(screen.getByText('Includes 10 AI planning credits per grant')).toBeTruthy();
     expect(screen.getByText('Trial includes 1 AI planning credit')).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Use AI to refine your goal into a SMART goal: specific, measurable, achievable, relevant, and time-bound.',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        'AI uses your goal description and planning context to create dated milestones and practical tasks for you.',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText('Review and edit the AI-generated plan to fit your approach.'),
+    ).toBeTruthy();
+    expect(
+      screen.queryByText('Keep device calendar access available on the free plan.'),
+    ).toBeNull();
     expect(screen.queryByText('Choose Monthly')).toBeNull();
 
     fireEvent.press(screen.getByRole('radio', { name: 'Select Yearly Bearing 360 plan' }));
