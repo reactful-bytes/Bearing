@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals
 import { StyleSheet } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 
+import { AppIcon } from '../components/ui/AppIcon';
+import { darkTheme, spacing } from '../design/tokens';
 import { GoalsScreen } from '../screens/GoalsScreen';
 import { GoalDetailScreen } from '../screens/GoalDetailScreen';
 import {
@@ -774,7 +776,74 @@ describe('GoalsScreen', () => {
     expect(screen.getByText('AI planning uses credits')).toBeTruthy();
     expect(screen.getByText('View Bearing 360 Plans')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Next'));
-    fireEvent.press(screen.getByLabelText('Expand milestone 1: Milestone 1'));
+    const milestoneHeader = screen.getByTestId('goal-wizard-milestone-header-1');
+    expect(
+      within(screen.getByTestId('draft-milestone-icon-1')).UNSAFE_getByType(AppIcon).props.name,
+    ).toBe('goalMilestone');
+    expect(
+      within(screen.getByTestId('draft-milestone-icon-1')).UNSAFE_getByType(AppIcon).props.color,
+    ).toBe(darkTheme.colors.importedCyan);
+    expect(
+      StyleSheet.flatten(screen.getByTestId('draft-milestone-icon-1').props.style),
+    ).toMatchObject({
+      width: 34,
+      height: 34,
+      borderRadius: darkTheme.radii.md,
+      backgroundColor: darkTheme.colors.surfaceMuted,
+    });
+    const milestoneMenuStyle = StyleSheet.flatten(
+      screen.getByTestId('goal-wizard-milestone-menu-1').props.style,
+    );
+    const milestoneDisclosureStyle = StyleSheet.flatten(
+      screen.getByTestId('goal-wizard-milestone-disclosure-1').props.style,
+    );
+    expect(milestoneMenuStyle).toMatchObject({
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      right: spacing.xs + milestoneDisclosureStyle.width,
+      justifyContent: 'center',
+    });
+    expect(milestoneDisclosureStyle).toMatchObject({ width: 44, height: 44 });
+    expect(
+      StyleSheet.flatten(screen.getByTestId('goal-wizard-milestone-title-1').props.style),
+    ).toMatchObject({ fontSize: 14, fontWeight: '600' });
+    expect(StyleSheet.flatten(screen.getByText('MILESTONE 1').props.style)).toMatchObject({
+      fontSize: 12,
+      fontWeight: '700',
+      color: darkTheme.colors.textSecondary,
+    });
+    expect(
+      within(screen.getByTestId('goal-wizard-milestone-disclosure-1')).UNSAFE_getByType(AppIcon)
+        .props.name,
+    ).toBe('expand');
+    expect(within(milestoneHeader).getByLabelText('Open actions for milestone 1')).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.getByTestId('goal-wizard-milestone-group-1').props.style),
+    ).toMatchObject({ gap: spacing.xs, marginTop: spacing.sm });
+    expect(
+      StyleSheet.flatten(screen.getByTestId('goal-wizard-review-section').props.style),
+    ).toMatchObject({ gap: spacing.sm });
+    expect(screen.getByLabelText('Collapse milestone 1: Milestone 1')).toBeTruthy();
+    expect(
+      within(screen.getByTestId('draft-task-icon-1')).UNSAFE_getByType(AppIcon).props.color,
+    ).toBe(darkTheme.colors.brand);
+    expect(
+      within(screen.getByTestId('draft-task-icon-1')).UNSAFE_getByType(AppIcon).props.size,
+    ).toBe(18);
+    expect(StyleSheet.flatten(screen.getByTestId('draft-task-icon-1').props.style)).toMatchObject({
+      width: 34,
+      height: 34,
+      borderRadius: darkTheme.radii.md,
+      backgroundColor: darkTheme.colors.surfaceBrand,
+    });
+    expect(
+      within(screen.getByTestId('goal-wizard-milestone-disclosure-1')).UNSAFE_getByType(AppIcon)
+        .props.name,
+    ).toBe('expand');
+    expect(
+      StyleSheet.flatten(screen.getByTestId('goal-wizard-task-connector-1').props.style),
+    ).toMatchObject({ width: 2 });
     fireEvent.press(screen.getByLabelText('Open actions for milestone 1'));
     expect(screen.getByLabelText('Edit milestone 1')).toBeTruthy();
     dismissOpenRowContextMenu();
@@ -821,6 +890,8 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Select edit milestone August'));
     fireEvent.press(screen.getByLabelText('August 5, 2026'));
     fireEvent.press(screen.getByLabelText('Save plan item changes'));
+    expect(screen.getByText('Aug 5')).toBeTruthy();
+    expect(screen.queryByText('Aug 5, 2026')).toBeNull();
 
     fireEvent.press(screen.getByLabelText('Add task to draft milestone 1'));
     fireEvent.press(screen.getByLabelText('Save plan item changes'));
@@ -838,6 +909,22 @@ describe('GoalsScreen', () => {
 
     fireEvent.press(screen.getByLabelText('Add another draft milestone'));
     fireEvent.press(screen.getByLabelText('Save plan item changes'));
+    fireEvent.press(screen.getByLabelText('Open actions for milestone 2'));
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Move milestone Milestone 2 up' }));
+    expect(screen.getByTestId('goal-wizard-milestone-title-1').props.children).toBe(
+      'Untitled milestone',
+    );
+    expect(screen.getByTestId('goal-wizard-milestone-title-2').props.children).toBe(
+      'Buy running shoes',
+    );
+    fireEvent.press(screen.getByLabelText('Open actions for milestone 1'));
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Move milestone Milestone 1 down' }));
+    expect(screen.getByTestId('goal-wizard-milestone-title-1').props.children).toBe(
+      'Buy running shoes',
+    );
+    expect(screen.getByTestId('goal-wizard-milestone-title-2').props.children).toBe(
+      'Untitled milestone',
+    );
     fireEvent.press(screen.getByLabelText('Add task to draft milestone 1'));
     fireEvent.press(screen.getByLabelText('Save plan item changes'));
     fireEvent.press(screen.getByLabelText('Open actions for task 2 in milestone 1'));
@@ -1315,7 +1402,12 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Expand milestone 1: Build a running base'));
     expect(screen.getByText('Choose weekly run times')).toBeTruthy();
     const firstTaskRow = screen.getByLabelText(/^Open task 1 in milestone 1:/);
-    expect(within(firstTaskRow).getByTestId('draft-task-number-1')).toHaveTextContent('1');
+    expect(
+      StyleSheet.flatten(screen.getByTestId('goal-wizard-task-title-1-1').props.style),
+    ).toMatchObject({ fontSize: 14, fontWeight: '600' });
+    expect(within(firstTaskRow).getByTestId('draft-task-icon-1').props.children.props.name).toBe(
+      'task',
+    );
     expect(screen.getByText('TASKS')).toBeTruthy();
     expect(screen.queryByText('TASK 1')).toBeNull();
     fireEvent.press(screen.getByLabelText('Open actions for milestone 1'));
@@ -1406,7 +1498,7 @@ describe('GoalsScreen', () => {
     ).mock.calls;
     expect(generationCalls[0][0].requestId).toBe(generationCalls[1][0].requestId);
     fireEvent.press(screen.getByLabelText('Next'));
-    expect(screen.getByLabelText('Expand milestone 1: Milestone 1')).toBeTruthy();
+    expect(screen.getByLabelText('Collapse milestone 1: Milestone 1')).toBeTruthy();
   });
 
   it('explains when the server cannot confirm AI planning access', async () => {
@@ -1455,7 +1547,7 @@ describe('GoalsScreen', () => {
     );
     expect(screen.getByText('You have used your available AI credits')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Next'));
-    expect(screen.getByLabelText('Expand milestone 1: Milestone 1')).toBeTruthy();
+    expect(screen.getByLabelText('Collapse milestone 1: Milestone 1')).toBeTruthy();
   });
 
   it('keeps the welcome message after a user spends one welcome AI credit', async () => {
@@ -1821,7 +1913,9 @@ describe('GoalsScreen', () => {
 
     render(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
 
-    expect(screen.getByText(/Current\s*· 0 of 0 tasks/)).toBeTruthy();
+    const milestoneMetadata = within(screen.getByTestId(`milestone-metadata-${milestone.id}`));
+    expect(milestoneMetadata.getByText('Current')).toBeTruthy();
+    expect(milestoneMetadata.getByText('0 of 0 tasks')).toBeTruthy();
     expect(
       screen.queryByRole('button', { name: 'Mark Done milestone Buy running shoes' }),
     ).toBeNull();

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { describe, expect, it, jest } from '@jest/globals';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleProp, StyleSheet, ViewStyle } from 'react-native';
 import React from 'react';
 
 import {
@@ -25,7 +25,20 @@ const mockCreateNote = jest.fn(async () => undefined);
 const mockCreateEvent = jest.fn(async () => 'event-1');
 
 jest.mock('../components/ui/AppScreen', () => ({
-  AppScreen: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  AppScreen: ({
+    children,
+    contentContainerStyle,
+  }: {
+    children: React.ReactNode;
+    contentContainerStyle?: StyleProp<ViewStyle>;
+  }) => {
+    const { View } = jest.requireActual<typeof import('react-native')>('react-native');
+    return (
+      <View testID="app-screen" style={contentContainerStyle}>
+        {children}
+      </View>
+    );
+  },
 }));
 
 jest.mock('../components/goals/CreateGoalModal', () => {
@@ -272,6 +285,9 @@ describe('creation route screens', () => {
       />,
     );
 
+    expect(StyleSheet.flatten(screen.getByTestId('app-screen').props.style)).toMatchObject({
+      flex: 1,
+    });
     fireEvent.press(screen.getByText('Save milestone'));
 
     await waitFor(() => {

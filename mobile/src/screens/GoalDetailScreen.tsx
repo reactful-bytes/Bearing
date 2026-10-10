@@ -14,6 +14,7 @@ import { RecoveryCard } from '../components/ui/RecoveryCard';
 import { RowContextMenu } from '../components/ui/RowContextMenu';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { useThemedStyles } from '../design/useThemedStyles';
+import { formatSummaryDate } from '../dateFormatting';
 import { spacing } from '../design/tokens';
 import type { Theme } from '../design/tokens';
 import { GoalMilestoneWithTasks, GoalWithMilestones } from '../features/goals/goalTypes';
@@ -38,9 +39,7 @@ function formatTaskContext(task: TaskRecord, goal: GoalWithMilestones, locale?: 
     ? goal.milestones.find((candidate) => candidate.id === task.milestoneId)
     : null;
   const date = task.dueDate ?? task.scheduledStart;
-  const dateText = date
-    ? date.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
-    : 'Unscheduled';
+  const dateText = date ? formatSummaryDate(date, locale) : 'Unscheduled';
   return milestone ? `${milestone.title} · ${dateText}` : dateText;
 }
 
@@ -299,12 +298,7 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
                 GOAL
               </Text>
               <Text testID="goal-finish-date" style={styles.detailFinishDate}>
-                Finish date:{' '}
-                {goal.estimatedCompletionDate.toLocaleDateString(profile?.locale, {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
+                Finish date: {formatSummaryDate(goal.estimatedCompletionDate, profile?.locale)}
               </Text>
             </View>
           </View>
@@ -523,6 +517,8 @@ export function GoalDetailScreen({ route }: GoalDetailScreenProps) {
                     reorderMilestones(goal.id, orderedMilestoneIds)
                   }
                   showMilestoneIcon
+                  showMilestoneMetadata
+                  locale={profile?.locale}
                   renderMilestoneTasks={(milestone) => {
                     const milestoneTasks = goalTasks.filter(
                       (task) => task.milestoneId === milestone.id,

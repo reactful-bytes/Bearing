@@ -136,7 +136,7 @@ describe('MilestoneDetailModal', () => {
     expect(screen.getByText('MILESTONE')).toBeTruthy();
     const milestoneTitle = screen.getByRole('header', { name: milestone.title });
     expect(StyleSheet.flatten(milestoneTitle.props.style).color).toBe(darkTheme.colors.text);
-    expect(screen.getByText('Expected completion date: Nov 1, 2026')).toBeTruthy();
+    expect(screen.getByText('Expected completion date: Nov 1')).toBeTruthy();
     const milestoneHeader = screen.getByTestId('milestone-section-header');
     const milestoneCopy = within(milestoneHeader).getByTestId('milestone-section-copy');
     expect(StyleSheet.flatten(within(milestoneCopy).getByText('MILESTONE').props.style).color).toBe(
@@ -230,7 +230,7 @@ describe('MilestoneDetailModal', () => {
         totalTaskCount: 2,
       },
     });
-    expect(screen.getByText('Expected completion date: Nov 1, 2026')).toBeTruthy();
+    expect(screen.getByText('Expected completion date: Nov 1')).toBeTruthy();
     const note = screen.getByText(
       '* Completion updates automatically when tasks are completed or uncompleted.',
     );

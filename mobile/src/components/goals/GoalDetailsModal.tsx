@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
+import { formatSummaryDate } from '../../dateFormatting';
 import { AppCard } from '../ui/AppCard';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
@@ -36,11 +37,7 @@ type GoalDetailsModalProps = {
 };
 
 function formatDateString(date: Date): string {
-  return date.toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  return formatSummaryDate(date);
 }
 
 export function GoalDetailsModal({

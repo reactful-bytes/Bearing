@@ -289,7 +289,7 @@ describe('GoalDetailScreen', () => {
     expect(screen.getByRole('header', { name: 'GOAL DETAILS' })).toBeTruthy();
     const taskSummary = within(screen.getByTestId('goal-detail-summary'));
     expect(taskSummary.getByText('GOAL')).toBeTruthy();
-    expect(taskSummary.getByText('Finish date: Oct 1, 2026')).toBeTruthy();
+    expect(taskSummary.getByText('Finish date: Oct 1')).toBeTruthy();
     expect(taskSummary.UNSAFE_getAllByType(AppIcon).map((icon) => icon.props.name)).toEqual([
       'goal',
       'complete',
@@ -299,7 +299,7 @@ describe('GoalDetailScreen', () => {
 
     const overviewSummary = within(screen.getByTestId('goal-detail-summary'));
     expect(overviewSummary.getByText('GOAL')).toBeTruthy();
-    expect(overviewSummary.getByText('Finish date: Oct 1, 2026')).toBeTruthy();
+    expect(overviewSummary.getByText('Finish date: Oct 1')).toBeTruthy();
     expect(overviewSummary.UNSAFE_getAllByType(AppIcon).map((icon) => icon.props.name)).toEqual([
       'goal',
       'complete',
@@ -337,7 +337,15 @@ describe('GoalDetailScreen', () => {
 
     expect(screen.getByRole('tab', { name: 'Overview', selected: true })).toBeTruthy();
     expect(screen.getByRole('header', { name: 'Milestones' })).toBeTruthy();
-    expect(screen.getByText('Current · 0 of 0 tasks')).toBeTruthy();
+    expect(screen.getByText('Sep 10')).toBeTruthy();
+    const milestoneMetadata = within(screen.getByTestId(`milestone-metadata-${milestone.id}`));
+    expect(milestoneMetadata.getByText('Current')).toBeTruthy();
+    expect(milestoneMetadata.getByText('Sep 10')).toBeTruthy();
+    expect(milestoneMetadata.getByText('0 of 0 tasks')).toBeTruthy();
+    expect(milestoneMetadata.UNSAFE_getAllByType(AppIcon).map((icon) => icon.props.name)).toEqual([
+      'date',
+      'tasks',
+    ]);
     expect(screen.getByRole('button', { name: 'Open milestone Choose a race date' })).toBeTruthy();
   });
 
@@ -391,6 +399,9 @@ describe('GoalDetailScreen', () => {
       gap: spacing.md,
     });
     expect(
+      StyleSheet.flatten(screen.getByTestId(`milestone-actions-${milestone.id}`).props.style),
+    ).toMatchObject({ flexDirection: 'row', alignItems: 'center', gap: 0 });
+    expect(
       StyleSheet.flatten(screen.getByTestId(`milestone-icon-${milestone.id}`).props.style),
     ).toMatchObject({ width: 34, height: 34 });
     expect(
@@ -399,14 +410,14 @@ describe('GoalDetailScreen', () => {
         .map((button) => button.props.accessibilityLabel),
     ).toEqual([
       'Open milestone Choose a race date',
-      'Expand milestone Choose a race date',
       'Milestone actions for Choose a race date',
+      'Expand milestone Choose a race date',
     ]);
     expect(
       within(screen.getByTestId('goal-detail-milestone-list'))
         .UNSAFE_getAllByType(AppIcon)
         .map((icon) => icon.props.name),
-    ).toEqual(['goalMilestone', 'expand', 'moreVertical']);
+    ).toEqual(['goalMilestone', 'date', 'tasks', 'moreVertical', 'next']);
     fireEvent.press(
       within(header).getByRole('button', { name: 'Expand milestone Choose a race date' }),
     );
@@ -414,7 +425,7 @@ describe('GoalDetailScreen', () => {
       within(header)
         .UNSAFE_getAllByType(AppIcon)
         .map((icon) => icon.props.name),
-    ).toEqual(['goalMilestone', 'collapse', 'moreVertical']);
+    ).toEqual(['goalMilestone', 'date', 'tasks', 'moreVertical', 'expand']);
     fireEvent.press(
       within(header).getByRole('button', { name: 'Open milestone Choose a race date' }),
     );
@@ -579,7 +590,8 @@ describe('GoalDetailScreen', () => {
     const { rerender } = render(
       <GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />,
     );
-    expect(screen.getByText('Current · 0 of 1 tasks')).toBeTruthy();
+    expect(screen.getByText('Current')).toBeTruthy();
+    expect(screen.getByText('0 of 1 tasks')).toBeTruthy();
     fireEvent.press(screen.getByRole('button', { name: 'Expand milestone Choose a race date' }));
     fireEvent.press(screen.getByLabelText('Task actions'));
     await act(async () => fireEvent.press(screen.getByRole('menuitem', { name: 'Complete task' })));
@@ -588,7 +600,8 @@ describe('GoalDetailScreen', () => {
     const completedTask: TaskRecord = { ...task, status: 'completed', completedAt: new Date() };
     setSnapshot([completedTask]);
     rerender(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
-    expect(screen.getByText('Completed · 1 of 1 tasks')).toBeTruthy();
+    expect(screen.getByText('Completed')).toBeTruthy();
+    expect(screen.getByText('1 of 1 tasks')).toBeTruthy();
     expect(screen.getByText(/^100% complete ·/)).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Task actions'));
     await act(async () =>
@@ -598,7 +611,8 @@ describe('GoalDetailScreen', () => {
 
     setSnapshot([task]);
     rerender(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
-    expect(screen.getByText('Current · 0 of 1 tasks')).toBeTruthy();
+    expect(screen.getByText('Current')).toBeTruthy();
+    expect(screen.getByText('0 of 1 tasks')).toBeTruthy();
     expect(screen.getByText(/^0% complete ·/)).toBeTruthy();
     expect(
       screen.getByRole('button', { name: 'Collapse milestone Choose a race date', expanded: true }),
@@ -606,11 +620,13 @@ describe('GoalDetailScreen', () => {
 
     setSnapshot([completedTask, { ...task, id: 'new-task', title: 'New active task' }]);
     rerender(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
-    expect(screen.getByText('Current · 1 of 2 tasks')).toBeTruthy();
+    expect(screen.getByText('Current')).toBeTruthy();
+    expect(screen.getByText('1 of 2 tasks')).toBeTruthy();
     expect(screen.getByText('New active task')).toBeTruthy();
     setSnapshot([]);
     rerender(<GoalDetailScreen route={{ params: { goalId: 'goal-1', initialTab: 'overview' } }} />);
-    expect(screen.getByText('Current · 0 of 0 tasks')).toBeTruthy();
+    expect(screen.getByText('Current')).toBeTruthy();
+    expect(screen.getByText('0 of 0 tasks')).toBeTruthy();
     expect(screen.getByText('No tasks in this milestone.')).toBeTruthy();
     expect(screen.getByText(/^0% complete ·/)).toBeTruthy();
   });
@@ -627,7 +643,7 @@ describe('GoalDetailScreen', () => {
     const fixedHeader = within(screen.getByTestId('goal-detail-fixed-header'));
     const summary = within(screen.getByTestId('goal-detail-summary'));
     expect(summary.getByRole('header', { name: 'Goal' })).toBeTruthy();
-    expect(summary.getByText('Finish date: Oct 1, 2026')).toBeTruthy();
+    expect(summary.getByText('Finish date: Oct 1')).toBeTruthy();
     expect(summary.getByTestId('goal-detail-title').props.children).toBe(goal.title);
     expect(summary.getByRole('header', { name: 'PROGRESS' })).toBeTruthy();
     expect(summary.getByText(`0% complete · ${goal.progressText}`)).toBeTruthy();
@@ -696,7 +712,7 @@ describe('GoalDetailScreen', () => {
       name: 'Expand milestone Choose a race date',
       expanded: false,
     });
-    expect(within(expand).UNSAFE_getByType(AppIcon).props.name).toBe('expand');
+    expect(within(expand).UNSAFE_getByType(AppIcon).props.name).toBe('next');
     expect(screen.queryByText(task.title)).toBeNull();
     fireEvent.press(expand);
 
@@ -704,7 +720,7 @@ describe('GoalDetailScreen', () => {
       name: 'Collapse milestone Choose a race date',
       expanded: true,
     });
-    expect(within(collapse).UNSAFE_getByType(AppIcon).props.name).toBe('collapse');
+    expect(within(collapse).UNSAFE_getByType(AppIcon).props.name).toBe('expand');
     expect(screen.queryByText('Milestone Details')).toBeNull();
     const list = within(screen.getByTestId('goal-detail-milestone-list'));
     expect(

@@ -164,7 +164,7 @@ export function CreateMilestoneScreen({ route, navigation }: CreateMilestoneScre
   }
 
   return (
-    <AppScreen mode="unmanaged">
+    <AppScreen mode="unmanaged" contentContainerStyle={{ flex: 1 }}>
       <AddMilestoneModal
         visible
         embedded

@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
 import type { Theme } from '../../design/tokens';
+import { formatSummaryDate } from '../../dateFormatting';
 import { spacing, typography } from '../../design/tokens';
 import type { AppIconName } from '../../design/icons';
 import { NoteRecord } from '../../features/notes/noteTypes';
@@ -24,11 +25,7 @@ type NoteDetailSectionProps = {
 };
 
 function formatDate(date: Date, locale?: string): string {
-  return date.toLocaleDateString(locale, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  return formatSummaryDate(date, locale);
 }
 
 export function NoteReadOnlyDetails({ note, locale, trailing }: NoteReadOnlyDetailsProps) {

@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { TaskRecord } from '../../features/tasks/taskTypes';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import type { Theme } from '../../design/tokens';
+import { formatSummaryDate } from '../../dateFormatting';
 import { spacing, typography } from '../../design/tokens';
 import { AppIcon } from '../ui/AppIcon';
 import { TaskActionMenu } from './TaskActionMenu';
@@ -22,7 +23,7 @@ type TaskListRowProps = {
 export function formatTaskDateLabel(task: TaskRecord, locale?: string): string {
   const date = task.dueDate ?? task.scheduledStart;
   if (!date) return task.status === 'completed' ? 'Completed' : 'Unscheduled';
-  const formatted = date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+  const formatted = formatSummaryDate(date, locale);
   return task.dueDate ? `Due ${formatted}` : `Scheduled ${formatted}`;
 }
 

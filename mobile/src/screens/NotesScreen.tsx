@@ -3,6 +3,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
+import { formatSummaryDate } from '../dateFormatting';
 import { AddNoteModal } from '../components/notes/AddNoteModal';
 import { NoteDetailModal } from '../components/notes/NoteDetailModal';
 import { NoteLabelChips } from '../components/notes/NoteLabels';
@@ -45,11 +46,7 @@ type NotesScreenProps = {
 const RECENT_NOTE_LIMIT = 3;
 
 function formatDate(date: Date, locale?: string): string {
-  return date.toLocaleDateString(locale, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  return formatSummaryDate(date, locale);
 }
 
 export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {

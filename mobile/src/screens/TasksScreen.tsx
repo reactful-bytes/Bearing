@@ -6,6 +6,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
+import { formatSummaryDate } from '../dateFormatting';
 import { AddEventModal } from '../components/calendar/AddEventModal';
 import { AddTaskModal } from '../components/tasks/AddTaskModal';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
@@ -58,7 +59,7 @@ type TaskGroup = {
 function taskDateLabel(task: TaskRecord, locale?: string): string {
   const date = task.dueDate ?? task.scheduledStart;
   if (!date) return 'No due date';
-  const formatted = date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+  const formatted = formatSummaryDate(date, locale);
   return task.dueDate ? `Due ${formatted}` : `Scheduled ${formatted}`;
 }
 

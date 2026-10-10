@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } fr
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
+import { formatSummaryDate } from '../../dateFormatting';
 import { AppIcon } from '../ui/AppIcon';
 import { AppModal } from '../ui/AppModal';
 import { RowContextMenu } from '../ui/RowContextMenu';
@@ -185,11 +186,7 @@ export function MilestoneDetailModal({
                   <Text testID="milestone-expected-date" style={styles.expectedDate}>
                     Expected completion date:{' '}
                     {milestone.estimatedFinishDate
-                      ? milestone.estimatedFinishDate.toLocaleDateString(locale, {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })
+                      ? formatSummaryDate(milestone.estimatedFinishDate, locale)
                       : 'Not set'}
                   </Text>
                 </View>

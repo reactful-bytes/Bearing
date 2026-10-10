@@ -4,6 +4,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../design/useThemedStyles';
+import { formatSummaryDate } from '../dateFormatting';
 import { CreateGoalModal } from '../components/goals/CreateGoalModal';
 import { GoalFilterModal } from '../components/goals/GoalFilterModal';
 import type { GoalFilterOption, GoalTargetDateFilter } from '../components/goals/GoalFilterModal';
@@ -30,12 +31,8 @@ import {
   getAiCreditStatus,
 } from '../services/firebase/firebaseAiGoalPlans';
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+function formatDate(date: Date, locale?: string): string {
+  return formatSummaryDate(date, locale);
 }
 
 function matchesGoalTargetDate(goal: GoalWithMilestones, filter: GoalTargetDateFilter): boolean {
@@ -124,7 +121,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
   const styles = useThemedStyles(createStyles);
   const stackNavigation = useNavigation<NavigationProp<PlanStackParamList>>();
   const insets = useSafeAreaInsets();
-  const { authUser, isAnonymous } = useUserProfile();
+  const { profile, authUser, isAnonymous } = useUserProfile();
   const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
   const {
     goals,
@@ -388,7 +385,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
               <GoalCard
                 key={goal.id}
                 goal={goal}
-                formatDate={formatDate}
+                formatDate={(date) => formatDate(date, profile?.locale)}
                 onPress={() => openGoal(goal)}
                 onEdit={() => openGoal(goal, 'edit')}
                 onComplete={

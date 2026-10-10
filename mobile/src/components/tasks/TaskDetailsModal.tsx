@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemedStyles } from '../../design/useThemedStyles';
+import { formatSummaryDate } from '../../dateFormatting';
 import type { Theme } from '../../design/tokens';
 import { spacing, typography } from '../../design/tokens';
 import { GoalWithMilestones } from '../../features/goals/goalTypes';
@@ -177,11 +178,7 @@ export function TaskDetailsModal({
               <Text style={styles.expectedDate}>
                 Expected completion date:{' '}
                 {linkedMilestone.estimatedFinishDate
-                  ? linkedMilestone.estimatedFinishDate.toLocaleDateString(locale, {
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })
+                  ? formatSummaryDate(linkedMilestone.estimatedFinishDate, locale)
                   : 'Not set'}
               </Text>
             ) : null}
@@ -207,14 +204,7 @@ export function TaskDetailsModal({
 
           <DetailSection icon="date" title="DUE">
             {task.dueDate ? (
-              <InfoLine
-                icon="date"
-                text={task.dueDate.toLocaleDateString(locale, {
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
-              />
+              <InfoLine icon="date" text={formatSummaryDate(task.dueDate, locale)} />
             ) : null}
             {task.scheduledStart ? (
               <InfoLine

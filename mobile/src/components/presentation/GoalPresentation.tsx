@@ -9,6 +9,7 @@ import {
 import { useTheme } from '../../design/ThemeProvider';
 import { useThemedStyles } from '../../design/useThemedStyles';
 import type { Theme } from '../../design/tokens';
+import { formatSummaryDate } from '../../dateFormatting';
 import { AppIcon } from '../ui/AppIcon';
 import { Card } from '../ui/Card';
 import { ProgressBar } from '../ui/ProgressBar';
@@ -194,6 +195,8 @@ type GoalTimelineProps = {
   onReorderMilestones?: (orderedMilestoneIds: string[]) => void | Promise<void>;
   renderMilestoneTasks?: (milestone: GoalMilestoneWithTasks) => ReactNode;
   showMilestoneIcon?: boolean;
+  showMilestoneMetadata?: boolean;
+  locale?: string;
 };
 
 function getCurrentMilestoneId(milestones: readonly GoalMilestoneWithTasks[]): string | null {
@@ -209,6 +212,8 @@ export function GoalTimeline({
   onReorderMilestones,
   renderMilestoneTasks,
   showMilestoneIcon = false,
+  showMilestoneMetadata = false,
+  locale,
 }: GoalTimelineProps) {
   const styles = useThemedStyles(createStyles);
   const { theme } = useTheme();
@@ -250,6 +255,7 @@ export function GoalTimeline({
         const isCompleted = milestone.status === 'completed';
         const isCurrent = !isCompleted && milestone.id === currentMilestoneId;
         const isExpanded = expandedMilestoneIds.has(milestone.id);
+        const statusLabel = isCompleted ? 'Completed' : isCurrent ? 'Current' : 'Upcoming';
 
         return (
           <View key={milestone.id} style={styles.timelineItem}>
@@ -277,70 +283,102 @@ export function GoalTimeline({
                   <View style={styles.timelineTitleRow}>
                     <Text style={styles.timelineTitle}>{milestone.title}</Text>
                   </View>
-                  <Text style={styles.meta}>
-                    {isCompleted ? 'Completed' : isCurrent ? 'Current' : 'Upcoming'}
-                    {` · ${milestone.progressText}`}
-                  </Text>
+                  {showMilestoneMetadata ? (
+                    <View
+                      testID={`milestone-metadata-${milestone.id}`}
+                      style={styles.timelineMetadata}
+                    >
+                      <Text style={styles.timelineMetadataText}>{statusLabel}</Text>
+                      <View style={styles.timelineMetadataSeparator} />
+                      <View style={styles.timelineMetadataItem}>
+                        <AppIcon
+                          name="date"
+                          size={14}
+                          color={theme.colors.textSecondary}
+                          decorative
+                        />
+                        <Text style={styles.timelineMetadataText}>
+                          {milestone.estimatedFinishDate
+                            ? formatSummaryDate(milestone.estimatedFinishDate, locale)
+                            : 'No target date'}
+                        </Text>
+                      </View>
+                      <View style={styles.timelineMetadataSeparator} />
+                      <View style={styles.timelineMetadataItem}>
+                        <AppIcon
+                          name="tasks"
+                          size={14}
+                          color={theme.colors.textSecondary}
+                          decorative
+                        />
+                        <Text style={styles.timelineMetadataText}>{milestone.progressText}</Text>
+                      </View>
+                    </View>
+                  ) : null}
                 </Pressable>
-                {renderMilestoneTasks ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${isExpanded ? 'Collapse' : 'Expand'} milestone ${milestone.title}`}
-                    accessibilityState={{ expanded: isExpanded }}
-                    onPress={() => toggleMilestone(milestone.id)}
-                    style={({ pressed }) => [
-                      styles.timelineDisclosure,
-                      pressed ? styles.timelineDisclosurePressed : null,
-                    ]}
-                  >
-                    <AppIcon
-                      name={isExpanded ? 'collapse' : 'expand'}
-                      size={18}
-                      color={theme.colors.textSecondary}
-                      decorative
-                    />
-                  </Pressable>
-                ) : null}
-                {onEditMilestone && onDeleteMilestone ? (
-                  <RowContextMenu
-                    accessibilityLabel={`Milestone actions for ${milestone.title}`}
-                    menuAccessibilityLabel={`Milestone actions menu for ${milestone.title}`}
-                    items={[
-                      {
-                        label: 'Edit',
-                        accessibilityLabel: `Edit milestone ${milestone.title}`,
-                        icon: 'edit',
-                        onPress: () => onEditMilestone(milestone),
-                      },
-                      ...(onReorderMilestones && index > 0
-                        ? [
-                            {
-                              label: 'Move up',
-                              accessibilityLabel: `Move milestone ${milestone.title} up`,
-                              icon: 'collapse' as const,
-                              onPress: () => moveMilestone(milestone.id, -1),
-                            },
-                          ]
-                        : []),
-                      ...(onReorderMilestones && index < orderedMilestones.length - 1
-                        ? [
-                            {
-                              label: 'Move down',
-                              accessibilityLabel: `Move milestone ${milestone.title} down`,
-                              icon: 'expand' as const,
-                              onPress: () => moveMilestone(milestone.id, 1),
-                            },
-                          ]
-                        : []),
-                      {
-                        label: 'Delete',
-                        accessibilityLabel: `Delete milestone ${milestone.title}`,
-                        icon: 'delete',
-                        tone: 'danger',
-                        onPress: () => onDeleteMilestone(milestone),
-                      },
-                    ]}
-                  />
+                {(onEditMilestone && onDeleteMilestone) || renderMilestoneTasks ? (
+                  <View testID={`milestone-actions-${milestone.id}`} style={styles.timelineActions}>
+                    {onEditMilestone && onDeleteMilestone ? (
+                      <RowContextMenu
+                        accessibilityLabel={`Milestone actions for ${milestone.title}`}
+                        menuAccessibilityLabel={`Milestone actions menu for ${milestone.title}`}
+                        items={[
+                          {
+                            label: 'Edit',
+                            accessibilityLabel: `Edit milestone ${milestone.title}`,
+                            icon: 'edit',
+                            onPress: () => onEditMilestone(milestone),
+                          },
+                          ...(onReorderMilestones && index > 0
+                            ? [
+                                {
+                                  label: 'Move up',
+                                  accessibilityLabel: `Move milestone ${milestone.title} up`,
+                                  icon: 'collapse' as const,
+                                  onPress: () => moveMilestone(milestone.id, -1),
+                                },
+                              ]
+                            : []),
+                          ...(onReorderMilestones && index < orderedMilestones.length - 1
+                            ? [
+                                {
+                                  label: 'Move down',
+                                  accessibilityLabel: `Move milestone ${milestone.title} down`,
+                                  icon: 'expand' as const,
+                                  onPress: () => moveMilestone(milestone.id, 1),
+                                },
+                              ]
+                            : []),
+                          {
+                            label: 'Delete',
+                            accessibilityLabel: `Delete milestone ${milestone.title}`,
+                            icon: 'delete',
+                            tone: 'danger',
+                            onPress: () => onDeleteMilestone(milestone),
+                          },
+                        ]}
+                      />
+                    ) : null}
+                    {renderMilestoneTasks ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`${isExpanded ? 'Collapse' : 'Expand'} milestone ${milestone.title}`}
+                        accessibilityState={{ expanded: isExpanded }}
+                        onPress={() => toggleMilestone(milestone.id)}
+                        style={({ pressed }) => [
+                          styles.timelineDisclosure,
+                          pressed ? styles.timelineDisclosurePressed : null,
+                        ]}
+                      >
+                        <AppIcon
+                          name={isExpanded ? 'expand' : 'next'}
+                          size={18}
+                          color={theme.colors.textSecondary}
+                          decorative
+                        />
+                      </Pressable>
+                    ) : null}
+                  </View>
                 ) : null}
               </View>
               {renderMilestoneTasks && isExpanded ? renderMilestoneTasks(milestone) : null}
@@ -431,6 +469,11 @@ const createStyles = (theme: Theme) =>
     timelineCopy: { flex: 1, gap: theme.spacing.xs },
     timelineBody: { flex: 1, gap: theme.spacing.sm },
     timelineHeader: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
+    timelineActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 0,
+    },
     milestoneIconFrame: {
       width: 34,
       height: 34,
@@ -457,6 +500,32 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.text,
       fontWeight: '600',
       flex: 1,
+    },
+    timelineMetadata: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+      flexWrap: 'wrap',
+      rowGap: theme.spacing.xs,
+      minWidth: 0,
+    },
+    timelineMetadataItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+      minWidth: 0,
+    },
+    timelineMetadataText: {
+      ...theme.typography.caption,
+      color: theme.colors.textSecondary,
+      flexShrink: 1,
+    },
+    timelineMetadataSeparator: {
+      width: 3,
+      height: 3,
+      borderRadius: 2,
+      backgroundColor: theme.colors.border,
+      marginHorizontal: theme.spacing.xs,
     },
     timelineDate: { ...theme.typography.caption, color: theme.colors.textSecondary },
     milestones: { gap: theme.spacing.md },

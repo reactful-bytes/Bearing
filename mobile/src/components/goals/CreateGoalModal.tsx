@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../../design/ThemeProvider';
 import { useThemedStyles } from '../../design/useThemedStyles';
+import { formatSummaryDate } from '../../dateFormatting';
 import { randomUUID } from 'expo-crypto';
 
 import { AppCard } from '../ui/AppCard';
@@ -128,7 +129,7 @@ const SMART_ITEMS = [
 ] as const;
 
 const TASK_HEADER_INSET = spacing['3xl'] + spacing.xs + spacing.sm;
-const TASK_BADGE_SIZE = 20;
+const TASK_BADGE_SIZE = 34;
 const TASK_SECTION_INSET = TASK_HEADER_INSET;
 const MILESTONE_BADGE_CENTER = spacing.xs + 16;
 const AI_GOAL_PLAN_PROVIDER_OPTIONS = [
@@ -217,11 +218,7 @@ function formatAiTargetDate(dateParts: GoalDateParts): string {
 }
 
 function formatReviewDate(dateParts: GoalDateParts): string {
-  return getGoalDateFromParts(dateParts).toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  return formatSummaryDate(getGoalDateFromParts(dateParts));
 }
 
 export function CreateGoalModal({
@@ -259,10 +256,12 @@ export function CreateGoalModal({
   const [goalDateParts, setGoalDateParts] = useState<GoalDateParts>(() =>
     buildDefaultGoalDateParts(today),
   );
-  const [draftMilestones, setDraftMilestones] = useState<DraftGoalMilestone[]>([
+  const [draftMilestones, setDraftMilestones] = useState<DraftGoalMilestone[]>(() => [
     makeEmptyDraftMilestone(1, today),
   ]);
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(
+    () => new Set([`milestone:${makeDraftId('draft-milestone', 1)}`]),
+  );
   const [editorDraft, setEditorDraft] = useState<GoalPlanEditorDraft | null>(null);
   const [removeConfirmationVisible, setRemoveConfirmationVisible] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -514,8 +513,9 @@ export function CreateGoalModal({
     setDescription('');
     setPersistedGoalId(null);
     setGoalDateParts(buildDefaultGoalDateParts(today));
-    setDraftMilestones([makeEmptyDraftMilestone(1, today)]);
-    setExpandedRows(new Set());
+    const initialMilestone = makeEmptyDraftMilestone(1, today);
+    setDraftMilestones([initialMilestone]);
+    setExpandedRows(new Set([`milestone:${initialMilestone.id}`]));
     closeRowContextMenu();
     setEditorDraft(null);
     setRemoveConfirmationVisible(false);
@@ -582,6 +582,19 @@ export function CreateGoalModal({
       const next = new Set(current);
       if (next.has(rowId)) next.delete(rowId);
       else next.add(rowId);
+      return next;
+    });
+  }
+
+  function moveDraftMilestone(milestoneId: string, direction: -1 | 1): void {
+    closeActionMenus();
+    setDraftMilestones((current) => {
+      const currentIndex = current.findIndex((milestone) => milestone.id === milestoneId);
+      const nextIndex = currentIndex + direction;
+      if (currentIndex < 0 || nextIndex < 0 || nextIndex >= current.length) return current;
+
+      const next = [...current];
+      [next[currentIndex], next[nextIndex]] = [next[nextIndex], next[currentIndex]];
       return next;
     });
   }
@@ -1328,21 +1341,32 @@ export function CreateGoalModal({
           ) : null}
 
           {wizardIndex === 4 ? (
-            <View style={[styles.section, styles.reviewSection]}>
+            <View
+              testID="goal-wizard-review-section"
+              style={[styles.section, styles.reviewSection]}
+            >
               <View style={styles.reviewIntro}>
                 <Text style={styles.reviewTitle}>Review your plan</Text>
                 <Text style={styles.reviewHint}>
-                  Open a milestone to review its tasks. Use an item&apos;s actions menu to edit or
-                  delete it.
+                  Open a milestone to review its tasks. Use an item&apos;s actions menu to edit,
+                  reorder, or delete it.
                 </Text>
               </View>
               {draftMilestones.map((milestone, index) => {
                 const milestoneRowId = `milestone:${milestone.id}`;
                 const milestoneMenuId = `goal-wizard:milestone:${milestone.id}`;
+                const milestoneLabel = milestone.title || `Milestone ${index + 1}`;
 
                 return (
-                  <View key={milestone.id} style={styles.milestoneGroup}>
-                    <View style={styles.milestoneHeader}>
+                  <View
+                    key={milestone.id}
+                    testID={`goal-wizard-milestone-group-${index + 1}`}
+                    style={[styles.milestoneGroup, index === 0 ? styles.firstMilestoneGroup : null]}
+                  >
+                    <View
+                      testID={`goal-wizard-milestone-header-${index + 1}`}
+                      style={styles.milestoneHeader}
+                    >
                       <Pressable
                         accessibilityRole="button"
                         accessibilityLabel={`${expandedRows.has(`milestone:${milestone.id}`) ? 'Collapse' : 'Expand'} milestone ${index + 1}: ${milestone.title || `Milestone ${index + 1}`}`}
@@ -1356,12 +1380,24 @@ export function CreateGoalModal({
                         }}
                         style={({ pressed }) => [styles.milestoneRow, pressed && styles.rowPressed]}
                       >
-                        <View style={styles.milestoneNumber}>
-                          <Text style={styles.milestoneNumberText}>{index + 1}</Text>
+                        <View
+                          testID={`draft-milestone-icon-${index + 1}`}
+                          style={styles.milestoneIconBadge}
+                        >
+                          <AppIcon
+                            name="goalMilestone"
+                            size={18}
+                            color={theme.colors.importedCyan}
+                            decorative
+                          />
                         </View>
                         <View style={styles.rowCopy}>
                           <Text style={styles.rowEyebrow}>MILESTONE {index + 1}</Text>
-                          <Text style={styles.rowTitle} numberOfLines={2}>
+                          <Text
+                            testID={`goal-wizard-milestone-title-${index + 1}`}
+                            style={styles.rowTitle}
+                            numberOfLines={2}
+                          >
                             {milestone.title || 'Untitled milestone'}
                           </Text>
                           <View style={styles.rowMeta}>
@@ -1384,40 +1420,73 @@ export function CreateGoalModal({
                             </View>
                           </View>
                         </View>
-                        <AppIcon
-                          name={
-                            expandedRows.has(`milestone:${milestone.id}`) ? 'collapse' : 'expand'
-                          }
-                          size={20}
-                          color={theme.colors.textSecondary}
-                          decorative
-                        />
+                        <View style={styles.milestoneMenuSpacer} />
+                        <View
+                          testID={`goal-wizard-milestone-disclosure-${index + 1}`}
+                          style={styles.milestoneDisclosure}
+                        >
+                          <AppIcon
+                            name={expandedRows.has(`milestone:${milestone.id}`) ? 'expand' : 'next'}
+                            size={20}
+                            color={theme.colors.textSecondary}
+                            decorative
+                          />
+                        </View>
                       </Pressable>
-                      <RowContextMenu
-                        menuId={milestoneMenuId}
-                        accessibilityLabel={`Open actions for milestone ${index + 1}`}
-                        menuAccessibilityLabel="milestone actions menu"
-                        items={[
-                          {
-                            label: 'Edit',
-                            accessibilityLabel: `Edit milestone ${milestone.title || index + 1}`,
-                            icon: 'edit',
-                            onPress: () => openMilestoneEditor(milestone),
-                          },
-                          {
-                            label: 'Delete',
-                            accessibilityLabel: `Delete milestone ${milestone.title || index + 1}`,
-                            icon: 'delete',
-                            tone: 'danger',
-                            onPress: () => requestMilestoneDelete(milestone),
-                          },
-                        ]}
-                      />
+                      <View
+                        testID={`goal-wizard-milestone-menu-${index + 1}`}
+                        style={styles.milestoneMenuAnchor}
+                      >
+                        <RowContextMenu
+                          menuId={milestoneMenuId}
+                          accessibilityLabel={`Open actions for milestone ${index + 1}`}
+                          menuAccessibilityLabel="milestone actions menu"
+                          items={[
+                            {
+                              label: 'Edit',
+                              accessibilityLabel: `Edit milestone ${milestone.title || index + 1}`,
+                              icon: 'edit',
+                              onPress: () => openMilestoneEditor(milestone),
+                            },
+                            ...(index > 0
+                              ? [
+                                  {
+                                    label: 'Move up',
+                                    accessibilityLabel: `Move milestone ${milestoneLabel} up`,
+                                    icon: 'collapse' as const,
+                                    onPress: () => moveDraftMilestone(milestone.id, -1),
+                                  },
+                                ]
+                              : []),
+                            ...(index < draftMilestones.length - 1
+                              ? [
+                                  {
+                                    label: 'Move down',
+                                    accessibilityLabel: `Move milestone ${milestoneLabel} down`,
+                                    icon: 'expand' as const,
+                                    onPress: () => moveDraftMilestone(milestone.id, 1),
+                                  },
+                                ]
+                              : []),
+                            {
+                              label: 'Delete',
+                              accessibilityLabel: `Delete milestone ${milestone.title || index + 1}`,
+                              icon: 'delete',
+                              tone: 'danger',
+                              onPress: () => requestMilestoneDelete(milestone),
+                            },
+                          ]}
+                        />
+                      </View>
                     </View>
                     {expandedRows.has(`milestone:${milestone.id}`) ? (
                       <View style={styles.expandedTasks}>
                         {milestone.tasks.length > 0 ? (
-                          <View pointerEvents="none" style={styles.taskConnector} />
+                          <View
+                            testID={`goal-wizard-task-connector-${index + 1}`}
+                            pointerEvents="none"
+                            style={styles.taskConnector}
+                          />
                         ) : null}
                         <Text accessibilityRole="header" style={styles.taskListHeader}>
                           TASKS
@@ -1448,13 +1517,22 @@ export function CreateGoalModal({
                                   >
                                     <View
                                       pointerEvents="none"
-                                      testID={`draft-task-number-${taskIndex + 1}`}
-                                      style={styles.taskNumberBadge}
+                                      testID={`draft-task-icon-${taskIndex + 1}`}
+                                      style={styles.taskIconBadge}
                                     >
-                                      <Text style={styles.taskNumberText}>{taskIndex + 1}</Text>
+                                      <AppIcon
+                                        name="task"
+                                        size={18}
+                                        color={theme.colors.brand}
+                                        decorative
+                                      />
                                     </View>
                                     <View style={styles.rowCopy}>
-                                      <Text style={styles.rowTitle} numberOfLines={2}>
+                                      <Text
+                                        testID={`goal-wizard-task-title-${index + 1}-${taskIndex + 1}`}
+                                        style={styles.rowTitle}
+                                        numberOfLines={2}
+                                      >
                                         {task.title || 'Untitled task'}
                                       </Text>
                                       <View style={styles.rowMeta}>
@@ -1996,32 +2074,28 @@ const createStyles = (theme: Theme) =>
       position: 'relative',
       gap: spacing.xs,
     },
+    firstMilestoneGroup: { marginTop: spacing.sm },
     taskConnector: {
       position: 'absolute',
       left: MILESTONE_BADGE_CENTER,
       top: spacing.xs,
       bottom: spacing['3xl'] + spacing.md + spacing.xs,
-      width: StyleSheet.hairlineWidth,
+      width: 2,
       backgroundColor: theme.colors.border,
       zIndex: 0,
     },
-    taskNumberBadge: {
+    taskIconBadge: {
       position: 'absolute',
       left: TASK_HEADER_INSET - TASK_SECTION_INSET + spacing.sm,
       top: '50%',
       width: TASK_BADGE_SIZE,
       height: TASK_BADGE_SIZE,
-      borderRadius: TASK_BADGE_SIZE / 2,
+      borderRadius: radii.md,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: theme.colors.surfaceMuted,
+      backgroundColor: theme.colors.surfaceBrand,
       transform: [{ translateY: -TASK_BADGE_SIZE / 2 }],
       zIndex: 1,
-    },
-    taskNumberText: {
-      ...typography.caption,
-      color: theme.colors.textSecondary,
-      fontWeight: '600',
     },
     milestoneHeader: {
       position: 'relative',
@@ -2029,15 +2103,30 @@ const createStyles = (theme: Theme) =>
       alignItems: 'center',
       gap: spacing.xs,
     },
+    milestoneMenuAnchor: {
+      position: 'absolute',
+      top: 0,
+      right: spacing.xs + theme.layout.minimumTouchTarget,
+      bottom: 0,
+      justifyContent: 'center',
+      zIndex: 1,
+    },
     milestoneRow: {
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
-      minHeight: 68,
+      minHeight: 64,
       paddingHorizontal: spacing.xs,
-      paddingVertical: spacing.sm,
+      paddingVertical: spacing.xs,
       borderRadius: radii.md,
+    },
+    milestoneMenuSpacer: { width: theme.layout.minimumTouchTarget },
+    milestoneDisclosure: {
+      width: theme.layout.minimumTouchTarget,
+      height: theme.layout.minimumTouchTarget,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     rowPressed: {
       backgroundColor: theme.colors.surfaceMuted,
@@ -2058,13 +2147,13 @@ const createStyles = (theme: Theme) =>
       gap: spacing.xs,
     },
     rowMetaText: {
-      ...typography.helper,
+      ...typography.caption,
       color: theme.colors.textSecondary,
     },
     rowTitle: {
-      ...typography.body,
+      ...typography.helper,
       color: theme.colors.text,
-      fontWeight: '700',
+      fontWeight: '600',
     },
     taskCounter: {
       flexDirection: 'row',
@@ -2082,18 +2171,13 @@ const createStyles = (theme: Theme) =>
       backgroundColor: theme.colors.border,
       marginHorizontal: spacing.xs,
     },
-    milestoneNumber: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
+    milestoneIconBadge: {
+      width: 34,
+      height: 34,
+      borderRadius: radii.md,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: theme.colors.surfaceBrand,
-    },
-    milestoneNumberText: {
-      ...typography.label,
-      color: theme.colors.brand,
-      fontWeight: '700',
+      backgroundColor: theme.colors.surfaceMuted,
     },
     taskSection: {
       position: 'relative',
@@ -2135,7 +2219,7 @@ const createStyles = (theme: Theme) =>
       marginLeft: -spacing.sm,
     },
     taskDate: {
-      ...typography.helper,
+      ...typography.caption,
       color: theme.colors.textSecondary,
     },
     emptyTasksText: {
@@ -2172,7 +2256,7 @@ const createStyles = (theme: Theme) =>
       ...typography.helper,
       color: theme.colors.textSecondary,
     },
-    reviewSection: { position: 'relative' },
+    reviewSection: { position: 'relative', gap: spacing.sm },
     editorContent: {
       gap: spacing.lg,
       paddingBottom: spacing.md,
