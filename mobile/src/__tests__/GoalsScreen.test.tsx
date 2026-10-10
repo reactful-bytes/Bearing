@@ -1166,7 +1166,13 @@ describe('GoalsScreen', () => {
       fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
     });
 
-    await waitFor(() => expect(screen.getByText('Your AI draft is ready.')).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByRole('header', { name: 'Your goal is ready' })).toBeTruthy(),
+    );
+    const planningButtons = screen.getAllByRole('button');
+    expect(
+      planningButtons.indexOf(screen.getByLabelText('Edit goal details before regenerating')),
+    ).toBeGreaterThan(planningButtons.indexOf(screen.getByLabelText('Regenerate AI goal plan')));
     expect(
       screen.getByText(
         'Select Next to review and edit each generated milestone and its tasks before saving.',

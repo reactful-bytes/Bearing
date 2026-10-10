@@ -1156,7 +1156,14 @@ export function CreateGoalModal({
               <View style={styles.section}>
                 {aiDraft ? (
                   <>
-                    <Text style={styles.cardTitle}>Your AI draft is ready.</Text>
+                    <View style={styles.creditHeading}>
+                      <View style={styles.creditIconFrame}>
+                        <AppIcon name="aiPlanning" size={20} color={theme.colors.brand} decorative />
+                      </View>
+                      <Text accessibilityRole="header" style={styles.cardTitle}>
+                        Your goal is ready
+                      </Text>
+                    </View>
                     <Text style={styles.cardBody}>{aiDraft.timelineSummary}</Text>
                     <Text style={styles.cardBody}>
                       Select Next to review and edit each generated milestone and its tasks before
@@ -1166,15 +1173,6 @@ export function CreateGoalModal({
                       Need a different plan? Go back and clarify the goal outcome, objectives,
                       constraints, or timing before using another AI credit.
                     </Text>
-                    <AppButton
-                      label="Edit Goal Details"
-                      variant="secondary"
-                      accessibilityLabel="Edit goal details before regenerating"
-                      disabled={aiGenerating}
-                      onPress={() => {
-                        if (!generating.current) setWizardIndex(1);
-                      }}
-                    />
                   </>
                 ) : (
                   <>
@@ -1252,6 +1250,17 @@ export function CreateGoalModal({
                   }}
                   disabled={!canGenerateAiPlan}
                 />
+                {aiDraft ? (
+                  <AppButton
+                    label="Edit Goal Details"
+                    variant="secondary"
+                    accessibilityLabel="Edit goal details before regenerating"
+                    disabled={aiGenerating}
+                    onPress={() => {
+                      if (!generating.current) setWizardIndex(1);
+                    }}
+                  />
+                ) : null}
                 {isPremiumStatusResolved && hasPremiumAccess && creditPackUserId ? (
                   <AppButton
                     label="Get More AI Credits"
