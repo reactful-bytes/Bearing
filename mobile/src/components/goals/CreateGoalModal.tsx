@@ -266,6 +266,8 @@ export function CreateGoalModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autosaveError, setAutosaveError] = useState<string | null>(null);
+  const [closeDraftConfirmationVisible, setCloseDraftConfirmationVisible] = useState(false);
+  const [closeDraftSaveFailed, setCloseDraftSaveFailed] = useState(false);
   const [aiDraft, setAiDraft] = useState<AiGoalPlanDraft | null>(null);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [regenerationConfirmationVisible, setRegenerationConfirmationVisible] = useState(false);
@@ -516,6 +518,8 @@ export function CreateGoalModal({
     setSaving(false);
     setError(null);
     setAutosaveError(null);
+    setCloseDraftConfirmationVisible(false);
+    setCloseDraftSaveFailed(false);
     setAiDraft(null);
     setAiGenerating(false);
     generating.current = false;
@@ -532,13 +536,19 @@ export function CreateGoalModal({
   async function handleClose(): Promise<void> {
     generationAttempt.current += 1;
     balanceAttempt.current += 1;
-    if (!aiGenerating) {
-      try {
-        await flushDraftAutosave();
-      } catch {
-        setAutosaveError('Draft changes could not be saved. Try again before closing.');
-        return;
+    if (persistedGoalId) {
+      let saveFailed = false;
+      if (!aiGenerating) {
+        try {
+          await flushDraftAutosave();
+        } catch {
+          setAutosaveError('Draft changes could not be saved. Try again before closing.');
+          saveFailed = true;
+        }
       }
+      setCloseDraftSaveFailed(saveFailed);
+      setCloseDraftConfirmationVisible(true);
+      return;
     }
     resetForm();
     onClose();
@@ -1158,7 +1168,12 @@ export function CreateGoalModal({
                   <>
                     <View style={styles.creditHeading}>
                       <View style={styles.creditIconFrame}>
-                        <AppIcon name="aiPlanning" size={20} color={theme.colors.brand} decorative />
+                        <AppIcon
+                          name="aiPlanning"
+                          size={20}
+                          color={theme.colors.brand}
+                          decorative
+                        />
                       </View>
                       <Text accessibilityRole="header" style={styles.cardTitle}>
                         Your goal is ready
@@ -1640,6 +1655,27 @@ export function CreateGoalModal({
           </ScrollView>
         ) : null}
       </AppModal>
+      <ConfirmationModal
+        visible={closeDraftConfirmationVisible}
+        title={closeDraftSaveFailed ? 'Draft changes could not be saved' : 'Goal draft saved'}
+        message={
+          closeDraftSaveFailed
+            ? 'Your last saved draft is available on the Goals screen. Close the wizard without the latest changes?'
+            : 'Your goal draft is available on the Goals screen. You can return to it later. Close the wizard?'
+        }
+        confirmLabel="Close Wizard"
+        confirmVariant={closeDraftSaveFailed ? 'danger' : 'primary'}
+        cancelLabel="Keep Editing"
+        confirmAccessibilityLabel="Close goal wizard and return to Goals"
+        cancelAccessibilityLabel="Keep editing goal draft"
+        icon={closeDraftSaveFailed ? 'warning' : 'info'}
+        iconTone={closeDraftSaveFailed ? 'warning' : 'brand'}
+        onCancel={() => setCloseDraftConfirmationVisible(false)}
+        onConfirm={() => {
+          resetForm();
+          onClose();
+        }}
+      />
       <ConfirmationModal
         visible={removeConfirmationVisible && editorDraft !== null}
         title={editorDraft?.kind === 'task' ? 'Delete task?' : 'Delete milestone?'}

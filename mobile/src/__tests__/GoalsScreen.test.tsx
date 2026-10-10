@@ -942,11 +942,86 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Next'));
     fireEvent.press(screen.getByLabelText('Close Create Goal'));
 
+    expect(await screen.findByText('Goal draft saved')).toBeTruthy();
+    expect(
+      await screen.findByText(
+        'Your goal draft is available on the Goals screen. You can return to it later. Close the wizard?',
+      ),
+    ).toBeTruthy();
+    fireEvent.press(await screen.findByLabelText('Close goal wizard and return to Goals'));
+
     await waitFor(() => {
       expect(screen.getByRole('header', { name: 'Draft goals' })).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Filter goals' })).toBeTruthy();
       expect(screen.getByText('Run a 10k')).toBeTruthy();
     });
+  });
+
+  it('allows closing the wizard without saving after draft autosave fails', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 6, 20));
+    const draftGoal = makeGoal({ id: 'goal-draft-1', title: 'Run a 10k', status: 'draft' });
+    const goals: GoalWithMilestones[] = [];
+    const createGoalDraft = jest.fn(async () => {
+      goals.push(draftGoal);
+      return draftGoal.id;
+    });
+    const saveGoalDraft = jest.fn(
+      async (_goalId: string, _input: GoalDraftSaveInput): Promise<GoalDraftSaveResult> => {
+        throw new Error('Draft save failed.');
+      },
+    );
+
+    (useGoals as jest.MockedFunction<typeof useGoals>).mockReturnValue({
+      goals,
+      uiState: 'empty',
+      createGoal: jest.fn(async () => undefined),
+      createGoalDraft,
+      saveGoalDraft,
+      activateGoalDraft: jest.fn(async () => undefined),
+      updateGoal: jest.fn(async () => undefined),
+      deleteGoal: async () => undefined,
+      setGoalManuallyCompleted: async () => undefined,
+      setMilestoneManuallyCompleted: async () => undefined,
+      createMilestone: async () => undefined,
+      deleteMilestone: async () => undefined,
+      updateMilestone: async () => undefined,
+      reorderMilestones: async () => undefined,
+      retry: jest.fn(),
+    });
+    (useMilestoneEvents as jest.MockedFunction<typeof useMilestoneEvents>).mockReturnValue({
+      events: [],
+      uiState: 'idle',
+    });
+
+    render(<GoalsScreen route={{ params: { createGoal: true } }} />);
+
+    fireEvent.press(screen.getByLabelText('Next'));
+    fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
+    fireEvent.changeText(screen.getByLabelText('Planning context'), 'Train three times weekly.');
+    fireEvent.press(screen.getByLabelText('Next'));
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Next'));
+    });
+    fireEvent.press(screen.getByLabelText('Next'));
+    fireEvent.press(screen.getByLabelText('Close Create Goal'));
+
+    expect(
+      await screen.findByText(
+        'Your last saved draft is available on the Goals screen. Close the wizard without the latest changes?',
+      ),
+    ).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Keep editing goal draft'));
+    expect(screen.getByText('Step 5 of 5: Milestones & Tasks')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Close Create Goal'));
+    fireEvent.press(await screen.findByLabelText('Close goal wizard and return to Goals'));
+
+    await waitFor(() => {
+      expect(screen.getByRole('header', { name: 'Draft goals' })).toBeTruthy();
+      expect(screen.getByText('Run a 10k')).toBeTruthy();
+    });
+    expect(saveGoalDraft).toHaveBeenCalled();
   });
 
   it('opens the premium paywall from the AI planning step for free users', async () => {
