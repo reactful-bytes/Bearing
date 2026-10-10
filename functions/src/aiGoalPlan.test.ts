@@ -363,6 +363,40 @@ describe("AI goal plan", () => {
     assert.equal(planningStartDate, "2027-01-01");
   });
 
+  it("allows tomorrow in the caller's timezone when UTC is already on that date", async () => {
+    let planningStartDate = "";
+    const nextDayDraft = {
+      ...validDraft,
+      milestones: validDraft.milestones.map((milestone) => ({
+        ...milestone,
+        targetDate: "2027-01-02",
+        tasks: milestone.tasks.map((task) => ({
+          ...task,
+          targetDate: "2027-01-02",
+        })),
+      })),
+    };
+
+    await generateGoalPlanDraft(
+      {
+        ...request,
+        data: {
+          ...request.data,
+          targetDate: "2027-01-02",
+          timezone: "America/Los_Angeles",
+        },
+      },
+      async (prompt) => {
+        planningStartDate = JSON.parse(prompt.input).planningStartDate;
+        return nextDayDraft;
+      },
+      undefined,
+      new Date("2027-01-02T00:30:00Z"),
+    );
+
+    assert.equal(planningStartDate, "2027-01-01");
+  });
+
   it("rejects a non-future goal target before reserving a credit", async () => {
     let prepared = false;
     let generated = false;
