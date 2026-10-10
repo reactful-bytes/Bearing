@@ -84,6 +84,13 @@ describe('NotesScreen', () => {
     render(<NotesScreen />);
 
     expect(screen.getByText('No notes yet.')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'No notes yet.' })).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.getByText('No notes yet.').props.style).fontSize,
+    ).toBe(14);
+    expect(
+      StyleSheet.flatten(screen.getByText('Create a note here or capture a thought during Focus Mode.').props.style).fontSize,
+    ).toBe(12);
     expect(screen.queryByRole('button', { name: 'New Note' })).toBeNull();
   });
 

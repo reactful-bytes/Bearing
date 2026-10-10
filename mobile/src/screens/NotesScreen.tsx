@@ -409,12 +409,12 @@ export function NotesScreen({ route, navigation }: NotesScreenProps = {}) {
         ) : null}
 
         {uiState === 'empty' ? (
-          <AppCard>
-            <Text style={styles.stateTitle}>No notes yet.</Text>
-            <Text style={styles.stateDescription}>
-              Create a note here or capture a thought during Focus Mode.
-            </Text>
-          </AppCard>
+          <EmptyState
+            presentation="compact"
+            style={styles.noMatchingNotes}
+            title="No notes yet."
+            description="Create a note here or capture a thought during Focus Mode."
+          />
         ) : null}
 
         {uiState === 'ready' ? (
