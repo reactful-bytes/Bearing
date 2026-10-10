@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  getWelcomeAiCreditErrorLogContext,
   WelcomeAiCreditDependencies,
   grantWelcomeAiCredit,
 } from "./welcomeAiCredit";
@@ -17,6 +18,29 @@ function dependencies(providerId = "password"): WelcomeAiCreditDependencies {
 }
 
 describe("welcome AI credit", () => {
+  it("logs safe failure metadata without exposing raw error messages", () => {
+    assert.deepEqual(
+      getWelcomeAiCreditErrorLogContext(
+        new Error("RevenueCat customer creation failed: 403"),
+      ),
+      {
+        errorType: "Error",
+        operation: "revenuecat_customer_creation",
+        httpStatus: 403,
+      },
+    );
+
+    const error = Object.assign(new Error("sensitive user or token details"), {
+      code: "auth/internal",
+    });
+    const context = getWelcomeAiCreditErrorLogContext(error);
+    assert.deepEqual(context, {
+      errorType: "Error",
+      errorCode: "auth/internal",
+    });
+    assert.equal(JSON.stringify(context).includes(error.message), false);
+  });
+
   it("grants email and Google accounts on first profile creation regardless of Auth account age", async () => {
     for (const provider of ["password", "google.com"]) {
       const calls: string[] = [];

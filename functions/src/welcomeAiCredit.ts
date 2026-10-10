@@ -60,6 +60,55 @@ export async function grantWelcomeAiCredit(
   return "granted";
 }
 
+export function getWelcomeAiCreditErrorLogContext(
+  error: unknown,
+): Record<string, string | number> {
+  const context: Record<string, string | number> = {
+    errorType:
+      error instanceof Error && /^[a-zA-Z0-9_.-]{1,64}$/.test(error.name)
+        ? error.name
+        : "unknown",
+  };
+  if (!error || typeof error !== "object") return context;
+
+  const details = error as { code?: unknown; status?: unknown };
+  if (
+    typeof details.code === "string" &&
+    /^[a-zA-Z0-9_/-]{1,64}$/.test(details.code)
+  ) {
+    context.errorCode = details.code;
+  } else if (
+    typeof details.code === "number" &&
+    Number.isInteger(details.code)
+  ) {
+    context.errorCode = details.code;
+  }
+  if (
+    typeof details.status === "number" &&
+    Number.isInteger(details.status) &&
+    details.status >= 100 &&
+    details.status <= 599
+  ) {
+    context.httpStatus = details.status;
+  }
+
+  if (error instanceof Error) {
+    const revenueCatFailure =
+      /^RevenueCat (customer creation|virtual currency transaction) failed: ([1-5][0-9]{2})$/.exec(
+        error.message,
+      );
+    if (revenueCatFailure) {
+      context.operation =
+        revenueCatFailure[1] === "customer creation"
+          ? "revenuecat_customer_creation"
+          : "revenuecat_credit_transaction";
+      context.httpStatus = Number(revenueCatFailure[2]);
+    }
+  }
+
+  return context;
+}
+
 export async function dismissWelcomeAiCreditMessage(
   userId: string,
 ): Promise<void> {

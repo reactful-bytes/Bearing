@@ -40,6 +40,7 @@ import {
 import { RevenueCatV2Config } from "./revenueCatV2";
 import {
   createWelcomeAiCreditDependencies,
+  getWelcomeAiCreditErrorLogContext,
   grantWelcomeAiCredit,
 } from "./welcomeAiCredit";
 
@@ -98,8 +99,11 @@ export const welcomeAiCredit = onDocumentCreated(
         event.params.userId,
         createWelcomeAiCreditDependencies(revenueCatV2Config()),
       );
-    } catch {
-      logger.error("welcome_ai_credit_failed");
+    } catch (error) {
+      logger.error(
+        "welcome_ai_credit_failed",
+        getWelcomeAiCreditErrorLogContext(error),
+      );
       throw new Error("Welcome AI credit grant failed.");
     }
   },
