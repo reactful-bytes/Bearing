@@ -22,7 +22,6 @@ function makePackage(
       priceString,
       pricePerMonthString,
       subscriptionPeriod,
-      introPrice: null,
     },
   };
 }
@@ -36,7 +35,6 @@ describe('premium plans', () => {
           {
             storeProductId: 'bearing_custom',
             amount: 5,
-            trialAmount: null,
             currencyCode: 'AIC',
           },
         ],
@@ -62,13 +60,12 @@ describe('premium plans', () => {
           {
             storeProductId: 'bearing_monthly',
             amount: 8,
-            trialAmount: 2,
           },
         ],
       ),
     ).toEqual([
-      expect.objectContaining({ creditAmount: 8, trialCreditAmount: 2 }),
-      expect.objectContaining({ creditAmount: null, trialCreditAmount: null }),
+      expect.objectContaining({ creditAmount: 8 }),
+      expect.objectContaining({ creditAmount: null }),
     ]);
   });
 
@@ -139,21 +136,27 @@ describe('premium plans', () => {
     expect(normalizePremiumPlans([storePackage])[0].title).toBe('Annual');
   });
 
-  it('uses compact recurring prices and concise introductory offers from the store', () => {
+  it('uses compact recurring prices without projecting legacy store offers', () => {
     const storePackage = makePackage('MONTHLY', 'P1M', '$7.99');
-    storePackage.product.introPrice = {
-      priceString: '$0.00',
-      cycles: 1,
-      periodUnit: 'WEEK',
-      periodNumberOfUnits: 1,
+    const legacyProduct = {
+      ...storePackage.product,
+      introPrice: {
+        priceString: '$0.00',
+        cycles: 1,
+        periodUnit: 'WEEK',
+        periodNumberOfUnits: 1,
+      },
     };
+    storePackage.product = legacyProduct;
 
-    expect(normalizePremiumPlans([storePackage])[0]).toEqual(
+    const plan = normalizePremiumPlans([storePackage])[0];
+    expect(plan).toEqual(
       expect.objectContaining({
         priceSuffixText: '/mo',
         annualMonthlyBreakdownText: null,
-        introductoryOfferText: '1 week free',
       }),
     );
+    expect(plan).not.toHaveProperty('introductoryOfferText');
+    expect(plan).not.toHaveProperty('trialCreditAmount');
   });
 });

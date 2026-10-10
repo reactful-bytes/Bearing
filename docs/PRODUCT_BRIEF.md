@@ -116,7 +116,7 @@ Bottom tab navigation with five screens:
 ### 5) Profile
 
 - Account management with display name, timezone, and locale.
-- Secure anonymous sessions by linking email/password credentials.
+- Sign in through email/password or Google; no guest access.
 - Password reset.
 - View Bearing 360 status, live AI-credit balance, and native purchase options.
 - Grant device calendar permission, select visible calendars, and choose one writable default calendar.
@@ -126,10 +126,11 @@ Bottom tab navigation with five screens:
 
 ## Bearing 360 Scope
 
-- AI-assisted goal setup and plan generation in the goal wizard.
+- AI-assisted goal setup and plan generation in the goal wizard for authenticated users with credits,
+  independently of subscription state. New email/Google accounts receive two welcome AI credits.
 - Free users can still create goals manually.
 - Each AI generation costs one credit. RevenueCat V2 owns balances and remotely configured
-  subscription, trial, and consumable pack grants.
+  paid subscription and consumable pack grants. No trials or introductory offers are supported.
 - Eligible members can buy non-transferable consumable packs from `credit_packs` in AI Planning and
   Profile. Localized prices come from the native store.
 - Web and Expo Go show an unsupported native-checkout state; they do not offer a broken purchase path.
@@ -167,4 +168,4 @@ Bottom tab navigation with five screens:
 
 - The task `starter` field is a short cue for getting started on a task.
 - Degree of visual mimicry versus legal-safe differentiation from Apple Calendar aesthetics.
-- Final launch pricing, trial terms, and remotely configured grant choices for Bearing 360.
+- Final launch pricing and remotely configured paid grant choices for Bearing 360.

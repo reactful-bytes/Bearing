@@ -3,18 +3,11 @@ import { describe, it } from "node:test";
 
 import { HttpsError } from "firebase-functions/v2/https";
 
-import { AiCreditSubscription, getAiCreditStatus } from "./aiCreditStatus";
-
-const subscription: AiCreditSubscription = {
-  status: "active",
-  periodStartAt: new Date("2026-01-01T00:00:00.000Z"),
-  periodEndAt: new Date("2026-05-01T00:00:00.000Z"),
-};
+import { getAiCreditStatus } from "./aiCreditStatus";
 
 describe("getAiCreditStatus", () => {
   it("uses authenticated identity and returns the live RevenueCat balance", async () => {
     let balanceUserId = "";
-    let subscriptionUserId = "";
     const result = await getAiCreditStatus(
       { auth: { uid: "user-1" }, data: { userId: "other-user" } } as {
         auth: { uid: string };
@@ -23,49 +16,77 @@ describe("getAiCreditStatus", () => {
         balanceUserId = userId;
         return 17;
       },
-      async (userId) => {
-        subscriptionUserId = userId;
-        return subscription;
-      },
-      new Date("2026-04-01T00:00:00.000Z"),
     );
 
     assert.equal(balanceUserId, "user-1");
-    assert.equal(subscriptionUserId, "user-1");
-    assert.deepEqual(result, { eligible: true, availableCredits: 17 });
+    assert.deepEqual(result, {
+      eligible: true,
+      availableCredits: 17,
+      welcomeMessageEligible: false,
+    });
   });
 
-  it("allows grace spending and locks inactive subscribers", async () => {
-    assert.deepEqual(
-      await getAiCreditStatus(
-        { auth: { uid: "user-1" } },
-        async () => 4,
-        async () => ({ ...subscription, status: "in_grace_period" }),
-        new Date("2026-04-01T00:00:00.000Z"),
-      ),
-      { eligible: true, availableCredits: 4 },
-    );
-    assert.deepEqual(
-      await getAiCreditStatus(
-        { auth: { uid: "user-1" } },
-        async () => 6,
-        async () => ({ ...subscription, status: "expired" }),
-        new Date("2026-04-01T00:00:00.000Z"),
-      ),
-      { eligible: false, availableCredits: 6 },
-    );
+  it("uses only a positive live balance for eligibility without a subscription lookup", async () => {
+    for (const availableCredits of [0, 1, 6]) {
+      assert.deepEqual(
+        await getAiCreditStatus(
+          { auth: { uid: "user-1" } },
+          async () => availableCredits,
+        ),
+        {
+          eligible: availableCredits > 0,
+          availableCredits,
+          welcomeMessageEligible: false,
+        },
+      );
+    }
   });
 
-  it("locks an active status after the recorded period end", async () => {
-    assert.deepEqual(
-      await getAiCreditStatus(
-        { auth: { uid: "user-1" } },
-        async () => 6,
-        async () => subscription,
-        new Date("2026-10-05T12:00:00.000Z"),
-      ),
-      { eligible: false, availableCredits: 6 },
+  it("identifies welcome-message eligibility from the grant marker", async () => {
+    const result = await getAiCreditStatus(
+      { auth: { uid: "user-1" } },
+      async () => 1,
+      async (userId) => ({
+        granted: userId === "user-1",
+        messageDismissed: false,
+      }),
     );
+
+    assert.deepEqual(result, {
+      eligible: true,
+      availableCredits: 1,
+      welcomeMessageEligible: true,
+    });
+  });
+
+  it("returns permanent welcome-message dismissal state", async () => {
+    const result = await getAiCreditStatus(
+      { auth: { uid: "user-1" } },
+      async () => 4,
+      async () => ({ granted: true, messageDismissed: true }),
+    );
+
+    assert.deepEqual(result, {
+      eligible: true,
+      availableCredits: 4,
+      welcomeMessageEligible: false,
+    });
+  });
+
+  it("keeps live credit status available when the welcome marker cannot be read", async () => {
+    const result = await getAiCreditStatus(
+      { auth: { uid: "user-1" } },
+      async () => 1,
+      async () => {
+        throw new Error("profile unavailable");
+      },
+    );
+
+    assert.deepEqual(result, {
+      eligible: true,
+      availableCredits: 1,
+      welcomeMessageEligible: false,
+    });
   });
 
   it("rejects unauthenticated callers before looking up balance", async () => {

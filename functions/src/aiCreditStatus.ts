@@ -1,4 +1,4 @@
-import { Timestamp, getFirestore } from "firebase-admin/firestore";
+import { getFirestore } from "firebase-admin/firestore";
 
 import {
   RevenueCatV2Config,
@@ -8,77 +8,65 @@ import {
   CallableIdentityRequest,
   requireAuthenticatedCaller,
 } from "./security";
-import { getEffectiveSubscriptionStatus } from "./entitlement";
-
-type AiCreditSubscriptionStatus =
-  "active" | "in_grace_period" | "expired" | "canceled";
-
-export type AiCreditSubscription = {
-  status: AiCreditSubscriptionStatus | null;
-  periodStartAt: Date | null;
-  periodEndAt: Date | null;
-};
 
 export type AiCreditStatus = {
   eligible: boolean;
   availableCredits: number;
+  welcomeMessageEligible: boolean;
 };
 
-export type AiCreditSubscriptionLookup = (
-  userId: string,
-) => Promise<AiCreditSubscription>;
-
 export type AiCreditBalanceLookup = (userId: string) => Promise<number>;
-
-const SUBSCRIPTION_STATUSES = new Set([
-  "active",
-  "in_grace_period",
-  "expired",
-  "canceled",
-]);
-
-function storedDate(value: unknown): Date | null {
-  return value instanceof Timestamp ? value.toDate() : null;
-}
-
-export async function loadAiCreditSubscription(
+export type AiCreditWelcomeGrantState = {
+  granted: boolean;
+  messageDismissed: boolean;
+};
+export type AiCreditWelcomeGrantLookup = (
   userId: string,
-): Promise<AiCreditSubscription> {
-  const snapshot = await getFirestore().doc(`subscriptions/${userId}`).get();
-  const record = snapshot.data();
-  const status = record?.status;
+) => Promise<AiCreditWelcomeGrantState>;
 
+export async function loadAiCreditWelcomeGrant(
+  userId: string,
+): Promise<AiCreditWelcomeGrantState> {
+  const db = getFirestore();
+  const [profile, subscription] = await Promise.all([
+    db.doc(`users/${userId}`).get(),
+    db.doc(`subscriptions/${userId}`).get(),
+  ]);
+  const subscriptionProductId = subscription.get("productId");
   return {
-    status: SUBSCRIPTION_STATUSES.has(status)
-      ? (status as AiCreditSubscription["status"])
-      : null,
-    periodStartAt: storedDate(record?.periodStartAt),
-    periodEndAt: storedDate(record?.periodEndAt),
+    granted: profile.get("welcomeAiCreditGranted") === true,
+    messageDismissed:
+      profile.get("welcomeAiCreditMessageDismissed") === true ||
+      subscription.get("hasEverSubscribed") === true ||
+      (typeof subscriptionProductId === "string" &&
+        subscriptionProductId.length > 0),
   };
 }
 
 export async function getAiCreditStatus(
   request: CallableIdentityRequest,
   balanceLookup: AiCreditBalanceLookup,
-  lookup: AiCreditSubscriptionLookup = loadAiCreditSubscription,
-  now = new Date(),
+  welcomeGrantLookup: AiCreditWelcomeGrantLookup = async () => ({
+    granted: false,
+    messageDismissed: false,
+  }),
 ): Promise<AiCreditStatus> {
   const caller = requireAuthenticatedCaller(request);
-  const [subscription, availableCredits] = await Promise.all([
-    lookup(caller.uid),
+  const [availableCredits, welcomeGrantState] = await Promise.all([
     balanceLookup(caller.uid),
+    welcomeGrantLookup(caller.uid).catch(() => ({
+      granted: false,
+      messageDismissed: false,
+    })),
   ]);
-  const effectiveStatus = getEffectiveSubscriptionStatus(
-    subscription.status,
-    subscription.periodEndAt,
-    now,
-  );
-  const eligible =
-    effectiveStatus === "active" || effectiveStatus === "in_grace_period";
 
   return {
-    eligible,
+    eligible: availableCredits > 0,
     availableCredits,
+    welcomeMessageEligible:
+      welcomeGrantState.granted &&
+      !welcomeGrantState.messageDismissed &&
+      availableCredits > 0,
   };
 }
 

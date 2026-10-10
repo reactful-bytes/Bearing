@@ -45,13 +45,14 @@ then fetches the canonical RevenueCat subscriber by Firebase UID. It writes the 
 deletion callable removes the RevenueCat customer before Firestore and Firebase Authentication.
 V1 is used only for that subscriber lookup and customer deletion.
 
-RevenueCat V2 is the sole AI-credit balance, debit, refund, and product-grant authority. Configure
-the non-expiring virtual currency and all paid, trial, and pack grant amounts in RevenueCat; no
-grant amount belongs in Functions configuration or source. Create a separate least-privilege V2
+RevenueCat V2 is the sole AI-credit balance, grant, debit, refund, and product-grant authority. Configure
+the non-expiring virtual currency and all paid and pack product-grant amounts in RevenueCat.
+The only fixed signup benefit is two welcome AI credits. Create a separate least-privilege V2
 secret key that can read customer virtual-currency balances and project products/product grants,
-and can create customer virtual-currency transactions.
+create customers, and create customer virtual-currency transactions. AI generation requires an
+authenticated caller and a credit, not an active subscription; credit packs remain member-only.
 
-Required managed secrets:
+Required server-only Functions parameters (`defineString`):
 
 - `REVENUECAT_SECRET_API_KEY`
 - `REVENUECAT_WEBHOOK_AUTHORIZATION`
@@ -59,6 +60,24 @@ Required managed secrets:
 - `REVENUECAT_SECRET_API_KEY_V2` (separate V2 key; never reuse the V1 key)
 - `REVENUECAT_PROJECT_ID`
 - `REVENUECAT_AI_CURRENCY_CODE` (defaults to `AIC`)
+
+`welcomeAiCredit` is a retry-enabled v2 Firestore creation trigger on `users/{userId}`, the shared
+email/Google profile-creation boundary. It verifies the account's provider, ensures the V2 customer
+exists, then grants two credits with a UID-derived SHA-256 idempotency key and marks the profile
+with `welcomeAiCreditGranted: true` after the grant succeeds. The first profile
+creation qualifies regardless of Auth account age, including an older account whose profile was
+missing. Existing profiles do not retrigger on login; duplicate delivery, retries, and profile
+recreation reuse the same key. No client grant endpoint, activation timestamp, or Firestore grant
+ledger exists. The welcome message is permanently dismissed once the welcome balance is exhausted
+or a subscription is observed, including after cancellation. The V2 key needs
+`customer_information:customers:read_write` as well as the existing
+currency transaction permissions.
+
+Deploy `welcomeAiCredit`, `getAiCreditStatus`, and `generateGoalPlanDraft` before releasing the
+credit-based client. Welcome grants are asynchronous: the client must read the live balance and
+must never assume a local +1. Verify fresh email/Google signup, repeat login, missing-profile
+creation, and retry in a non-production project. Disable all trial/intro offers in Apple, Google, and
+RevenueCat and remove or zero trial grants before release; repository changes cannot do this.
 
 The deployed V2 integration expects balance lists with `items`, product pagination in `next_page`,
 product fields `id` and `store_identifier`, virtual-currency `product_grants` with `product_id` and

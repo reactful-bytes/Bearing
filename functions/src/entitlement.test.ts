@@ -31,11 +31,7 @@ describe("getEffectiveSubscriptionStatus", () => {
       "expired",
     );
     assert.equal(
-      getEffectiveSubscriptionStatus(
-        "in_grace_period",
-        now,
-        now,
-      ),
+      getEffectiveSubscriptionStatus("in_grace_period", now, now),
       "expired",
     );
   });

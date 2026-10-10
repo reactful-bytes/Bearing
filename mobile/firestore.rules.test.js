@@ -166,6 +166,17 @@ describe('Firestore ownership rules', () => {
     await assertSucceeds(updateDoc(profileRef, { timeFormat: '24-hour' }));
     await assertFails(updateDoc(profileRef, { premiumStatus: 'premium' }));
     await assertFails(updateDoc(profileRef, { premiumSource: 'app_store' }));
+    await assertFails(updateDoc(profileRef, { welcomeAiCreditGranted: true }));
+    await assertFails(updateDoc(profileRef, { welcomeAiCreditMessageDismissed: true }));
+    await assertFails(
+      setDoc(doc(firestoreFor(OTHER_ID), 'users', OTHER_ID), {
+        displayName: 'Other user',
+        premiumStatus: 'free',
+        premiumSource: 'none',
+        welcomeAiCreditGranted: true,
+        welcomeAiCreditMessageDismissed: true,
+      }),
+    );
   });
 
   it('keeps subscriptions server-owned and user-readable', async () => {

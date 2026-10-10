@@ -46,7 +46,6 @@ function makePackage(
       priceString,
       pricePerMonthString: null,
       subscriptionPeriod: productType === 'CONSUMABLE' ? null : 'P1M',
-      introPrice: null,
     },
   } as unknown as PurchasesPackage;
 }
@@ -74,7 +73,6 @@ describe('RevenueCat offering isolation', () => {
         productType: 'subscription',
         currencyCode: 'AIC',
         amount: 10,
-        trialAmount: 2,
         expiresAtCycleEnd: false,
       },
       {
@@ -82,7 +80,6 @@ describe('RevenueCat offering isolation', () => {
         productType: 'consumable',
         currencyCode: 'AIC',
         amount: 5,
-        trialAmount: null,
         expiresAtCycleEnd: false,
       },
     ]);
@@ -103,7 +100,7 @@ describe('RevenueCat offering isolation', () => {
     });
 
     await expect(loadPremiumPlans('user-1')).resolves.toEqual([
-      expect.objectContaining({ creditAmount: 10, trialCreditAmount: 2 }),
+      expect.objectContaining({ creditAmount: 10 }),
     ]);
     await expect(loadCreditPacks('user-1')).resolves.toEqual([
       {

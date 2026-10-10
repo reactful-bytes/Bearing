@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { getAiCreditStatus } from '../../services/firebase/firebaseAiGoalPlans';
 import {
@@ -25,6 +25,17 @@ export function useCreditPackPurchase(
   const [pendingPackageIdentifier, setPendingPackageIdentifier] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const purchaseScope = useRef(0);
+
+  useEffect(() => {
+    purchaseScope.current += 1;
+    setPendingPackageIdentifier(null);
+    setError(null);
+    setFeedback(null);
+    return () => {
+      purchaseScope.current += 1;
+    };
+  }, [enabled, userId, visible]);
 
   useEffect(() => {
     if (!visible || !enabled || !userId || availability !== 'available') return;
@@ -52,7 +63,8 @@ export function useCreditPackPurchase(
   }, [availability, enabled, source, userId, visible]);
 
   async function purchase(pack: CreditPack): Promise<void> {
-    if (!userId || !enabled) return;
+    if (!userId || !enabled || !visible) return;
+    const scope = purchaseScope.current;
     setPendingPackageIdentifier(pack.packageIdentifier);
     setError(null);
     setFeedback(null);
@@ -60,6 +72,7 @@ export function useCreditPackPurchase(
     try {
       void recordTelemetryEvent('premium_credit_pack_purchase_started', { source });
       const result = await purchaseCreditPack(userId, pack.packageIdentifier);
+      if (scope !== purchaseScope.current) return;
       void recordTelemetryEvent('premium_credit_pack_purchase_result', { source, outcome: result });
 
       if (result === 'cancelled') {
@@ -73,6 +86,7 @@ export function useCreditPackPurchase(
       } else {
         storePurchaseSucceeded = true;
         const status = await getAiCreditStatus();
+        if (scope !== purchaseScope.current) return;
         setAiCreditBalance(userId, status.availableCredits);
         onBalanceUpdated(status.availableCredits);
         setFeedback(`${status.availableCredits} AI planning credits available.`);
@@ -82,6 +96,7 @@ export function useCreditPackPurchase(
         });
       }
     } catch {
+      if (scope !== purchaseScope.current) return;
       if (storePurchaseSucceeded) {
         setError('The purchase completed, but the current balance is temporarily unavailable.');
         void recordTelemetryEvent('premium_credit_pack_balance_refresh_result', {
@@ -92,7 +107,7 @@ export function useCreditPackPurchase(
         setError('Unable to start the credit pack purchase. Please try again.');
       }
     } finally {
-      setPendingPackageIdentifier(null);
+      if (scope === purchaseScope.current) setPendingPackageIdentifier(null);
     }
   }
 

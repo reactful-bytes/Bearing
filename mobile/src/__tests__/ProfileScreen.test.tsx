@@ -332,6 +332,7 @@ describe('ProfileScreen', () => {
     (getAiCreditStatus as jest.MockedFunction<typeof getAiCreditStatus>).mockResolvedValue({
       eligible: true,
       availableCredits: 7,
+      welcomeMessageEligible: false,
     });
   });
 

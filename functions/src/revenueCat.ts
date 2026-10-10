@@ -343,9 +343,15 @@ export async function handleRevenueCatWebhook(
     const receipt = await transaction.get(receiptRef);
     if (receipt.exists) return;
     const existingSubscription = await transaction.get(subscriptionRef);
+    const hasEverSubscribed =
+      existingSubscription.data()?.hasEverSubscribed === true ||
+      subscription.status === "active" ||
+      subscription.status === "in_grace_period" ||
+      subscription.productId.length > 0;
     const existingCreatedAt = existingSubscription.data()?.createdAt;
     transaction.set(subscriptionRef, {
       ...subscription,
+      hasEverSubscribed,
       createdAt:
         existingCreatedAt instanceof Timestamp
           ? existingCreatedAt

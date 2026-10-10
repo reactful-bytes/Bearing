@@ -24,6 +24,11 @@ import { useUserProfile } from '../features/profile/useUserProfile';
 import { UserProfileRecord } from '../features/profile/profileTypes';
 import { useCalendarPublication } from '../features/calendar/useCalendarPublication';
 import { usePremiumEntitlement } from '../features/premium/usePremiumEntitlement';
+import {
+  getPremiumPurchaseAvailability,
+  loadCreditPacks,
+  purchaseCreditPack,
+} from '../services/purchases/revenueCatClient';
 import { TaskRecord } from '../features/tasks/taskTypes';
 import {
   generateAiGoalPlanDraft,
@@ -32,6 +37,12 @@ import {
 } from '../services/firebase/firebaseAiGoalPlans';
 
 const mockTaskNavigate = jest.fn();
+
+jest.mock('../services/purchases/revenueCatClient', () => ({
+  getPremiumPurchaseAvailability: jest.fn(() => 'web'),
+  loadCreditPacks: jest.fn(),
+  purchaseCreditPack: jest.fn(),
+}));
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(() => ({ navigate: mockTaskNavigate })),
@@ -117,7 +128,7 @@ function mockUserProfile(overrides: Partial<ReturnType<typeof useUserProfile>> =
   const mockedUseUserProfile = useUserProfile as jest.MockedFunction<typeof useUserProfile>;
 
   mockedUseUserProfile.mockReturnValue({
-    authUser: { isAnonymous: false, email: 'preston@example.com' } as never,
+    authUser: { uid: 'user-1', isAnonymous: false, email: 'preston@example.com' } as never,
     profile: makeProfile(),
     uiState: 'ready',
     error: null,
@@ -270,19 +281,20 @@ function mockEmptyGoals(): void {
 }
 
 function openAiPlanningStep(): void {
-  fireEvent.press(screen.getByLabelText('Continue'));
+  fireEvent.press(screen.getByLabelText('Next'));
   fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
   fireEvent.changeText(
     screen.getByLabelText('Planning context'),
     'Build endurance safely with three runs per week over eight weeks.',
   );
-  fireEvent.press(screen.getByLabelText('Continue'));
-  fireEvent.press(screen.getByLabelText('Continue'));
+  fireEvent.press(screen.getByLabelText('Next'));
+  fireEvent.press(screen.getByLabelText('Next'));
 }
 
 describe('GoalsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.mocked(getPremiumPurchaseAvailability).mockReturnValue('web');
     (useIsFocused as jest.MockedFunction<typeof useIsFocused>).mockReturnValue(true);
     mockUserProfile();
     (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
@@ -290,10 +302,20 @@ describe('GoalsScreen', () => {
       uiState: 'ready',
       error: null,
     });
-    (getAiCreditStatus as jest.MockedFunction<typeof getAiCreditStatus>).mockResolvedValue({
-      eligible: true,
-      availableCredits: 10,
-    });
+    (getAiCreditStatus as jest.MockedFunction<typeof getAiCreditStatus>).mockImplementation(
+      async () => {
+        const entitlement = (
+          usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>
+        )('user-1').entitlement;
+        const availableCredits =
+          entitlement?.status === 'active' || entitlement?.status === 'in_grace_period' ? 10 : 0;
+        return {
+          eligible: availableCredits > 0,
+          availableCredits,
+          welcomeMessageEligible: false,
+        };
+      },
+    );
     (useCalendarPublication as jest.MockedFunction<typeof useCalendarPublication>).mockReturnValue({
       publicationCalendarTitle: null,
       createEvent: jest.fn(async () => 'event-new'),
@@ -711,7 +733,7 @@ describe('GoalsScreen', () => {
     render(<GoalsScreen route={{ params: { createGoal: true } }} />);
 
     expect(screen.getByLabelText('Create Goal modal')).toBeTruthy();
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
     expect(screen.getByLabelText('Create Goal modal')).toBeTruthy();
 
     expect(
@@ -723,7 +745,7 @@ describe('GoalsScreen', () => {
       ),
     ).toBeTruthy();
     fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
     expect(screen.getByText('Planning context is required for milestones and tasks.')).toBeTruthy();
     fireEvent.changeText(
       screen.getByLabelText('Planning context'),
@@ -740,18 +762,18 @@ describe('GoalsScreen', () => {
     ).toBeTruthy();
     expect(screen.queryByText('What the AI plans from')).toBeNull();
     expect(screen.queryByLabelText('SMART Specific')).toBeNull();
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
     fireEvent.press(screen.getByLabelText('Select goal target month'));
     fireEvent.press(screen.getByLabelText('Select goal target October'));
     fireEvent.press(screen.getByLabelText('Select goal target year'));
     fireEvent.press(screen.getByLabelText('Select goal target year 2026'));
     expect(screen.queryByText('Unlock AI goal builder with Bearing 360.')).toBeNull();
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('Continue'));
+      fireEvent.press(screen.getByLabelText('Next'));
     });
-    expect(screen.getByText('Unlock AI goal builder with Bearing 360.')).toBeTruthy();
+    expect(screen.getByText('AI planning uses credits')).toBeTruthy();
     expect(screen.getByText('View Bearing 360 Plans')).toBeTruthy();
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
     fireEvent.press(screen.getByLabelText('Expand milestone 1: Milestone 1'));
     fireEvent.press(screen.getByLabelText('Open actions for milestone 1'));
     expect(screen.getByLabelText('Edit milestone 1')).toBeTruthy();
@@ -898,13 +920,13 @@ describe('GoalsScreen', () => {
 
     render(<GoalsScreen route={{ params: { createGoal: true } }} />);
 
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
     fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.changeText(screen.getByLabelText('Planning context'), 'Train three times weekly.');
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
 
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('Continue'));
+      fireEvent.press(screen.getByLabelText('Next'));
     });
 
     expect(createGoalDraft).toHaveBeenCalledWith(
@@ -915,9 +937,9 @@ describe('GoalsScreen', () => {
         milestones: [],
       }),
     );
-    expect(screen.getByText('Unlock AI goal builder with Bearing 360.')).toBeTruthy();
+    expect(screen.getByText('AI planning uses credits')).toBeTruthy();
 
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
     fireEvent.press(screen.getByLabelText('Close Create Goal'));
 
     await waitFor(() => {
@@ -927,7 +949,7 @@ describe('GoalsScreen', () => {
     });
   });
 
-  it('opens the premium paywall from the AI planning step for free users', () => {
+  it('opens the premium paywall from the AI planning step for free users', async () => {
     const mockedUseGoals = useGoals as jest.MockedFunction<typeof useGoals>;
     const mockedUseGoalStepEvents = useMilestoneEvents as jest.MockedFunction<
       typeof useMilestoneEvents
@@ -952,16 +974,24 @@ describe('GoalsScreen', () => {
 
     render(<GoalsScreen route={{ params: { createGoal: true } }} navigation={{ navigate }} />);
 
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
     fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.changeText(
       screen.getByLabelText('Planning context'),
       'Train consistently for eight weeks.',
     );
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
     fireEvent.press(screen.getByLabelText('Select goal target year'));
     fireEvent.press(screen.getByLabelText('Select goal target year 2027'));
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
+    await screen.findByLabelText('AI credits available: 0');
+    expect(screen.getByText('AI planning uses credits')).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Bearing 360 includes recurring AI credits and access to credit packs for AI-assisted goal planning.',
+      ),
+    ).toBeTruthy();
+    await screen.findByLabelText('View Bearing 360 plans for AI goal builder');
     fireEvent.press(screen.getByLabelText('View Bearing 360 plans for AI goal builder'));
 
     expect(navigate).toHaveBeenCalledWith('PremiumPaywall', {
@@ -970,22 +1000,23 @@ describe('GoalsScreen', () => {
     });
   });
 
-  it('does not own paywall legal documents locally', () => {
+  it('does not own paywall legal documents locally', async () => {
     mockEmptyGoals();
     const navigate = jest.fn();
 
     render(<GoalsScreen route={{ params: { createGoal: true } }} navigation={{ navigate }} />);
 
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
     fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.changeText(
       screen.getByLabelText('Planning context'),
       'Train consistently for eight weeks.',
     );
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
     fireEvent.press(screen.getByLabelText('Select goal target year'));
     fireEvent.press(screen.getByLabelText('Select goal target year 2027'));
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
+    await screen.findByLabelText('View Bearing 360 plans for AI goal builder');
     fireEvent.press(screen.getByLabelText('View Bearing 360 plans for AI goal builder'));
 
     expect(navigate).toHaveBeenCalledWith('PremiumPaywall', {
@@ -1007,7 +1038,7 @@ describe('GoalsScreen', () => {
 
     render(<GoalsScreen route={{ params: { createGoal: true } }} />);
     openAiPlanningStep();
-    await waitFor(() => expect(screen.getByText(/AI credits available: 10/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByLabelText('AI credits available: 10')).toBeTruthy());
 
     fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
 
@@ -1020,6 +1051,11 @@ describe('GoalsScreen', () => {
     expect(
       screen.getByRole('button', { name: 'Generate AI goal plan' }).props.accessibilityState,
     ).toEqual({ disabled: true, busy: false });
+    expect(screen.getByLabelText('Back')).toBeDisabled();
+    expect(screen.getByLabelText('Next')).toBeDisabled();
+    fireEvent.press(screen.getByLabelText('Back'));
+    fireEvent.press(screen.getByLabelText('Next'));
+    expect(screen.getByText('Step 4 of 5: AI Planning')).toBeTruthy();
   });
 
   it('generates an editable AI draft before saving for premium users', async () => {
@@ -1103,31 +1139,40 @@ describe('GoalsScreen', () => {
 
     render(<GoalsScreen route={{ params: { createGoal: true } }} />);
 
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
     fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.changeText(
       screen.getByLabelText('Planning context'),
       'Train consistently for eight weeks.',
     );
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
     fireEvent.press(screen.getByLabelText('Select goal target year'));
     fireEvent.press(screen.getByLabelText('Select goal target year 2027'));
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('Continue'));
+      fireEvent.press(screen.getByLabelText('Next'));
     });
 
-    expect(screen.getByText('Build an editable first draft.')).toBeTruthy();
+    expect(
+      screen.getByText(
+        'AI planning is optional. Generate a draft, or select Next to add milestones and tasks yourself.',
+      ),
+    ).toBeTruthy();
     expect(screen.getByText('What the AI plans from')).toBeTruthy();
     expect(screen.queryByText('Bearing 360 Enabled')).toBeNull();
     expect(screen.queryByLabelText('View Bearing 360 plans for AI goal builder')).toBeNull();
-    await waitFor(() => expect(screen.getByText(/AI credits available: 10/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByLabelText(/AI credits available: 10/)).toBeTruthy());
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
     });
 
-    await waitFor(() => expect(screen.getByText('Review your AI draft.')).toBeTruthy());
-    expect(screen.getByText(/AI credits available: 9/)).toBeTruthy();
+    await waitFor(() => expect(screen.getByText('Your AI draft is ready.')).toBeTruthy());
+    expect(
+      screen.getByText(
+        'Select Next to review and edit each generated milestone and its tasks before saving.',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByLabelText(/AI credits available: 9/)).toBeTruthy();
     await act(async () => {
       await jest.advanceTimersByTimeAsync(700);
     });
@@ -1166,7 +1211,7 @@ describe('GoalsScreen', () => {
       expect.objectContaining({ goalId: 'goal-draft-1' }),
     );
 
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
     expect(screen.getByText('Build a running base')).toBeTruthy();
     expect(screen.queryByText('Choose weekly run times')).toBeNull();
     fireEvent.press(screen.getByLabelText('Expand milestone 1: Build a running base'));
@@ -1235,16 +1280,16 @@ describe('GoalsScreen', () => {
     mockedUseGoalStepEvents.mockReturnValue({ events: [], uiState: 'idle' });
 
     render(<GoalsScreen route={{ params: { createGoal: true } }} />);
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
     fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.changeText(
       screen.getByLabelText('Planning context'),
       'Build endurance safely with three runs per week over eight weeks.',
     );
-    fireEvent.press(screen.getByLabelText('Continue'));
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
+    fireEvent.press(screen.getByLabelText('Next'));
 
-    await waitFor(() => expect(screen.getByText(/AI credits available: 10/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByLabelText(/AI credits available: 10/)).toBeTruthy());
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
@@ -1262,11 +1307,11 @@ describe('GoalsScreen', () => {
       generateAiGoalPlanDraft as jest.MockedFunction<typeof generateAiGoalPlanDraft>
     ).mock.calls;
     expect(generationCalls[0][0].requestId).toBe(generationCalls[1][0].requestId);
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
     expect(screen.getByLabelText('Expand milestone 1: Milestone 1')).toBeTruthy();
   });
 
-  it('explains when the server has not confirmed premium access for AI planning', async () => {
+  it('explains when the server cannot confirm AI planning access', async () => {
     (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
       entitlement: { status: 'active' } as never,
       uiState: 'ready',
@@ -1279,16 +1324,14 @@ describe('GoalsScreen', () => {
 
     render(<GoalsScreen route={{ params: { createGoal: true } }} />);
     openAiPlanningStep();
-    await waitFor(() => expect(screen.getByText(/AI credits available: 10/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByLabelText(/AI credits available: 10/)).toBeTruthy());
 
     await act(async () => {
       fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
     });
 
     expect(
-      screen.getByText(
-        'Bearing 360 access is not available for this account yet. Restore purchases or try again shortly.',
-      ),
+      screen.getByText('AI planning access could not be confirmed. Try again shortly.'),
     ).toBeTruthy();
   });
 
@@ -1301,18 +1344,61 @@ describe('GoalsScreen', () => {
     (getAiCreditStatus as jest.MockedFunction<typeof getAiCreditStatus>).mockResolvedValue({
       eligible: true,
       availableCredits: 0,
+      welcomeMessageEligible: false,
     });
     mockEmptyGoals();
 
     render(<GoalsScreen route={{ params: { createGoal: true } }} />);
     openAiPlanningStep();
 
-    await waitFor(() => expect(screen.getByText(/AI credits available: 0/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByLabelText(/AI credits available: 0/)).toBeTruthy());
     expect(screen.getByLabelText('Generate AI goal plan').props.accessibilityState.disabled).toBe(
       true,
     );
-    fireEvent.press(screen.getByLabelText('Continue'));
+    expect(screen.getByText('You have used your available AI credits')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Next'));
     expect(screen.getByLabelText('Expand milestone 1: Milestone 1')).toBeTruthy();
+  });
+
+  it('keeps the welcome message after a user spends one welcome AI credit', async () => {
+    (getAiCreditStatus as jest.MockedFunction<typeof getAiCreditStatus>).mockResolvedValue({
+      eligible: true,
+      availableCredits: 1,
+      welcomeMessageEligible: true,
+    });
+    mockEmptyGoals();
+
+    render(<GoalsScreen route={{ params: { createGoal: true } }} />);
+    openAiPlanningStep();
+
+    await waitFor(() => expect(screen.getByLabelText('AI credits available: 1')).toBeTruthy());
+    expect(
+      screen.getByText(
+        'Welcome! Your account includes two free AI credits. Use them to turn your goal details into a plan with milestones and tasks. Select Generate Goal, then review and edit the plan before saving.',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText('Generate Goal')).toBeTruthy();
+    expect(screen.queryByText('Generate Draft')).toBeNull();
+  });
+
+  it('does not restore the welcome message after a subscription ends', async () => {
+    (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
+      entitlement: { status: 'expired' } as never,
+      uiState: 'ready',
+      error: null,
+    });
+    (getAiCreditStatus as jest.MockedFunction<typeof getAiCreditStatus>).mockResolvedValue({
+      eligible: true,
+      availableCredits: 1,
+      welcomeMessageEligible: false,
+    });
+    mockEmptyGoals();
+
+    render(<GoalsScreen route={{ params: { createGoal: true } }} />);
+    openAiPlanningStep();
+
+    await waitFor(() => expect(screen.getByLabelText('AI credits available: 1')).toBeTruthy());
+    expect(screen.queryByText(/Welcome! Your account includes two free AI credits/)).toBeNull();
   });
 
   it('refreshes the balance and explains backend credit exhaustion', async () => {
@@ -1322,8 +1408,16 @@ describe('GoalsScreen', () => {
       error: null,
     });
     (getAiCreditStatus as jest.MockedFunction<typeof getAiCreditStatus>)
-      .mockResolvedValueOnce({ eligible: true, availableCredits: 1 })
-      .mockResolvedValueOnce({ eligible: true, availableCredits: 0 });
+      .mockResolvedValueOnce({
+        eligible: true,
+        availableCredits: 1,
+        welcomeMessageEligible: false,
+      })
+      .mockResolvedValueOnce({
+        eligible: true,
+        availableCredits: 0,
+        welcomeMessageEligible: false,
+      });
     (
       generateAiGoalPlanDraft as jest.MockedFunction<typeof generateAiGoalPlanDraft>
     ).mockRejectedValue({ code: 'functions/resource-exhausted' });
@@ -1331,17 +1425,53 @@ describe('GoalsScreen', () => {
 
     render(<GoalsScreen route={{ params: { createGoal: true } }} />);
     openAiPlanningStep();
-    await waitFor(() => expect(screen.getByText(/AI credits available: 1/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByLabelText(/AI credits available: 1/)).toBeTruthy());
     fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
 
     await waitFor(() =>
-      expect(
-        screen.getByText(
-          'No AI planning credits remain. Continue manually or get more AI credits.',
-        ),
-      ).toBeTruthy(),
+      expect(screen.getByText('You have used your available AI credits')).toBeTruthy(),
     );
-    expect(screen.getByText(/AI credits available: 0/)).toBeTruthy();
+    expect(screen.getByLabelText(/AI credits available: 0/)).toBeTruthy();
+  });
+
+  it('keeps navigation locked through failed exhaustion recovery and shows only the known zero state', async () => {
+    let rejectBalance!: (error: Error) => void;
+    jest.mocked(usePremiumEntitlement).mockReturnValue({
+      entitlement: { status: 'active' } as never,
+      uiState: 'ready',
+      error: null,
+    });
+    jest
+      .mocked(getAiCreditStatus)
+      .mockResolvedValueOnce({
+        eligible: true,
+        availableCredits: 1,
+        welcomeMessageEligible: false,
+      })
+      .mockImplementationOnce(
+        () =>
+          new Promise((_resolve, reject) => {
+            rejectBalance = reject;
+          }),
+      );
+    jest
+      .mocked(generateAiGoalPlanDraft)
+      .mockRejectedValue({ code: 'functions/resource-exhausted' });
+    mockEmptyGoals();
+    render(<GoalsScreen route={{ params: { createGoal: true } }} />);
+    openAiPlanningStep();
+    await screen.findByLabelText('AI credits available: 1');
+    fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
+    await waitFor(() => expect(getAiCreditStatus).toHaveBeenCalledTimes(2));
+    expect(screen.getByLabelText('Back')).toBeDisabled();
+    expect(screen.getByLabelText('Next')).toBeDisabled();
+    await act(async () => rejectBalance(new Error('offline')));
+    expect(screen.getByLabelText('AI credits available: 0')).toBeTruthy();
+    expect(screen.getAllByText('You have used your available AI credits')).toHaveLength(1);
+    expect(screen.queryByText('AI credit balance is unavailable right now.')).toBeNull();
+    expect(screen.getByLabelText('Generate AI goal plan')).toBeDisabled();
+    expect(screen.getByLabelText('Back')).toBeEnabled();
+    expect(screen.getByLabelText('Next')).toBeEnabled();
   });
 
   it('shows a specific message when another generation is active', async () => {
@@ -1357,7 +1487,7 @@ describe('GoalsScreen', () => {
 
     render(<GoalsScreen route={{ params: { createGoal: true } }} />);
     openAiPlanningStep();
-    await waitFor(() => expect(screen.getByText(/AI credits available: 10/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByLabelText(/AI credits available: 10/)).toBeTruthy());
     fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
 
     await waitFor(() =>
@@ -1367,6 +1497,155 @@ describe('GoalsScreen', () => {
         ),
       ).toBeTruthy(),
     );
+  });
+
+  it.each([null, 'expired', 'canceled', 'ended', 'loading'])(
+    'allows authenticated credits with subscription status %s',
+    async (status) => {
+      (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
+        entitlement:
+          status === 'ended'
+            ? ({ status: 'active', periodEndAt: new Date('2020-01-01') } as never)
+            : status && status !== 'loading'
+              ? ({ status } as never)
+              : null,
+        uiState: status === 'loading' ? 'loading' : 'ready',
+        error: null,
+      });
+      (getAiCreditStatus as jest.MockedFunction<typeof getAiCreditStatus>).mockResolvedValue({
+        eligible: true,
+        availableCredits: 1,
+        welcomeMessageEligible: false,
+      });
+      (
+        generateAiGoalPlanDraft as jest.MockedFunction<typeof generateAiGoalPlanDraft>
+      ).mockImplementation(() => new Promise(() => undefined));
+      mockEmptyGoals();
+      render(<GoalsScreen route={{ params: { createGoal: true } }} />);
+      openAiPlanningStep();
+      await screen.findByLabelText('AI credits available: 1');
+      expect(screen.getByLabelText('Generate AI goal plan')).toBeEnabled();
+      expect(screen.queryByLabelText('Get more AI credits from AI planning')).toBeNull();
+      fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
+      await waitFor(() => expect(generateAiGoalPlanDraft).toHaveBeenCalledTimes(1));
+    },
+  );
+
+  it.each([5, 0, null])(
+    'requires a confirmed positive same-step balance after member purchase (balance %s)',
+    async (balance) => {
+      (usePremiumEntitlement as jest.MockedFunction<typeof usePremiumEntitlement>).mockReturnValue({
+        entitlement: { status: 'active' } as never,
+        uiState: 'ready',
+        error: null,
+      });
+      jest.mocked(getPremiumPurchaseAvailability).mockReturnValue('available');
+      jest
+        .mocked(loadCreditPacks)
+        .mockResolvedValue([
+          { packageIdentifier: 'credits_5', amount: 5, currencyCode: 'AIC', priceText: '$4.99' },
+        ]);
+      jest.mocked(purchaseCreditPack).mockResolvedValue('success');
+      jest
+        .mocked(getAiCreditStatus)
+        .mockResolvedValueOnce({
+          eligible: false,
+          availableCredits: 0,
+          welcomeMessageEligible: false,
+        })
+        .mockResolvedValueOnce({
+          eligible: true,
+          availableCredits: 5,
+          welcomeMessageEligible: false,
+        })
+        .mockImplementation(async () => {
+          if (balance === null) throw new Error('offline');
+          return {
+            eligible: balance > 0,
+            availableCredits: balance,
+            welcomeMessageEligible: false,
+          };
+        });
+      mockEmptyGoals();
+      render(<GoalsScreen route={{ params: { createGoal: true } }} />);
+      openAiPlanningStep();
+      await screen.findByLabelText('AI credits available: 0');
+      expect(screen.getByLabelText('Generate AI goal plan')).toBeDisabled();
+      fireEvent.press(screen.getByLabelText('Get more AI credits from AI planning'));
+      fireEvent.press(await screen.findByRole('button', { name: 'Continue with 5 AI credits' }));
+      fireEvent.press(
+        screen.getByRole('button', { name: 'Continue to the store for 5 AI credits' }),
+      );
+      await screen.findByText('AI credits added');
+      fireEvent.press(screen.getByRole('button', { name: 'Close credit pack purchase' }));
+      if (balance === null) await screen.findByLabelText('Retry AI credit balance');
+      else await screen.findByLabelText(`AI credits available: ${balance}`);
+      expect(screen.getByText('Step 4 of 5: AI Planning')).toBeTruthy();
+      if (balance !== null && balance > 0) {
+        expect(screen.getByLabelText('Generate AI goal plan')).toBeEnabled();
+        expect(screen.queryByText('AI planning uses credits')).toBeNull();
+      } else {
+        expect(screen.getByLabelText('Generate AI goal plan')).toBeDisabled();
+        fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
+        expect(generateAiGoalPlanDraft).not.toHaveBeenCalled();
+      }
+      expect(getAiCreditStatus).toHaveBeenCalledTimes(3);
+    },
+  );
+
+  it('blocks unknown and failed balances, retries, and refreshes on every step visit', async () => {
+    let resolveBalance!: (value: {
+      eligible: boolean;
+      availableCredits: number;
+      welcomeMessageEligible: boolean;
+    }) => void;
+    const lookup = getAiCreditStatus as jest.MockedFunction<typeof getAiCreditStatus>;
+    lookup
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveBalance = resolve;
+          }),
+      )
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce({
+        eligible: true,
+        availableCredits: 1,
+        welcomeMessageEligible: false,
+      })
+      .mockResolvedValueOnce({
+        eligible: false,
+        availableCredits: 0,
+        welcomeMessageEligible: false,
+      });
+    mockEmptyGoals();
+    render(<GoalsScreen route={{ params: { createGoal: true } }} />);
+    openAiPlanningStep();
+    expect(screen.getByLabelText('Generate AI goal plan')).toBeDisabled();
+    fireEvent.press(screen.getByLabelText('Generate AI goal plan'));
+    expect(generateAiGoalPlanDraft).not.toHaveBeenCalled();
+    fireEvent.press(screen.getByLabelText('Back'));
+    fireEvent.press(screen.getByLabelText('Next'));
+    await screen.findByLabelText('Retry AI credit balance');
+    expect(screen.getByText('AI CREDITS AVAILABLE')).toBeTruthy();
+    await act(async () =>
+      resolveBalance({
+        eligible: true,
+        availableCredits: 10,
+        welcomeMessageEligible: false,
+      }),
+    );
+    expect(screen.queryByLabelText('AI credits available: 10')).toBeNull();
+    expect(screen.getByLabelText('Generate AI goal plan')).toBeDisabled();
+    fireEvent.press(screen.getByLabelText('Retry AI credit balance'));
+    await screen.findByLabelText('AI credits available: 1');
+    expect(screen.getByLabelText('Generate AI goal plan')).toBeEnabled();
+    expect(screen.queryByText('AI credit balance is unavailable right now.')).toBeNull();
+    fireEvent.press(screen.getByLabelText('Next'));
+    fireEvent.press(screen.getByLabelText('Back'));
+    await screen.findByLabelText('AI credits available: 0');
+    expect(screen.getByLabelText('Generate AI goal plan')).toBeDisabled();
+    expect(lookup).toHaveBeenCalledTimes(4);
   });
 
   it('limits year choices to the present or future and allows a target date of today', () => {
@@ -1396,13 +1675,13 @@ describe('GoalsScreen', () => {
 
     render(<GoalsScreen route={{ params: { createGoal: true } }} />);
 
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
     fireEvent.changeText(screen.getByLabelText('Goal outcome'), 'Run a 10k');
     fireEvent.changeText(
       screen.getByLabelText('Planning context'),
       'Train consistently for eight weeks.',
     );
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
 
     expect(screen.getByLabelText('July 21, 2026').props.accessibilityState.selected).toBe(true);
 
@@ -1416,7 +1695,7 @@ describe('GoalsScreen', () => {
     fireEvent.press(screen.getByLabelText('Select goal target month'));
     fireEvent.press(screen.getByLabelText('Select goal target July'));
     fireEvent.press(screen.getByLabelText('July 20, 2026'));
-    fireEvent.press(screen.getByLabelText('Continue'));
+    fireEvent.press(screen.getByLabelText('Next'));
 
     expect(screen.queryByText('Estimated completion date must be today or later.')).toBeNull();
     expect(screen.getByText('Step 4 of 5: AI Planning')).toBeTruthy();

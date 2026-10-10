@@ -10,7 +10,7 @@ Release placeholders that must be replaced before publication:
 - Support email and public terms URL: `[REQUIRED]`
 - Minimum age and legal-capacity rules: `[REQUIRED]`
 - Governing law, venue, and regional consumer notices: `[REQUIRED]`
-- Final subscription products, trial terms, regional prices, credit grants, and included features:
+- Final subscription products, regional prices, credit grants, and included features:
   `[OWNER APPROVAL REQUIRED]`
 
 ## Agreement and Eligibility
@@ -57,11 +57,13 @@ Apple, Google, Firebase, Gemini, and other third-party services have separate te
 ## Bearing 360 Subscriptions And AI Credits
 
 Bearing 360 is offered through monthly and annual auto-renewing subscriptions. The live
-store-localized product, price, currency, billing period, trial or introductory terms, renewal
-behavior, and included features are displayed before purchase. RevenueCat remotely configures the
-AI-credit grants associated with eligible subscription, trial, and consumable pack products; those
+store-localized product, price, currency, billing period, renewal behavior, and included features
+are displayed before purchase. No trials or introductory offers are provided. RevenueCat remotely configures the
+AI-credit grants associated with eligible paid subscription and consumable pack products; those
 amounts may change for future grants without an app update.
 
+New email and Google accounts receive two welcome AI credits. Authenticated users may spend
+available credits without an active subscription; credit-pack purchases remain member-only.
 Each AI plan generation costs one credit. Bearing debits after authorization and refunds that credit
 when generation fails under the implemented recovery rules. Credits and consumable packs are
 non-transferable, have no cash value, are not legal tender, and cannot be sold or exchanged. Credit

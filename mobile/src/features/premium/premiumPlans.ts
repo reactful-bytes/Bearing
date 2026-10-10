@@ -10,12 +10,6 @@ export type StorePackageSummary = {
     priceString: string;
     pricePerMonthString: string | null;
     subscriptionPeriod: string | null;
-    introPrice: {
-      priceString: string;
-      cycles: number;
-      periodUnit: string;
-      periodNumberOfUnits: number;
-    } | null;
   };
 };
 
@@ -23,7 +17,6 @@ export type ProductGrantSummary = {
   storeProductId: string;
   currencyCode?: string;
   amount: number;
-  trialAmount: number | null;
 };
 
 type PlanPeriodDetails = {
@@ -112,18 +105,6 @@ function getPlanPeriodDetails(storePackage: StorePackageSummary): PlanPeriodDeta
   };
 }
 
-function getIntroductoryOfferText(storePackage: StorePackageSummary): string | null {
-  const intro = storePackage.product.introPrice;
-  if (!intro) return null;
-
-  const unit = intro.periodUnit.toLowerCase();
-  const duration = intro.periodNumberOfUnits * intro.cycles;
-  const unitLabel = `${unit}${duration === 1 ? '' : 's'}`;
-  return intro.priceString === '0' || Number(intro.priceString.replace(/[^0-9.]/g, '')) === 0
-    ? `${duration} ${unitLabel} free`
-    : `${intro.priceString} for ${duration} ${unitLabel}`;
-}
-
 function getAnnualMonthlyBreakdownText(storePackage: StorePackageSummary): string | null {
   if (storePackage.product.subscriptionPeriod !== 'P1Y') return null;
   const monthlyPrice = storePackage.product.pricePerMonthString?.trim();
@@ -154,14 +135,12 @@ export function normalizePremiumPlans(
       packageIdentifier: storePackage.identifier,
       telemetryPlanType: storePackage.packageType,
       creditAmount: productGrant?.amount ?? null,
-      trialCreditAmount: productGrant?.trialAmount ?? null,
       title: getCustomerFacingPlanTitle(storePackage, periodDetails.fallbackTitle),
       priceText: storePackage.product.priceString,
       priceSuffixText: periodDetails.priceSuffixText,
       annualMonthlyBreakdownText: periodDetails.isAutoRenewing
         ? getAnnualMonthlyBreakdownText(storePackage)
         : null,
-      introductoryOfferText: getIntroductoryOfferText(storePackage),
       isAutoRenewing: periodDetails.isAutoRenewing,
       isOneTimePurchase: periodDetails.isOneTimePurchase,
     };

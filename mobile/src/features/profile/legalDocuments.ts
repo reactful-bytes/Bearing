@@ -87,7 +87,7 @@ export const LEGAL_DOCUMENTS: Record<LegalDocumentId, LegalDocument> = {
       },
       {
         heading: 'Subscriptions',
-        body: 'Bearing 360 may be offered through auto-renewing store subscriptions. AI credit packs are one-time consumable purchases available to eligible members. The live localized price, billing period, configured AI credit grant, and any trial or introductory terms are shown before purchase. Apple or Google processes payment and controls cancellation and refund requests. Subscriptions can be restored to the secured Bearing account. Deleting Bearing does not by itself cancel a store subscription.',
+        body: 'Bearing 360 may be offered through auto-renewing store subscriptions. AI credit packs are one-time consumable purchases available to eligible members. The live localized price, billing period, and configured AI credit grant are shown before purchase. No trials or introductory offers are provided. New email and Google accounts receive two welcome AI credits; authenticated users can spend available credits without an active subscription. Apple or Google processes payment and controls cancellation and refund requests. Subscriptions can be restored to the secured Bearing account. Deleting Bearing does not by itself cancel a store subscription.',
       },
       {
         heading: 'Availability and changes',

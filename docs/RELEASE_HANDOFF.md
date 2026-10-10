@@ -44,15 +44,21 @@ restricted release location without secrets, full UIDs, receipts, or customer co
 ### RevenueCat Configuration
 
 - [ ] Create and activate virtual currency `AIC` in the production RevenueCat project.
-- [ ] Configure approved non-expiring paid and trial grants remotely for monthly and annual
+- [ ] Configure approved non-expiring paid grants remotely for monthly and annual
       products. Record the current values and RevenueCat screenshots privately; do not place grant
       amounts or an assumed cadence in source or active docs.
 - [ ] Create offering `credit_packs` and attach only approved consumable products with non-expiring
       `AIC` grants. Verify every pack is non-transferable, has no cash value, and has no Restore path.
 - [ ] Provision `REVENUECAT_SECRET_API_KEY_V2` as a separate least-privilege key for required
-      customer virtual-currency reads/transactions and project currency/product/grant reads. Record
+      customer creation (`customer_information:customers:read_write`), virtual-currency
+      reads/transactions, and project currency/product/grant reads. Record
       key name, project, permissions, and rotation owner, never the key value.
 - [ ] Verify `REVENUECAT_PROJECT_ID` and `REVENUECAT_AI_CURRENCY_CODE` for staging and production.
+- [ ] Disable all trial/intro offers in both stores and RevenueCat; remove or zero trial grants.
+      No trial access is grandfathered.
+- [ ] Deploy the `welcomeAiCredit` profile-created hook and credit-based callables before the
+      client. First profile creation qualifies regardless of Auth account age; verify existing
+      profiles do not retrigger and missing profiles qualify.
 - [ ] Keep the V1 key boundary limited to canonical subscriber reconciliation and RevenueCat
       customer deletion. Do not authorize V1 as balance, grant, or transaction authority.
 - [ ] Configure authenticated webhook URL, authorization, signing secret, and all required purchase,
@@ -61,13 +67,19 @@ restricted release location without secrets, full UIDs, receipts, or customer co
 ### Sandbox And Installed Builds
 
 - [ ] Complete the `MONETIZATION_RELEASE.md` sandbox matrix with disposable accounts on iOS and
-      Android, including trial, conversion, renewal behavior, cancellation, refund, restore,
+      Android, including absence of trials, renewal behavior, cancellation, refund, restore,
       entitlement delay, duplicate webhook, and account deletion.
 - [ ] Prove a successful AI generation debits exactly one credit, a generation/provider failure
       refunds exactly one credit, and request replay does not adjust twice.
 - [ ] Prove each `credit_packs` consumable purchase grants its remotely configured amount, refreshes
       the live balance, handles cancel/failure/accepted-but-syncing, and offers no Restore action.
-- [ ] Change a paid, trial, or pack grant in RevenueCat non-production configuration and prove future
+- [ ] Verify fresh email and Google signup each eventually grant two welcome credits. Retry and
+      recreate profiles without duplicate grants; a first profile creation qualifies even for an
+      older Auth account whose profile was missing.
+- [ ] Verify positive-credit AI access with active, ended, canceled, expired, or absent subscriptions;
+      zero-credit members see the primary purchase CTA and generation stays disabled until a positive
+      live read. Check every AI-step visit, purchase return, failed reads, and Back/Next locking.
+- [ ] Change a paid or pack grant in RevenueCat non-production configuration and prove future
       catalog/UI behavior changes without an app or Functions deployment. Restore the approved
       value and record both observations.
 - [ ] Install and exercise development plus release-candidate builds on physical iOS and Android

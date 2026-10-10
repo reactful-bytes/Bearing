@@ -3,7 +3,6 @@ export type RevenueCatProductGrant = {
   productType: string;
   currencyCode: string;
   amount: number;
-  trialAmount: number | null;
   expiresAtCycleEnd: boolean;
 };
 

@@ -1,5 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../../design/ThemeProvider';
@@ -10,6 +18,7 @@ import { AppCard } from '../ui/AppCard';
 import { AppButton } from '../ui/AppButton';
 import { AppModal } from '../ui/AppModal';
 import { AppIcon } from '../ui/AppIcon';
+import { IconButton } from '../ui/IconButton';
 import { CreditPackPurchaseModal } from '../premium/CreditPackPurchaseModal';
 import { FormField } from '../ui/FormField';
 import { RowContextMenu, closeRowContextMenu } from '../ui/RowContextMenu';
@@ -47,6 +56,7 @@ import {
   getAiPlanningErrorCode,
   getAiPlanningErrorDetails,
 } from '../../services/firebase/firebaseAiGoalPlans';
+import { setAiCreditBalance } from '../../features/premium/aiCreditBalance';
 
 type CreateGoalModalProps = {
   visible: boolean;
@@ -268,6 +278,59 @@ export function CreateGoalModal({
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autosaveQueue = useRef<Promise<void>>(Promise.resolve());
   const generationAttempt = useRef(0);
+  const generating = useRef(false);
+  const balanceAttempt = useRef(0);
+  const creditNoticeProgress = useRef(new Animated.Value(0)).current;
+
+  const applyAiCreditBalance = useCallback(
+    (availableCredits: number, welcomeMessageEligible?: boolean) => {
+      setAiCreditStatus((currentStatus) => {
+        const shouldShowWelcomeMessage =
+          (welcomeMessageEligible ?? currentStatus?.welcomeMessageEligible === true) &&
+          availableCredits > 0;
+        return {
+          eligible: availableCredits > 0,
+          availableCredits,
+          welcomeMessageEligible: shouldShowWelcomeMessage,
+        };
+      });
+      setAiCreditStatusError(null);
+      if (creditPackUserId) setAiCreditBalance(creditPackUserId, availableCredits);
+    },
+    [creditPackUserId],
+  );
+
+  const refreshAiCreditStatus = useCallback(
+    async (preserveExhaustion = false) => {
+      const attempt = ++balanceAttempt.current;
+      if (!preserveExhaustion) setAiCreditStatus(null);
+      setAiCreditsLoading(true);
+      setAiCreditStatusError(null);
+      try {
+        const status = await onLoadAiCreditStatus();
+        if (attempt === balanceAttempt.current)
+          applyAiCreditBalance(status.availableCredits, status.welcomeMessageEligible);
+      } catch {
+        if (attempt === balanceAttempt.current && !preserveExhaustion)
+          setAiCreditStatusError('AI credit balance is unavailable right now.');
+      } finally {
+        if (attempt === balanceAttempt.current) setAiCreditsLoading(false);
+      }
+    },
+    [applyAiCreditBalance, onLoadAiCreditStatus],
+  );
+
+  useEffect(() => {
+    generationAttempt.current += 1;
+    generating.current = false;
+    setAiGenerating(false);
+    setCreditPackVisible(false);
+    return () => {
+      generationAttempt.current += 1;
+      balanceAttempt.current += 1;
+      generating.current = false;
+    };
+  }, [creditPackUserId, visible]);
 
   useEffect(() => {
     if (!visible) return;
@@ -281,30 +344,47 @@ export function CreateGoalModal({
     [wizardIndex],
   );
 
-  useEffect(() => {
-    if (!visible || wizardIndex !== 3 || !isPremiumStatusResolved || !hasPremiumAccess) {
+  useLayoutEffect(() => {
+    if (!visible || wizardIndex !== 3 || creditPackVisible) {
       return;
     }
-
-    let active = true;
-    setAiCreditsLoading(true);
-    setAiCreditStatusError(null);
-    setCreditPackVisible(false);
-    void onLoadAiCreditStatus()
-      .then((status) => {
-        if (active) setAiCreditStatus(status);
-      })
-      .catch(() => {
-        if (active) setAiCreditStatusError('AI credit balance is unavailable right now.');
-      })
-      .finally(() => {
-        if (active) setAiCreditsLoading(false);
-      });
-
+    setAiError(null);
+    void refreshAiCreditStatus();
     return () => {
-      active = false;
+      balanceAttempt.current += 1;
     };
-  }, [hasPremiumAccess, isPremiumStatusResolved, onLoadAiCreditStatus, visible, wizardIndex]);
+  }, [creditPackVisible, hasPremiumAccess, refreshAiCreditStatus, visible, wizardIndex]);
+
+  const canGenerateAiPlan =
+    visible &&
+    wizardIndex === 3 &&
+    !creditPackVisible &&
+    !aiGenerating &&
+    !aiCreditsLoading &&
+    !aiCreditStatusError &&
+    aiCreditStatus !== null &&
+    aiCreditStatus.availableCredits > 0;
+  const isWelcomeCreditUser =
+    isPremiumStatusResolved &&
+    !hasPremiumAccess &&
+    aiCreditStatus?.welcomeMessageEligible === true &&
+    aiCreditStatus.availableCredits > 0 &&
+    !aiDraft;
+  const shouldShowAiCreditNotice = aiCreditStatus?.availableCredits === 0;
+
+  useEffect(() => {
+    creditNoticeProgress.stopAnimation();
+    creditNoticeProgress.setValue(0);
+    if (!shouldShowAiCreditNotice) return;
+
+    Animated.timing(creditNoticeProgress, {
+      toValue: 1,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
+
+    return () => creditNoticeProgress.stopAnimation();
+  }, [creditNoticeProgress, shouldShowAiCreditNotice]);
 
   const buildGoalInput = useCallback((): CreateGoalInput => {
     const parsedDate = getGoalDateFromParts(goalDateParts);
@@ -438,6 +518,7 @@ export function CreateGoalModal({
     setAutosaveError(null);
     setAiDraft(null);
     setAiGenerating(false);
+    generating.current = false;
     setRegenerationConfirmationVisible(false);
     setAiError(null);
     setAiCreditStatus(null);
@@ -450,6 +531,7 @@ export function CreateGoalModal({
 
   async function handleClose(): Promise<void> {
     generationAttempt.current += 1;
+    balanceAttempt.current += 1;
     if (!aiGenerating) {
       try {
         await flushDraftAutosave();
@@ -622,6 +704,7 @@ export function CreateGoalModal({
   }
 
   async function handleGenerateAiPlan(): Promise<void> {
+    if (!canGenerateAiPlan || generating.current) return;
     setRegenerationConfirmationVisible(false);
     if (!title.trim() || title.trim().length > 120) {
       setAiError('Enter a goal name up to 120 characters before generating a plan.');
@@ -636,6 +719,7 @@ export function CreateGoalModal({
       return;
     }
     const currentGenerationAttempt = ++generationAttempt.current;
+    generating.current = true;
     setAiGenerating(true);
     setAiError(null);
 
@@ -657,9 +741,10 @@ export function CreateGoalModal({
       aiRequestId.current = null;
       if (draft.goalId) setPersistedGoalId(draft.goalId);
       if (typeof draft.availableCredits === 'number') {
-        setAiCreditStatus((current) =>
-          current ? { ...current, availableCredits: draft.availableCredits! } : current,
-        );
+        applyAiCreditBalance(draft.availableCredits);
+      } else {
+        await refreshAiCreditStatus();
+        if (currentGenerationAttempt !== generationAttempt.current) return;
       }
 
       setAiDraft(draft);
@@ -700,12 +785,11 @@ export function CreateGoalModal({
       const providerDetails = getAiPlanningErrorDetails(generationError);
       if (code === 'resource-exhausted') {
         aiRequestId.current = null;
-        setAiError('No AI planning credits remain. Continue manually or get more AI credits.');
+        applyAiCreditBalance(0);
+        setAiError(null);
       } else if (code === 'permission-denied') {
         aiRequestId.current = null;
-        setAiError(
-          'Bearing 360 access is not available for this account yet. Restore purchases or try again shortly.',
-        );
+        setAiError('AI planning access could not be confirmed. Try again shortly.');
       } else if (code === 'aborted') {
         setAiError('An AI plan is already being created. Please wait a moment and try again.');
       } else if (code === 'failed-precondition') {
@@ -723,13 +807,12 @@ export function CreateGoalModal({
         );
       }
 
-      try {
-        setAiCreditStatus(await onLoadAiCreditStatus());
-      } catch {
-        setAiCreditStatusError('AI credit balance is unavailable right now.');
-      }
+      await refreshAiCreditStatus(code === 'resource-exhausted');
     } finally {
-      if (currentGenerationAttempt === generationAttempt.current) setAiGenerating(false);
+      if (currentGenerationAttempt === generationAttempt.current) {
+        generating.current = false;
+        setAiGenerating(false);
+      }
     }
   }
 
@@ -813,6 +896,7 @@ export function CreateGoalModal({
   }
 
   async function handleNext(): Promise<void> {
+    if (generating.current || aiGenerating) return;
     if (!validateCurrentStep()) {
       return;
     }
@@ -872,6 +956,72 @@ export function CreateGoalModal({
       setSaving(false);
     }
   }
+
+  const aiCreditBalanceRow = (
+    <>
+      {aiCreditStatusError ? <Text style={styles.errorText}>{aiCreditStatusError}</Text> : null}
+      <View style={styles.creditHeading}>
+        <View style={styles.creditIconFrame}>
+          <AppIcon name="aiPlanning" size={20} color={theme.colors.brand} decorative />
+        </View>
+        <View style={styles.creditCopy}>
+          <Text style={styles.creditTitle}>AI CREDITS AVAILABLE</Text>
+          <Text
+            style={styles.creditBalance}
+            accessibilityLabel={
+              aiCreditStatus
+                ? `AI credits available: ${aiCreditStatus.availableCredits}`
+                : undefined
+            }
+          >
+            {aiCreditsLoading
+              ? 'Checking AI credits...'
+              : (aiCreditStatus?.availableCredits ?? 'Unavailable')}
+          </Text>
+        </View>
+        {aiCreditStatusError ? (
+          <IconButton
+            name="refresh"
+            accessibilityLabel="Retry AI credit balance"
+            disabled={aiGenerating || aiCreditsLoading}
+            onPress={() => void refreshAiCreditStatus()}
+          />
+        ) : null}
+      </View>
+    </>
+  );
+  const aiCreditNotice = shouldShowAiCreditNotice ? (
+    <Animated.View
+      style={[
+        styles.creditInfo,
+        {
+          opacity: creditNoticeProgress,
+          transform: [
+            {
+              translateY: creditNoticeProgress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [-8, 0],
+              }),
+            },
+          ],
+        },
+      ]}
+    >
+      <AppIcon name="info" size={20} color={theme.colors.brand} decorative />
+      <View style={styles.creditInfoCopy}>
+        <Text style={styles.creditInfoTitle}>
+          {hasPremiumAccess
+            ? 'You have used your available AI credits'
+            : 'AI planning uses credits'}
+        </Text>
+        <Text style={styles.creditInfoBody}>
+          {hasPremiumAccess
+            ? 'Get more AI credits to create another goal plan.'
+            : 'Bearing 360 includes recurring AI credits and access to credit packs for AI-assisted goal planning.'}
+        </Text>
+      </View>
+    </Animated.View>
+  ) : null;
 
   return (
     <>
@@ -1002,24 +1152,14 @@ export function CreateGoalModal({
           ) : null}
 
           {wizardIndex === 3 ? (
-            !isPremiumStatusResolved ? (
-              <AppCard style={styles.card}>
-                <Text style={styles.cardTitle}>Checking Bearing 360 access...</Text>
-                <Text style={styles.cardBody}>
-                  Bearing is confirming whether AI goal planning should be unlocked for this
-                  account.
-                </Text>
-              </AppCard>
-            ) : hasPremiumAccess ? (
-              <AppCard style={styles.card}>
-                <Text style={styles.cardTitle}>
-                  {aiDraft ? 'Review your AI draft.' : 'Build an editable first draft.'}
-                </Text>
+            <View style={styles.section}>
+              <View style={styles.section}>
                 {aiDraft ? (
                   <>
+                    <Text style={styles.cardTitle}>Your AI draft is ready.</Text>
                     <Text style={styles.cardBody}>{aiDraft.timelineSummary}</Text>
                     <Text style={styles.cardBody}>
-                      Continue to review and edit each generated milestone and its tasks before
+                      Select Next to review and edit each generated milestone and its tasks before
                       saving.
                     </Text>
                     <Text style={styles.regenerationGuidance}>
@@ -1030,17 +1170,31 @@ export function CreateGoalModal({
                       label="Edit Goal Details"
                       variant="secondary"
                       accessibilityLabel="Edit goal details before regenerating"
-                      onPress={() => setWizardIndex(1)}
+                      disabled={aiGenerating}
+                      onPress={() => {
+                        if (!generating.current) setWizardIndex(1);
+                      }}
                     />
                   </>
                 ) : (
                   <>
+                    {isWelcomeCreditUser ? (
+                      <Text style={styles.cardBody}>
+                        Welcome! Your account includes two free AI credits. Use them to turn your
+                        goal details into a plan with milestones and tasks. Select Generate Goal,
+                        then review and edit the plan before saving.
+                      </Text>
+                    ) : (
+                      <Text style={styles.cardBody}>
+                        AI planning is optional. Generate a draft, or select Next to add milestones
+                        and tasks yourself.
+                      </Text>
+                    )}
                     <Text style={styles.exampleLabel}>What the AI plans from</Text>
                     <Text style={styles.cardBody}>
                       Your goal outcome, objectives, success measures, starting point, resources,
                       constraints, and timing guide the generated milestones and their tasks. Your
-                      goal is saved as a draft before planning begins. AI-generated plans are
-                      persisted before they return, and edits save automatically.
+                      goal is saved as a draft before planning begins.
                     </Text>
                   </>
                 )}
@@ -1060,23 +1214,12 @@ export function CreateGoalModal({
                     />
                   </View>
                 ) : null}
-                {aiCreditsLoading ? (
-                  <Text style={styles.cardBody}>Checking AI credits...</Text>
+                {aiError &&
+                !aiCreditsLoading &&
+                !aiCreditStatusError &&
+                aiCreditStatus?.availableCredits !== 0 ? (
+                  <Text style={styles.errorText}>{aiError}</Text>
                 ) : null}
-                {aiCreditStatus ? (
-                  <Text style={styles.cardBody}>
-                    AI credits available: {aiCreditStatus.availableCredits}
-                  </Text>
-                ) : null}
-                {aiCreditStatus?.availableCredits === 0 && !aiError ? (
-                  <Text style={styles.errorText}>
-                    No AI credits remain. Continue manually or check your plan balance later.
-                  </Text>
-                ) : null}
-                {aiCreditStatusError ? (
-                  <Text style={styles.errorText}>{aiCreditStatusError}</Text>
-                ) : null}
-                {aiError ? <Text style={styles.errorText}>{aiError}</Text> : null}
                 {aiGenerating ? (
                   <View
                     style={styles.generationStatus}
@@ -1093,49 +1236,39 @@ export function CreateGoalModal({
                     </View>
                   </View>
                 ) : null}
+                {aiCreditBalanceRow}
+                {aiCreditNotice}
                 <AppButton
-                  label={aiDraft ? 'Regenerate Draft' : 'Generate Draft'}
+                  label={aiDraft ? 'Regenerate Goal' : 'Generate Goal'}
+                  variant={aiCreditStatus?.availableCredits === 0 ? 'secondary' : 'primary'}
                   accessibilityLabel={aiDraft ? 'Regenerate AI goal plan' : 'Generate AI goal plan'}
                   onPress={() => {
+                    if (!canGenerateAiPlan || generating.current) return;
                     if (aiDraft) {
                       setRegenerationConfirmationVisible(true);
                       return;
                     }
                     void handleGenerateAiPlan();
                   }}
-                  disabled={
-                    aiGenerating ||
-                    aiCreditsLoading ||
-                    aiCreditStatus?.availableCredits === 0 ||
-                    aiCreditStatus?.eligible === false
-                  }
+                  disabled={!canGenerateAiPlan}
                 />
-                {creditPackUserId ? (
+                {isPremiumStatusResolved && hasPremiumAccess && creditPackUserId ? (
                   <AppButton
                     label="Get More AI Credits"
-                    variant="secondary"
+                    variant={aiCreditStatus?.availableCredits === 0 ? 'primary' : 'secondary'}
                     accessibilityLabel="Get more AI credits from AI planning"
                     onPress={() => setCreditPackVisible(true)}
+                    disabled={aiGenerating}
+                  />
+                ) : aiCreditStatus?.availableCredits === 0 && !hasPremiumAccess ? (
+                  <AppButton
+                    label="View Bearing 360 Plans"
+                    accessibilityLabel="View Bearing 360 plans for AI goal builder"
+                    onPress={onOpenPremiumPaywall}
                   />
                 ) : null}
-              </AppCard>
-            ) : (
-              <AppCard style={styles.card}>
-                <Text style={styles.cardTitle}>Unlock AI goal builder with Bearing 360.</Text>
-                <Text style={styles.cardBody}>
-                  Bearing 360 opens AI-generated milestones and tasks here. You can keep building
-                  the goal manually right now.
-                </Text>
-                <View style={styles.disabledBadge}>
-                  <Text style={styles.disabledBadgeText}>Bearing 360 Required</Text>
-                </View>
-                <AppButton
-                  label="View Bearing 360 Plans"
-                  accessibilityLabel="View Bearing 360 plans for AI goal builder"
-                  onPress={onOpenPremiumPaywall}
-                />
-              </AppCard>
-            )
+              </View>
+            </View>
           ) : null}
 
           {wizardIndex === 2 ? (
@@ -1381,15 +1514,20 @@ export function CreateGoalModal({
                 label="Back"
                 variant="secondary"
                 accessibilityLabel="Back"
-                onPress={() => setWizardIndex((current) => Math.max(0, current - 1))}
+                disabled={aiGenerating}
+                onPress={() => {
+                  if (!generating.current) setWizardIndex((current) => Math.max(0, current - 1));
+                }}
                 style={styles.actionButton}
               />
             ) : null}
 
             {wizardIndex < WIZARD_TITLES.length - 1 ? (
               <AppButton
-                label="Continue"
-                accessibilityLabel="Continue"
+                label="Next"
+                variant="secondary"
+                disabled={aiGenerating}
+                accessibilityLabel="Next"
                 onPress={() => void handleNext()}
                 loading={saving}
                 style={styles.actionButton}
@@ -1525,7 +1663,7 @@ export function CreateGoalModal({
             label="Use 1 Credit and Regenerate"
             accessibilityLabel="Confirm AI goal plan regeneration"
             onPress={() => void handleGenerateAiPlan()}
-            disabled={aiGenerating}
+            disabled={!canGenerateAiPlan}
           />
           <AppButton
             label="Edit Goal Details"
@@ -1550,9 +1688,7 @@ export function CreateGoalModal({
         enabled={hasPremiumAccess && creditPackUserId !== null}
         source="ai_planning"
         currentBalance={aiCreditStatus?.availableCredits ?? null}
-        onBalanceUpdated={(availableCredits) =>
-          setAiCreditStatus({ eligible: true, availableCredits })
-        }
+        onBalanceUpdated={applyAiCreditBalance}
         onClose={() => setCreditPackVisible(false)}
       />
     </>
@@ -1568,6 +1704,42 @@ const createStyles = (theme: Theme) =>
     section: {
       gap: spacing.lg,
     },
+    creditHeading: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    creditIconFrame: {
+      width: 34,
+      height: 34,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: theme.radii.md,
+      backgroundColor: theme.colors.surfaceMuted,
+    },
+    creditCopy: { flex: 1, minWidth: 0, gap: spacing.xs },
+    creditTitle: {
+      ...typography.helper,
+      color: theme.colors.textSecondary,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+    },
+    creditBalance: { ...typography.helper, color: theme.colors.textSecondary },
+    creditInfo: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.md,
+      padding: spacing.md,
+      backgroundColor: theme.colors.surfaceBrand,
+      borderRadius: theme.radii.md,
+    },
+    creditInfoCopy: { flex: 1, minWidth: 0, gap: spacing.xs },
+    creditInfoTitle: {
+      ...typography.helper,
+      color: theme.colors.textPrimary,
+      fontWeight: '700',
+    },
+    creditInfoBody: { ...typography.helper, color: theme.colors.textSecondary },
     stepLabel: {
       ...typography.label,
       color: theme.colors.brand,

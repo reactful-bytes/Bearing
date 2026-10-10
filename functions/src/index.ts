@@ -2,6 +2,7 @@ import { initializeApp } from "firebase-admin/app";
 import { defineString } from "firebase-functions/params";
 import { logger } from "firebase-functions/logger";
 import { onCall, onRequest } from "firebase-functions/v2/https";
+import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { setGlobalOptions } from "firebase-functions/v2/options";
 
 import { getBackendStatus } from "./status";
@@ -13,6 +14,7 @@ import {
 } from "./aiGoalPlan";
 import {
   createRevenueCatAiCreditBalanceLookup,
+  loadAiCreditWelcomeGrant,
   getAiCreditStatus as getAiCreditStatusHandler,
 } from "./aiCreditStatus";
 import { createGeminiGoalPlanGenerator } from "./geminiGoalPlan";
@@ -36,6 +38,10 @@ import {
   getRevenueCatProductGrantCatalog as getRevenueCatProductGrantCatalogHandler,
 } from "./revenueCatCatalog";
 import { RevenueCatV2Config } from "./revenueCatV2";
+import {
+  createWelcomeAiCreditDependencies,
+  grantWelcomeAiCredit,
+} from "./welcomeAiCredit";
 
 initializeApp();
 
@@ -83,6 +89,21 @@ function revenueCatV2Config(): RevenueCatV2Config {
 let loadRevenueCatProductGrantCatalog:
   | (() => Promise<import("./revenueCatCatalog").RevenueCatProductGrant[]>)
   | null = null;
+
+export const welcomeAiCredit = onDocumentCreated(
+  { document: "users/{userId}", retry: true, timeoutSeconds: 60 },
+  async (event) => {
+    try {
+      await grantWelcomeAiCredit(
+        event.params.userId,
+        createWelcomeAiCreditDependencies(revenueCatV2Config()),
+      );
+    } catch {
+      logger.error("welcome_ai_credit_failed");
+      throw new Error("Welcome AI credit grant failed.");
+    }
+  },
+);
 
 export const revenueCatWebhook = onRequest(
   {
@@ -143,6 +164,7 @@ export const getAiCreditStatus = onCall(
     getAiCreditStatusHandler(
       request,
       createRevenueCatAiCreditBalanceLookup(revenueCatV2Config()),
+      loadAiCreditWelcomeGrant,
     ),
 );
 
@@ -176,7 +198,6 @@ export const generateGoalPlanDraft = onCall(
     return generateGoalPlanDraftHandler(
       request,
       generator,
-      undefined,
       createRevenueCatGoalPlanCreditService(
         revenueCatV2Config(),
         createGoalPlanDraftAdminPersister(),

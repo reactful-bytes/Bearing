@@ -12,7 +12,6 @@ export type RevenueCatProductGrant = {
   productType: string;
   currencyCode: string;
   amount: number;
-  trialAmount: number | null;
   expiresAtCycleEnd: boolean;
 };
 
@@ -149,11 +148,6 @@ export function createRevenueCatProductGrantCatalog(
             typeof grant.amount !== "number" ||
             !Number.isSafeInteger(grant.amount) ||
             grant.amount <= 0 ||
-            (grant.trial_amount !== null &&
-              grant.trial_amount !== undefined &&
-              (typeof grant.trial_amount !== "number" ||
-                !Number.isSafeInteger(grant.trial_amount) ||
-                grant.trial_amount < 0)) ||
             (grant.expire_at_cycle_end !== null &&
               grant.expire_at_cycle_end !== undefined &&
               typeof grant.expire_at_cycle_end !== "boolean")
@@ -168,10 +162,6 @@ export function createRevenueCatProductGrantCatalog(
               ...product,
               currencyCode: config.currencyCode.toUpperCase(),
               amount: grant.amount as number,
-              trialAmount:
-                typeof grant.trial_amount === "number"
-                  ? grant.trial_amount
-                  : null,
               expiresAtCycleEnd: grant.expire_at_cycle_end === true,
             };
           });

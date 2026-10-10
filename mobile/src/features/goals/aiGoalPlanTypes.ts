@@ -30,6 +30,7 @@ export type AiGoalPlanInput = {
 export type AiCreditStatus = {
   eligible: boolean;
   availableCredits: number;
+  welcomeMessageEligible: boolean;
 };
 
 export type AiGoalTask = {

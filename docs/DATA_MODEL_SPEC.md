@@ -244,6 +244,8 @@ Notes:
   management page, from real App Store or Play Store purchases.
 - A missing document means free access. Clients must fail closed on missing, malformed, loading, or error states.
 - Only `active` and `in_grace_period` unlock premium features.
+- AI spending is separate: authenticated users with available RevenueCat credits may generate plans
+  regardless of subscription state. Credit-pack purchases remain member-only; no trial access exists.
 - Clients may read only their own document and may not write subscription state.
 
 ### revenueCatWebhookEvents
@@ -287,6 +289,16 @@ Notes:
 - Successful validated output supports idempotent replay without another debit or generation.
 - RevenueCat V2 is the sole balance, grant, and transaction authority; this collection is not a
   ledger or grant history.
+- A retry-enabled creation trigger on `users/{userId}` grants two welcome AI credits when an
+  email/Google account's profile is first created, regardless of Auth account age. Existing profile
+  documents do not trigger on login; accounts with a missing profile qualify when it is created.
+  A UID-derived SHA-256 transaction key handles retries/recreation, and the server sets
+  `welcomeAiCreditGranted: true` on the profile so the app can identify the grant after spending.
+  `welcomeAiCreditMessageDismissed` records exhaustion, while
+  `subscriptions/{userId}.hasEverSubscribed` suppresses the welcome message permanently after a
+  subscription, including after cancellation. The status callable combines these server-owned
+  facts with the live balance into `welcomeMessageEligible`. Clients cannot set or update these
+  markers; no separate welcome-grant collection exists.
 - Firestore TTL targets `expiresAt`, which is set 24 hours after operation creation.
 
 ### aiCreditLocks

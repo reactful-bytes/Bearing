@@ -196,23 +196,10 @@ export function PremiumPaywallModal({
                         {plan.annualMonthlyBreakdownText ? (
                           <Text style={styles.planSummary}>{plan.annualMonthlyBreakdownText}</Text>
                         ) : null}
-                        {plan.introductoryOfferText ? (
-                          <View style={styles.planOfferBadge}>
-                            <Text style={styles.planIntroductoryOffer}>
-                              {plan.introductoryOfferText}
-                            </Text>
-                          </View>
-                        ) : null}
                         {plan.creditAmount !== null ? (
                           <Text style={styles.planMeta}>
                             Includes {plan.creditAmount} AI planning{' '}
-                            {plan.creditAmount === 1 ? 'credit' : 'credits'} per grant
-                          </Text>
-                        ) : null}
-                        {plan.trialCreditAmount !== null ? (
-                          <Text style={styles.planMeta}>
-                            Trial includes {plan.trialCreditAmount} AI planning{' '}
-                            {plan.trialCreditAmount === 1 ? 'credit' : 'credits'}
+                            {plan.creditAmount === 1 ? 'credit' : 'credits'} per month
                           </Text>
                         ) : null}
                       </View>
@@ -365,9 +352,6 @@ export function PremiumPaywallModal({
                   <Text style={styles.planSummary}>
                     {confirmationPlan.annualMonthlyBreakdownText}
                   </Text>
-                ) : null}
-                {confirmationPlan.introductoryOfferText ? (
-                  <Text style={styles.planMeta}>{confirmationPlan.introductoryOfferText}</Text>
                 ) : null}
               </View>
               <Text style={styles.confirmationPlanPrice}>
@@ -668,17 +652,6 @@ const createStyles = (theme: Theme) =>
       ...typography.button,
       color: theme.colors.purple,
       textAlign: 'right',
-    },
-    planIntroductoryOffer: {
-      ...typography.helper,
-      color: theme.colors.brand,
-    },
-    planOfferBadge: {
-      alignSelf: 'flex-start',
-      borderRadius: radii.sm,
-      backgroundColor: theme.colors.surface,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.xs,
     },
     planMeta: {
       ...typography.helper,

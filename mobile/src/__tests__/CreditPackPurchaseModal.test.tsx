@@ -54,7 +54,11 @@ describe('CreditPackPurchaseModal', () => {
     jest.mocked(getPremiumPurchaseAvailability).mockReturnValue('available');
     jest.mocked(loadCreditPacks).mockResolvedValue([creditPack]);
     jest.mocked(purchaseCreditPack).mockResolvedValue('success');
-    jest.mocked(getAiCreditStatus).mockResolvedValue({ eligible: true, availableCredits: 15 });
+    jest.mocked(getAiCreditStatus).mockResolvedValue({
+      eligible: true,
+      availableCredits: 15,
+      welcomeMessageEligible: false,
+    });
   });
 
   it('applies safe-area insets to the wizard credit-pack flow', async () => {
@@ -175,5 +179,45 @@ describe('CreditPackPurchaseModal', () => {
       screen.getByText('Unable to start the credit pack purchase. Please try again.'),
     ).toBeTruthy();
     expect(getAiCreditStatus).not.toHaveBeenCalled();
+  });
+
+  it('ignores a pending balance response after the account changes', async () => {
+    let resolveBalance!: (value: {
+      eligible: boolean;
+      availableCredits: number;
+      welcomeMessageEligible: boolean;
+    }) => void;
+    jest.mocked(getAiCreditStatus).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveBalance = resolve;
+        }),
+    );
+    const onBalanceUpdated = jest.fn();
+    const props = {
+      visible: true,
+      userId: 'user-1',
+      enabled: true,
+      source: 'profile' as const,
+      currentBalance: 0,
+      onBalanceUpdated,
+      onClose: jest.fn(),
+    };
+    const { rerender } = render(<CreditPackPurchaseModal {...props} />);
+    fireEvent.press(await screen.findByRole('button', { name: 'Continue with 12 AI credits' }));
+    fireEvent.press(
+      screen.getByRole('button', { name: 'Continue to the store for 12 AI credits' }),
+    );
+    await waitFor(() => expect(getAiCreditStatus).toHaveBeenCalledTimes(1));
+    rerender(<CreditPackPurchaseModal {...props} userId="user-2" />);
+    await act(async () =>
+      resolveBalance({
+        eligible: true,
+        availableCredits: 12,
+        welcomeMessageEligible: false,
+      }),
+    );
+    expect(onBalanceUpdated).not.toHaveBeenCalled();
+    expect(screen.queryByText('12 AI planning credits available.')).toBeNull();
   });
 });

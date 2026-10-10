@@ -107,7 +107,6 @@ describe("AI goal plan", () => {
     await generateGoalPlanDraft(
       { ...request, data: { ...request.data, provider: "gemini" } },
       registry,
-      async () => "active",
       creditService(),
       new Date("2027-01-01T00:00:00Z"),
     );
@@ -139,7 +138,6 @@ describe("AI goal plan", () => {
     await generateGoalPlanDraft(
       { ...request, data: { ...request.data, requestId } },
       registry,
-      async () => "active",
       service,
     );
     await generateGoalPlanDraft(
@@ -148,7 +146,6 @@ describe("AI goal plan", () => {
         data: { ...request.data, requestId, provider: "gemini" },
       },
       registry,
-      async () => "active",
       service,
       new Date(),
     );
@@ -359,7 +356,6 @@ describe("AI goal plan", () => {
         planningStartDate = JSON.parse(prompt.input).planningStartDate;
         return validDraft;
       },
-      async () => "active",
       undefined,
       now,
     );
@@ -378,7 +374,6 @@ describe("AI goal plan", () => {
           generated = true;
           return validDraft;
         },
-        async () => "active",
         creditService({
           run: async () => {
             prepared = true;
@@ -395,12 +390,8 @@ describe("AI goal plan", () => {
     assert.equal(generated, false);
   });
 
-  it("returns a draft for a verified premium caller", async () => {
-    const draft = await generateGoalPlanDraft(
-      request,
-      async () => validDraft,
-      async () => "active",
-    );
+  it("returns a draft for an authenticated caller without checking subscription status", async () => {
+    const draft = await generateGoalPlanDraft(request, async () => validDraft);
 
     assert.deepEqual(draft, { promptVersion: 1, ...validDraft });
   });
@@ -414,16 +405,18 @@ describe("AI goal plan", () => {
         data: { ...request.data, userId: "other-user" },
       },
       async () => validDraft,
-      async (userId) => {
-        lookedUpUserId = userId;
-        return "active";
-      },
+      creditService({
+        run: async (userId, _requestId, _fingerprint, generate) => {
+          lookedUpUserId = userId;
+          return { kind: "completed", draft: await generate() };
+        },
+      }),
     );
 
     assert.equal(lookedUpUserId, "user-1");
   });
 
-  it("does not invoke the provider for a free caller", async () => {
+  it("does not invoke the provider when no credits remain", async () => {
     let providerInvoked = false;
 
     await assert.rejects(
@@ -433,10 +426,14 @@ describe("AI goal plan", () => {
           providerInvoked = true;
           return validDraft;
         },
-        async () => null,
+        creditService({
+          run: async () => {
+            throw new HttpsError("resource-exhausted", "No AI credits remain.");
+          },
+        }),
       ),
       (error: unknown) =>
-        error instanceof HttpsError && error.code === "permission-denied",
+        error instanceof HttpsError && error.code === "resource-exhausted",
     );
     assert.equal(providerInvoked, false);
   });
@@ -456,7 +453,6 @@ describe("AI goal plan", () => {
           error.status = 503;
           throw error;
         },
-        async () => "in_grace_period",
         creditService(),
       ),
       (error: unknown) => {
@@ -490,7 +486,6 @@ describe("AI goal plan", () => {
         generatorRequestId = context?.requestId ?? "";
         return validDraft;
       },
-      async () => "active",
       creditService({
         run: async (_userId, _requestId, _fingerprint, generate) => {
           finalized = true;
@@ -536,7 +531,6 @@ describe("AI goal plan", () => {
         persistenceOrder.push("generated");
         return validDraft;
       },
-      async () => "active",
       creditService({
         persistDraft: async (_userId, _input, draft) => {
           persistenceOrder.push("persisted");
@@ -572,7 +566,6 @@ describe("AI goal plan", () => {
           ...validDraft,
           milestones: [{ ...validDraft.milestones[0], tasks: [] }],
         }),
-        async () => "active",
         creditService({
           run: async (_userId, _requestId, _fingerprint, generate) => {
             try {
@@ -596,7 +589,6 @@ describe("AI goal plan", () => {
     const result = await generateGoalPlanDraft(
       request,
       async () => validDraft,
-      async () => "active",
       creditService({
         run: async (_userId, requestId, _fingerprint, generate) => {
           generatedRequestId = requestId;
@@ -617,6 +609,7 @@ describe("AI goal plan", () => {
 
   it("returns a matching cached replay without invoking the provider", async () => {
     let providerInvoked = false;
+    let welcomeMessageDismissed = false;
     const result = await generateGoalPlanDraft(
       {
         ...request,
@@ -629,20 +622,45 @@ describe("AI goal plan", () => {
         providerInvoked = true;
         return validDraft;
       },
-      async () => "active",
       creditService({
         run: async () => ({
           kind: "replay",
           draft: { promptVersion: 1, ...validDraft },
         }),
-        getBalance: async () => 8,
+        getBalance: async () => 0,
+        dismissWelcomeMessage: async (userId) => {
+          welcomeMessageDismissed = userId === "user-1";
+        },
       }),
     );
 
     assert.equal(providerInvoked, false);
+    assert.equal(welcomeMessageDismissed, true);
     assert.equal(
       "availableCredits" in result ? result.availableCredits : -1,
-      8,
+      0,
     );
+  });
+
+  it("rejects missing authentication before provider or credit work", async () => {
+    let invoked = false;
+    await assert.rejects(
+      generateGoalPlanDraft(
+        { data: request.data },
+        async () => {
+          invoked = true;
+          return validDraft;
+        },
+        creditService({
+          run: async () => {
+            invoked = true;
+            throw new Error("unexpected");
+          },
+        }),
+      ),
+      (error: unknown) =>
+        error instanceof HttpsError && error.code === "unauthenticated",
+    );
+    assert.equal(invoked, false);
   });
 });

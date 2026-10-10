@@ -18,12 +18,10 @@ const monthlyPlan: PremiumPlan = {
   packageIdentifier: '$rc_monthly',
   telemetryPlanType: 'MONTHLY',
   creditAmount: 10,
-  trialCreditAmount: 1,
   title: 'Monthly',
   priceText: '$7.99',
   priceSuffixText: '/mo',
   annualMonthlyBreakdownText: null,
-  introductoryOfferText: '1 week free',
   isAutoRenewing: true,
   isOneTimePurchase: false,
 };
@@ -32,12 +30,10 @@ const annualPlan: PremiumPlan = {
   packageIdentifier: '$rc_annual',
   telemetryPlanType: 'ANNUAL',
   creditAmount: null,
-  trialCreditAmount: null,
   title: 'Yearly',
   priceText: '$59.99',
   priceSuffixText: '/yr',
   annualMonthlyBreakdownText: 'Only $5.00/mo',
-  introductoryOfferText: null,
   isAutoRenewing: true,
   isOneTimePurchase: false,
 };
@@ -74,8 +70,8 @@ describe('PremiumPaywallModal', () => {
       screen.getByRole('radio', { name: 'Select Monthly Bearing 360 plan', selected: true }),
     ).toBeTruthy();
     expect(screen.getByText('$7.99/mo')).toBeTruthy();
-    expect(screen.getByText('Includes 10 AI planning credits per grant')).toBeTruthy();
-    expect(screen.getByText('Trial includes 1 AI planning credit')).toBeTruthy();
+    expect(screen.getByText('Includes 10 AI planning credits per month')).toBeTruthy();
+    expect(screen.queryByText(/Trial includes|week free/)).toBeNull();
     expect(
       screen.getByText(
         'Use AI to refine your goal into a SMART goal: specific, measurable, achievable, relevant, and time-bound.',

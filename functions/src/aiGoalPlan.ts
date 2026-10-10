@@ -7,13 +7,16 @@ import {
   AiCreditOperationResult,
   runAiCreditOperation,
 } from "./aiCreditOperations";
-import { EntitlementLookup, requirePremiumCaller } from "./entitlement";
 import {
   RevenueCatV2Config,
   createRevenueCatVirtualCurrencyTransaction,
   getRevenueCatVirtualCurrencyBalance,
 } from "./revenueCatV2";
-import { CallableIdentityRequest } from "./security";
+import {
+  CallableIdentityRequest,
+  requireAuthenticatedCaller,
+} from "./security";
+import { dismissWelcomeAiCreditMessage } from "./welcomeAiCredit";
 
 const MAX_TITLE_LENGTH = 120;
 const MAX_DESCRIPTION_LENGTH = 1_000;
@@ -153,6 +156,7 @@ export type GoalPlanCreditService = {
     now: Date,
   ) => Promise<AiCreditOperationResult<GoalPlanDraft>>;
   getBalance: (userId: string) => Promise<number>;
+  dismissWelcomeMessage?: (userId: string) => Promise<void>;
   persistDraft: (
     userId: string,
     input: GoalPlanInput,
@@ -193,6 +197,7 @@ export function createRevenueCatGoalPlanCreditService(
       ),
     getBalance: async (userId) =>
       (await getRevenueCatVirtualCurrencyBalance(userId, config)).balance,
+    dismissWelcomeMessage: dismissWelcomeAiCreditMessage,
     persistDraft,
   };
 }
@@ -494,21 +499,10 @@ export function validateGoalPlanDraft(
 export async function generateGoalPlanDraft(
   request: GoalPlanRequest,
   generator: GoalPlanGenerator,
-  entitlementLookup?: EntitlementLookup,
   creditService?: GoalPlanCreditService,
   now = new Date(),
 ): Promise<GoalPlanDraft | MeteredGoalPlanDraft> {
-  const caller = await requirePremiumCaller(request, entitlementLookup).catch(
-    (error: unknown) => {
-      if (error instanceof HttpsError) {
-        logger.warn("ai_goal_plan_rejected", {
-          code: error.code,
-          stage: "entitlement",
-        });
-      }
-      throw error;
-    },
-  );
+  const caller = requireAuthenticatedCaller(request);
   const input = parseGoalPlanInput(request.data);
   const planningStartDate = formatUtcDate(now);
   if (input.targetDate <= planningStartDate) {
@@ -590,6 +584,11 @@ export async function generateGoalPlanDraft(
     );
     failureStage = "balance_lookup";
     const availableCredits = await creditService.getBalance(caller.uid);
+    if (availableCredits === 0 && creditService.dismissWelcomeMessage) {
+      await creditService
+        .dismissWelcomeMessage(caller.uid)
+        .catch(() => undefined);
+    }
     logger.info("ai_goal_plan_succeeded", { requestId });
     return {
       ...draft,

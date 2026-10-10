@@ -4,12 +4,10 @@ export type PremiumPlan = {
   packageIdentifier: string;
   telemetryPlanType: string;
   creditAmount: number | null;
-  trialCreditAmount: number | null;
   title: string;
   priceText: string;
   priceSuffixText: string | null;
   annualMonthlyBreakdownText: string | null;
-  introductoryOfferText: string | null;
   isAutoRenewing: boolean;
   isOneTimePurchase: boolean;
 };
