@@ -94,7 +94,7 @@ function dismissCreationScreen(
 export function CreateGoalScreen({ navigation }: CreateGoalScreenProps) {
   const { authUser, isAnonymous } = useUserProfile();
   const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
-  const { createGoal, createGoalDraft, saveGoalDraft, activateGoalDraft } = useGoals();
+  const { createGoal, createGoalDraft, saveGoalDraft, activateGoalDraft, deleteGoal } = useGoals();
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status, entitlement?.periodEndAt);
 
   return (
@@ -109,6 +109,7 @@ export function CreateGoalScreen({ navigation }: CreateGoalScreenProps) {
         }}
         onSaveDraft={saveGoalDraft}
         onActivateDraft={activateGoalDraft}
+        onDeleteDraft={deleteGoal}
         hasPremiumAccess={hasPremiumAccess}
         isPremiumStatusResolved={entitlementUiState === 'ready'}
         onOpenPremiumPaywall={() =>
@@ -227,7 +228,7 @@ export function CreateGoalFromNoteScreen({ route, navigation }: NoteConversionPr
   const note = notes.find((item) => item.id === route?.params?.noteId);
   const { authUser, isAnonymous } = useUserProfile();
   const { entitlement, uiState: entitlementUiState } = usePremiumEntitlement(authUser?.uid ?? null);
-  const { createGoal, createGoalDraft, saveGoalDraft, activateGoalDraft } = useGoals();
+  const { createGoal, createGoalDraft, saveGoalDraft, activateGoalDraft, deleteGoal } = useGoals();
   const hasPremiumAccess = hasActivePremiumStatus(entitlement?.status, entitlement?.periodEndAt);
 
   if (!note) {
@@ -252,6 +253,7 @@ export function CreateGoalFromNoteScreen({ route, navigation }: NoteConversionPr
         }}
         onSaveDraft={saveGoalDraft}
         onActivateDraft={activateGoalDraft}
+        onDeleteDraft={deleteGoal}
         hasPremiumAccess={hasPremiumAccess}
         isPremiumStatusResolved={entitlementUiState === 'ready'}
         onOpenPremiumPaywall={() =>

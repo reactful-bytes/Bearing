@@ -65,6 +65,7 @@ type CreateGoalModalProps = {
   onCreateDraft?: (input: CreateGoalInput) => Promise<string>;
   onSaveDraft?: (goalId: string, input: GoalDraftSaveInput) => Promise<GoalDraftSaveResult>;
   onActivateDraft?: (goalId: string) => Promise<void>;
+  onDeleteDraft: (goalId: string) => Promise<void>;
   hasPremiumAccess: boolean;
   isPremiumStatusResolved: boolean;
   onOpenPremiumPaywall: () => void;
@@ -230,6 +231,7 @@ export function CreateGoalModal({
   onCreateDraft,
   onSaveDraft,
   onActivateDraft,
+  onDeleteDraft,
   hasPremiumAccess,
   isPremiumStatusResolved,
   onOpenPremiumPaywall,
@@ -268,6 +270,8 @@ export function CreateGoalModal({
   const [autosaveError, setAutosaveError] = useState<string | null>(null);
   const [closeDraftConfirmationVisible, setCloseDraftConfirmationVisible] = useState(false);
   const [closeDraftSaveFailed, setCloseDraftSaveFailed] = useState(false);
+  const [closeDraftDiscarding, setCloseDraftDiscarding] = useState(false);
+  const [closeDraftDiscardError, setCloseDraftDiscardError] = useState<string | null>(null);
   const [aiDraft, setAiDraft] = useState<AiGoalPlanDraft | null>(null);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [regenerationConfirmationVisible, setRegenerationConfirmationVisible] = useState(false);
@@ -520,6 +524,8 @@ export function CreateGoalModal({
     setAutosaveError(null);
     setCloseDraftConfirmationVisible(false);
     setCloseDraftSaveFailed(false);
+    setCloseDraftDiscarding(false);
+    setCloseDraftDiscardError(null);
     setAiDraft(null);
     setAiGenerating(false);
     generating.current = false;
@@ -542,14 +548,31 @@ export function CreateGoalModal({
         try {
           await flushDraftAutosave();
         } catch {
-          setAutosaveError('Draft changes could not be saved. Try again before closing.');
+          setAutosaveError('Draft changes could not be saved. Try again.');
           saveFailed = true;
         }
       }
       setCloseDraftSaveFailed(saveFailed);
+      setCloseDraftDiscardError(null);
       setCloseDraftConfirmationVisible(true);
       return;
     }
+    resetForm();
+    onClose();
+  }
+
+  async function handleDiscardDraft(): Promise<void> {
+    if (!persistedGoalId) return;
+    setCloseDraftDiscarding(true);
+    setCloseDraftDiscardError(null);
+    try {
+      await onDeleteDraft(persistedGoalId);
+    } catch {
+      setCloseDraftDiscarding(false);
+      setCloseDraftDiscardError('Draft could not be discarded. Try again.');
+      return;
+    }
+    setCloseDraftDiscarding(false);
     resetForm();
     onClose();
   }
@@ -1659,17 +1682,28 @@ export function CreateGoalModal({
         visible={closeDraftConfirmationVisible}
         title={closeDraftSaveFailed ? 'Draft changes could not be saved' : 'Goal draft saved'}
         message={
-          closeDraftSaveFailed
-            ? 'Your last saved draft is available on the Goals screen. Close the wizard without the latest changes?'
-            : 'Your goal draft is available on the Goals screen. You can return to it later. Close the wizard?'
+          closeDraftDiscardError ??
+          (closeDraftSaveFailed
+            ? 'Your last saved draft is available on the Goals screen. Close the wizard to keep it, or discard it permanently.'
+            : 'Your goal draft is available on the Goals screen. Close the wizard to keep it, or discard it permanently.')
         }
+        confirmFirst
         confirmLabel="Close Wizard"
-        confirmVariant={closeDraftSaveFailed ? 'danger' : 'primary'}
+        confirmVariant="secondary"
         cancelLabel="Keep Editing"
+        cancelVariant="primary"
         confirmAccessibilityLabel="Close goal wizard and return to Goals"
         cancelAccessibilityLabel="Keep editing goal draft"
         icon={closeDraftSaveFailed ? 'warning' : 'info'}
         iconTone={closeDraftSaveFailed ? 'warning' : 'brand'}
+        destructiveAction={{
+          label: 'Close and Discard Draft',
+          accessibilityLabel: 'Close wizard and discard goal draft',
+          variant: 'secondary',
+          loadingLabel: 'Discarding...',
+          loading: closeDraftDiscarding,
+          onPress: () => void handleDiscardDraft(),
+        }}
         onCancel={() => setCloseDraftConfirmationVisible(false)}
         onConfirm={() => {
           resetForm();

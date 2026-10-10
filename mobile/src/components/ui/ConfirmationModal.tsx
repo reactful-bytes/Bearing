@@ -10,12 +10,22 @@ import { AppIcon } from './AppIcon';
 
 type ConfirmationIconTone = 'brand' | 'danger' | 'warning';
 
+type ConfirmationDestructiveAction = {
+  label: string;
+  accessibilityLabel: string;
+  variant?: AppButtonVariant;
+  loadingLabel?: string;
+  loading?: boolean;
+  onPress: () => void;
+};
+
 type ConfirmationModalProps = {
   visible: boolean;
   title: string;
   message: string;
   confirmLabel: string;
   cancelLabel?: string;
+  confirmFirst?: boolean;
   confirmVariant?: AppButtonVariant;
   cancelVariant?: AppButtonVariant;
   icon?: AppIconName;
@@ -23,6 +33,7 @@ type ConfirmationModalProps = {
   confirmAccessibilityLabel?: string;
   cancelAccessibilityLabel?: string;
   loading?: boolean;
+  destructiveAction?: ConfirmationDestructiveAction;
   onCancel: () => void;
   onConfirm: () => void;
 };
@@ -33,6 +44,7 @@ export function ConfirmationModal({
   message,
   confirmLabel,
   cancelLabel = 'Cancel',
+  confirmFirst = false,
   confirmVariant = 'primary',
   cancelVariant = 'secondary',
   icon,
@@ -40,10 +52,12 @@ export function ConfirmationModal({
   confirmAccessibilityLabel = confirmLabel,
   cancelAccessibilityLabel = cancelLabel,
   loading = false,
+  destructiveAction,
   onCancel,
   onConfirm,
 }: ConfirmationModalProps) {
   const styles = useThemedStyles(createStyles);
+  const isActionLoading = loading || destructiveAction?.loading === true;
   const iconFrameToneStyle =
     iconTone === 'danger'
       ? styles.iconFrameDanger
@@ -56,6 +70,30 @@ export function ConfirmationModal({
       : iconTone === 'warning'
         ? styles.iconWarning
         : styles.iconBrand;
+  const cancelButton = (
+    <AppButton
+      label={cancelLabel}
+      variant={cancelVariant}
+      accessibilityLabel={cancelAccessibilityLabel}
+      onPress={onCancel}
+      disabled={isActionLoading}
+      style={styles.actionButton}
+      textStyle={styles.actionButtonText}
+    />
+  );
+  const confirmButton = (
+    <AppButton
+      label={confirmLabel}
+      variant={confirmVariant}
+      accessibilityLabel={confirmAccessibilityLabel}
+      onPress={onConfirm}
+      disabled={isActionLoading}
+      loading={loading}
+      loadingLabel="Deleting..."
+      style={styles.actionButton}
+      textStyle={styles.actionButtonText}
+    />
+  );
 
   if (!visible) return null;
 
@@ -67,7 +105,7 @@ export function ConfirmationModal({
       statusBarTranslucent
       navigationBarTranslucent
       onRequestClose={() => {
-        if (!loading) onCancel();
+        if (!isActionLoading) onCancel();
       }}
     >
       <View style={styles.overlay}>
@@ -75,7 +113,7 @@ export function ConfirmationModal({
           accessibilityRole="button"
           accessibilityLabel={`Dismiss ${title}`}
           onPress={onCancel}
-          disabled={loading}
+          disabled={isActionLoading}
           style={StyleSheet.absoluteFill}
         />
         <View
@@ -93,26 +131,27 @@ export function ConfirmationModal({
             {title}
           </Text>
           <Text style={styles.message}>{message}</Text>
-          <View style={styles.actions}>
-            <AppButton
-              label={cancelLabel}
-              variant={cancelVariant}
-              accessibilityLabel={cancelAccessibilityLabel}
-              onPress={onCancel}
-              disabled={loading}
-              style={styles.actionButton}
-              textStyle={styles.actionButtonText}
-            />
-            <AppButton
-              label={confirmLabel}
-              variant={confirmVariant}
-              accessibilityLabel={confirmAccessibilityLabel}
-              onPress={onConfirm}
-              loading={loading}
-              loadingLabel="Deleting..."
-              style={styles.actionButton}
-              textStyle={styles.actionButtonText}
-            />
+          <View style={styles.actionStack}>
+            {destructiveAction ? (
+              <View style={styles.destructiveActionGroup}>
+                <AppButton
+                  label={destructiveAction.label}
+                  variant={destructiveAction.variant ?? 'danger'}
+                  accessibilityLabel={destructiveAction.accessibilityLabel}
+                  onPress={destructiveAction.onPress}
+                  disabled={isActionLoading}
+                  loading={destructiveAction.loading}
+                  loadingLabel={destructiveAction.loadingLabel}
+                  style={styles.destructiveActionButton}
+                  textStyle={styles.actionButtonText}
+                />
+                <View style={styles.actionDivider} />
+              </View>
+            ) : null}
+            <View style={styles.actions}>
+              {confirmFirst ? confirmButton : cancelButton}
+              {confirmFirst ? cancelButton : confirmButton}
+            </View>
           </View>
         </View>
       </View>
@@ -177,10 +216,24 @@ const createStyles = (theme: Theme) =>
       ...typography.body,
       color: theme.colors.textSecondary,
     },
+    actionStack: {
+      gap: spacing.md,
+      marginTop: spacing.xs,
+    },
     actions: {
       flexDirection: 'row',
       gap: spacing.sm,
-      marginTop: spacing.xs,
+    },
+    destructiveActionButton: {
+      width: '100%',
+      minWidth: 0,
+    },
+    destructiveActionGroup: {
+      gap: spacing.md,
+    },
+    actionDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.colors.border,
     },
     actionButton: {
       flex: 1,

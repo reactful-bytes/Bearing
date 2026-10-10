@@ -414,6 +414,7 @@ export function GoalsScreen({ route, navigation }: GoalsScreenProps = {}) {
         onCreateDraft={createGoalDraft ? handleCreateGoalDraft : undefined}
         onSaveDraft={saveGoalDraft}
         onActivateDraft={activateGoalDraft ? handleActivateGoalDraft : undefined}
+        onDeleteDraft={deleteGoal}
         hasPremiumAccess={hasPremiumAccess}
         isPremiumStatusResolved={entitlementUiState === 'ready'}
         onOpenPremiumPaywall={() =>

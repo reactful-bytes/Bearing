@@ -945,7 +945,7 @@ describe('GoalsScreen', () => {
     expect(await screen.findByText('Goal draft saved')).toBeTruthy();
     expect(
       await screen.findByText(
-        'Your goal draft is available on the Goals screen. You can return to it later. Close the wizard?',
+        'Your goal draft is available on the Goals screen. Close the wizard to keep it, or discard it permanently.',
       ),
     ).toBeTruthy();
     fireEvent.press(await screen.findByLabelText('Close goal wizard and return to Goals'));
@@ -966,6 +966,9 @@ describe('GoalsScreen', () => {
       goals.push(draftGoal);
       return draftGoal.id;
     });
+    const deleteGoal = jest.fn(async () => {
+      goals.splice(0, goals.length);
+    });
     const saveGoalDraft = jest.fn(
       async (_goalId: string, _input: GoalDraftSaveInput): Promise<GoalDraftSaveResult> => {
         throw new Error('Draft save failed.');
@@ -980,7 +983,7 @@ describe('GoalsScreen', () => {
       saveGoalDraft,
       activateGoalDraft: jest.fn(async () => undefined),
       updateGoal: jest.fn(async () => undefined),
-      deleteGoal: async () => undefined,
+      deleteGoal,
       setGoalManuallyCompleted: async () => undefined,
       setMilestoneManuallyCompleted: async () => undefined,
       createMilestone: async () => undefined,
@@ -1004,23 +1007,37 @@ describe('GoalsScreen', () => {
       fireEvent.press(screen.getByLabelText('Next'));
     });
     fireEvent.press(screen.getByLabelText('Next'));
-    fireEvent.press(screen.getByLabelText('Close Create Goal'));
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Close Create Goal'));
+    });
 
     expect(
-      await screen.findByText(
-        'Your last saved draft is available on the Goals screen. Close the wizard without the latest changes?',
+      screen.getByText(
+        'Your last saved draft is available on the Goals screen. Close the wizard to keep it, or discard it permanently.',
       ),
     ).toBeTruthy();
+    expect(
+      within(screen.getByLabelText('Draft changes could not be saved confirmation dialog'))
+        .getAllByRole('button')
+        .map((button) => button.props.accessibilityLabel),
+    ).toEqual([
+      'Close wizard and discard goal draft',
+      'Close goal wizard and return to Goals',
+      'Keep editing goal draft',
+    ]);
     fireEvent.press(screen.getByLabelText('Keep editing goal draft'));
     expect(screen.getByText('Step 5 of 5: Milestones & Tasks')).toBeTruthy();
 
-    fireEvent.press(screen.getByLabelText('Close Create Goal'));
-    fireEvent.press(await screen.findByLabelText('Close goal wizard and return to Goals'));
-
-    await waitFor(() => {
-      expect(screen.getByRole('header', { name: 'Draft goals' })).toBeTruthy();
-      expect(screen.getByText('Run a 10k')).toBeTruthy();
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Close Create Goal'));
     });
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Close wizard and discard goal draft'));
+    });
+
+    expect(screen.getByRole('header', { name: 'Draft goals' })).toBeTruthy();
+    expect(screen.queryByLabelText('Create Goal modal')).toBeNull();
+    expect(deleteGoal).toHaveBeenCalledWith('goal-draft-1');
     expect(saveGoalDraft).toHaveBeenCalled();
   });
 
