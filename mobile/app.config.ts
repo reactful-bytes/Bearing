@@ -38,7 +38,7 @@ const config: ExpoConfig = {
   version: '1.0.0',
   scheme: 'bearing',
   orientation: 'portrait',
-  icon: './assets/icon.png',
+  icon: './assets/logoBlueBackground.png',
   userInterfaceStyle: 'automatic',
   plugins: [
     './plugins/withAndroidDnd',
@@ -85,15 +85,14 @@ const config: ExpoConfig = {
       'android.permission.WRITE_CALENDAR',
     ],
     adaptiveIcon: {
-      foregroundImage: './assets/android-icon-foreground.png',
-      backgroundImage: './assets/android-icon-background.png',
-      monochromeImage: './assets/android-icon-monochrome.png',
-      backgroundColor: '#E6F4FE',
+      foregroundImage: './assets/bearing-icon-foreground.png',
+      monochromeImage: './assets/bearing-icon-monochrome.png',
+      backgroundColor: '#052245',
     },
     predictiveBackGestureEnabled: false,
   },
   web: {
-    favicon: './assets/favicon.png',
+    favicon: './assets/logoBlueBackground.png',
   },
   extra: {
     appEnv,
