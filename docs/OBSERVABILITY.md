@@ -143,8 +143,9 @@ Optional telemetry is consent-dependent. Never alert on an absence or decline of
 ## Activation Handoff
 
 Repository implementation is complete when mobile and Functions tests pass. The release owner must
-still deploy Functions, migrate TTL to `aiCreditOperations.expiresAt`, create log-based metrics, dashboards, budget alerts,
-and notification channels in staging first, then production. App Check remains deferred to M17 and
-must not be enforced before coordinated native/web token acceptance. Record screenshots or exported
-policies plus one synthetic alert delivery in the release evidence folder. Credentials and live
-cloud-console acceptance are intentionally outside repository automation.
+still deploy Functions, migrate TTL to `aiCreditOperations.expiresAt`, create log-based metrics,
+dashboards, budget alerts, and notification channels in staging first, then production. App Check
+remains deferred to M17 and must not be enforced before coordinated native/web token acceptance.
+Record screenshots or exported policies plus one synthetic alert delivery in the release evidence
+folder. Credentials and live cloud-console acceptance are intentionally outside repository
+automation.

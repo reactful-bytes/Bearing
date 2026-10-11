@@ -1,3 +1,5 @@
+import Constants from 'expo-constants';
+
 export type FirebaseRuntimeConfig = {
   apiKey: string;
   authDomain: string;
@@ -25,13 +27,22 @@ const REQUIRED_FIREBASE_ENV_KEYS: FirebaseEnvKey[] = [
 ];
 
 function getRuntimeEnv(): Record<string, string | undefined> {
-  const maybeProcess = globalThis as {
-    process?: {
-      env?: Record<string, string | undefined>;
-    };
-  };
+  const embeddedConfig = Constants.expoConfig?.extra?.firebase as
+    Partial<FirebaseRuntimeConfig> | undefined;
 
-  return maybeProcess.process?.env ?? {};
+  return {
+    EXPO_PUBLIC_FIREBASE_API_KEY:
+      process.env.EXPO_PUBLIC_FIREBASE_API_KEY ?? embeddedConfig?.apiKey,
+    EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN:
+      process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN ?? embeddedConfig?.authDomain,
+    EXPO_PUBLIC_FIREBASE_PROJECT_ID:
+      process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID ?? embeddedConfig?.projectId,
+    EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET:
+      process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET ?? embeddedConfig?.storageBucket,
+    EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID:
+      process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? embeddedConfig?.messagingSenderId,
+    EXPO_PUBLIC_FIREBASE_APP_ID: process.env.EXPO_PUBLIC_FIREBASE_APP_ID ?? embeddedConfig?.appId,
+  };
 }
 
 export function getFirebaseRuntimeConfig(): FirebaseRuntimeConfig {

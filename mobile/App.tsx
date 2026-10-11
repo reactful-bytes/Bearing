@@ -36,7 +36,7 @@ const bearingMarks = {
 } as const;
 
 function AppContent() {
-  const { status, user, error, retry } = useAuthBootstrap();
+  const { status, user, retry } = useAuthBootstrap();
   const { preference, isHydrated } = useTheme();
   const styles = useThemedStyles(createStyles);
   const [authActionError, setAuthActionError] = useState<string | null>(null);
@@ -131,12 +131,12 @@ function AppContent() {
               {showSignedOut ? <SignedOutAuth /> : null}
               {showError ? (
                 <AuthShell
-                  heading="Unable to start Bearing"
-                  description="The app could not finish checking your account session."
+                  heading="Unable to load Bearing"
+                  description="An unexpected error prevented the app from starting."
                 >
                   <RecoveryCard
-                    title="Startup error"
-                    description={error?.message ?? 'Unknown startup error.'}
+                    title="Startup problem"
+                    description="Bearing couldn't load. Please try again later."
                     onRetry={retry}
                   />
                 </AuthShell>

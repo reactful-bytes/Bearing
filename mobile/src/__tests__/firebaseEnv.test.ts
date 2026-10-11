@@ -1,6 +1,24 @@
-import { afterAll, beforeEach, describe, expect, it } from '@jest/globals';
+import { afterAll, beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { getFirebaseRuntimeConfig } from '../services/config/firebaseEnv';
+
+jest.mock('expo-constants', () => ({
+  __esModule: true,
+  default: {
+    expoConfig: {
+      extra: {
+        firebase: {
+          apiKey: 'embedded-api-key',
+          authDomain: 'embedded-project.firebaseapp.com',
+          projectId: 'embedded-project',
+          storageBucket: 'embedded-project.firebasestorage.app',
+          messagingSenderId: '987654321',
+          appId: '1:987654321:web:fedcba',
+        },
+      },
+    },
+  },
+}));
 
 const firebaseEnvKeys = [
   'EXPO_PUBLIC_FIREBASE_API_KEY',
@@ -55,7 +73,20 @@ describe('Firebase runtime config', () => {
     process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = '   ';
 
     expect(() => getFirebaseRuntimeConfig()).toThrow(
-      'Missing environment values: EXPO_PUBLIC_FIREBASE_API_KEY, EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+      'Missing environment values: EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
     );
+  });
+
+  it('reads Firebase values embedded in the Expo app config when runtime env is unavailable', () => {
+    for (const key of firebaseEnvKeys) delete process.env[key];
+
+    expect(getFirebaseRuntimeConfig()).toEqual({
+      apiKey: 'embedded-api-key',
+      authDomain: 'embedded-project.firebaseapp.com',
+      projectId: 'embedded-project',
+      storageBucket: 'embedded-project.firebasestorage.app',
+      messagingSenderId: '987654321',
+      appId: '1:987654321:web:fedcba',
+    });
   });
 });

@@ -351,6 +351,9 @@ describe('App shell', () => {
     });
 
     await renderReadyApp();
+    expect(screen.getByText("Bearing couldn't load. Please try again later.")).toBeTruthy();
+    expect(screen.queryByText('Network unavailable.')).toBeNull();
+
     fireEvent.press(screen.getByRole('button', { name: 'Try Again' }));
 
     expect(retry).toHaveBeenCalledTimes(1);
